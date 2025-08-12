@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps (GTest, lcov)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov libgtest-dev
+          # Build GoogleTest (if you vendor it, skip this)
+          sudo apt-get install -y cmake
+          sudo cmake -S /usr/src/googletest -B /usr/src/googletest/build
+          sudo cmake --build /usr/src/googletest/build --target install
+
+      - name: Build tests with coverage
+        run: |
+          make clean
+          make tests COVERAGE=1 CXX=g++ CXXFLAGS="-std=c++14 -O0 -g --coverage" LDFLAGS="--coverage"
+
+      - name: Run tests
+        run: ./tests
+
+      - name: Generate coverage (LCOV)
+        run: |
+          # Capture
+          lcov --capture --directory . --output-file coverage.info
+          # Remove system & irrelevant paths
+          lcov --remove coverage.info '/usr/*' '*/tests/*' '*/third_party/*' --output-file coverage.info
+          # Optional: HTML report for debugging (artifact, not needed by Codecov)
+          genhtml coverage.info --output-directory coverage
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.info
+          flags: unittests
+          name: ubuntu-gcc
+          fail_ci_if_error: true
+        env:
+          # Public repos don't need a token. Private repos: add a secret CODECOV_TOKEN
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -9,7 +9,7 @@
     <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/JohnsonBiophysicsLab/SLIMED/ci.yml?branch=main&label=CI">
   </a>
   <!-- Codecov (or Coveralls) -->
-  <!--a href="https://codecov.io/gh/JohnsonBiophysicsLab/SLIMED">
+  <a href="https://codecov.io/gh/JohnsonBiophysicsLab/SLIMED">
     <img alt="Coverage" src="https://img.shields.io/codecov/c/github/JohnsonBiophysicsLab/SLIMED?logo=codecov">
   </a>
   <!-- Release -->
