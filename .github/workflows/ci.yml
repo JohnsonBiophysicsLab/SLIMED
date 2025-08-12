@@ -32,12 +32,14 @@ jobs:
       - name: Generate coverage (LCOV)
         run: |
           lcov --capture \
-               --directory obj \
-               --directory bin \
+               --directory obj --directory bin \
                --gcov-tool gcov-13 \
-               --ignore-errors empty \
-               --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '*/googletest/*' \
+               --rc geninfo_unexecuted_blocks=1 \
+               --ignore-errors empty,mismatch \
+               --output-file coverage.raw.info
+
+          # Then prune noise (tests and system headers)
+          lcov --remove coverage.raw.info '/usr/*' '*/googletest/*' '*/tests/*' \
                --output-file coverage.info
 
       - name: Upload to Codecov
