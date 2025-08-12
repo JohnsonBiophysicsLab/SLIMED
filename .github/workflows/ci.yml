@@ -32,13 +32,14 @@ jobs:
       - name: Generate coverage (LCOV)
         run: |
           # Clean any stale traces first
-          lcov --directory build --zerocounters
+          lcov --directory obj --directory bin --zerocounters
           # Capture with matching gcov tool and stable options
-          lcov --capture --directory build \
-              --gcov-tool gcov-13 \
-              --rc geninfo_unexecuted_blocks=1 \
-              --ignore-errors mismatch,source \
-              --output-file coverage.info
+          lcov --capture \
+               --directory obj \
+               --directory bin \
+               --gcov-tool gcov-13 \
+               --ignore-errors empty \
+               --output-file coverage.info
           # (optional) keep only your code
           lcov --remove coverage.info '/usr/*' '*/googletest/*' \
               --output-file coverage.info
