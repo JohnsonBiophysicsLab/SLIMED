@@ -1,3 +1,6 @@
+#  Update 2025-08-12:
+#  o Add flags for codecov
+#                                                            Moon yying7@jh.edu
 #
 #  Update 2020-01-29: 
 #  o Uses required argument of serial, omp, or mpi. 
@@ -15,13 +18,13 @@
 #  --  a bit cleaner                                            Kent milfeld@tacc.utexas.edu
 #
 # TODO: use function to create VPATH
-# TODO: Fix MPI after learning purpose
 # TODO: Make rules for *.hpp's
 #
 # Set terminal width to 220 to avoid viewing wrapped lines in output. A width of 200 avoids most wrapping.
 
 
 # LDFLAGS = -larmadillo
+#  -- armadillo is not a dependency any more. (changed 2022)
 
 VPATH = \
 	src/ \
@@ -45,10 +48,33 @@ SDIR   = src
 EPDIR  = EXE_PAR
 ECDIR = EXE_CLUSTER
 
+# Add test to path if enabled
 ifeq (test,$(MAKECMDGOALS))
 	VPATH += tests
 	SDIR += tests
 endif
+
+# Enable coverage for "coverage" and "test" targets
+# --- Coverage toggle (OFF by default)
+COVERAGE ?= 0
+
+# GCC/g++ coverage (works on Linux easily)
+ifeq ($(COVERAGE),1)
+  CFLAGS   += -O0 -g --coverage
+  CXXFLAGS += -O0 -g --coverage
+  LDFLAGS  += --coverage
+  # Optional: ensure gcov is linked explicitly
+  # LIBS += -lgcov
+endif
+
+# (Optional) If you use Clang/LLVM for coverage instead of GCC,
+# use COVERAGE=llvm and uncomment this block:
+ifeq ($(COVERAGE),llvm)
+  CFLAGS   += -O0 -g -fprofile-instr-generate -fcoverage-mapping
+  CXXFLAGS += -O0 -g -fprofile-instr-generate -fcoverage-mapping
+  LDFLAGS  += -fprofile-instr-generate
+endif
+
 
 PROF   = 
 
@@ -184,16 +210,17 @@ $(MAKECMDGOALS):$(EXEC)
 
 $(EXEC): $(OBJS) $(TEST_OBJ)
 	@echo "Compiling $(EDIR)/$(@F).cpp"
-	$(CC) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) -o $@ $(EDIR)/$(@F).cpp $(OBJS) $(LIBS) $(PLANG)
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) $(LDFLAGS) -o $@ $(EDIR)/$(@F).cpp $(OBJS) $(LIBS) $(PLANG)
 	@echo "------------"
 
 obj/%.o: %.cpp
 	@echo "Compiling $< at $(<F) $(<D)"
-	$(CC) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) -c $< -o $@ $(PLANG) $(DEFS)
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) $(LDFLAGS) -c $< -o $@ $(PLANG) $(DEFS)
 	@echo "------------"
 
 clean:
 	rm -rf $(ODIR) bin
+	rm -rf *.gcno *.gcda *.gcov coverage/ coverage.info
 
 # Reference: https://www.gnu.org/software/make/manual/html_node/Quick-Reference.html
 #            https://www.gnu.org/software/make/
