@@ -124,7 +124,7 @@ helix insertion. Submitted (2021) Available on
 [bioRxiv](https://www.biorxiv.org/content/10.1101/2021.04.22.440963v1.full)
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the GPL License - see the LICENSE file for details.
 
 ## Reference
 1. Helfrich, W. (1973). Elastic properties of lipid bilayers: theory and possible experiments. Zeitschrift fur Naturforschung C, 28(11), 693-703.
