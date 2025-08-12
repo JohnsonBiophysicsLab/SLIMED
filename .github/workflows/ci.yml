@@ -39,7 +39,7 @@ jobs:
                --output-file coverage.raw.info
 
           # Then prune noise (tests and system headers)
-          lcov --remove coverage.raw.info '/usr/*' '*/googletest/*' '*/tests/*' \
+          lcov --remove coverage.raw.info '/usr/*' '*/tests/*' \
                --output-file coverage.info
 
       - name: Upload to Codecov
