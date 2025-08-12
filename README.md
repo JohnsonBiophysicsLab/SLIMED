@@ -123,9 +123,26 @@ make dyna
 ./bin/membrane_dynamics
 ```
 
-## Parameters
+## Input Parameters
 
-Input parameter file is located in the root directory: ``continuum_membrane/input.params``
+The input file is `continuum_membrane/input.params`. Parameters are broken down into geometric parameters, physical properties, insertion mode, and advanced parameters.
+
+| Category    | Subcategory / Parameter   | Name / Key              | Description |
+|-------------|---------------------------|-------------------------|-------------|
+| **Geometric Parameters** | —                         | `lMeshSide`             | Target side length of the triangular mesh (nm). This only serves as a reference scale. The mesh side length set up by the algorithm may vary. |
+|             | **Sphere model**          | `isSphere`               | Set `true` to enable sphere mode. |
+|             |                           | `rSphere`                | Target radius of sphere (nm). This is the radius of spherical frame to set up the triangular mesh. The radius of the resulting membrane represented by the triangular mesh may vary. |
+| **Physical Properties** | —                         | `c0Insertion`            | Curvature of the membrane at the insertion area. |
+|             | —                         | `c0Membrane`              | Spontaneous curvature of the membrane. |
+|             | —                         | `kcMembraneBending`       | Membrane bending constant in the energy function (pN·nm). |
+|             | —                         | `usMembraneStretching`    | Membrane stretching modulus in the energy function (pN/nm). |
+|             | —                         | `uvVolumeConstraint`      | Volume constraint coefficient in the energy function (pN/nm²). |
+| **Insertion Mode** | —                  | `isInsertionIncluded`     | Set `true` to include insertion. |
+|             | —                         | `sigma`                   | 2·sigma (nm) is the length scale of decaying insertion curvature, or in other words expansion of non-spontaneous curvature due to insertion. |
+| **Advanced Parameters** | **Optimization** | `numMaxIterations`        | Number of maximum iterations allowed. |
+|             |                           | `criterionForce`          | Force criteria to determine if adequate optimization is accomplished (pN). |
+|             | **Algorithm**             | `gaussQuadratureN`        | Default Gauss Quadrature used in integral approximation. |
+
 
 ## Energy Function and Lowest Energy Search
 
