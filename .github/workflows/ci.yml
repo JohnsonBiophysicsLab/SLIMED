@@ -24,25 +24,21 @@ jobs:
       - name: Build tests with coverage
         run: |
           make clean
-          make test COVERAGE=1 CXX=g++ CXXFLAGS="-O0 -g --coverage" LDFLAGS="--coverage"
+          make test COVERAGE=1 CXX=g++
 
       - name: Run tests
         run: ./bin/test_main
 
       - name: Generate coverage (LCOV)
         run: |
-          # Clean any stale traces first
-          lcov --directory obj --directory bin --zerocounters
-          # Capture with matching gcov tool and stable options
           lcov --capture \
                --directory obj \
                --directory bin \
                --gcov-tool gcov-13 \
                --ignore-errors empty \
                --output-file coverage.info
-          # (optional) keep only your code
           lcov --remove coverage.info '/usr/*' '*/googletest/*' \
-              --output-file coverage.info
+               --output-file coverage.info
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
