@@ -15,7 +15,7 @@ jobs:
       - name: Install deps (GTest, lcov)
         run: |
           sudo apt-get update
-          sudo apt-get install -y lcov libgtest-dev
+          sudo apt-get install -y lcov libgtest-dev cmake pkg-config libgsl-dev
           # Build GoogleTest (if you vendor it, skip this)
           sudo apt-get install -y cmake
           sudo cmake -S /usr/src/googletest -B /usr/src/googletest/build
