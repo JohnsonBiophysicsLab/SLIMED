@@ -3,6 +3,37 @@
 
 # SLIMED
 
+<p align="center">
+  <!-- Build / CI -->
+  <!--a href="https://github.com/JohnsonBiophysicsLab/SLIMED/actions">
+    <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/JohnsonBiophysicsLab/SLIMED/ci.yml?branch=main&label=CI">
+  </a>
+  <!-- Codecov (or Coveralls) -->
+  <!--a href="https://codecov.io/gh/JohnsonBiophysicsLab/SLIMED">
+    <img alt="Coverage" src="https://img.shields.io/codecov/c/github/JohnsonBiophysicsLab/SLIMED?logo=codecov">
+  </a>
+  <!-- Release -->
+  <a href="https://github.com/JohnsonBiophysicsLab/SLIMED/releases">
+    <img alt="Release" src="https://img.shields.io/github/v/release/JohnsonBiophysicsLab/SLIMED">
+  </a>
+  <!-- License -->
+  <a href="https://github.com/JohnsonBiophysicsLab/SLIMED/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/JohnsonBiophysicsLab/SLIMED">
+  </a>
+  <!-- C++ standard -->
+  <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-%E2%89%A514-blue">
+  <!-- CMake minimum -->
+  <img alt="CMake" src="https://img.shields.io/badge/CMake-%E2%89%A53.20-informational">
+  <!-- Package managers (optional) -->
+  <!-- img alt="Conan" src="https://img.shields.io/badge/Conan-ready-0ea5e9">
+  <!-- img alt="vcpkg" src="https://img.shields.io/badge/vcpkg-port-22c55e">
+  <!-- Platforms -->
+  <img alt="Platforms" src="https://img.shields.io/badge/Linux%20|%20macOS%20-supported-success">
+  <!-- Code style -->
+  <!-- img alt="clang-format" src="https://img.shields.io/badge/clang--format-enforced-brightgreen"-->
+</p>
+
+
 SLIMED (Subdivision-limit membrane dynamics) model is established with triangular mesh and optimized using an energy function. The installation instructions and dependencies are provided in README.rst. The first step requires setting up the triangular mesh model to approximate the membrane's geometry applying Loop's subdivision method. The lowest energy search model minimizes the membrane energy evaluated by the energy function. The Brownian Dynamics model simulates the moving membrane's surface with a displacement equation, performed on the limit surface with the help of a conversion matrix. Three types of boundary conditions are available: Fixed, Periodic, and Free, all defined for "ghost vertices" on the boundary of the triangular mesh.
 
 ## Installation
@@ -14,13 +45,57 @@ To install the model, follow these steps:
 git clone https://github.com/mjohn218/continuum_membrane.git
 ```
 
-2. Install the required libraries: GSL (GNU scientific library) and OpenMP (if parallelization is needed) 
+2. Install dependencies (GSL and OpenMP)
+
+This project depends on:
+
+* **GSL** (GNU Scientific Library)
+* **OpenMP** (only for the `omp`/parallel build)
+
+### Ubuntu (apt)
+
+```bash
+# Update package lists
+sudo apt-get update
+
+# GSL (headers + library)
+sudo apt-get install -y libgsl-dev
+
+# Compilers
+sudo apt-get install -y build-essential clang
+
+# OpenMP
+# - If you build with GCC: OpenMP is included (use -fopenmp, links against libgomp).
+# - If you build with Clang: install the LLVM OpenMP runtime:
+sudo apt-get install -y libomp-dev
+```
+
+### macOS (Homebrew)
+
+```bash
+# Install Homebrew if needed: https://brew.sh
+
+# GSL
+brew install gsl
+
+# Option A (recommended): use Homebrew LLVM (Clang) for OpenMP
+brew install llvm libomp
+# Option B: Apple Clang + libomp can work, but setup is trickier.
+```
+
+**Using Homebrew LLVM for OpenMP (recommended):**
+
+```bash
+# Determine prefixes (Apple Silicon uses /opt/homebrew, Intel uses /usr/local)
+brew --prefix llvm
+brew --prefix libomp
+```
 
 ## Compile and Run
 
 To compile and run continuum membrane lowest energy conformation search with OpenMP parallelization. See section 5 for model details.
 
-OpenMP parallel:
+OpenMP parallelization:
 
 ```console
 make omp
@@ -57,19 +132,21 @@ Input parameter file is located in the root directory: ``continuum_membrane/inpu
 The goal for the lowest energy search model is to minimize the membrane energy evaluated by the energy function, which is the sum of membrane bending energy, area constraint energy (or elastic area change energy), and volume constraint energy:
 
 
-   `E = E_B + E_S + E_V = \int_S \frac{1}{2}\kappa (2H-C_0)^2 dS + \frac{1}{2} \mu_S \frac{(S-S_0)^2}{S_0} + \frac{1}{2} \mu_V \frac{(V-V_0)^2}{V_0}`
+$$
+E = E_B + E_S + E_V = \int_S \frac{1}{2}\kappa (2H-C_0)^2 dS + \frac{1}{2} \mu_S \frac{(S-S_0)^2}{S_0} + \frac{1}{2} \mu_V \frac{(V-V_0)^2}{V_0}
+$$
 
 where:
 
-- `\kappa` : membrane bending constant ``kcMembraneBending``
-- `H` : mean membrane culvature
-- `C_0` : spontaneous curvature of the membrane ``c0Membrane``
-- `\mu_S` : membrane streching modulus ``usMembraneStretching``
-- `S` : global membrane area
-- `S_0` : target membrane area
-- `\mu_V` : volume constraint coefficient ``uvVolumeConstraint``
-- `V` : global volume
-- `V_0` : target volume
+- $\kappa$ : membrane bending constant ``kcMembraneBending``
+- $H$ : mean membrane culvature
+- $C_0$ : spontaneous curvature of the membrane ``c0Membrane``
+- $\mu_S$ : membrane streching modulus ``usMembraneStretching``
+- $S$ : global membrane area
+- $S_0$ : target membrane area
+- $\mu_V$ : volume constraint coefficient ``uvVolumeConstraint``
+- $V$ : global volume
+- $V_0$ : target volume
  
 ## Membrane Brownian Dynamics
 
@@ -77,24 +154,28 @@ Membrane Brownian Dynamics model runs a step-wise simulation of the moving membr
 
 
 
-`\Delta X = -\frac{D\Delta t}{k_b T} \nabla E + \sqrt{2D\Delta t} (N(0,1))`
+$$
+\Delta X = -\frac{D\Delta t}{k_b T} \nabla E + \sqrt{2D\Delta t} (N(0,1))
+$$
 
 where:
 
-- `\Delta X`: displacement of point on limit surface
-- `D`: diffusion constant of the membrane
-- `\Delta t`: time step
-- `N(0,1)`: standard normal distribution
+- $\Delta X$: displacement of point on limit surface
+- $D$: diffusion constant of the membrane
+- $\Delta t$: time step
+- $N(0,1)$: standard normal distribution
 
 Note that the displacement of membrane according to the equation above is performed on the limit surface, not the control mesh.
 In this case, a conversion matrix helps to convert between triangular mesh and limit surface, as currently the points on the limit surface
 represented by the mesh point are chosen to represent the surface.
 
+$$
+M_{s} = C M_{m}
+$$
 
-   `M_{s} = C M_{m}`
-
-
-   `M_{m} = C^{-1} M_{s}`
+$$
+M_{m} = C^{-1} M_{s}
+$$
 
 ## Boundary Conditions
 
@@ -114,14 +195,15 @@ A detailed doxygen style documentation is available in ``continuum_membrane/html
 If you use or modify continuum membrane model, in addition to citing
 NERDSS, please be kind and cite us:
 
-1. Continuum Membrane Implementation Fu, Y., Yogurtcu, O.N., Kothari,
+1. For continuum Membrane Implementation: Fu, Y., Yogurtcu, O.N., Kothari,
 R., Thorkelsdottir, G., Sodt, A.J. & Johnson, M.E. (2019) An implicit
-lipid model for efficient reaction-diffusion simulations of protein binding to surfaces of arbitrary topology. *J Chem Phys.* 151 (12), 124115. <doi:%6010.1063/1.5120516%60_>
+lipid model for efficient reaction-diffusion simulations of protein binding to surfaces of arbitrary topology. *J Chem Phys.* 151 (12), 124115. 
+doi:[10.1063/5.0045867](https://doi.org/10.1063/5.0045867)
 
-2. Membrane energies and insertion Fu, Y., Zeno, W., Stachowiak, J. &
+3. For membrane energies and insertion: Fu, Y., Zeno, W., Stachowiak, J. &
 Johnson, M.E. A continuum membrane model predicts curvature sensing by
-helix insertion. Submitted (2021) Available on
-[bioRxiv](https://www.biorxiv.org/content/10.1101/2021.04.22.440963v1.full)
+helix insertion. Soft Matter. 2021 Dec 8;17(47):10649–10663
+doi:[10.1039/d1sm01333e](https://doi.org/10.1039/d1sm01333e)
 
 ## License
 This project is licensed under the GPL License - see the LICENSE file for details.
