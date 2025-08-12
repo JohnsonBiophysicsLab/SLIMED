@@ -205,7 +205,7 @@ Three types of boundary conditions are provided currently in both models. Note t
 
 ## For Developers
 
-A detailed doxygen style documentation is available in ``continuum_membrane/html/index.html``. We are working on getting the documentation online, but currently you will need to clone the repository and view it locally.
+A detailed doxygen style documentation is available in [SLIMED developer's documentation](https://johnsonbiophysicslab.github.io/SLIMED/index.html).
 
 ## Cite Continuum Membrane
 
