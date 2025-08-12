@@ -27,7 +27,7 @@ jobs:
           make tests COVERAGE=1 CXX=g++ CXXFLAGS="-std=c++14 -O0 -g --coverage" LDFLAGS="--coverage"
 
       - name: Run tests
-        run: ./tests
+        run: ./bin/test_main
 
       - name: Generate coverage (LCOV)
         run: |
