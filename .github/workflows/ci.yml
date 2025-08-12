@@ -31,12 +31,17 @@ jobs:
 
       - name: Generate coverage (LCOV)
         run: |
-          # Capture
-          lcov --capture --directory . --output-file coverage.info
-          # Remove system & irrelevant paths
-          lcov --remove coverage.info '/usr/*' '*/tests/*' '*/third_party/*' --output-file coverage.info
-          # Optional: HTML report for debugging (artifact, not needed by Codecov)
-          genhtml coverage.info --output-directory coverage
+          # Clean any stale traces first
+          lcov --directory build --zerocounters
+          # Capture with matching gcov tool and stable options
+          lcov --capture --directory build \
+              --gcov-tool gcov-13 \
+              --rc geninfo_unexecuted_blocks=1 \
+              --ignore-errors mismatch,source \
+              --output-file coverage.info
+          # (optional) keep only your code
+          lcov --remove coverage.info '/usr/*' '*/googletest/*' \
+              --output-file coverage.info
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
