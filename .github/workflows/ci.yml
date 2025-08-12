@@ -24,7 +24,7 @@ jobs:
       - name: Build tests with coverage
         run: |
           make clean
-          make test COVERAGE=1 CXX=g++ CXXFLAGS="-std=c++14 -O0 -g --coverage" LDFLAGS="--coverage"
+          make test COVERAGE=1 CXX=g++ CXXFLAGS="-O0 -g --coverage" LDFLAGS="--coverage"
 
       - name: Run tests
         run: ./bin/test_main

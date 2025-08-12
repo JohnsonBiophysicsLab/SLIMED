@@ -141,7 +141,7 @@ INTEL  = $(shell type icpc  >/dev/null 2>&1; echo $$?)
 GCC    = $(shell type g++   >/dev/null 2>&1; echo $$?)
 
 INCS    = $(shell gsl-config --cflags) -Iinclude -Iinclude/*
-CXXFLAGS = -std=c++14
+CXXFLAGS += -std=c++14
 LIBS     = $(shell gsl-config --libs)
 
 # Add pthread to library if multithreading (embarrassingly parallel) is needed
