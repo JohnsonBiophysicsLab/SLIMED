@@ -1,0 +1,77 @@
+\hypertarget{Vertex_8hpp}{}\doxysection{include/\+Vertex.hpp File Reference}
+\label{Vertex_8hpp}\index{include/Vertex.hpp@{include/Vertex.hpp}}
+
+
+This file defines the \mbox{\hyperlink{classVertex}{Vertex}} class which includes information of coordinate and forces exerted at a vertex.  
+
+
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$Force.\+hpp$>$}\newline
+{\ttfamily \#include $<$Face.\+hpp$>$}\newline
+{\ttfamily \#include $<$Linear\+\_\+algebra.\+hpp$>$}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classVertex}{Vertex}}
+\begin{DoxyCompactList}\small\item\em Defines a vertex in \mbox{\hyperlink{classMesh}{Mesh}}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}{Vertex\+Type}} \{ \newline
+\mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7f80fcc452c2f1ed2bb51b39d0864df1}{Real}}
+, \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0abb1df1f5573ada06d99e065fd589da58}{Fixed\+Boundary}}
+, \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7868d01b6ec99878e50dec85649e03c9}{Periodic\+Boundary}}
+, \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a95e44de3d0a9d4f2488482c88bc10046}{Periodic\+Reflective\+Boundary}}
+, \newline
+\mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a401357e57c765967393ba391a338e89b}{Ghost}}
+ \}
+\begin{DoxyCompactList}\small\item\em The type of vertex. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines the \mbox{\hyperlink{classVertex}{Vertex}} class which includes information of coordinate and forces exerted at a vertex. 
+
+\begin{DoxyAuthor}{Author}
+Y Ying (\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}}) 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2023-\/01-\/05
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}\label{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}} 
+\index{Vertex.hpp@{Vertex.hpp}!VertexType@{VertexType}}
+\index{VertexType@{VertexType}!Vertex.hpp@{Vertex.hpp}}
+\doxysubsubsection{\texorpdfstring{VertexType}{VertexType}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}{Vertex\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+The type of vertex. 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Real@{Real}!Vertex.hpp@{Vertex.hpp}}\index{Vertex.hpp@{Vertex.hpp}!Real@{Real}}}\mbox{\Hypertarget{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7f80fcc452c2f1ed2bb51b39d0864df1}\label{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7f80fcc452c2f1ed2bb51b39d0864df1}} 
+Real&Real vertex that is not on the boundary. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FixedBoundary@{FixedBoundary}!Vertex.hpp@{Vertex.hpp}}\index{Vertex.hpp@{Vertex.hpp}!FixedBoundary@{FixedBoundary}}}\mbox{\Hypertarget{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0abb1df1f5573ada06d99e065fd589da58}\label{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0abb1df1f5573ada06d99e065fd589da58}} 
+Fixed\+Boundary&Real vertex that is on the fixed boundary. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{PeriodicBoundary@{PeriodicBoundary}!Vertex.hpp@{Vertex.hpp}}\index{Vertex.hpp@{Vertex.hpp}!PeriodicBoundary@{PeriodicBoundary}}}\mbox{\Hypertarget{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7868d01b6ec99878e50dec85649e03c9}\label{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7868d01b6ec99878e50dec85649e03c9}} 
+Periodic\+Boundary&Real vertex that is on the periodic boundary. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{PeriodicReflectiveBoundary@{PeriodicReflectiveBoundary}!Vertex.hpp@{Vertex.hpp}}\index{Vertex.hpp@{Vertex.hpp}!PeriodicReflectiveBoundary@{PeriodicReflectiveBoundary}}}\mbox{\Hypertarget{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a95e44de3d0a9d4f2488482c88bc10046}\label{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a95e44de3d0a9d4f2488482c88bc10046}} 
+Periodic\+Reflective\+Boundary&Real vertex that is reflective of the opposite vertex on the periodic boundary. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Ghost@{Ghost}!Vertex.hpp@{Vertex.hpp}}\index{Vertex.hpp@{Vertex.hpp}!Ghost@{Ghost}}}\mbox{\Hypertarget{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a401357e57c765967393ba391a338e89b}\label{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a401357e57c765967393ba391a338e89b}} 
+Ghost&Ghost vertex that is reflective of the real or periodic boundary vertex \\
+\hline
+
+\end{DoxyEnumFields}

@@ -1,0 +1,75 @@
+\hypertarget{Dynamics_8hpp_source}{}\doxysection{Dynamics.\+hpp}
+\label{Dynamics_8hpp_source}\index{include/Dynamics.hpp@{include/Dynamics.hpp}}
+\mbox{\hyperlink{Dynamics_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ <omp.h>}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#include\ <random>}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00024\ \textcolor{comment}{//\ model\ setup}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Mesh_8hpp}{Mesh.hpp}}"{}}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Face_8hpp}{Face.hpp}}"{}}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Vertex_8hpp}{Vertex.hpp}}"{}}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Energy_8hpp}{Energy.hpp}}"{}}}
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Force_8hpp}{Force.hpp}}"{}}}
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Model_8hpp}{Model.hpp}}"{}}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Gauss__quadrature_8hpp}{Gauss\_quadrature.hpp}}"{}}}
+\DoxyCodeLine{00032\ \textcolor{comment}{//\ matrix\ math}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00034\ \textcolor{comment}{//\ parameters}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}"{}}}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00042\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classDynamicMesh}{DynamicMesh}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classMesh}{Mesh}}}
+\DoxyCodeLine{00043\ \{}
+\DoxyCodeLine{00044\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classDynamicMesh_a0da7485c97570d1945da13f50cf89570}{mesh2surface}};}
+\DoxyCodeLine{00046\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classDynamicMesh_aa27e9f6f3b04928e6c8a7a6d3c43e4ad}{surface2mesh}};}
+\DoxyCodeLine{00047\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classDynamicMesh_a55cd83fbd8c6cdcffb59ea24c28f3537}{matMesh}};}
+\DoxyCodeLine{00048\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classDynamicMesh_a54946d4b69db8a53ff82550ef5a8263c}{matSurface}};}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00056\ \ \ \ \ \mbox{\hyperlink{classDynamicMesh_a2645f64e9f57420cdb7d4371229ead73}{DynamicMesh}}(\mbox{\hyperlink{structParam}{Param}}\ \&srcParam);}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classDynamicMesh_aab771f9438974285e84848183c2a995f}{setup\_flat}}();}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classDynamicMesh_a6aafcb958f1025e72ccd54645ca2cd84}{assign\_mesh2surface}}();}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classDynamicMesh_a013dfec614038a1f8fb698d513e30749}{update\_vertices\_mat\_with\_vector}}();}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00084\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classDynamicMesh_a7211c963b65e06b235b3e4dd1c5fd7ef}{update\_vertices\_vector\_with\_mat}}();}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00093\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classDynamicMesh_a7d18117779c2f559cc914a3b613317e3}{postprocess\_ghost\_periodic}}();}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00095\ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classDynamicMesh_af004fdce97e6ac0117071bdc473d430c}{get\_relative\_pt\_periodic}}(\textcolor{keywordtype}{int}\ i,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ m);}
+\DoxyCodeLine{00107\ \};}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00109\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classDynamicModel}{DynamicModel}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classModel}{Model}}}
+\DoxyCodeLine{00110\ \{}
+\DoxyCodeLine{00111\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00112\ \ \ \ \ \mbox{\hyperlink{classDynamicMesh}{DynamicMesh}}\ \&\mbox{\hyperlink{classDynamicModel_a413da1373cbf8e2c80239712dca57a8a}{mesh}};\ }
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classDynamicModel_a4ba89c77d9fe49808445b717a7f8291d}{randScaleConst}};}
+\DoxyCodeLine{00115\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classDynamicModel_ae714bbd2aa0c8790cfbf27afe06dc68e}{forceScaleConst}};}
+\DoxyCodeLine{00116\ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classDynamicModel_acb80d9dfabba8208ed9e46a3fb8dda8a}{randomSeed}};}
+\DoxyCodeLine{00117\ \ \ \ \ std::mt19937\ \mbox{\hyperlink{classDynamicModel_ab92f18722ac0ce37eb0f8381742826cf}{gen}};}
+\DoxyCodeLine{00118\ \ \ \ \ std::normal\_distribution<>\ \mbox{\hyperlink{classDynamicModel_a167e0b9ded6f7f2ce2613baa921cf073}{normal\_dist}};}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00126\ \ \ \ \ \mbox{\hyperlink{classDynamicModel_a39ca44c73cd614e9b7e5dc41a6443062}{DynamicModel}}(\mbox{\hyperlink{classDynamicMesh}{DynamicMesh}}\ \&mesh\_,\ \mbox{\hyperlink{classRecord}{Record}}\ \&record\_);}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00141\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classDynamicModel_ac3cac48622c5bd011f97ec0dde928255}{next\_step}}();}
+\DoxyCodeLine{00142\ \};}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00145\ \textcolor{comment}{//boundary\ condition}}
+\DoxyCodeLine{00146\ \textcolor{comment}{int\ get\_relatve\_pt\_periodic(int\ i,\ int\ n,\ int\ m);}}
+\DoxyCodeLine{00147\ \textcolor{comment}{void\ postprocess\_ghost\_periodic(Param\&\ param,\ gsl\_matrix\ *verticesOnMesh,\ std::vector<Vertex>\&\ vertex);}}
+\DoxyCodeLine{00148\ \textcolor{comment}{*/}}
+
+\end{DoxyCode}

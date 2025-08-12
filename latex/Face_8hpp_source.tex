@@ -1,0 +1,37 @@
+\hypertarget{Face_8hpp_source}{}\doxysection{Face.\+hpp}
+\label{Face_8hpp_source}\index{include/Face.hpp@{include/Face.hpp}}
+\mbox{\hyperlink{Face_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{comment}{//\#include\ "{}Edge.hpp"{}}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Force_8hpp}{Force.hpp}}"{}}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Energy_8hpp}{Energy.hpp}}"{}}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00028\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classFace}{Face}}}
+\DoxyCodeLine{00029\ \{}
+\DoxyCodeLine{00030\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classFace_a582933cc37182985c2a39057d99e0894}{index}}\ =\ 0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classFace_a5da7290b4ec3efacc1d7f07615dea0d6}{layerIndex}}\ =\ 0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classFace_af46019e49b6926a468e31dfc4675824d}{isBoundary}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classFace_ab9a25d141ffdcd96d51789a35f963dc1}{isGhost}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classFace_ac40dca7c682e2edc17bf0b59925c60d2}{isInsertionPatch}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ std::vector<int>\ \mbox{\hyperlink{classFace_ab414817e649cc2b4099093ed8b168119}{adjacentVertices}}\{0,\ 0,\ 0\};\ }
+\DoxyCodeLine{00037\ \ \ \ \ std::vector<int>\ \mbox{\hyperlink{classFace_accb536c30615a952bc66bdcf9aab3d00}{oneRingVertices}};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ std::vector<int>\ \mbox{\hyperlink{classFace_ae8f8488ddd0a72b7e0f84176f60271b5}{adjacentFaces}};\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classFace_af413b79b601f1bb8fd97c5dc427213d4}{spontCurvature}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classFace_a1298aa063963fdf60c034ff9c92017fb}{meanCurvature}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00041\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classFace_ae6ddcb5676afc53fe5c273dc8a501279}{normVector}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classFace_a281c137d647fa6a3474ba3ff4392d730}{elementArea}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classFace_aa5190dbd706ad6175c491e0e729d6dc5}{elementVolume}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00044\ \ \ \ \ \mbox{\hyperlink{classEnergy}{Energy}}\ \mbox{\hyperlink{classFace_ad74ab69e79804876c8b6b2e175b183cd}{energyPrev}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{classEnergy}{Energy}}\ \mbox{\hyperlink{classFace_a35a3c765eda62582044bffbdef909c9d}{energy}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{comment}{//Halfedge*\ halfedge;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ///<\ One\ half\ edge}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{classFace_afdb634bc2d5287ba0d62e46b57e9dc2e}{Face}}();}
+\DoxyCodeLine{00053\ \};}
+
+\end{DoxyCode}

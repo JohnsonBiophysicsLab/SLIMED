@@ -1,0 +1,58 @@
+\hypertarget{energy__force__calculation_8cpp}{}\doxysection{src/energy\+\_\+force/energy\+\_\+force\+\_\+calculation.cpp File Reference}
+\label{energy__force__calculation_8cpp}\index{src/energy\_force/energy\_force\_calculation.cpp@{src/energy\_force/energy\_force\_calculation.cpp}}
+{\ttfamily \#include \char`\"{}energy\+\_\+force.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{energy__force__calculation_8cpp_ae738ab22827693c0a6eb25d6314f04b0}{element\+\_\+energy\+\_\+force\+\_\+regular}} (vector$<$ vector$<$ double $>$ $>$ \&dots, Param \&param, double \mbox{\hyperlink{membrane__dynamics_8cpp_a1d23aed57ae21b2856939bd1b932763f}{c0}}, double \&Hmean, vector$<$ double $>$ \&norm\+Vector, double \&Ebe, vector$<$ vector$<$ double $>$ $>$ \&F\+\_\+be, vector$<$ vector$<$ double $>$ $>$ \&F\+\_\+s, vector$<$ vector$<$ double $>$ $>$ \&F\+\_\+v, vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, vector$<$ Shapefunctions $>$ \&Shape\+Functions)
+\item 
+void \mbox{\hyperlink{energy__force__calculation_8cpp_a2d530204dbea3ea782aee068845d8697}{element\+\_\+energy\+\_\+force\+\_\+irregular}} (vector$<$ vector$<$ double $>$ $>$ \&Dots, Param \&param, double \mbox{\hyperlink{membrane__dynamics_8cpp_a1d23aed57ae21b2856939bd1b932763f}{c0}}, double \&Hmean, vector$<$ double $>$ \&norm\+Vector, double \&E\+\_\+bending, vector$<$ vector$<$ double $>$ $>$ \&F\+\_\+be, vector$<$ vector$<$ double $>$ $>$ \&F\+\_\+s, vector$<$ vector$<$ double $>$ $>$ \&F\+\_\+v, vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, vector$<$ Shapefunctions $>$ \&Shape\+Functions, Subdivision\+Matrix sub\+Matrix)
+\item 
+void \mbox{\hyperlink{energy__force__calculation_8cpp_ac662068713d2b6c3cd9d7f74ecc97e9f}{energy\+\_\+force\+\_\+regularization}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, Param \&param)
+\item 
+void \mbox{\hyperlink{energy__force__calculation_8cpp_a3f6fe48b3331250e7d88452a2f2a60a1}{Compute\+\_\+\+Energy\+\_\+\+And\+\_\+\+Force}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, Param \&param, vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, vector$<$ Shapefunctions $>$ \&Shape\+Functions, Subdivision\+Matrix \&sub\+Matrix)
+\item 
+double \mbox{\hyperlink{energy__force__calculation_8cpp_a6bdaca7fe2484365a17112d9a93a5d14}{line\+Search\+\_\+for\+\_\+\+Step\+Size\+\_\+to\+\_\+minimize\+\_\+energy}} (double a0, vector$<$ vector$<$ double $>$ $>$ \&element\+Triangle\+Area0, vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, Param \&param, vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, vector$<$ Shapefunctions $>$ \&Shape\+Functions, Subdivision\+Matrix \&sub\+Matrix)
+\item 
+void \mbox{\hyperlink{energy__force__calculation_8cpp_a329d3f3a8a15aeaf109875efda56d12b}{check\+\_\+nodal\+\_\+force}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, Param \&param, vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, vector$<$ Shapefunctions $>$ \&Shape\+Functions, Subdivision\+Matrix \&sub\+Matrix)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{energy__force__calculation_8cpp_a329d3f3a8a15aeaf109875efda56d12b}\label{energy__force__calculation_8cpp_a329d3f3a8a15aeaf109875efda56d12b}} 
+\index{energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}!check\_nodal\_force@{check\_nodal\_force}}
+\index{check\_nodal\_force@{check\_nodal\_force}!energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{check\_nodal\_force()}{check\_nodal\_force()}}
+{\footnotesize\ttfamily void check\+\_\+nodal\+\_\+force (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{Param \&}]{param,  }\item[{vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Subdivision\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force__calculation_8cpp_a3f6fe48b3331250e7d88452a2f2a60a1}\label{energy__force__calculation_8cpp_a3f6fe48b3331250e7d88452a2f2a60a1}} 
+\index{energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}!Compute\_Energy\_And\_Force@{Compute\_Energy\_And\_Force}}
+\index{Compute\_Energy\_And\_Force@{Compute\_Energy\_And\_Force}!energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{Compute\_Energy\_And\_Force()}{Compute\_Energy\_And\_Force()}}
+{\footnotesize\ttfamily void Compute\+\_\+\+Energy\+\_\+\+And\+\_\+\+Force (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{Param \&}]{param,  }\item[{vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Subdivision\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force__calculation_8cpp_a2d530204dbea3ea782aee068845d8697}\label{energy__force__calculation_8cpp_a2d530204dbea3ea782aee068845d8697}} 
+\index{energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}!element\_energy\_force\_irregular@{element\_energy\_force\_irregular}}
+\index{element\_energy\_force\_irregular@{element\_energy\_force\_irregular}!energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{element\_energy\_force\_irregular()}{element\_energy\_force\_irregular()}}
+{\footnotesize\ttfamily void element\+\_\+energy\+\_\+force\+\_\+irregular (\begin{DoxyParamCaption}\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{Dots,  }\item[{Param \&}]{param,  }\item[{double}]{c0,  }\item[{double \&}]{Hmean,  }\item[{vector$<$ double $>$ \&}]{norm\+Vector,  }\item[{double \&}]{E\+\_\+bending,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{F\+\_\+be,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{F\+\_\+s,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{F\+\_\+v,  }\item[{vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Subdivision\+Matrix}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force__calculation_8cpp_ae738ab22827693c0a6eb25d6314f04b0}\label{energy__force__calculation_8cpp_ae738ab22827693c0a6eb25d6314f04b0}} 
+\index{energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}!element\_energy\_force\_regular@{element\_energy\_force\_regular}}
+\index{element\_energy\_force\_regular@{element\_energy\_force\_regular}!energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{element\_energy\_force\_regular()}{element\_energy\_force\_regular()}}
+{\footnotesize\ttfamily void element\+\_\+energy\+\_\+force\+\_\+regular (\begin{DoxyParamCaption}\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{dots,  }\item[{Param \&}]{param,  }\item[{double}]{c0,  }\item[{double \&}]{Hmean,  }\item[{vector$<$ double $>$ \&}]{norm\+Vector,  }\item[{double \&}]{Ebe,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{F\+\_\+be,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{F\+\_\+s,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{F\+\_\+v,  }\item[{vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force__calculation_8cpp_ac662068713d2b6c3cd9d7f74ecc97e9f}\label{energy__force__calculation_8cpp_ac662068713d2b6c3cd9d7f74ecc97e9f}} 
+\index{energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}!energy\_force\_regularization@{energy\_force\_regularization}}
+\index{energy\_force\_regularization@{energy\_force\_regularization}!energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{energy\_force\_regularization()}{energy\_force\_regularization()}}
+{\footnotesize\ttfamily void energy\+\_\+force\+\_\+regularization (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{Param \&}]{param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force__calculation_8cpp_a6bdaca7fe2484365a17112d9a93a5d14}\label{energy__force__calculation_8cpp_a6bdaca7fe2484365a17112d9a93a5d14}} 
+\index{energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}!lineSearch\_for\_StepSize\_to\_minimize\_energy@{lineSearch\_for\_StepSize\_to\_minimize\_energy}}
+\index{lineSearch\_for\_StepSize\_to\_minimize\_energy@{lineSearch\_for\_StepSize\_to\_minimize\_energy}!energy\_force\_calculation.cpp@{energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{lineSearch\_for\_StepSize\_to\_minimize\_energy()}{lineSearch\_for\_StepSize\_to\_minimize\_energy()}}
+{\footnotesize\ttfamily double line\+Search\+\_\+for\+\_\+\+Step\+Size\+\_\+to\+\_\+minimize\+\_\+energy (\begin{DoxyParamCaption}\item[{double}]{a0,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{element\+Triangle\+Area0,  }\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{Param \&}]{param,  }\item[{vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Subdivision\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+if (param.\+is\+Energy\+Spline\+Included)\{ param.\+energy.\+energy\+Spline = calculate\+Spline\+Energy\+Force(param.\+scaffolding\+Points, vertex, param.\+scaffolding\+Points\+\_\+corresponding\+Vertex\+Index, param.\+lbond, param.\+spring\+Const, false, param.\+spline\+Points\+Zcoord\+Scaling); param.\+energy.\+energy\+Total += param.\+energy.\+energy\+Spline; \}

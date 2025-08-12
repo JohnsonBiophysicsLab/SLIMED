@@ -1,0 +1,68 @@
+\hypertarget{structDeformationCount}{}\doxysection{Deformation\+Count Struct Reference}
+\label{structDeformationCount}\index{DeformationCount@{DeformationCount}}
+
+
+Bookkeeps the shape and area deformation count of \mbox{\hyperlink{classMesh}{Mesh}}.  
+
+
+
+
+{\ttfamily \#include $<$Parameters.\+hpp$>$}
+
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{structDeformationCount_ab83c50d3cb2dc65f4ad22c546f9127e9}{shape\+Deform\+Count}} = 0
+\begin{DoxyCompactList}\small\item\em Number of triangles with shape deformation. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structDeformationCount_adc0707b8e8e84df4bd467d04aac8c7f8}{area\+Deform\+Count}} = 0
+\begin{DoxyCompactList}\small\item\em Number of triangles with area deformation. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structDeformationCount_a34d23d9b95d193171c02d9305311e475}{no\+Deform\+Count}} = 0
+\begin{DoxyCompactList}\small\item\em Number of triangles with no deformation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Bookkeeps the shape and area deformation count of \mbox{\hyperlink{classMesh}{Mesh}}. 
+
+Shape deformation is calculated by measuring the deviation of normalized side length of mesh triangles from equilateral triangles. Area deformation is calculated by measuring the deviation of triangle areas from their equilibrium values.
+
+Note that this struct is only used for development and testing purposes and is not used in the simulation itself.
+\begin{DoxyItemize}
+\item Yiben 
+\end{DoxyItemize}
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{structDeformationCount_adc0707b8e8e84df4bd467d04aac8c7f8}\label{structDeformationCount_adc0707b8e8e84df4bd467d04aac8c7f8}} 
+\index{DeformationCount@{DeformationCount}!areaDeformCount@{areaDeformCount}}
+\index{areaDeformCount@{areaDeformCount}!DeformationCount@{DeformationCount}}
+\doxysubsubsection{\texorpdfstring{areaDeformCount}{areaDeformCount}}
+{\footnotesize\ttfamily int Deformation\+Count\+::area\+Deform\+Count = 0}
+
+
+
+Number of triangles with area deformation. 
+
+\mbox{\Hypertarget{structDeformationCount_a34d23d9b95d193171c02d9305311e475}\label{structDeformationCount_a34d23d9b95d193171c02d9305311e475}} 
+\index{DeformationCount@{DeformationCount}!noDeformCount@{noDeformCount}}
+\index{noDeformCount@{noDeformCount}!DeformationCount@{DeformationCount}}
+\doxysubsubsection{\texorpdfstring{noDeformCount}{noDeformCount}}
+{\footnotesize\ttfamily int Deformation\+Count\+::no\+Deform\+Count = 0}
+
+
+
+Number of triangles with no deformation. 
+
+\mbox{\Hypertarget{structDeformationCount_ab83c50d3cb2dc65f4ad22c546f9127e9}\label{structDeformationCount_ab83c50d3cb2dc65f4ad22c546f9127e9}} 
+\index{DeformationCount@{DeformationCount}!shapeDeformCount@{shapeDeformCount}}
+\index{shapeDeformCount@{shapeDeformCount}!DeformationCount@{DeformationCount}}
+\doxysubsubsection{\texorpdfstring{shapeDeformCount}{shapeDeformCount}}
+{\footnotesize\ttfamily int Deformation\+Count\+::shape\+Deform\+Count = 0}
+
+
+
+Number of triangles with shape deformation. 
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Parameters_8hpp}{Parameters.\+hpp}}\end{DoxyCompactItemize}

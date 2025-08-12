@@ -1,0 +1,245 @@
+\hypertarget{classOptimizationAlgorithm}{}\doxysection{Optimization\+Algorithm Class Reference}
+\label{classOptimizationAlgorithm}\index{OptimizationAlgorithm@{OptimizationAlgorithm}}
+
+
+A class that defines an optimization algorithm and its settings. This class defines the settings for an optimization algorithm, including whether to use nonlinear conjugate gradient (NCG), whether NCG has gotten stuck and cannot further minimize, and whether to use R-\/pi adaptive method for regularization energy. These settings can be accessed and modified using the public member variables of the class.  
+
+
+
+
+{\ttfamily \#include $<$Model.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classOptimizationAlgorithm_a088280fde13c703f5615aea63b50da28}{Optimization\+Algorithm}} ()
+\begin{DoxyCompactList}\small\item\em Constructor for the \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} class. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classOptimizationAlgorithm_afca995b0bc1c4c71707fe2831121c4c0}{Optimization\+Algorithm}} (const int \mbox{\hyperlink{classOptimizationAlgorithm_aff2e3a82297050c504cd7119ec63df66}{trial\+Iteration\+Interval}}, const double \mbox{\hyperlink{classOptimizationAlgorithm_ab1ceedba175edc55190ffa5ca22aff3b}{c1}}, const double \mbox{\hyperlink{classOptimizationAlgorithm_a1b5aef24591fb8889a5cbdccaa661ec5}{c2}}, const double \mbox{\hyperlink{classOptimizationAlgorithm_ac7bcbefa309fecf015c4da4c35b28e0c}{step\+Threshold}})
+\begin{DoxyCompactList}\small\item\em Constructor for the \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} class. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classOptimizationAlgorithm_ae9f8a4aee032f42c0e787733cd152aa9}{reset\+\_\+\+NCG\+\_\+\+Rpi}} ()
+\begin{DoxyCompactList}\small\item\em Reset NCG and Rpi to default. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classOptimizationAlgorithm_a4e265432247340fe2e7c38eaf098af94}{disable\+\_\+\+NCG\+\_\+if\+\_\+stuck\+\_\+consecutively}} ()
+\begin{DoxyCompactList}\small\item\em Disables the use of NCG if it has been stuck consecutively over a threshold. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{classOptimizationAlgorithm_a19e0b4e14a14e7e916085ddb4dc10dbd}{using\+NCG}} = true
+\begin{DoxyCompactList}\small\item\em Flag indicating whether to use the nonlinear conjugate gradient optimizer. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classOptimizationAlgorithm_a1dab32f415e161f5ad9d0498062c912d}{is\+NCGstuck}} = false
+\begin{DoxyCompactList}\small\item\em Flag indicating whether the NCG optimizer has gotten stuck and cannot further minimize. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classOptimizationAlgorithm_af01490f826ddabac57e857dd72dc6085}{using\+Rpi}} = true
+\begin{DoxyCompactList}\small\item\em Flag indicating whether to use the R-\/pi adaptive method for regularization energy. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classOptimizationAlgorithm_aef104ec704b12951af1939016bc076b0}{is\+Criteria\+Satisfied}} = false
+\begin{DoxyCompactList}\small\item\em Flag indicating whether the optimization criteria have been met. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classOptimizationAlgorithm_ab318fa9bfb1b5d31a1c7c64ec7c7eccb}{trial\+Step\+Size}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em The step size used in the optimization algorithm. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classOptimizationAlgorithm_aff2e3a82297050c504cd7119ec63df66}{trial\+Iteration\+Interval}} = 50
+\begin{DoxyCompactList}\small\item\em The number of iterations between trial step size adjustments. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classOptimizationAlgorithm_ab1ceedba175edc55190ffa5ca22aff3b}{c1}} = 1e-\/4
+\begin{DoxyCompactList}\small\item\em The c1 parameter in the NCG Wolfe condition. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classOptimizationAlgorithm_a1b5aef24591fb8889a5cbdccaa661ec5}{c2}} = 0.\+1
+\begin{DoxyCompactList}\small\item\em The c2 parameter in the NCG Wolfe condition. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classOptimizationAlgorithm_ac7bcbefa309fecf015c4da4c35b28e0c}{step\+Threshold}} = 1e-\/15
+\begin{DoxyCompactList}\small\item\em The lower bound for the step size in NCG. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classOptimizationAlgorithm_ab8c17b424b276c31d35015dc960de007}{n\+Consecutive\+Ncg\+Stuck}} = 0
+\begin{DoxyCompactList}\small\item\em The number of consecutive times the NCG optimizer has gotten stuck. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classOptimizationAlgorithm_a08f67c57c2ea1cffc199070d6d98a52f}{n\+Consecutive\+Ncg\+Stuck\+Threshold}} = 8
+\begin{DoxyCompactList}\small\item\em The threshold of consecutive NCG stuck iterations before disabling it. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classOptimizationAlgorithm_a903ad145a8b81c533555cc95af9d5786}{energy\+Diff\+Threshold}} = 1e-\/3
+\begin{DoxyCompactList}\small\item\em The energy difference threshold for convergence checking. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classOptimizationAlgorithm_acf679c2c21f3c2e474dc5165730be6f2}{force\+Diff\+Threshold}} = 1e-\/2
+\begin{DoxyCompactList}\small\item\em The mean force difference threshold for convergence checking. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A class that defines an optimization algorithm and its settings. This class defines the settings for an optimization algorithm, including whether to use nonlinear conjugate gradient (NCG), whether NCG has gotten stuck and cannot further minimize, and whether to use R-\/pi adaptive method for regularization energy. These settings can be accessed and modified using the public member variables of the class. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classOptimizationAlgorithm_a088280fde13c703f5615aea63b50da28}\label{classOptimizationAlgorithm_a088280fde13c703f5615aea63b50da28}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{OptimizationAlgorithm()}{OptimizationAlgorithm()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Optimization\+Algorithm\+::\+Optimization\+Algorithm (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Constructor for the \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} class. 
+
+Initializes an instance of the \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} class with default settings. Sets using\+NCG to true, is\+NCGstuck to false, and using\+Rpi to true. \mbox{\Hypertarget{classOptimizationAlgorithm_afca995b0bc1c4c71707fe2831121c4c0}\label{classOptimizationAlgorithm_afca995b0bc1c4c71707fe2831121c4c0}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{OptimizationAlgorithm()}{OptimizationAlgorithm()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Optimization\+Algorithm\+::\+Optimization\+Algorithm (\begin{DoxyParamCaption}\item[{const int}]{trial\+Iteration\+Interval,  }\item[{const double}]{c1,  }\item[{const double}]{c2,  }\item[{const double}]{step\+Threshold }\end{DoxyParamCaption})}
+
+
+
+Constructor for the \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} class. 
+
+Initializes an instance of the \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} class with default settings. Customize iteration interval, c1, c2, and step threshold. Sets using\+NCG to true, is\+NCGstuck to false, and using\+Rpi to true. 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classOptimizationAlgorithm_a4e265432247340fe2e7c38eaf098af94}\label{classOptimizationAlgorithm_a4e265432247340fe2e7c38eaf098af94}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!disable\_NCG\_if\_stuck\_consecutively@{disable\_NCG\_if\_stuck\_consecutively}}
+\index{disable\_NCG\_if\_stuck\_consecutively@{disable\_NCG\_if\_stuck\_consecutively}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{disable\_NCG\_if\_stuck\_consecutively()}{disable\_NCG\_if\_stuck\_consecutively()}}
+{\footnotesize\ttfamily bool Optimization\+Algorithm\+::disable\+\_\+\+NCG\+\_\+if\+\_\+stuck\+\_\+consecutively (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Disables the use of NCG if it has been stuck consecutively over a threshold. 
+
+If the NCG optimizer has been stuck for too many consecutive iterations (as determined by the {\ttfamily is\+NCGstuck} flag), this function will increment a counter {\ttfamily n\+Consecutive\+Ncg\+Stuck}. If that counter exceeds a threshold of n\+Consecutive\+Ncg\+Stuck\+Threshold, the {\ttfamily using\+NCG} flag will be set to false, indicating that NCG should not be used. Otherwise, {\ttfamily using\+NCG} remains true.
+
+If the NCG optimizer is not currently stuck, the {\ttfamily n\+Consecutive\+Ncg\+Stuck} counter is reset to 0 and {\ttfamily using\+NCG} is set to true.
+
+\begin{DoxyReturn}{Returns}
+True if NCG should be used, false otherwise. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classOptimizationAlgorithm_ae9f8a4aee032f42c0e787733cd152aa9}\label{classOptimizationAlgorithm_ae9f8a4aee032f42c0e787733cd152aa9}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!reset\_NCG\_Rpi@{reset\_NCG\_Rpi}}
+\index{reset\_NCG\_Rpi@{reset\_NCG\_Rpi}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{reset\_NCG\_Rpi()}{reset\_NCG\_Rpi()}}
+{\footnotesize\ttfamily void Optimization\+Algorithm\+::reset\+\_\+\+NCG\+\_\+\+Rpi (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Reset NCG and Rpi to default. 
+
+Sets using\+NCG to true, is\+NCGstuck to false, and using\+Rpi to true. 
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classOptimizationAlgorithm_ab1ceedba175edc55190ffa5ca22aff3b}\label{classOptimizationAlgorithm_ab1ceedba175edc55190ffa5ca22aff3b}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!c1@{c1}}
+\index{c1@{c1}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{c1}{c1}}
+{\footnotesize\ttfamily double Optimization\+Algorithm\+::c1 = 1e-\/4}
+
+
+
+The c1 parameter in the NCG Wolfe condition. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_a1b5aef24591fb8889a5cbdccaa661ec5}\label{classOptimizationAlgorithm_a1b5aef24591fb8889a5cbdccaa661ec5}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!c2@{c2}}
+\index{c2@{c2}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{c2}{c2}}
+{\footnotesize\ttfamily double Optimization\+Algorithm\+::c2 = 0.\+1}
+
+
+
+The c2 parameter in the NCG Wolfe condition. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_a903ad145a8b81c533555cc95af9d5786}\label{classOptimizationAlgorithm_a903ad145a8b81c533555cc95af9d5786}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!energyDiffThreshold@{energyDiffThreshold}}
+\index{energyDiffThreshold@{energyDiffThreshold}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{energyDiffThreshold}{energyDiffThreshold}}
+{\footnotesize\ttfamily double Optimization\+Algorithm\+::energy\+Diff\+Threshold = 1e-\/3}
+
+
+
+The energy difference threshold for convergence checking. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_acf679c2c21f3c2e474dc5165730be6f2}\label{classOptimizationAlgorithm_acf679c2c21f3c2e474dc5165730be6f2}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!forceDiffThreshold@{forceDiffThreshold}}
+\index{forceDiffThreshold@{forceDiffThreshold}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{forceDiffThreshold}{forceDiffThreshold}}
+{\footnotesize\ttfamily double Optimization\+Algorithm\+::force\+Diff\+Threshold = 1e-\/2}
+
+
+
+The mean force difference threshold for convergence checking. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_aef104ec704b12951af1939016bc076b0}\label{classOptimizationAlgorithm_aef104ec704b12951af1939016bc076b0}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!isCriteriaSatisfied@{isCriteriaSatisfied}}
+\index{isCriteriaSatisfied@{isCriteriaSatisfied}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{isCriteriaSatisfied}{isCriteriaSatisfied}}
+{\footnotesize\ttfamily bool Optimization\+Algorithm\+::is\+Criteria\+Satisfied = false}
+
+
+
+Flag indicating whether the optimization criteria have been met. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_a1dab32f415e161f5ad9d0498062c912d}\label{classOptimizationAlgorithm_a1dab32f415e161f5ad9d0498062c912d}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!isNCGstuck@{isNCGstuck}}
+\index{isNCGstuck@{isNCGstuck}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{isNCGstuck}{isNCGstuck}}
+{\footnotesize\ttfamily bool Optimization\+Algorithm\+::is\+NCGstuck = false}
+
+
+
+Flag indicating whether the NCG optimizer has gotten stuck and cannot further minimize. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_ab8c17b424b276c31d35015dc960de007}\label{classOptimizationAlgorithm_ab8c17b424b276c31d35015dc960de007}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!nConsecutiveNcgStuck@{nConsecutiveNcgStuck}}
+\index{nConsecutiveNcgStuck@{nConsecutiveNcgStuck}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{nConsecutiveNcgStuck}{nConsecutiveNcgStuck}}
+{\footnotesize\ttfamily int Optimization\+Algorithm\+::n\+Consecutive\+Ncg\+Stuck = 0}
+
+
+
+The number of consecutive times the NCG optimizer has gotten stuck. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_a08f67c57c2ea1cffc199070d6d98a52f}\label{classOptimizationAlgorithm_a08f67c57c2ea1cffc199070d6d98a52f}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!nConsecutiveNcgStuckThreshold@{nConsecutiveNcgStuckThreshold}}
+\index{nConsecutiveNcgStuckThreshold@{nConsecutiveNcgStuckThreshold}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{nConsecutiveNcgStuckThreshold}{nConsecutiveNcgStuckThreshold}}
+{\footnotesize\ttfamily int Optimization\+Algorithm\+::n\+Consecutive\+Ncg\+Stuck\+Threshold = 8}
+
+
+
+The threshold of consecutive NCG stuck iterations before disabling it. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_ac7bcbefa309fecf015c4da4c35b28e0c}\label{classOptimizationAlgorithm_ac7bcbefa309fecf015c4da4c35b28e0c}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!stepThreshold@{stepThreshold}}
+\index{stepThreshold@{stepThreshold}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{stepThreshold}{stepThreshold}}
+{\footnotesize\ttfamily double Optimization\+Algorithm\+::step\+Threshold = 1e-\/15}
+
+
+
+The lower bound for the step size in NCG. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_aff2e3a82297050c504cd7119ec63df66}\label{classOptimizationAlgorithm_aff2e3a82297050c504cd7119ec63df66}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!trialIterationInterval@{trialIterationInterval}}
+\index{trialIterationInterval@{trialIterationInterval}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{trialIterationInterval}{trialIterationInterval}}
+{\footnotesize\ttfamily int Optimization\+Algorithm\+::trial\+Iteration\+Interval = 50}
+
+
+
+The number of iterations between trial step size adjustments. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_ab318fa9bfb1b5d31a1c7c64ec7c7eccb}\label{classOptimizationAlgorithm_ab318fa9bfb1b5d31a1c7c64ec7c7eccb}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!trialStepSize@{trialStepSize}}
+\index{trialStepSize@{trialStepSize}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{trialStepSize}{trialStepSize}}
+{\footnotesize\ttfamily double Optimization\+Algorithm\+::trial\+Step\+Size = 0.\+0}
+
+
+
+The step size used in the optimization algorithm. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_a19e0b4e14a14e7e916085ddb4dc10dbd}\label{classOptimizationAlgorithm_a19e0b4e14a14e7e916085ddb4dc10dbd}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!usingNCG@{usingNCG}}
+\index{usingNCG@{usingNCG}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{usingNCG}{usingNCG}}
+{\footnotesize\ttfamily bool Optimization\+Algorithm\+::using\+NCG = true}
+
+
+
+Flag indicating whether to use the nonlinear conjugate gradient optimizer. 
+
+\mbox{\Hypertarget{classOptimizationAlgorithm_af01490f826ddabac57e857dd72dc6085}\label{classOptimizationAlgorithm_af01490f826ddabac57e857dd72dc6085}} 
+\index{OptimizationAlgorithm@{OptimizationAlgorithm}!usingRpi@{usingRpi}}
+\index{usingRpi@{usingRpi}!OptimizationAlgorithm@{OptimizationAlgorithm}}
+\doxysubsubsection{\texorpdfstring{usingRpi}{usingRpi}}
+{\footnotesize\ttfamily bool Optimization\+Algorithm\+::using\+Rpi = true}
+
+
+
+Flag indicating whether to use the R-\/pi adaptive method for regularization energy. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Model_8hpp}{Model.\+hpp}}\end{DoxyCompactItemize}

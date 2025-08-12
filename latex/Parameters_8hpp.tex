@@ -1,0 +1,108 @@
+\hypertarget{Parameters_8hpp}{}\doxysection{include/\+Parameters.hpp File Reference}
+\label{Parameters_8hpp}\index{include/Parameters.hpp@{include/Parameters.hpp}}
+
+
+This file defines essential parameters used in continuum membrane as well as membrane dynamics code. The \mbox{\hyperlink{structParam}{Param}} structure defines all the essential physical constants and simulation parameters for the model; multiple instances of \mbox{\hyperlink{structParam}{Param}} help with parallel computing of the model. The \mbox{\hyperlink{classMesh}{Mesh}} class includes vertices and faces information for the control mesh of the model.  
+
+
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+matrix.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+blas.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+linalg.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}Energy.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Force.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structDeformationCount}{Deformation\+Count}}
+\begin{DoxyCompactList}\small\item\em Bookkeeps the shape and area deformation count of \mbox{\hyperlink{classMesh}{Mesh}}. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structSubdivisionMatrix}{Subdivision\+Matrix}}
+\begin{DoxyCompactList}\small\item\em 5 Subdivison matrices for irregular mesh. \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{classParticle}{Particle}}
+\begin{DoxyCompactList}\small\item\em Represents a single diffusing particle in a simulation. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structParam}{Param}}
+\begin{DoxyCompactList}\small\item\em Contains simulation parameters and physical constants. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}{Boundary\+Type}} \{ \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8a4457d440870ad6d42bab9082d9bf9b61}{Fixed}}
+, \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8acdcc32a064503184053bd2018d1c0e7e}{Periodic}}
+, \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8ab24ce0cd392a5b0b8dedc66c25213594}{Free}}
+ \}
+\begin{DoxyCompactList}\small\item\em The type of boundary condition for the simulation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::ostream \& \mbox{\hyperlink{Parameters_8hpp_a98c4b6e4d79e01bd56bfa6ec99176c63}{operator$<$$<$}} (std\+::ostream \&os, const \mbox{\hyperlink{structParam}{Param}} \&param)
+\begin{DoxyCompactList}\small\item\em Overloaded stream insertion operator to output the \mbox{\hyperlink{structParam}{Param}} struct in a readable format. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines essential parameters used in continuum membrane as well as membrane dynamics code. The \mbox{\hyperlink{structParam}{Param}} structure defines all the essential physical constants and simulation parameters for the model; multiple instances of \mbox{\hyperlink{structParam}{Param}} help with parallel computing of the model. The \mbox{\hyperlink{classMesh}{Mesh}} class includes vertices and faces information for the control mesh of the model. 
+
+\begin{DoxyAuthor}{Author}
+Y Ying (\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}}) 
+
+Y Fu (\href{mailto:yfu31@jh.edu}{\texttt{ yfu31@jh.\+edu}}) 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2023-\/01-\/05
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}\label{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}} 
+\index{Parameters.hpp@{Parameters.hpp}!BoundaryType@{BoundaryType}}
+\index{BoundaryType@{BoundaryType}!Parameters.hpp@{Parameters.hpp}}
+\doxysubsubsection{\texorpdfstring{BoundaryType}{BoundaryType}}
+{\footnotesize\ttfamily enum class \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}{Boundary\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+The type of boundary condition for the simulation. 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Fixed@{Fixed}!Parameters.hpp@{Parameters.hpp}}\index{Parameters.hpp@{Parameters.hpp}!Fixed@{Fixed}}}\mbox{\Hypertarget{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8a4457d440870ad6d42bab9082d9bf9b61}\label{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8a4457d440870ad6d42bab9082d9bf9b61}} 
+Fixed&Fixed boundary condition. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Periodic@{Periodic}!Parameters.hpp@{Parameters.hpp}}\index{Parameters.hpp@{Parameters.hpp}!Periodic@{Periodic}}}\mbox{\Hypertarget{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8acdcc32a064503184053bd2018d1c0e7e}\label{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8acdcc32a064503184053bd2018d1c0e7e}} 
+Periodic&Periodic boundary condition. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Free@{Free}!Parameters.hpp@{Parameters.hpp}}\index{Parameters.hpp@{Parameters.hpp}!Free@{Free}}}\mbox{\Hypertarget{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8ab24ce0cd392a5b0b8dedc66c25213594}\label{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8ab24ce0cd392a5b0b8dedc66c25213594}} 
+Free&Free boundary condition. \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Parameters_8hpp_a98c4b6e4d79e01bd56bfa6ec99176c63}\label{Parameters_8hpp_a98c4b6e4d79e01bd56bfa6ec99176c63}} 
+\index{Parameters.hpp@{Parameters.hpp}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!Parameters.hpp@{Parameters.hpp}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}}
+{\footnotesize\ttfamily std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{os,  }\item[{const \mbox{\hyperlink{structParam}{Param}} \&}]{param }\end{DoxyParamCaption})}
+
+
+
+Overloaded stream insertion operator to output the \mbox{\hyperlink{structParam}{Param}} struct in a readable format. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em os} & The output stream \\
+\hline
+{\em param} & The \mbox{\hyperlink{structParam}{Param}} struct to be outputted \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+ostream\& A reference to the output stream 
+\end{DoxyReturn}

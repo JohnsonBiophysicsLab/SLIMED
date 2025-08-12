@@ -1,0 +1,50 @@
+\hypertarget{Force_8hpp_source}{}\doxysection{Force.\+hpp}
+\label{Force_8hpp_source}\index{include/Force.hpp@{include/Force.hpp}}
+\mbox{\hyperlink{Force_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <ostream>}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <omp.h>}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <iomanip>}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}"{}}}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00031\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classForce}{Force}}}
+\DoxyCodeLine{00032\ \{}
+\DoxyCodeLine{00033\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00034\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_a27beaa4895f6e9f9fdfa63d04c39c1f5}{forceCurvature}};\ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_ad705959161e70f62686dfe2fa9a32f5f}{forceArea}};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_a9f30d1cd6683a492fd48a911c58a9911}{forceVolume}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_af9b4e54fddd0d6360726c9fc2b85a8cf}{forceThickness}};\ \ \ \ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_a013fe3de6bd136f65d9222ff5815aae8}{forceTilt}};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_a08bac5511cd6cf5a94081f4886ee1d68}{forceRegularization}};\ }
+\DoxyCodeLine{00044\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_a582f686f48ccc6fcd7a00e5780b4579f}{forceHarmonicBond}};\ \ \ }
+\DoxyCodeLine{00049\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classForce_a910b4d4baf1e424b8f055ca491f41314}{forceTotal}};\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00054\ \ \ \ \ \mbox{\hyperlink{classForce_a00983e3bbc206a00bb9253deafc4e424}{Force}}();}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00063\ \ \ \ \ \mbox{\hyperlink{classForce_ab116476d6119b002ddfad551987826ef}{Force}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classForce}{Force}}\ \&force);}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00069\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&\mbox{\hyperlink{classForce_a3f2bfef63af70521dbf494772e0368be}{calculate\_total\_force}}();}
+\DoxyCodeLine{00070\ }
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classForce_a7c6d23d95fa6a3c53d7c7aed2c351588}{get\_total\_force\_magnitude}}();}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00087\ \ \ \ \ std::string\ \mbox{\hyperlink{classForce_a3644fa44423cedb88bfe701dcd6520b7}{to\_string\_full}}();}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00096\ \ \ \ \ std::string\ \mbox{\hyperlink{classForce_af6eb9bcb0598f03b80c890533ad9646e}{to\_string\_full\_at\_vertex}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ i);}
+\DoxyCodeLine{00097\ }
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keyword}{friend}\ std::ostream\ \&\mbox{\hyperlink{classForce_a58e97ab831e03e564f42a7900f2da7be}{operator<<}}(std::ostream\ \&stream,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classForce}{Force}}\ \&force);}
+\DoxyCodeLine{00107\ \};}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00117\ \mbox{\hyperlink{classForce}{Force}}\ \mbox{\hyperlink{Force_8hpp_a4e462e1e5704e123e66caf7420081b87}{operator+}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classForce}{Force}}\&\ lhs,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classForce}{Force}}\&\ rhs);}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00129\ \mbox{\hyperlink{classForce}{Force}}\&\ \mbox{\hyperlink{Force_8hpp_aa86b26220667e08489b3fb1006d30b7a}{operator+=}}(\mbox{\hyperlink{classForce}{Force}}\&\ lhs,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classForce}{Force}}\&\ rhs);}
+\DoxyCodeLine{00130\ }
+
+\end{DoxyCode}

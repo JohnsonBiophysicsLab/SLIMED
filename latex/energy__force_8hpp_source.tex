@@ -1,0 +1,75 @@
+\hypertarget{energy__force_8hpp_source}{}\doxysection{energy\+\_\+force.\+hpp}
+\label{energy__force_8hpp_source}\index{include/energy\_force.hpp@{include/energy\_force.hpp}}
+\mbox{\hyperlink{energy__force_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <omp.h>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <iomanip>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <ctime>}\ \ \ \ \ \ \ \textcolor{comment}{/*\ clock\_t,\ clock,\ CLOCKS\_PER\_SEC\ */}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_matrix.h>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_blas.h>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_linalg.h>}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}mesh.hpp"{}}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ "{}vector\_math.hpp"{}}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}parameters.hpp"{}}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}gsl\_matrix\_methods.hpp"{}}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00020\ \textcolor{comment}{//energy\ force\ declaration}}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00024\ \textcolor{comment}{//\ append\ functions;}}
+\DoxyCodeLine{00025\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_ab9cb3477178c0e25c91c69e4544637d1}{determine\_IsInsertionPatch\_for\_face}}(std::vector<Face>\&\ face,\ std::vector<std::vector<int>>\&\ InsertionPatch);}
+\DoxyCodeLine{00026\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a0211dcbd2aeacefa5033e2fe4f7473b2}{determine\_SpontaneousCurvature\_for\_face}}(\textcolor{keywordtype}{double}\ perturbed\_c0,\ \textcolor{keywordtype}{double}\ unperturbed\_c0,\ std::vector<Face>\&\ face);}
+\DoxyCodeLine{00027\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a8df48dc62037a26db38692971d07b054}{calculate\_element\_area\_volume}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{membrane__dynamics_8cpp_afb32136076548aa5049d24de570fae2d}{subDivideTimes}},\ std::vector<double>\&\ GaussQuadratureCoeff,\ std::vector<Shapefunctions>\&\ ShapeFunctions,\ SubMatrix\&\ subMatrix);}
+\DoxyCodeLine{00028\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_ab4560541fb4b1fefd6dbe789f8cbfa87}{sum\_Membrane\_Area}}(std::vector<Face>\&\ face);}
+\DoxyCodeLine{00029\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_aebb664c601ee6c077c16fe265fb915b2}{sum\_Membrane\_Volume}}(std::vector<Face>\&\ face);}
+\DoxyCodeLine{00030\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_af04b63ac27935a2e85ee79ada4dbb7f5}{clear\_forceONvertex\_and\_energyONface}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face);}
+\DoxyCodeLine{00031\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a551f7ecbe676f6ff9a4912ecaf65a07c}{update\_PreviousCoord\_for\_vertex}}(std::vector<Vertex>\&\ vertex);}
+\DoxyCodeLine{00032\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a5987ce7008eeb06ef3c829a8f7db0acc}{update\_reference\_from\_CoordPrevious}}(std::vector<Vertex>\&\ vertex);}
+\DoxyCodeLine{00033\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_ae95138d341e58cc44a36fbdd17e24abb}{update\_PreviousForce\_for\_vertex}}(std::vector<Vertex>\&\ vertex);}
+\DoxyCodeLine{00034\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_af1e295b21bdcbfb145707fb3a5f9d019}{update\_PreviousEnergy\_for\_face}}(std::vector<Face>\&\ face);}
+\DoxyCodeLine{00035\ std::vector<double>\ \mbox{\hyperlink{energy__force_8hpp_a6638f7619efbec66c5ea997312d2f3d2}{ForceScale}}(std::vector<std::vector<double>>\&\ \mbox{\hyperlink{classForce}{Force}});}
+\DoxyCodeLine{00036\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_adfd52855afb05961c98a0d0f091f9b09}{calculate\_mean\_force}}(std::vector<Vertex>\&\ vertex);}
+\DoxyCodeLine{00037\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_acee43f37e70d53ac949f2a22d28ecae0}{manage\_force\_for\_boundary\_ghost\_vertex}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \mbox{\hyperlink{structParam}{Param}}\&\ param);}
+\DoxyCodeLine{00038\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_ab457db22fde9d609ac89bb2868cfcec7}{update\_vertex\_from\_NonlinearConjugateGradient\_s0}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \textcolor{keywordtype}{double}\ a,\ std::vector<std::vector<double>>\&\ \mbox{\hyperlink{classForce}{Force}},\ \mbox{\hyperlink{structParam}{Param}}\&\ param);}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00042\ \textcolor{comment}{//\ calculations}}
+\DoxyCodeLine{00043\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a3c213a34c95a355ab166ff478e1fadd2}{element\_energy\_force\_regular}}(std::vector<std::vector<double>>\&\ dots,\ \mbox{\hyperlink{structParam}{Param}}\&\ param,\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{membrane__dynamics_8cpp_a1d23aed57ae21b2856939bd1b932763f}{c0}},\ \textcolor{keywordtype}{double}\&\ Hmean,\ std::vector<double>\&\ normVector,\ \textcolor{keywordtype}{double}\&\ Ebe,\ std::vector<std::vector<double>>\&\ F\_be,\ std::vector<std::vector<double>>\&\ F\_s,\ std::vector<std::vector<double>>\&\ F\_v,\ std::vector<double>\&\ GaussQuadratureCoeff,\ std::vector<Shapefunctions>\&\ ShapeFunctions);}
+\DoxyCodeLine{00044\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_ab8890a13d1761a9641e2949f329e7e87}{element\_energy\_force\_irregular}}(std::vector<std::vector<double>>\&\ Dots,\ \mbox{\hyperlink{structParam}{Param}}\&\ param,\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{membrane__dynamics_8cpp_a1d23aed57ae21b2856939bd1b932763f}{c0}},\ \textcolor{keywordtype}{double}\&\ Hmean,\ std::vector<double>\&\ normVector,\ \textcolor{keywordtype}{double}\&\ E\_bending,\ std::vector<std::vector<double>>\&\ F\_be,\ std::vector<std::vector<double>>\&\ F\_s,\ std::vector<std::vector<double>>\&\ F\_v,\ std::vector<double>\&\ GaussQuadratureCoeff,\ std::vector<Shapefunctions>\&\ ShapeFunctions,\ SubMatrix\ subMatrix);}
+\DoxyCodeLine{00045\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a505ed090bba8615f87aae8011e8b3c48}{energy\_force\_regularization}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \mbox{\hyperlink{structParam}{Param}}\&\ param);}
+\DoxyCodeLine{00046\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a7e44f5003c644adff2caa8b739e8e85b}{Energy\_and\_Force}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \mbox{\hyperlink{structParam}{Param}}\&\ param,\ std::vector<double>\&\ GaussQuadratureCoeff,\ std::vector<Shapefunctions>\&\ ShapeFunctions,\ SubMatrix\&\ subMatrix);}
+\DoxyCodeLine{00047\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_ab2967069a25034a7b71dab46032dfab4}{lineSearch\_for\_StepSize\_to\_minimize\_energy}}(\textcolor{keywordtype}{double}\ a0,\ std::vector<std::vector<double>>\&\ s0,\ std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \mbox{\hyperlink{structParam}{Param}}\&\ param,\ std::vector<double>\&\ GaussQuadratureCoeff,\ std::vector<Shapefunctions>\&\ ShapeFunctions,\ SubMatrix\&\ subMatrix);}
+\DoxyCodeLine{00048\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_adddba78e93fe996342acd4bd6f6323c6}{check\_nodal\_force}}(std::vector<Vertex>\&\ vertex,\ std::vector<Face>\&\ face,\ \mbox{\hyperlink{structParam}{Param}}\&\ param,\ std::vector<double>\&\ GaussQuadratureCoeff,\ std::vector<Shapefunctions>\&\ ShapeFunctions,\ SubMatrix\&\ subMatrix);}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00051\ \textcolor{comment}{//\ spline\ points}}
+\DoxyCodeLine{00052\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{energy__force_8hpp_ae134860a075c37ad13df71bd628cca22}{moveVerticesBasedOnSpline}}(std::vector<std::vector<double>>\&\ splinePoints,}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<Vertex>\&\ vertices,}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ lbond);}
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{energy__force_8hpp_a9d8faa7d987d313261843a5e8d785a81}{getAverageVector}}(std::vector<std::vector<double>>\&\ inVec2D,\ std::vector<double>\&\ avgVec);}
+\DoxyCodeLine{00056\ std::vector<int>\ \mbox{\hyperlink{energy__force_8hpp_a48c6fc5d52dd2ae03d6e134be6baf197}{getClosestVertexIndex}}(std::vector<std::vector<double>>\&\ splinePoints,}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<Vertex>\&\ vertices);}
+\DoxyCodeLine{00058\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_ac1514d2a8af5f784cf83dcc222283308}{getDistance}}(std::vector<double>\&\ splinePoint,\ \mbox{\hyperlink{classVertex}{Vertex}}\&\ vertex);}
+\DoxyCodeLine{00059\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_a9733ec68d81d39c6a2e4f12c1363c3ba}{getSquaredDistance}}(std::vector<double>\&\ splinePoint,\ \mbox{\hyperlink{classVertex}{Vertex}}\&\ vertex);}
+\DoxyCodeLine{00060\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{energy__force_8hpp_a74f5b46b5069f3de08be693a8aa6b409}{calculateSplineEnergyForce}}(std::vector<std::vector<double>>\&\ splinePoints,}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<Vertex>\&\ vertices,}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<int>\ splinePoints\_correspondingVertexIndex,}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ lbond,\ \textcolor{keywordtype}{double}\ springConst,\ \textcolor{keywordtype}{bool}\ doLocalSearch,\ \textcolor{keywordtype}{double}\ splinePointsZcoordScaling);}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \textcolor{comment}{//\ rigid\ body}}
+\DoxyCodeLine{00066\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{energy__force_8hpp_a89bfb108e0ee858121c8416a75b3df8a}{calculate\_rigid\_force\_and\_torque}}(}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structParam}{Param}}\&\ param,}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ std::vector<std::vector<double>>\&\ splinePoints,}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<Vertex>\&\ vertices,}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<int>\ splinePoints\_correspondingVertexIndex);}
+\DoxyCodeLine{00071\ gsl\_matrix*\ \mbox{\hyperlink{energy__force_8hpp_a99ca2c5b931b3593798786d8d1ce743d}{get\_rotation\_matrix}}(\textcolor{keyword}{const}\ std::vector<double>\&\ rotAngles);}
+\DoxyCodeLine{00072\ gsl\_matrix*\ \mbox{\hyperlink{energy__force_8hpp_aa17fcf4e08bb907c16b5409c59876277}{vec\_to\_col\_matrix}}(\textcolor{keyword}{const}\ std::vector<double>\&\ vec);}
+\DoxyCodeLine{00073\ std::vector<double>\ \mbox{\hyperlink{energy__force_8hpp_aa73b9077b88f9be60787d9c1918184df}{col\_matrix\_to\_vec}}(\textcolor{keyword}{const}\ gsl\_matrix*\ \textcolor{keyword}{const}\ mat);}
+
+\end{DoxyCode}

@@ -1,0 +1,194 @@
+\hypertarget{classEnergy}{}\doxysection{Energy Class Reference}
+\label{classEnergy}\index{Energy@{Energy}}
+
+
+This class includes 7 components in calculating energy on vertrices including membrane bending energy, area constraint energy, volume constraint energy, membrane thickness constraint energy, lipid tilting energy, regularization energy, and harmonic bonding energy.  
+
+
+
+
+{\ttfamily \#include $<$Energy.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classEnergy_ace7d4d30b4d89e661e169c299d65cad9}{Energy}} ()
+\begin{DoxyCompactList}\small\item\em Generate a new \mbox{\hyperlink{classEnergy}{Energy}} object with all energy terms set to zero. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classEnergy_a547385c0d0fa0e7dffffdf61f5199a2f}{Energy}} (const \mbox{\hyperlink{classEnergy}{Energy}} \&energy)
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classEnergy}{Energy}} object by copying all member values to the new \mbox{\hyperlink{classEnergy}{Energy}} instance, i.\+e. deepcopy of input energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a20fe6fae9e5923bb0e0c2d160355dbcb}{calculate\+Total\+Energy}} ()
+\begin{DoxyCompactList}\small\item\em Set energy\+Total to the sum of energy components. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+double \mbox{\hyperlink{classEnergy_aa5a87f85f77b01e609179efa588f7cc7}{energy\+Curvature}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store curvature energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a8f2b3a85f61a45c48755185fd053655b}{energy\+Area}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store area constraint energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a2772aa5268c1a167f13d67f314c78a21}{energy\+Volume}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store volume constraint energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a6d3d2358e76e0ae58aa071f064c2fe9b}{energy\+Thickness}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store thickness constraint energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_ad3d0b5874748fe1adb85318020459132}{energy\+Tilt}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store tilt angle constraint energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a2e45eafc1d32ddd1b2a952bdbfb4de61}{energy\+Regularization}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store regularization energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a65e13ec288820cd1cd308912260ad3ef}{energy\+Harmonic\+Bond}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store harmonic bond energy. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classEnergy_a2b5cd00427d3cf100c5524dc61285a78}{energy\+Total}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Variable to store total energy. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+std\+::ostream \& \mbox{\hyperlink{classEnergy_abad2d7c870919634dc2f702148261a6b}{operator$<$$<$}} (std\+::ostream \&stream, const \mbox{\hyperlink{classEnergy}{Energy}} \&energy)
+\begin{DoxyCompactList}\small\item\em Overrides the operator \texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<} in ostream. Outputs force in the format of (force\+Total\mbox{[}0\mbox{]}, force\+Total\mbox{[}1\mbox{]}, force\+Total\mbox{[}2\mbox{]}). Used in command line output. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This class includes 7 components in calculating energy on vertrices including membrane bending energy, area constraint energy, volume constraint energy, membrane thickness constraint energy, lipid tilting energy, regularization energy, and harmonic bonding energy. 
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classEnergy_ace7d4d30b4d89e661e169c299d65cad9}\label{classEnergy_ace7d4d30b4d89e661e169c299d65cad9}} 
+\index{Energy@{Energy}!Energy@{Energy}}
+\index{Energy@{Energy}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{Energy()}{Energy()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Energy\+::\+Energy (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Generate a new \mbox{\hyperlink{classEnergy}{Energy}} object with all energy terms set to zero. 
+
+\mbox{\Hypertarget{classEnergy_a547385c0d0fa0e7dffffdf61f5199a2f}\label{classEnergy_a547385c0d0fa0e7dffffdf61f5199a2f}} 
+\index{Energy@{Energy}!Energy@{Energy}}
+\index{Energy@{Energy}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{Energy()}{Energy()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Energy\+::\+Energy (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classEnergy}{Energy}} \&}]{energy }\end{DoxyParamCaption})}
+
+
+
+Construct a new \mbox{\hyperlink{classEnergy}{Energy}} object by copying all member values to the new \mbox{\hyperlink{classEnergy}{Energy}} instance, i.\+e. deepcopy of input energy. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em energy} & \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classEnergy_a20fe6fae9e5923bb0e0c2d160355dbcb}\label{classEnergy_a20fe6fae9e5923bb0e0c2d160355dbcb}} 
+\index{Energy@{Energy}!calculateTotalEnergy@{calculateTotalEnergy}}
+\index{calculateTotalEnergy@{calculateTotalEnergy}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{calculateTotalEnergy()}{calculateTotalEnergy()}}
+{\footnotesize\ttfamily double Energy\+::calculate\+Total\+Energy (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Set energy\+Total to the sum of energy components. 
+
+\begin{DoxyReturn}{Returns}
+Calculated total energy. 
+\end{DoxyReturn}
+
+
+\doxysubsection{Friends And Related Function Documentation}
+\mbox{\Hypertarget{classEnergy_abad2d7c870919634dc2f702148261a6b}\label{classEnergy_abad2d7c870919634dc2f702148261a6b}} 
+\index{Energy@{Energy}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$}{operator<<}}
+{\footnotesize\ttfamily std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{stream,  }\item[{const \mbox{\hyperlink{classEnergy}{Energy}} \&}]{energy }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [friend]}}
+
+
+
+Overrides the operator \texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<} in ostream. Outputs force in the format of (force\+Total\mbox{[}0\mbox{]}, force\+Total\mbox{[}1\mbox{]}, force\+Total\mbox{[}2\mbox{]}). Used in command line output. 
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classEnergy_a8f2b3a85f61a45c48755185fd053655b}\label{classEnergy_a8f2b3a85f61a45c48755185fd053655b}} 
+\index{Energy@{Energy}!energyArea@{energyArea}}
+\index{energyArea@{energyArea}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyArea}{energyArea}}
+{\footnotesize\ttfamily double Energy\+::energy\+Area = 0.\+0}
+
+
+
+Variable to store area constraint energy. 
+
+\mbox{\Hypertarget{classEnergy_aa5a87f85f77b01e609179efa588f7cc7}\label{classEnergy_aa5a87f85f77b01e609179efa588f7cc7}} 
+\index{Energy@{Energy}!energyCurvature@{energyCurvature}}
+\index{energyCurvature@{energyCurvature}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyCurvature}{energyCurvature}}
+{\footnotesize\ttfamily double Energy\+::energy\+Curvature = 0.\+0}
+
+
+
+Variable to store curvature energy. 
+
+\mbox{\Hypertarget{classEnergy_a65e13ec288820cd1cd308912260ad3ef}\label{classEnergy_a65e13ec288820cd1cd308912260ad3ef}} 
+\index{Energy@{Energy}!energyHarmonicBond@{energyHarmonicBond}}
+\index{energyHarmonicBond@{energyHarmonicBond}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyHarmonicBond}{energyHarmonicBond}}
+{\footnotesize\ttfamily double Energy\+::energy\+Harmonic\+Bond = 0.\+0}
+
+
+
+Variable to store harmonic bond energy. 
+
+\mbox{\Hypertarget{classEnergy_a2e45eafc1d32ddd1b2a952bdbfb4de61}\label{classEnergy_a2e45eafc1d32ddd1b2a952bdbfb4de61}} 
+\index{Energy@{Energy}!energyRegularization@{energyRegularization}}
+\index{energyRegularization@{energyRegularization}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyRegularization}{energyRegularization}}
+{\footnotesize\ttfamily double Energy\+::energy\+Regularization = 0.\+0}
+
+
+
+Variable to store regularization energy. 
+
+\mbox{\Hypertarget{classEnergy_a6d3d2358e76e0ae58aa071f064c2fe9b}\label{classEnergy_a6d3d2358e76e0ae58aa071f064c2fe9b}} 
+\index{Energy@{Energy}!energyThickness@{energyThickness}}
+\index{energyThickness@{energyThickness}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyThickness}{energyThickness}}
+{\footnotesize\ttfamily double Energy\+::energy\+Thickness = 0.\+0}
+
+
+
+Variable to store thickness constraint energy. 
+
+\mbox{\Hypertarget{classEnergy_ad3d0b5874748fe1adb85318020459132}\label{classEnergy_ad3d0b5874748fe1adb85318020459132}} 
+\index{Energy@{Energy}!energyTilt@{energyTilt}}
+\index{energyTilt@{energyTilt}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyTilt}{energyTilt}}
+{\footnotesize\ttfamily double Energy\+::energy\+Tilt = 0.\+0}
+
+
+
+Variable to store tilt angle constraint energy. 
+
+\mbox{\Hypertarget{classEnergy_a2b5cd00427d3cf100c5524dc61285a78}\label{classEnergy_a2b5cd00427d3cf100c5524dc61285a78}} 
+\index{Energy@{Energy}!energyTotal@{energyTotal}}
+\index{energyTotal@{energyTotal}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyTotal}{energyTotal}}
+{\footnotesize\ttfamily double Energy\+::energy\+Total = 0.\+0}
+
+
+
+Variable to store total energy. 
+
+\mbox{\Hypertarget{classEnergy_a2772aa5268c1a167f13d67f314c78a21}\label{classEnergy_a2772aa5268c1a167f13d67f314c78a21}} 
+\index{Energy@{Energy}!energyVolume@{energyVolume}}
+\index{energyVolume@{energyVolume}!Energy@{Energy}}
+\doxysubsubsection{\texorpdfstring{energyVolume}{energyVolume}}
+{\footnotesize\ttfamily double Energy\+::energy\+Volume = 0.\+0}
+
+
+
+Variable to store volume constraint energy. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Energy_8hpp}{Energy.\+hpp}}\end{DoxyCompactItemize}

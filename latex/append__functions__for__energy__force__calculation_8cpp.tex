@@ -1,0 +1,81 @@
+\hypertarget{append__functions__for__energy__force__calculation_8cpp}{}\doxysection{src/energy\+\_\+force/append\+\_\+functions\+\_\+for\+\_\+energy\+\_\+force\+\_\+calculation.cpp File Reference}
+\label{append__functions__for__energy__force__calculation_8cpp}\index{src/energy\_force/append\_functions\_for\_energy\_force\_calculation.cpp@{src/energy\_force/append\_functions\_for\_energy\_force\_calculation.cpp}}
+{\ttfamily \#include \char`\"{}energy\+\_\+force.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_aacfd123fb6bf3d39786a1b252e1ab7ba}{clear\+\_\+force\+\_\+on\+\_\+vertices\+\_\+and\+\_\+energy\+\_\+on\+\_\+faces}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_a7f5f02102db027f677696b58d72f5a3a}{update\+\_\+previous\+\_\+coord\+\_\+for\+\_\+vertex}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_a640ce5fe9c85a83ec24c894db2db1d84}{update\+\_\+reference\+\_\+coord\+\_\+from\+\_\+previous\+\_\+coord}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_a3bfc7927a186ee9c08269ab21092e45a}{update\+\_\+previous\+\_\+force\+\_\+for\+\_\+vertex}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_a7762a9de112a9e4eb36dadcd71ec11f3}{update\+\_\+previous\+\_\+energy\+\_\+for\+\_\+face}} (vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+vector$<$ double $>$ \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_ac7f8ecbe8438a9b70c6d37aafb77c5b7}{Force\+Scale}} (vector$<$ vector$<$ double $>$ $>$ \&\mbox{\hyperlink{classForce}{Force}})
+\item 
+double \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_a2b29dc55f7beb6eadf0071def8e4cef7}{calculate\+\_\+mean\+\_\+force}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_aae0b7de190a5c999235ae30f8215a2c8}{manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, Param \&param)
+\item 
+void \mbox{\hyperlink{append__functions__for__energy__force__calculation_8cpp_a3afa45ea1bb12964e30d25d384c7f8d9}{update\+\_\+vertex\+\_\+from\+\_\+\+Nonlinear\+Conjugate\+Gradient\+\_\+s0}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, double a, vector$<$ vector$<$ double $>$ $>$ \&\mbox{\hyperlink{classForce}{Force}}, Param \&param)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_a2b29dc55f7beb6eadf0071def8e4cef7}\label{append__functions__for__energy__force__calculation_8cpp_a2b29dc55f7beb6eadf0071def8e4cef7}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!calculate\_mean\_force@{calculate\_mean\_force}}
+\index{calculate\_mean\_force@{calculate\_mean\_force}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{calculate\_mean\_force()}{calculate\_mean\_force()}}
+{\footnotesize\ttfamily double calculate\+\_\+mean\+\_\+force (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_aacfd123fb6bf3d39786a1b252e1ab7ba}\label{append__functions__for__energy__force__calculation_8cpp_aacfd123fb6bf3d39786a1b252e1ab7ba}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!clear\_force\_on\_vertices\_and\_energy\_on\_faces@{clear\_force\_on\_vertices\_and\_energy\_on\_faces}}
+\index{clear\_force\_on\_vertices\_and\_energy\_on\_faces@{clear\_force\_on\_vertices\_and\_energy\_on\_faces}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{clear\_force\_on\_vertices\_and\_energy\_on\_faces()}{clear\_force\_on\_vertices\_and\_energy\_on\_faces()}}
+{\footnotesize\ttfamily void clear\+\_\+force\+\_\+on\+\_\+vertices\+\_\+and\+\_\+energy\+\_\+on\+\_\+faces (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_ac7f8ecbe8438a9b70c6d37aafb77c5b7}\label{append__functions__for__energy__force__calculation_8cpp_ac7f8ecbe8438a9b70c6d37aafb77c5b7}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!ForceScale@{ForceScale}}
+\index{ForceScale@{ForceScale}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{ForceScale()}{ForceScale()}}
+{\footnotesize\ttfamily vector$<$ double $>$ Force\+Scale (\begin{DoxyParamCaption}\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{Force }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_aae0b7de190a5c999235ae30f8215a2c8}\label{append__functions__for__energy__force__calculation_8cpp_aae0b7de190a5c999235ae30f8215a2c8}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!manage\_force\_for\_boundary\_ghost\_vertex@{manage\_force\_for\_boundary\_ghost\_vertex}}
+\index{manage\_force\_for\_boundary\_ghost\_vertex@{manage\_force\_for\_boundary\_ghost\_vertex}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{manage\_force\_for\_boundary\_ghost\_vertex()}{manage\_force\_for\_boundary\_ghost\_vertex()}}
+{\footnotesize\ttfamily void manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{Param \&}]{param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_a7f5f02102db027f677696b58d72f5a3a}\label{append__functions__for__energy__force__calculation_8cpp_a7f5f02102db027f677696b58d72f5a3a}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!update\_previous\_coord\_for\_vertex@{update\_previous\_coord\_for\_vertex}}
+\index{update\_previous\_coord\_for\_vertex@{update\_previous\_coord\_for\_vertex}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{update\_previous\_coord\_for\_vertex()}{update\_previous\_coord\_for\_vertex()}}
+{\footnotesize\ttfamily void update\+\_\+previous\+\_\+coord\+\_\+for\+\_\+vertex (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_a7762a9de112a9e4eb36dadcd71ec11f3}\label{append__functions__for__energy__force__calculation_8cpp_a7762a9de112a9e4eb36dadcd71ec11f3}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!update\_previous\_energy\_for\_face@{update\_previous\_energy\_for\_face}}
+\index{update\_previous\_energy\_for\_face@{update\_previous\_energy\_for\_face}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{update\_previous\_energy\_for\_face()}{update\_previous\_energy\_for\_face()}}
+{\footnotesize\ttfamily void update\+\_\+previous\+\_\+energy\+\_\+for\+\_\+face (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_a3bfc7927a186ee9c08269ab21092e45a}\label{append__functions__for__energy__force__calculation_8cpp_a3bfc7927a186ee9c08269ab21092e45a}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!update\_previous\_force\_for\_vertex@{update\_previous\_force\_for\_vertex}}
+\index{update\_previous\_force\_for\_vertex@{update\_previous\_force\_for\_vertex}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{update\_previous\_force\_for\_vertex()}{update\_previous\_force\_for\_vertex()}}
+{\footnotesize\ttfamily void update\+\_\+previous\+\_\+force\+\_\+for\+\_\+vertex (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_a640ce5fe9c85a83ec24c894db2db1d84}\label{append__functions__for__energy__force__calculation_8cpp_a640ce5fe9c85a83ec24c894db2db1d84}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!update\_reference\_coord\_from\_previous\_coord@{update\_reference\_coord\_from\_previous\_coord}}
+\index{update\_reference\_coord\_from\_previous\_coord@{update\_reference\_coord\_from\_previous\_coord}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{update\_reference\_coord\_from\_previous\_coord()}{update\_reference\_coord\_from\_previous\_coord()}}
+{\footnotesize\ttfamily void update\+\_\+reference\+\_\+coord\+\_\+from\+\_\+previous\+\_\+coord (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{append__functions__for__energy__force__calculation_8cpp_a3afa45ea1bb12964e30d25d384c7f8d9}\label{append__functions__for__energy__force__calculation_8cpp_a3afa45ea1bb12964e30d25d384c7f8d9}} 
+\index{append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}!update\_vertex\_from\_NonlinearConjugateGradient\_s0@{update\_vertex\_from\_NonlinearConjugateGradient\_s0}}
+\index{update\_vertex\_from\_NonlinearConjugateGradient\_s0@{update\_vertex\_from\_NonlinearConjugateGradient\_s0}!append\_functions\_for\_energy\_force\_calculation.cpp@{append\_functions\_for\_energy\_force\_calculation.cpp}}
+\doxysubsubsection{\texorpdfstring{update\_vertex\_from\_NonlinearConjugateGradient\_s0()}{update\_vertex\_from\_NonlinearConjugateGradient\_s0()}}
+{\footnotesize\ttfamily void update\+\_\+vertex\+\_\+from\+\_\+\+Nonlinear\+Conjugate\+Gradient\+\_\+s0 (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{double}]{a,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{Force,  }\item[{Param \&}]{param }\end{DoxyParamCaption})}
+

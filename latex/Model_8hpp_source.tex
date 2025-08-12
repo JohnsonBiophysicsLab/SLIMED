@@ -1,0 +1,72 @@
+\hypertarget{Model_8hpp_source}{}\doxysection{Model.\+hpp}
+\label{Model_8hpp_source}\index{include/Model.hpp@{include/Model.hpp}}
+\mbox{\hyperlink{Model_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Mesh_8hpp}{Mesh.hpp}}"{}}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Model_8hpp}{Model.hpp}}"{}}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Record_8hpp}{Record.hpp}}"{}}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}"{}}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Force_8hpp}{Force.hpp}}"{}}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00028\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classOptimizationAlgorithm}{OptimizationAlgorithm}}}
+\DoxyCodeLine{00029\ \{}
+\DoxyCodeLine{00030\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classOptimizationAlgorithm_a19e0b4e14a14e7e916085ddb4dc10dbd}{usingNCG}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classOptimizationAlgorithm_a1dab32f415e161f5ad9d0498062c912d}{isNCGstuck}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classOptimizationAlgorithm_af01490f826ddabac57e857dd72dc6085}{usingRpi}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classOptimizationAlgorithm_aef104ec704b12951af1939016bc076b0}{isCriteriaSatisfied}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_ab318fa9bfb1b5d31a1c7c64ec7c7eccb}{trialStepSize}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classOptimizationAlgorithm_aff2e3a82297050c504cd7119ec63df66}{trialIterationInterval}}\ =\ 50;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_ab1ceedba175edc55190ffa5ca22aff3b}{c1}}\ =\ 1e-\/4;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_a1b5aef24591fb8889a5cbdccaa661ec5}{c2}}\ =\ 0.1;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_ac7bcbefa309fecf015c4da4c35b28e0c}{stepThreshold}}\ =\ 1e-\/15;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classOptimizationAlgorithm_ab8c17b424b276c31d35015dc960de007}{nConsecutiveNcgStuck}}\ =\ 0;\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classOptimizationAlgorithm_a08f67c57c2ea1cffc199070d6d98a52f}{nConsecutiveNcgStuckThreshold}}\ =\ 8;\ }
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_a903ad145a8b81c533555cc95af9d5786}{energyDiffThreshold}}\ =\ 1e-\/3;\ \ \ \ \ }
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_acf679c2c21f3c2e474dc5165730be6f2}{forceDiffThreshold}}\ =\ 1e-\/2;\ \ \ \ \ \ }
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00051\ \ \ \ \ \mbox{\hyperlink{classOptimizationAlgorithm_a088280fde13c703f5615aea63b50da28}{OptimizationAlgorithm}}();}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00060\ \ \ \ \ \mbox{\hyperlink{classOptimizationAlgorithm_afca995b0bc1c4c71707fe2831121c4c0}{OptimizationAlgorithm}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classOptimizationAlgorithm_aff2e3a82297050c504cd7119ec63df66}{trialIterationInterval}},}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_ab1ceedba175edc55190ffa5ca22aff3b}{c1}},}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_a1b5aef24591fb8889a5cbdccaa661ec5}{c2}},}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classOptimizationAlgorithm_ac7bcbefa309fecf015c4da4c35b28e0c}{stepThreshold}});}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classOptimizationAlgorithm_ae9f8a4aee032f42c0e787733cd152aa9}{reset\_NCG\_Rpi}}();}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00084\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classOptimizationAlgorithm_a4e265432247340fe2e7c38eaf098af94}{disable\_NCG\_if\_stuck\_consecutively}}();}
+\DoxyCodeLine{00085\ \};}
+\DoxyCodeLine{00086\ }
+\DoxyCodeLine{00090\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classModel}{Model}}}
+\DoxyCodeLine{00091\ \{}
+\DoxyCodeLine{00092\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00093\ \ \ \ \ \textcolor{comment}{//\ Geometry,\ energy,\ and\ force}}
+\DoxyCodeLine{00094\ \ \ \ \ \mbox{\hyperlink{classMesh}{Mesh}}\&\ \mbox{\hyperlink{classModel_a71c5bc5c140ccf73b32e516908bdb780}{mesh}};\ \ \ \ \ }
+\DoxyCodeLine{00095\ \ \ \ \ \mbox{\hyperlink{classRecord}{Record}}\&\ \mbox{\hyperlink{classModel_af42bc28b7c6bb489bf71bb21f59a8912}{record}};\ }
+\DoxyCodeLine{00096\ \ \ \ \ \textcolor{comment}{//\ Optimization}}
+\DoxyCodeLine{00097\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classModel_af5b6157364a0fe7610b3b8ace65095aa}{iteration}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classModel_a3594da5a1ede2964c3f3becae5a553b1}{stepSize}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00099\ \ \ \ \ \mbox{\hyperlink{classOptimizationAlgorithm}{OptimizationAlgorithm}}\ \mbox{\hyperlink{classModel_a290f10d67b74dcfac182e9a5abd7ae31}{oa}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00100\ \ \ \ \ std::vector<Force>\ \mbox{\hyperlink{classModel_a39e556caad02cc7510ae157af0602d57}{ncgDirection0}};\ }
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00108\ \ \ \ \ \mbox{\hyperlink{classModel_aa903f67f485d09e5815b59aec7e63897}{Model}}(\mbox{\hyperlink{classMesh}{Mesh}}\ \&mesh\_,\ \mbox{\hyperlink{classRecord}{Record}}\ \&record\_);}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00121\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classModel_a7f90416049f50239b6c5969d6d515b8b}{should\_continue\_optimization}}();}
+\DoxyCodeLine{00122\ }
+\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classModel_ad8c4b04a27c60afdc2986fcbf340349b}{determine\_trial\_step\_size}}();}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00138\ \ \ \ \ std::string\ \mbox{\hyperlink{classModel_a13aec43d55c406aecdb69381a00da6ca}{to\_string\_current\_step}}();}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00148\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classModel_a0615dca43529762c6c2faf7a4b045964}{update\_ncg\_direction}}();}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00150\ \ \ \ \ \textcolor{comment}{//\ energy\ and\ force}}
+\DoxyCodeLine{00159\ \textcolor{comment}{}\ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classModel_a68dccc91b5766f9ea23c1fce192b63a8}{linear\_search\_for\_stepsize\_to\_minimize\_energy}}();}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00165\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classModel_a0dcc60b9238108d2d43c24a6df86ea02}{update\_vertex\_using\_NCG}}();}
+\DoxyCodeLine{00166\ \};}
+
+\end{DoxyCode}

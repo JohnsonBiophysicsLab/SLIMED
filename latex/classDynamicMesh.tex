@@ -1,0 +1,268 @@
+\hypertarget{classDynamicMesh}{}\doxysection{Dynamic\+Mesh Class Reference}
+\label{classDynamicMesh}\index{DynamicMesh@{DynamicMesh}}
+
+
+A class representing a dynamic mesh.  
+
+
+
+
+{\ttfamily \#include $<$Dynamics.\+hpp$>$}
+
+Inheritance diagram for Dynamic\+Mesh\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classDynamicMesh}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classDynamicMesh_a2645f64e9f57420cdb7d4371229ead73}{Dynamic\+Mesh}} (\mbox{\hyperlink{structParam}{Param}} \&src\+Param)
+\begin{DoxyCompactList}\small\item\em Construct a new Dynamic \mbox{\hyperlink{classMesh}{Mesh}} object. Calls the parent constructor Mesh\+::\+Mesh(src\+Param). \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classDynamicMesh_aab771f9438974285e84848183c2a995f}{setup\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Overloads the setup\+\_\+flat in superclass \mbox{\hyperlink{classMesh}{Mesh}}. Add functionality to assign mesh2surface and surface2mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classDynamicMesh_a6aafcb958f1025e72ccd54645ca2cd84}{assign\+\_\+mesh2surface}} ()
+\begin{DoxyCompactList}\small\item\em Assign the mesh2surface member. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classDynamicMesh_a013dfec614038a1f8fb698d513e30749}{update\+\_\+vertices\+\_\+mat\+\_\+with\+\_\+vector}} ()
+\begin{DoxyCompactList}\small\item\em Updates the vertices matrix using the values from the vertices vector. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classDynamicMesh_a7211c963b65e06b235b3e4dd1c5fd7ef}{update\+\_\+vertices\+\_\+vector\+\_\+with\+\_\+mat}} ()
+\begin{DoxyCompactList}\small\item\em Updates the vertices vector using the values from the vertices matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classDynamicMesh_a7d18117779c2f559cc914a3b613317e3}{postprocess\+\_\+ghost\+\_\+periodic}} ()
+\begin{DoxyCompactList}\small\item\em Post process ghost vertices in case of periodic boundary condition. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions inherited from \mbox{\hyperlink{classMesh}{Mesh}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMesh_a0685f9dfb74d633c092886d56afffb6e}{Mesh}} (\mbox{\hyperlink{structParam}{Param}} \&src\+Param)
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classMesh}{Mesh}} object with parameters. Initialize vertices and faces with other functions like set\+Vertices\+Flat. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMesh_aaab78f3a30742a937d9a387287ce323c}{Mesh}} (const std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&src\+Vertices, const std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&src\+Faces, \mbox{\hyperlink{structParam}{Param}} \&src\+Param) \+\_\+\+\_\+attribute\+\_\+\+\_\+((deprecated(\char`\"{}Initialize with \mbox{\hyperlink{classMesh}{Mesh}}(\mbox{\hyperlink{structParam}{Param}} \&src\+Param) and setup with \mbox{\hyperlink{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}{setup\+\_\+from\+\_\+vertices\+\_\+faces}} instead.\char`\"{})))
+\begin{DoxyCompactList}\small\item\em Construct a new mesh object with given vertices, faces, and parameters. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_affdc2aaee5e4762f56c6637b16506f2d}{setup\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Initialize halfedges based on the mesh\textquotesingle{}s vertices and faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}{setup\+\_\+from\+\_\+vertices\+\_\+faces}} (const std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&vertices\+Data, const std\+::vector$<$ std\+::vector$<$ int $>$ $>$ \&faces\+Data)
+\begin{DoxyCompactList}\small\item\em Initialize membrane with arbitrary vertices and faces imported from files. Sets up the membrane from data and then call\+: (1) this-\/\texorpdfstring{$>$}{>}set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted (2) this-\/\texorpdfstring{$>$}{>}determine\+\_\+ghost\+\_\+vertices\+\_\+faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a99b21ba1a874da6dc75cfa473d02a747}{set\+\_\+axes\+\_\+division\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Divide x,y axis to nx$\ast$dx (number of faces times length of each face) and ny$\ast$dy based on X, Y side length of the mesh and side length of faces in parameter. Note\+: \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ac531dabf200ff831464999c03f345707}{set\+\_\+vertices\+\_\+faces\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Set vertices and faces according to mesh and face side lengths in param for flat mesh. This also sets adjacent vertices of faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_aed33be097663033bc75853c33c3333ed}{set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted}} ()
+\begin{DoxyCompactList}\small\item\em Set adjacent\+Faces properties based on the current vertices and mesh. Sort the adjacent vertices so that the adjacent vertices property of vertices follow the counterclockwise order and therefore the the adjacent faces with index number difference of one are adjacent to each other. This sorting streamlines the shapefunction calculation. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a3701b70db1a2940cbda09d8d8ae36dc0}{set\+\_\+adjacent\+\_\+vertices\+\_\+of\+\_\+vertices\+\_\+sorted}} ()
+\begin{DoxyCompactList}\small\item\em Set adjacent\+Vertices of vertices based on current mesh. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classMesh_ae93250c015872ef461069e436ec0d7be}{find\+\_\+opposite\+\_\+node\+\_\+index}} (const int \&node1, const int \&node2, const int \&node3)
+\begin{DoxyCompactList}\small\item\em Find the vertex that is adjacent to node1 and node2 but not node3. Particularly, when the three nodes are vertices of a triangle, then the function returns the the index of node4 that forms a parallegram with 1-\/\texorpdfstring{$>$}{>}3-\/\texorpdfstring{$>$}{>}2-\/\texorpdfstring{$>$}{>}4. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a83c95e1c6ae386b81d44558273b10a1e}{set\+\_\+one\+\_\+ring\+\_\+vertices\+\_\+sorted}} ()
+\begin{DoxyCompactList}\small\item\em find out the one-\/ring vertices aound face\+\_\+i. It should be 12 for the flat surface because we set it up only with regular patch. The boundary faces do not have complete one-\/ring, neither it will be called in the code, so no need to store their one-\/ring-\/vertex \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_aef5bfdb2d69c0d217dff5b1fd83ed0f5}{determine\+\_\+boundary\+\_\+vertices\+\_\+faces}} ()
+\begin{DoxyCompactList}\small\item\em Iterate through vertices and faces and set the is\+Boundary\} property of boundary vertices and faces to true\}. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a744de61088daa25cc58ae32c07020e5d}{determine\+\_\+ghost\+\_\+vertices\+\_\+faces}} ()
+\begin{DoxyCompactList}\small\item\em Iterate through vertices and faces and set the is\+Ghost property of ghost vertices and face to true. The number of layers of ghost vertices in a flat membrane is dependent upon the boundary conditions\+: free boundary condition has 1 layer of ghost vertices and faces while periodic bounary condition has 3 layers of ghost vertices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ae03d9aefdf5b321200fc4f1a6354c1c8}{set\+\_\+insertion\+\_\+patch}} (const vector$<$ vector$<$ int $>$ $>$ \&insertion\+Patch)
+\begin{DoxyCompactList}\small\item\em Sets the is\+Insertion\+Patch flag for each face in the insertion patch. This also sets with spontaneous curvature after setting the flag with set\+\_\+spontaneous\+\_\+curvature\+\_\+for\+\_\+face function. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ae3c686d28a291b262ca1c026dba2e817}{set\+\_\+spontaneous\+\_\+curvature\+\_\+for\+\_\+face}} (const double \&insert\+Curv, const double \&spont\+Curv)
+\begin{DoxyCompactList}\small\item\em Sets the spontaneous curvature for each face in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a0acaf454a27868a6ed2ff0ddf4aff64e}{calculate\+\_\+element\+\_\+area\+\_\+volume}} ()
+\begin{DoxyCompactList}\small\item\em Calculates the area and volume of each element in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_acbf7a146011c884429c5d5009850d834}{sum\+\_\+membrane\+\_\+area\+\_\+and\+\_\+volume}} (double \&area, double \&volume)
+\begin{DoxyCompactList}\small\item\em This function calculates the total membrane area and volume of non-\/ghost faces in a given set of faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_afe3b6819bae35b86e80ba1c4104c8269}{Compute\+\_\+\+Energy\+\_\+\+And\+\_\+\+Force}} ()
+\begin{DoxyCompactList}\small\item\em Computes the energy and force on each vertex and face of the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ab3e3994d78b0224d9759fe4ed4b4c6d5}{element\+\_\+energy\+\_\+force\+\_\+regular}} (const std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&coord\+One\+Ring\+Vertices, \mbox{\hyperlink{classFace}{Face}} \&face, const double spont\+Curv, double \&mean\+Curv, \mbox{\hyperlink{classMatrix}{Matrix}} \&norm\+Vector, double \&e\+Bend, \mbox{\hyperlink{classMatrix}{Matrix}} \&f\+Bend, \mbox{\hyperlink{classMatrix}{Matrix}} \&f\+Area, \mbox{\hyperlink{classMatrix}{Matrix}} \&f\+Volume)
+\begin{DoxyCompactList}\small\item\em The purpose of this function is to calculate the energy and forces for a regular element of a given mesh using the provided information about the element and its one-\/ring neighborhood. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a290b3c7dd1e39da6095b5d12da1b2c8c}{energy\+\_\+force\+\_\+regularization}} ()
+\begin{DoxyCompactList}\small\item\em Calculates the regularization energy and force for each face. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a5818bb84a71e7d6e4da2cd0a2da96cfb}{manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex}} ()
+\begin{DoxyCompactList}\small\item\em Manages forces depending on different boundary conditions. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_a0d9a489b9658c52c771d8aeb86761cff}{get\+\_\+max\+\_\+force\+\_\+magnitude}} ()
+\begin{DoxyCompactList}\small\item\em Get the max force scale of vertices.\+force.\+get\+\_\+total\+\_\+force\+\_\+magnitude() \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_ae709a12efd5127a80c9e53298d175b8b}{calculate\+\_\+mean\+\_\+force}} ()
+\begin{DoxyCompactList}\small\item\em Get the mean force magnitude on all vertices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ace8f4f14e01b2dc240eedb9ea4d71ff8}{update\+\_\+previous\+\_\+coord\+\_\+for\+\_\+vertex}} ()
+\begin{DoxyCompactList}\small\item\em This function updates the coord\+Prev member variable for each vertex in the mesh. It does this by copying the current value of coord to coord\+Prev. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a3789d9eb9e117406a17167c3b9cee1e4}{update\+\_\+reference\+\_\+coord\+\_\+from\+\_\+previous\+\_\+coord}} ()
+\begin{DoxyCompactList}\small\item\em Update the reference coordinates for each vertex in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a195aba6e11cd1d7a55604c2c337d65c4}{update\+\_\+previous\+\_\+force\+\_\+for\+\_\+vertex}} ()
+\begin{DoxyCompactList}\small\item\em Update the previous force vectors for each vertex in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a79e83327f9919ee1de80e19f0f3e38a6}{update\+\_\+previous\+\_\+energy\+\_\+for\+\_\+face}} ()
+\begin{DoxyCompactList}\small\item\em Update the previous energy values for each face in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a742357b9318965689249acd31601642e}{clear\+\_\+force\+\_\+on\+\_\+vertices\+\_\+and\+\_\+energy\+\_\+on\+\_\+faces}} ()
+\begin{DoxyCompactList}\small\item\em this function sets the force member variable of each vertex, and the energy member variable of each face to their default values. This is useful to clear out any residual forces or energies before computing new ones. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classMesh_a0dbefd57ee3d41858d212263d1dc8024}{move\+\_\+vertices\+\_\+based\+\_\+on\+\_\+scaffolding}} (bool fix\+Dir=true)
+\begin{DoxyCompactList}\small\item\em This method takes in the vector of spline point and calculate the average coordinates. Based on the difference between spline points and mesh vertices, a difference vector is calculated and compared to the target bond length. (Supposed only in Z direction). Afterwards, all the mesh points are moved in the direction of the target difference vector. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a6e11a64d5b45a2ce39b70325f7ff9a4e}{set\+\_\+scaffolding\+\_\+vertices\+\_\+correspondence}} ()
+\begin{DoxyCompactList}\small\item\em Get a vector of indexes of vertices that are closest to the scaffolding\+Points vector provided. Then set the param.\+scaffolding\+Points\+\_\+corresponding\+Vertex\+Index\} to represent the vertices bonded with each scaffolding point. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_a9d4290cf23bd9694e577e9ba73990df3}{calculate\+\_\+scaffolding\+\_\+energy\+\_\+force}} (bool do\+Local\+Search)
+\begin{DoxyCompactList}\small\item\em Calculates the energy and force due to the harmonic bond between scaffold points and membrane vertices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a5bb6aca91c6fbd690653536eced038bf}{write\+\_\+faces\+\_\+csv}} (const std\+::string \&outfile\+\_\+name)
+\begin{DoxyCompactList}\small\item\em Writes a csv file containing the adjacent vertices for each face in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a24565ddc787b2fd6c78fc8715c5bbd0a}{write\+\_\+vertices\+\_\+csv}} (const std\+::string \&outfile\+\_\+name)
+\begin{DoxyCompactList}\small\item\em Writes a csv file containing the coordinates of each vertex in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ac641af43730870056e0ba395856a771a}{write\+\_\+vertices\+\_\+csv\+\_\+with\+\_\+type}} (const std\+::string \&outfile\+\_\+name)
+\begin{DoxyCompactList}\small\item\em Writes a csv file containing the coordinates and types of each vertex in the mesh. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classDynamicMesh_a0da7485c97570d1945da13f50cf89570}{mesh2surface}}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classDynamicMesh_aa27e9f6f3b04928e6c8a7a6d3c43e4ad}{surface2mesh}}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classDynamicMesh_a55cd83fbd8c6cdcffb59ea24c28f3537}{mat\+Mesh}}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classDynamicMesh_a54946d4b69db8a53ff82550ef5a8263c}{mat\+Surface}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes inherited from \mbox{\hyperlink{classMesh}{Mesh}}}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \mbox{\hyperlink{classMesh_a6465a888c97232a39e12aad008c969c3}{vertices}}
+\begin{DoxyCompactList}\small\item\em Vector to store all vertices in the mesh. \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \mbox{\hyperlink{classMesh_a9da199719905f2b213f8c0c8feba2d1f}{faces}}
+\begin{DoxyCompactList}\small\item\em Vector to store all faces in the mesh. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structParam}{Param}} \& \mbox{\hyperlink{classMesh_ae2ce6a4fa3c43202516e8de3504478bc}{param}}
+\begin{DoxyCompactList}\small\item\em Object of the \mbox{\hyperlink{structParam}{Param}} class containing all necessary parameters for building the \mbox{\hyperlink{classMesh}{Mesh}} object. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{classDynamicMesh_af004fdce97e6ac0117071bdc473d430c}{get\+\_\+relative\+\_\+pt\+\_\+periodic}} (int i, int n, int m)
+\begin{DoxyCompactList}\small\item\em calculate real point relative to the given ghost point (index(real) -\/ index(given)) in periodic boundary condition returns 0 if real point (not on 4th ring) given an arbitrary real point is chosen if given 4th \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Member Functions inherited from \mbox{\hyperlink{classMesh}{Mesh}}}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classMesh_a1820a26272a1ce4209a30032908c92d4}{enumerate\+\_\+gauss\+\_\+quadrature\+\_\+point\+\_\+area\+\_\+volume}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&dots, double \&area, double \&volume)
+\begin{DoxyCompactList}\small\item\em Private member used in calculating element area volume\+: Calculates the area and volume at a Gauss quadrature point for a given set of shape functions and dots. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classMesh_a43e1893669c41ee154462ceb0518a6b0}{get\+\_\+one\+\_\+ring\+\_\+vertex\+\_\+matrix}} (const \mbox{\hyperlink{classFace}{Face}} \&face)
+\begin{DoxyCompactList}\small\item\em Private member used in calculating element area volume\+: Computes a matrix containing the coordinates of the one-\/ring vertices for the input face. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_a3a166003a4f1e86bbedfa5ee6867ff0d}{get\+\_\+squared\+\_\+distance\+\_\+sp\+\_\+and\+\_\+v}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&scaffolding\+Point, const \mbox{\hyperlink{classVertex}{Vertex}} \&vertex)
+\begin{DoxyCompactList}\small\item\em Private member used in calculating correspondence between scaffolding points and vertices Calculate the squared distance between two points denoted by (3,1) \mbox{\hyperlink{classMatrix}{Matrix}} and \mbox{\hyperlink{classVertex}{Vertex}} respectively. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A class representing a dynamic mesh. 
+
+This class inherits from the \mbox{\hyperlink{classMesh}{Mesh}} class and adds functionality to simulate the mesh dynamically. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classDynamicMesh_a2645f64e9f57420cdb7d4371229ead73}\label{classDynamicMesh_a2645f64e9f57420cdb7d4371229ead73}} 
+\index{DynamicMesh@{DynamicMesh}!DynamicMesh@{DynamicMesh}}
+\index{DynamicMesh@{DynamicMesh}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{DynamicMesh()}{DynamicMesh()}}
+{\footnotesize\ttfamily Dynamic\+Mesh\+::\+Dynamic\+Mesh (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{src\+Param }\end{DoxyParamCaption})}
+
+
+
+Construct a new Dynamic \mbox{\hyperlink{classMesh}{Mesh}} object. Calls the parent constructor Mesh\+::\+Mesh(src\+Param). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em src\+Param} & \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classDynamicMesh_a6aafcb958f1025e72ccd54645ca2cd84}\label{classDynamicMesh_a6aafcb958f1025e72ccd54645ca2cd84}} 
+\index{DynamicMesh@{DynamicMesh}!assign\_mesh2surface@{assign\_mesh2surface}}
+\index{assign\_mesh2surface@{assign\_mesh2surface}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{assign\_mesh2surface()}{assign\_mesh2surface()}}
+{\footnotesize\ttfamily void Dynamic\+Mesh\+::assign\+\_\+mesh2surface (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Assign the mesh2surface member. 
+
+Assign values to mesh2surface matrix that convertes mesh to surface point matrix. \mbox{\Hypertarget{classDynamicMesh_af004fdce97e6ac0117071bdc473d430c}\label{classDynamicMesh_af004fdce97e6ac0117071bdc473d430c}} 
+\index{DynamicMesh@{DynamicMesh}!get\_relative\_pt\_periodic@{get\_relative\_pt\_periodic}}
+\index{get\_relative\_pt\_periodic@{get\_relative\_pt\_periodic}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{get\_relative\_pt\_periodic()}{get\_relative\_pt\_periodic()}}
+{\footnotesize\ttfamily int Dynamic\+Mesh\+::get\+\_\+relative\+\_\+pt\+\_\+periodic (\begin{DoxyParamCaption}\item[{int}]{i,  }\item[{int}]{n,  }\item[{int}]{m }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+calculate real point relative to the given ghost point (index(real) -\/ index(given)) in periodic boundary condition returns 0 if real point (not on 4th ring) given an arbitrary real point is chosen if given 4th 
+
+
+\begin{DoxyParams}{Parameters}
+{\em i} & \\
+\hline
+{\em n} & \\
+\hline
+{\em m} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+int 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDynamicMesh_a7d18117779c2f559cc914a3b613317e3}\label{classDynamicMesh_a7d18117779c2f559cc914a3b613317e3}} 
+\index{DynamicMesh@{DynamicMesh}!postprocess\_ghost\_periodic@{postprocess\_ghost\_periodic}}
+\index{postprocess\_ghost\_periodic@{postprocess\_ghost\_periodic}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{postprocess\_ghost\_periodic()}{postprocess\_ghost\_periodic()}}
+{\footnotesize\ttfamily void Dynamic\+Mesh\+::postprocess\+\_\+ghost\+\_\+periodic (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Post process ghost vertices in case of periodic boundary condition. 
+
+\begin{DoxyNote}{Note}
+This function does not have check for PBC -\/ it assumes the model is in PBC! 
+\end{DoxyNote}
+\mbox{\Hypertarget{classDynamicMesh_aab771f9438974285e84848183c2a995f}\label{classDynamicMesh_aab771f9438974285e84848183c2a995f}} 
+\index{DynamicMesh@{DynamicMesh}!setup\_flat@{setup\_flat}}
+\index{setup\_flat@{setup\_flat}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{setup\_flat()}{setup\_flat()}}
+{\footnotesize\ttfamily void Dynamic\+Mesh\+::setup\+\_\+flat (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Overloads the setup\+\_\+flat in superclass \mbox{\hyperlink{classMesh}{Mesh}}. Add functionality to assign mesh2surface and surface2mesh. 
+
+\mbox{\Hypertarget{classDynamicMesh_a013dfec614038a1f8fb698d513e30749}\label{classDynamicMesh_a013dfec614038a1f8fb698d513e30749}} 
+\index{DynamicMesh@{DynamicMesh}!update\_vertices\_mat\_with\_vector@{update\_vertices\_mat\_with\_vector}}
+\index{update\_vertices\_mat\_with\_vector@{update\_vertices\_mat\_with\_vector}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{update\_vertices\_mat\_with\_vector()}{update\_vertices\_mat\_with\_vector()}}
+{\footnotesize\ttfamily void Dynamic\+Mesh\+::update\+\_\+vertices\+\_\+mat\+\_\+with\+\_\+vector (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Updates the vertices matrix using the values from the vertices vector. 
+
+\mbox{\Hypertarget{classDynamicMesh_a7211c963b65e06b235b3e4dd1c5fd7ef}\label{classDynamicMesh_a7211c963b65e06b235b3e4dd1c5fd7ef}} 
+\index{DynamicMesh@{DynamicMesh}!update\_vertices\_vector\_with\_mat@{update\_vertices\_vector\_with\_mat}}
+\index{update\_vertices\_vector\_with\_mat@{update\_vertices\_vector\_with\_mat}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{update\_vertices\_vector\_with\_mat()}{update\_vertices\_vector\_with\_mat()}}
+{\footnotesize\ttfamily void Dynamic\+Mesh\+::update\+\_\+vertices\+\_\+vector\+\_\+with\+\_\+mat (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Updates the vertices vector using the values from the vertices matrix. 
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classDynamicMesh_a55cd83fbd8c6cdcffb59ea24c28f3537}\label{classDynamicMesh_a55cd83fbd8c6cdcffb59ea24c28f3537}} 
+\index{DynamicMesh@{DynamicMesh}!matMesh@{matMesh}}
+\index{matMesh@{matMesh}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{matMesh}{matMesh}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Dynamic\+Mesh\+::mat\+Mesh}
+
+\mbox{\Hypertarget{classDynamicMesh_a54946d4b69db8a53ff82550ef5a8263c}\label{classDynamicMesh_a54946d4b69db8a53ff82550ef5a8263c}} 
+\index{DynamicMesh@{DynamicMesh}!matSurface@{matSurface}}
+\index{matSurface@{matSurface}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{matSurface}{matSurface}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Dynamic\+Mesh\+::mat\+Surface}
+
+\mbox{\Hypertarget{classDynamicMesh_a0da7485c97570d1945da13f50cf89570}\label{classDynamicMesh_a0da7485c97570d1945da13f50cf89570}} 
+\index{DynamicMesh@{DynamicMesh}!mesh2surface@{mesh2surface}}
+\index{mesh2surface@{mesh2surface}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{mesh2surface}{mesh2surface}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Dynamic\+Mesh\+::mesh2surface}
+
+\mbox{\Hypertarget{classDynamicMesh_aa27e9f6f3b04928e6c8a7a6d3c43e4ad}\label{classDynamicMesh_aa27e9f6f3b04928e6c8a7a6d3c43e4ad}} 
+\index{DynamicMesh@{DynamicMesh}!surface2mesh@{surface2mesh}}
+\index{surface2mesh@{surface2mesh}!DynamicMesh@{DynamicMesh}}
+\doxysubsubsection{\texorpdfstring{surface2mesh}{surface2mesh}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Dynamic\+Mesh\+::surface2mesh}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Dynamics_8hpp}{Dynamics.\+hpp}}\end{DoxyCompactItemize}

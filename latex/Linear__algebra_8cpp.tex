@@ -1,0 +1,298 @@
+\hypertarget{Linear__algebra_8cpp}{}\doxysection{src/linear\+\_\+algebra/\+Linear\+\_\+algebra.cpp File Reference}
+\label{Linear__algebra_8cpp}\index{src/linear\_algebra/Linear\_algebra.cpp@{src/linear\_algebra/Linear\_algebra.cpp}}
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Matrix.\+h\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_af45abfc5a0e5e23d8aabcea64c339312}{mat\+\_\+calloc}} (const int \&nrow, const int \&ncol)
+\begin{DoxyCompactList}\small\item\em This function allocates a new \mbox{\hyperlink{classMatrix}{Matrix}} object with the specified number of rows and columns, and initializes all elements to zero. \end{DoxyCompactList}\item 
+std\+::ostream \& \mbox{\hyperlink{Linear__algebra_8cpp_a391be9262318fa95cf1c7c21d0afa0f9}{operator$<$$<$}} (std\+::ostream \&stream, const \mbox{\hyperlink{classMatrix}{Matrix}} \&matrix)
+\begin{DoxyCompactList}\small\item\em Bit push all element of a matrix in the format of\+: \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_ac7cdf03a80923323fe403b5c49cc2fb7}{operator+=}} (\mbox{\hyperlink{classMatrix}{Matrix}} m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two gsl\+\_\+matrix pointers as arguments and adds the elements of the second matrix to the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. Note that this implementation modifies the first matrix in place, rather than creating a new matrix. If you want to create a new matrix instead, you could modify the implementation accordingly. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_aa5a9f2db2b3c1862c9c0d19241239ce7}{operator+}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have the same dimensions and allocates memory for the result of the addition. It then adds the matrices element-\/wise and stores the result in a newly allocated matrix result, which is then returned. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a5fd9d7bbd3d0f6705602c834efb42abe}{operator-\/=}} (\mbox{\hyperlink{classMatrix}{Matrix}} m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two gsl\+\_\+matrix pointers as arguments and subtract the elements of the second matrix from the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. Note that this implementation modifies the first matrix in place, rather than creating a new matrix. If you want to create a new matrix instead, you could modify the implementation accordingly. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a52ad5ef4b9998529c85e8523c20d6b86}{operator-\/}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have the same dimensions and allocates memory for the result of the subtraction. It then adds the matrices element-\/wise and stores the result in a newly allocated matrix result, which is then returned. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a1762f6addafe53aa8169c3da731adfc0}{operator$\ast$=}} (\mbox{\hyperlink{classMatrix}{Matrix}} mat, const double \&scalar)
+\begin{DoxyCompactList}\small\item\em This implementation uses the gsl\+\_\+matrix\+\_\+scale function to scale each element in the matrix by the scalar value. The function returns the modified matrix, which allows for method chaining when using the $\ast$= operator. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_ac1628fdfaebf401b1cbc5116540ba779}{operator$\ast$}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&matrix, const double \&scalar)
+\begin{DoxyCompactList}\small\item\em This operator takes a double scalar and a matrix as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the scalar. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a64c608ba3c31fd9088fd759188ae2c1a}{operator$\ast$}} (const double \&scalar, const \mbox{\hyperlink{classMatrix}{Matrix}} \&matrix)
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a24933f0942a63359419a41373a017c73}{operator$\ast$=}} (\mbox{\hyperlink{classMatrix}{Matrix}} m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a temporary matrix, which is then copied back into m1. Finally, the temporary memory is freed before returning m1. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a24da5fd1a21f5010ee32de71af9be3b9}{operator$\ast$}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a newly allocated matrix result, which is then returned. The temporary memory is not freed here, and it is the responsibility of the caller to free the memory once the result is no longer needed. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_aed5a7001ababed63208a5f37d4da8a6e}{dot}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a7012ee7a2db0347dc7724359e975fa80}{operator/=}} (\mbox{\hyperlink{classMatrix}{Matrix}} mat, const double \&scalar)
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a287766f48ce1537b4789b890515572cb}{operator/}} (\mbox{\hyperlink{classMatrix}{Matrix}} matrix, const double \&scalar)
+\begin{DoxyCompactList}\small\item\em This operator takes a double scalar and a matrix as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by 1/scalar. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{Linear__algebra_8cpp_a16f2d841a7bbc07c6ed264848e532536}{dot\+\_\+col}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two column vectors as arguments and returns their dot product as double. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{Linear__algebra_8cpp_a1321d248693d484c54370beae277e19d}{dot\+\_\+row}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two row vectors as arguments and returns their dot product as double. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a74ef398ea342aaaa6bef5128e9bf15a8}{cross\+\_\+col}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two column vectors as arguments and returns their cross product as a new column vector. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{Linear__algebra_8cpp_a8c3bf9ef46fde8b009e48d735c668d93}{cross\+\_\+row}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two row vectors as arguments and returns their cross product as a new row vector. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a74ef398ea342aaaa6bef5128e9bf15a8}\label{Linear__algebra_8cpp_a74ef398ea342aaaa6bef5128e9bf15a8}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!cross\_col@{cross\_col}}
+\index{cross\_col@{cross\_col}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{cross\_col()}{cross\_col()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} cross\+\_\+col (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two column vectors as arguments and returns their cross product as a new column vector. 
+
+\begin{DoxyNote}{Note}
+Note that this implementation assumes that the input matrices are already column vectors, so no additional transposition is necessary. 
+\end{DoxyNote}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a8c3bf9ef46fde8b009e48d735c668d93}\label{Linear__algebra_8cpp_a8c3bf9ef46fde8b009e48d735c668d93}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!cross\_row@{cross\_row}}
+\index{cross\_row@{cross\_row}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{cross\_row()}{cross\_row()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} cross\+\_\+row (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two row vectors as arguments and returns their cross product as a new row vector. 
+
+\begin{DoxyNote}{Note}
+Note that this implementation assumes that the input matrices are already row vectors, so no additional transposition is necessary. 
+\end{DoxyNote}
+\mbox{\Hypertarget{Linear__algebra_8cpp_aed5a7001ababed63208a5f37d4da8a6e}\label{Linear__algebra_8cpp_aed5a7001ababed63208a5f37d4da8a6e}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!dot@{dot}}
+\index{dot@{dot}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{dot()}{dot()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} dot (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_a16f2d841a7bbc07c6ed264848e532536}\label{Linear__algebra_8cpp_a16f2d841a7bbc07c6ed264848e532536}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!dot\_col@{dot\_col}}
+\index{dot\_col@{dot\_col}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{dot\_col()}{dot\_col()}}
+{\footnotesize\ttfamily double dot\+\_\+col (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two column vectors as arguments and returns their dot product as double. 
+
+\begin{DoxyNote}{Note}
+Note that this implementation assumes that the input matrices are already column vectors, so no additional transposition is necessary. 
+\end{DoxyNote}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a1321d248693d484c54370beae277e19d}\label{Linear__algebra_8cpp_a1321d248693d484c54370beae277e19d}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!dot\_row@{dot\_row}}
+\index{dot\_row@{dot\_row}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{dot\_row()}{dot\_row()}}
+{\footnotesize\ttfamily double dot\+\_\+row (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two row vectors as arguments and returns their dot product as double. 
+
+\begin{DoxyNote}{Note}
+Note that this implementation converts the row vectors into column vectors before computing the dot product. 
+\end{DoxyNote}
+\mbox{\Hypertarget{Linear__algebra_8cpp_af45abfc5a0e5e23d8aabcea64c339312}\label{Linear__algebra_8cpp_af45abfc5a0e5e23d8aabcea64c339312}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!mat\_calloc@{mat\_calloc}}
+\index{mat\_calloc@{mat\_calloc}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{mat\_calloc()}{mat\_calloc()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} mat\+\_\+calloc (\begin{DoxyParamCaption}\item[{const int \&}]{nrow,  }\item[{const int \&}]{ncol }\end{DoxyParamCaption})}
+
+
+
+This function allocates a new \mbox{\hyperlink{classMatrix}{Matrix}} object with the specified number of rows and columns, and initializes all elements to zero. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em nrow} & \\
+\hline
+{\em ncol} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a64c608ba3c31fd9088fd759188ae2c1a}\label{Linear__algebra_8cpp_a64c608ba3c31fd9088fd759188ae2c1a}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator$\ast$ (\begin{DoxyParamCaption}\item[{const double \&}]{scalar,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_a24da5fd1a21f5010ee32de71af9be3b9}\label{Linear__algebra_8cpp_a24da5fd1a21f5010ee32de71af9be3b9}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator$\ast$ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a newly allocated matrix result, which is then returned. The temporary memory is not freed here, and it is the responsibility of the caller to free the memory once the result is no longer needed. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & \\
+\hline
+{\em m2} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Linear__algebra_8cpp_ac1628fdfaebf401b1cbc5116540ba779}\label{Linear__algebra_8cpp_ac1628fdfaebf401b1cbc5116540ba779}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator$\ast$ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{matrix,  }\item[{const double \&}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This operator takes a double scalar and a matrix as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the scalar. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scalar} & \\
+\hline
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a24933f0942a63359419a41373a017c73}\label{Linear__algebra_8cpp_a24933f0942a63359419a41373a017c73}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator$\ast$=@{operator$\ast$=}}
+\index{operator$\ast$=@{operator$\ast$=}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$=()}{operator*=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator$\ast$= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}}}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a temporary matrix, which is then copied back into m1. Finally, the temporary memory is freed before returning m1. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & \\
+\hline
+{\em m2} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a1762f6addafe53aa8169c3da731adfc0}\label{Linear__algebra_8cpp_a1762f6addafe53aa8169c3da731adfc0}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator$\ast$=@{operator$\ast$=}}
+\index{operator$\ast$=@{operator$\ast$=}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$=()}{operator*=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator$\ast$= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}}}]{mat,  }\item[{const double \&}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This implementation uses the gsl\+\_\+matrix\+\_\+scale function to scale each element in the matrix by the scalar value. The function returns the modified matrix, which allows for method chaining when using the $\ast$= operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mat} & \\
+\hline
+{\em scalar} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Linear__algebra_8cpp_aa5a9f2db2b3c1862c9c0d19241239ce7}\label{Linear__algebra_8cpp_aa5a9f2db2b3c1862c9c0d19241239ce7}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator+@{operator+}}
+\index{operator+@{operator+}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator+()}{operator+()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator+ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have the same dimensions and allocates memory for the result of the addition. It then adds the matrices element-\/wise and stores the result in a newly allocated matrix result, which is then returned. 
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_ac7cdf03a80923323fe403b5c49cc2fb7}\label{Linear__algebra_8cpp_ac7cdf03a80923323fe403b5c49cc2fb7}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator+=()}{operator+=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator+= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}}}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two gsl\+\_\+matrix pointers as arguments and adds the elements of the second matrix to the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. Note that this implementation modifies the first matrix in place, rather than creating a new matrix. If you want to create a new matrix instead, you could modify the implementation accordingly. 
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_a52ad5ef4b9998529c85e8523c20d6b86}\label{Linear__algebra_8cpp_a52ad5ef4b9998529c85e8523c20d6b86}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator-\/@{operator-\/}}
+\index{operator-\/@{operator-\/}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator-\/()}{operator-()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator-\/ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have the same dimensions and allocates memory for the result of the subtraction. It then adds the matrices element-\/wise and stores the result in a newly allocated matrix result, which is then returned. 
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_a5fd9d7bbd3d0f6705602c834efb42abe}\label{Linear__algebra_8cpp_a5fd9d7bbd3d0f6705602c834efb42abe}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator-\/=@{operator-\/=}}
+\index{operator-\/=@{operator-\/=}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator-\/=()}{operator-=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator-\/= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}}}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two gsl\+\_\+matrix pointers as arguments and subtract the elements of the second matrix from the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. Note that this implementation modifies the first matrix in place, rather than creating a new matrix. If you want to create a new matrix instead, you could modify the implementation accordingly. 
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_a287766f48ce1537b4789b890515572cb}\label{Linear__algebra_8cpp_a287766f48ce1537b4789b890515572cb}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator/@{operator/}}
+\index{operator/@{operator/}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator/()}{operator/()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator/ (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}}}]{matrix,  }\item[{const double \&}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This operator takes a double scalar and a matrix as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by 1/scalar. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scalar} & \\
+\hline
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Linear__algebra_8cpp_a7012ee7a2db0347dc7724359e975fa80}\label{Linear__algebra_8cpp_a7012ee7a2db0347dc7724359e975fa80}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator/=@{operator/=}}
+\index{operator/=@{operator/=}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator/=()}{operator/=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} operator/= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}}}]{mat,  }\item[{const double \&}]{scalar }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{Linear__algebra_8cpp_a391be9262318fa95cf1c7c21d0afa0f9}\label{Linear__algebra_8cpp_a391be9262318fa95cf1c7c21d0afa0f9}} 
+\index{Linear\_algebra.cpp@{Linear\_algebra.cpp}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!Linear\_algebra.cpp@{Linear\_algebra.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}}
+{\footnotesize\ttfamily std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{stream,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{matrix }\end{DoxyParamCaption})}
+
+
+
+Bit push all element of a matrix in the format of\+: 
+
+a11, a12, a13, ..., a21, a22, a23, ..., ...,
+
+
+\begin{DoxyParams}{Parameters}
+{\em stream} & ostream \\
+\hline
+{\em matrix} & matrix to be output as string \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+std\+::ostream\& 
+\end{DoxyReturn}

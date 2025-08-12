@@ -1,0 +1,225 @@
+\hypertarget{classFace}{}\doxysection{Face Class Reference}
+\label{classFace}\index{Face@{Face}}
+
+
+A triangular mesh face element used in the membrane model.  
+
+
+
+
+{\ttfamily \#include $<$Face.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classFace_afdb634bc2d5287ba0d62e46b57e9dc2e}{Face}} ()
+\begin{DoxyCompactList}\small\item\em Generate a new \mbox{\hyperlink{classFace}{Face}} object with all member variable set to default. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{classFace_a582933cc37182985c2a39057d99e0894}{index}} = 0
+\begin{DoxyCompactList}\small\item\em Index of face that is used in adjacent\+Faces. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classFace_a5da7290b4ec3efacc1d7f07615dea0d6}{layer\+Index}} = 0
+\begin{DoxyCompactList}\small\item\em Default to 0 for single layer membrane model; +1 for upper and -\/1 for lower layer. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classFace_af46019e49b6926a468e31dfc4675824d}{is\+Boundary}} = false
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classFace}{Face}} on boundary of the membrane; determined by boundary condition. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classFace_ab9a25d141ffdcd96d51789a35f963dc1}{is\+Ghost}} = false
+\begin{DoxyCompactList}\small\item\em Ghost face outside boundary of the membrane; determined by boundary condition. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classFace_ac40dca7c682e2edc17bf0b59925c60d2}{is\+Insertion\+Patch}} = false
+\begin{DoxyCompactList}\small\item\em True if there is an insertion on this face. \end{DoxyCompactList}\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{classFace_ab414817e649cc2b4099093ed8b168119}{adjacent\+Vertices}} \{0, 0, 0\}
+\begin{DoxyCompactList}\small\item\em The indices of 3 vertices of the triangle. \end{DoxyCompactList}\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{classFace_accb536c30615a952bc66bdcf9aab3d00}{one\+Ring\+Vertices}}
+\begin{DoxyCompactList}\small\item\em Adjacent\+Vertices + the vertices that are 1 edge away from the face. \end{DoxyCompactList}\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{classFace_ae8f8488ddd0a72b7e0f84176f60271b5}{adjacent\+Faces}}
+\begin{DoxyCompactList}\small\item\em Faces that are adjacent to this face. There should be 12 or 11 faces. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classFace_af413b79b601f1bb8fd97c5dc427213d4}{spont\+Curvature}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Spontaneous curvature of this face. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classFace_a1298aa063963fdf60c034ff9c92017fb}{mean\+Curvature}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Mean curvature of this face. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classFace_ae6ddcb5676afc53fe5c273dc8a501279}{norm\+Vector}}
+\begin{DoxyCompactList}\small\item\em Outward pointing normal vector of this face element. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classFace_a281c137d647fa6a3474ba3ff4392d730}{element\+Area}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Local area of this face. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classFace_aa5190dbd706ad6175c491e0e729d6dc5}{element\+Volume}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Local volume of this face. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classEnergy}{Energy}} \mbox{\hyperlink{classFace_ad74ab69e79804876c8b6b2e175b183cd}{energy\+Prev}}
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classEnergy}{Energy}} of this face in previous iteration. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classEnergy}{Energy}} \mbox{\hyperlink{classFace_a35a3c765eda62582044bffbdef909c9d}{energy}}
+\begin{DoxyCompactList}\small\item\em Current energy of this face. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A triangular mesh face element used in the membrane model. 
+
+This class represents a triangular face element in a mesh used in a membrane model. It contains information about the vertices and faces adjacent to this face, as well as other geometric properties like curvature and area. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classFace_afdb634bc2d5287ba0d62e46b57e9dc2e}\label{classFace_afdb634bc2d5287ba0d62e46b57e9dc2e}} 
+\index{Face@{Face}!Face@{Face}}
+\index{Face@{Face}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{Face()}{Face()}}
+{\footnotesize\ttfamily Face\+::\+Face (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Generate a new \mbox{\hyperlink{classFace}{Face}} object with all member variable set to default. 
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classFace_ae8f8488ddd0a72b7e0f84176f60271b5}\label{classFace_ae8f8488ddd0a72b7e0f84176f60271b5}} 
+\index{Face@{Face}!adjacentFaces@{adjacentFaces}}
+\index{adjacentFaces@{adjacentFaces}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{adjacentFaces}{adjacentFaces}}
+{\footnotesize\ttfamily std\+::vector$<$int$>$ Face\+::adjacent\+Faces}
+
+
+
+Faces that are adjacent to this face. There should be 12 or 11 faces. 
+
+\mbox{\Hypertarget{classFace_ab414817e649cc2b4099093ed8b168119}\label{classFace_ab414817e649cc2b4099093ed8b168119}} 
+\index{Face@{Face}!adjacentVertices@{adjacentVertices}}
+\index{adjacentVertices@{adjacentVertices}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{adjacentVertices}{adjacentVertices}}
+{\footnotesize\ttfamily std\+::vector$<$int$>$ Face\+::adjacent\+Vertices \{0, 0, 0\}}
+
+
+
+The indices of 3 vertices of the triangle. 
+
+\mbox{\Hypertarget{classFace_a281c137d647fa6a3474ba3ff4392d730}\label{classFace_a281c137d647fa6a3474ba3ff4392d730}} 
+\index{Face@{Face}!elementArea@{elementArea}}
+\index{elementArea@{elementArea}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{elementArea}{elementArea}}
+{\footnotesize\ttfamily double Face\+::element\+Area = 0.\+0}
+
+
+
+Local area of this face. 
+
+\mbox{\Hypertarget{classFace_aa5190dbd706ad6175c491e0e729d6dc5}\label{classFace_aa5190dbd706ad6175c491e0e729d6dc5}} 
+\index{Face@{Face}!elementVolume@{elementVolume}}
+\index{elementVolume@{elementVolume}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{elementVolume}{elementVolume}}
+{\footnotesize\ttfamily double Face\+::element\+Volume = 0.\+0}
+
+
+
+Local volume of this face. 
+
+\mbox{\Hypertarget{classFace_a35a3c765eda62582044bffbdef909c9d}\label{classFace_a35a3c765eda62582044bffbdef909c9d}} 
+\index{Face@{Face}!energy@{energy}}
+\index{energy@{energy}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{energy}{energy}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classEnergy}{Energy}} Face\+::energy}
+
+
+
+Current energy of this face. 
+
+\mbox{\Hypertarget{classFace_ad74ab69e79804876c8b6b2e175b183cd}\label{classFace_ad74ab69e79804876c8b6b2e175b183cd}} 
+\index{Face@{Face}!energyPrev@{energyPrev}}
+\index{energyPrev@{energyPrev}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{energyPrev}{energyPrev}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classEnergy}{Energy}} Face\+::energy\+Prev}
+
+
+
+\mbox{\hyperlink{classEnergy}{Energy}} of this face in previous iteration. 
+
+\mbox{\Hypertarget{classFace_a582933cc37182985c2a39057d99e0894}\label{classFace_a582933cc37182985c2a39057d99e0894}} 
+\index{Face@{Face}!index@{index}}
+\index{index@{index}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{index}{index}}
+{\footnotesize\ttfamily int Face\+::index = 0}
+
+
+
+Index of face that is used in adjacent\+Faces. 
+
+\mbox{\Hypertarget{classFace_af46019e49b6926a468e31dfc4675824d}\label{classFace_af46019e49b6926a468e31dfc4675824d}} 
+\index{Face@{Face}!isBoundary@{isBoundary}}
+\index{isBoundary@{isBoundary}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{isBoundary}{isBoundary}}
+{\footnotesize\ttfamily bool Face\+::is\+Boundary = false}
+
+
+
+\mbox{\hyperlink{classFace}{Face}} on boundary of the membrane; determined by boundary condition. 
+
+\mbox{\Hypertarget{classFace_ab9a25d141ffdcd96d51789a35f963dc1}\label{classFace_ab9a25d141ffdcd96d51789a35f963dc1}} 
+\index{Face@{Face}!isGhost@{isGhost}}
+\index{isGhost@{isGhost}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{isGhost}{isGhost}}
+{\footnotesize\ttfamily bool Face\+::is\+Ghost = false}
+
+
+
+Ghost face outside boundary of the membrane; determined by boundary condition. 
+
+\mbox{\Hypertarget{classFace_ac40dca7c682e2edc17bf0b59925c60d2}\label{classFace_ac40dca7c682e2edc17bf0b59925c60d2}} 
+\index{Face@{Face}!isInsertionPatch@{isInsertionPatch}}
+\index{isInsertionPatch@{isInsertionPatch}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{isInsertionPatch}{isInsertionPatch}}
+{\footnotesize\ttfamily bool Face\+::is\+Insertion\+Patch = false}
+
+
+
+True if there is an insertion on this face. 
+
+\mbox{\Hypertarget{classFace_a5da7290b4ec3efacc1d7f07615dea0d6}\label{classFace_a5da7290b4ec3efacc1d7f07615dea0d6}} 
+\index{Face@{Face}!layerIndex@{layerIndex}}
+\index{layerIndex@{layerIndex}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{layerIndex}{layerIndex}}
+{\footnotesize\ttfamily int Face\+::layer\+Index = 0}
+
+
+
+Default to 0 for single layer membrane model; +1 for upper and -\/1 for lower layer. 
+
+\mbox{\Hypertarget{classFace_a1298aa063963fdf60c034ff9c92017fb}\label{classFace_a1298aa063963fdf60c034ff9c92017fb}} 
+\index{Face@{Face}!meanCurvature@{meanCurvature}}
+\index{meanCurvature@{meanCurvature}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{meanCurvature}{meanCurvature}}
+{\footnotesize\ttfamily double Face\+::mean\+Curvature = 0.\+0}
+
+
+
+Mean curvature of this face. 
+
+\mbox{\Hypertarget{classFace_ae6ddcb5676afc53fe5c273dc8a501279}\label{classFace_ae6ddcb5676afc53fe5c273dc8a501279}} 
+\index{Face@{Face}!normVector@{normVector}}
+\index{normVector@{normVector}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{normVector}{normVector}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Face\+::norm\+Vector}
+
+
+
+Outward pointing normal vector of this face element. 
+
+\mbox{\Hypertarget{classFace_accb536c30615a952bc66bdcf9aab3d00}\label{classFace_accb536c30615a952bc66bdcf9aab3d00}} 
+\index{Face@{Face}!oneRingVertices@{oneRingVertices}}
+\index{oneRingVertices@{oneRingVertices}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{oneRingVertices}{oneRingVertices}}
+{\footnotesize\ttfamily std\+::vector$<$int$>$ Face\+::one\+Ring\+Vertices}
+
+
+
+Adjacent\+Vertices + the vertices that are 1 edge away from the face. 
+
+\mbox{\Hypertarget{classFace_af413b79b601f1bb8fd97c5dc427213d4}\label{classFace_af413b79b601f1bb8fd97c5dc427213d4}} 
+\index{Face@{Face}!spontCurvature@{spontCurvature}}
+\index{spontCurvature@{spontCurvature}!Face@{Face}}
+\doxysubsubsection{\texorpdfstring{spontCurvature}{spontCurvature}}
+{\footnotesize\ttfamily double Face\+::spont\+Curvature = 0.\+0}
+
+
+
+Spontaneous curvature of this face. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Face_8hpp}{Face.\+hpp}}\end{DoxyCompactItemize}

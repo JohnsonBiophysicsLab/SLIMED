@@ -1,0 +1,170 @@
+\hypertarget{classRecord}{}\doxysection{Record Class Reference}
+\label{classRecord}\index{Record@{Record}}
+
+
+Bookkeeps simulation data throughout iterations.  
+
+
+
+
+{\ttfamily \#include $<$Record.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classRecord_ae8ee53ffec6ff4dac9911517d47e86a5}{Record}} ()
+\begin{DoxyCompactList}\small\item\em Constructor for \mbox{\hyperlink{classRecord}{Record}} class. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classRecord_afadb40d6df146349f7f0fa688bb9d9d9}{Record}} (const int num\+Iterations)
+\begin{DoxyCompactList}\small\item\em Constructor for \mbox{\hyperlink{classRecord}{Record}} class that pre-\/allocates memory for the data vectors. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classRecord_a18144873ba64df082ba237c9629e24ac}{add}} (const double current\+Area, const \mbox{\hyperlink{classEnergy}{Energy}} \&current\+Energy, const double current\+Mean\+Force)
+\begin{DoxyCompactList}\small\item\em Adds a new record to the data vectors. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classRecord_afea43ae0c95b9a2316cd55248657952e}{set}} (const int iteration, const double current\+Area, const \mbox{\hyperlink{classEnergy}{Energy}} \&current\+Energy, const double current\+Mean\+Force)
+\begin{DoxyCompactList}\small\item\em Sets the values for a specific record in the data vectors. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classRecord_aa4cf7dc94ac91b56a5009c22b7ab4b79}{print\+\_\+iteration}} (const int iteration)
+\begin{DoxyCompactList}\small\item\em Prints information about a single iteration of the optimization algorithm. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ double $>$ \mbox{\hyperlink{classRecord_a04e2a507a5790f3b3fb218504425ea65}{area\+Total}}
+\begin{DoxyCompactList}\small\item\em Vector of total surface area values. \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classEnergy}{Energy}} $>$ \mbox{\hyperlink{classRecord_ad0a05c2bbd22323c2e6e3ccf279e826a}{energy\+Vec}}
+\begin{DoxyCompactList}\small\item\em Vector of energy values. \end{DoxyCompactList}\item 
+std\+::vector$<$ double $>$ \mbox{\hyperlink{classRecord_a443db73a5c1a3a06d71ca1d93b244c41}{mean\+Force}}
+\begin{DoxyCompactList}\small\item\em Vector of mean force values. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Bookkeeps simulation data throughout iterations. 
+
+This class stores vectors of surface area, energy, and mean force values for each iteration of a simulation. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classRecord_ae8ee53ffec6ff4dac9911517d47e86a5}\label{classRecord_ae8ee53ffec6ff4dac9911517d47e86a5}} 
+\index{Record@{Record}!Record@{Record}}
+\index{Record@{Record}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{Record()}{Record()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Record\+::\+Record (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Constructor for \mbox{\hyperlink{classRecord}{Record}} class. 
+
+\mbox{\Hypertarget{classRecord_afadb40d6df146349f7f0fa688bb9d9d9}\label{classRecord_afadb40d6df146349f7f0fa688bb9d9d9}} 
+\index{Record@{Record}!Record@{Record}}
+\index{Record@{Record}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{Record()}{Record()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Record\+::\+Record (\begin{DoxyParamCaption}\item[{const int}]{num\+Iterations }\end{DoxyParamCaption})}
+
+
+
+Constructor for \mbox{\hyperlink{classRecord}{Record}} class that pre-\/allocates memory for the data vectors. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em num\+Iterations} & The number of iterations to allocate memory for. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classRecord_a18144873ba64df082ba237c9629e24ac}\label{classRecord_a18144873ba64df082ba237c9629e24ac}} 
+\index{Record@{Record}!add@{add}}
+\index{add@{add}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{add()}{add()}}
+{\footnotesize\ttfamily void Record\+::add (\begin{DoxyParamCaption}\item[{const double}]{current\+Area,  }\item[{const \mbox{\hyperlink{classEnergy}{Energy}} \&}]{current\+Energy,  }\item[{const double}]{current\+Mean\+Force }\end{DoxyParamCaption})}
+
+
+
+Adds a new record to the data vectors. 
+
+This function adds a new record to each of the {\ttfamily area\+Total}, {\ttfamily energy\+Vec}, and {\ttfamily mean\+Force} vectors. The values added correspond to the current area, energy, and mean force, respectively.
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Area} & The current surface area of the mesh. \\
+\hline
+{\em current\+Energy} & The current energy of the mesh. \\
+\hline
+{\em current\+Mean\+Force} & The current mean force on the mesh vertices. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classRecord_aa4cf7dc94ac91b56a5009c22b7ab4b79}\label{classRecord_aa4cf7dc94ac91b56a5009c22b7ab4b79}} 
+\index{Record@{Record}!print\_iteration@{print\_iteration}}
+\index{print\_iteration@{print\_iteration}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{print\_iteration()}{print\_iteration()}}
+{\footnotesize\ttfamily void Record\+::print\+\_\+iteration (\begin{DoxyParamCaption}\item[{const int}]{iteration }\end{DoxyParamCaption})}
+
+
+
+Prints information about a single iteration of the optimization algorithm. 
+
+This function prints information about a single iteration of the optimization algorithm, including the current step number ({\ttfamily iteration}), the total energy of the mesh at that step ({\ttfamily energy\+Vec\mbox{[}iteration\mbox{]}.energy\+Total}), the mean force on the mesh vertices at that step ({\ttfamily mean\+Force\mbox{[}iteration\mbox{]}}), and the surface area of the mesh at that step ({\ttfamily area\+Total\mbox{[}iteration\mbox{]}}).
+
+The output is sent to standard output (i.\+e., to the terminal).
+
+
+\begin{DoxyParams}{Parameters}
+{\em iteration} & The step number of the iteration to print information about. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classRecord_afea43ae0c95b9a2316cd55248657952e}\label{classRecord_afea43ae0c95b9a2316cd55248657952e}} 
+\index{Record@{Record}!set@{set}}
+\index{set@{set}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{set()}{set()}}
+{\footnotesize\ttfamily void Record\+::set (\begin{DoxyParamCaption}\item[{const int}]{iteration,  }\item[{const double}]{current\+Area,  }\item[{const \mbox{\hyperlink{classEnergy}{Energy}} \&}]{current\+Energy,  }\item[{const double}]{current\+Mean\+Force }\end{DoxyParamCaption})}
+
+
+
+Sets the values for a specific record in the data vectors. 
+
+This function sets the values for a specific record in each of the {\ttfamily area\+Total}, {\ttfamily energy\+Vec}, and {\ttfamily mean\+Force} vectors. The index of the record to set is given by the {\ttfamily iteration} parameter, and the values to set are given by the {\ttfamily current\+Area}, {\ttfamily current\+Energy}, and {\ttfamily current\+Mean\+Force} parameters.
+
+
+\begin{DoxyParams}{Parameters}
+{\em iteration} & The index of the record to set. \\
+\hline
+{\em current\+Area} & The surface area for the record. \\
+\hline
+{\em current\+Energy} & The energy for the record. \\
+\hline
+{\em current\+Mean\+Force} & The mean force for the record. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classRecord_a04e2a507a5790f3b3fb218504425ea65}\label{classRecord_a04e2a507a5790f3b3fb218504425ea65}} 
+\index{Record@{Record}!areaTotal@{areaTotal}}
+\index{areaTotal@{areaTotal}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{areaTotal}{areaTotal}}
+{\footnotesize\ttfamily std\+::vector$<$double$>$ Record\+::area\+Total}
+
+
+
+Vector of total surface area values. 
+
+\mbox{\Hypertarget{classRecord_ad0a05c2bbd22323c2e6e3ccf279e826a}\label{classRecord_ad0a05c2bbd22323c2e6e3ccf279e826a}} 
+\index{Record@{Record}!energyVec@{energyVec}}
+\index{energyVec@{energyVec}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{energyVec}{energyVec}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classEnergy}{Energy}}$>$ Record\+::energy\+Vec}
+
+
+
+Vector of energy values. 
+
+\mbox{\Hypertarget{classRecord_a443db73a5c1a3a06d71ca1d93b244c41}\label{classRecord_a443db73a5c1a3a06d71ca1d93b244c41}} 
+\index{Record@{Record}!meanForce@{meanForce}}
+\index{meanForce@{meanForce}!Record@{Record}}
+\doxysubsubsection{\texorpdfstring{meanForce}{meanForce}}
+{\footnotesize\ttfamily std\+::vector$<$double$>$ Record\+::mean\+Force}
+
+
+
+Vector of mean force values. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Record_8hpp}{Record.\+hpp}}\end{DoxyCompactItemize}

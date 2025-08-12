@@ -1,0 +1,199 @@
+\hypertarget{io_8hpp}{}\doxysection{include/io.hpp File Reference}
+\label{io_8hpp}\index{include/io.hpp@{include/io.hpp}}
+
+
+Manage io of continuum membrane model, including parameter files, vertices and faces, and scaffolding structure files.  
+
+
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$sstream$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$stdexcept$>$}\newline
+{\ttfamily \#include $<$sys/stat.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}Mesh.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Record.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Model.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Vertex.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Parameters.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Dynamics.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{io_8hpp_a5b002291f48bd673403545bc02a460a6}{pop\+\_\+space}} (std\+::string raw\+String)
+\begin{DoxyCompactList}\small\item\em Remove spaces from a string. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{io_8hpp_a294030742b383eda09c4dc87fbfb7b14}{import\+\_\+kv\+\_\+string}} (std\+::string variable\+Name\+Str, std\+::string variable\+Value\+Str, \mbox{\hyperlink{structParam}{Param}} \&param)
+\begin{DoxyCompactList}\small\item\em Import key-\/value pairs from a string. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{io_8hpp_a13985e7083515b2e7a300857118cd682}{import\+\_\+param\+\_\+file}} (\mbox{\hyperlink{structParam}{Param}} \&param, std\+::string filepath)
+\begin{DoxyCompactList}\small\item\em Import parameters from a file. \end{DoxyCompactList}\item 
+{\footnotesize template$<$typename T $>$ }\\std\+::vector$<$ std\+::vector$<$ T $>$ $>$ \mbox{\hyperlink{io_8hpp_ad33ab514f86fbd8b37a136feebfa4b0c}{read\+\_\+data\+\_\+from\+\_\+csv}} (const std\+::string \&filepath, char separator=\textquotesingle{},\textquotesingle{})
+\begin{DoxyCompactList}\small\item\em Read data from a CSV file and store it in a vector of vectors with the specified data type. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{io_8hpp_abec5fb0a800f49ce307cb251a0d310e8}{import\+\_\+mesh\+\_\+from\+\_\+vertices\+\_\+faces}} (\mbox{\hyperlink{classMesh}{Mesh}} \&mesh, std\+::string vertices\+Filepath, std\+::string faces\+Filepath)
+\begin{DoxyCompactList}\small\item\em Import a mesh from separate files containing vertices and faces. \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \mbox{\hyperlink{io_8hpp_ae286f3abaa172d750a34bd8b5fb9ff1f}{import\+\_\+scaffolding\+\_\+mesh}} (std\+::string filepath)
+\begin{DoxyCompactList}\small\item\em Import scaffolding mesh from a file. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Manage io of continuum membrane model, including parameter files, vertices and faces, and scaffolding structure files. 
+
+\begin{DoxyAuthor}{Author}
+Y Ying (\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}}) 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2023-\/03-\/29
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{io_8hpp_a294030742b383eda09c4dc87fbfb7b14}\label{io_8hpp_a294030742b383eda09c4dc87fbfb7b14}} 
+\index{io.hpp@{io.hpp}!import\_kv\_string@{import\_kv\_string}}
+\index{import\_kv\_string@{import\_kv\_string}!io.hpp@{io.hpp}}
+\doxysubsubsection{\texorpdfstring{import\_kv\_string()}{import\_kv\_string()}}
+{\footnotesize\ttfamily bool import\+\_\+kv\+\_\+string (\begin{DoxyParamCaption}\item[{std\+::string}]{variable\+Name\+Str,  }\item[{std\+::string}]{variable\+Value\+Str,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param }\end{DoxyParamCaption})}
+
+
+
+Import key-\/value pairs from a string. 
+
+This function takes two strings, {\ttfamily variable\+Name\+Str} and {\ttfamily variable\+Value\+Str}, which are expected to contain name-\/value pairs separated by an \char`\"{}=\char`\"{} sign. It then parses these variables and uses them to update a {\ttfamily \mbox{\hyperlink{structParam}{Param}}} struct object\textquotesingle{}s variables, which is passed as reference. If parsing and updating are successful, returns true, else returns false.
+
+
+\begin{DoxyParams}{Parameters}
+{\em variable\+Name\+Str} & the string containing names of the variables \\
+\hline
+{\em variable\+Value\+Str} & the string containing values of the variables \\
+\hline
+{\em param} & the \mbox{\hyperlink{structParam}{Param}} object to be updated\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if parsing and updating was successful, else false. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{io_8hpp_abec5fb0a800f49ce307cb251a0d310e8}\label{io_8hpp_abec5fb0a800f49ce307cb251a0d310e8}} 
+\index{io.hpp@{io.hpp}!import\_mesh\_from\_vertices\_faces@{import\_mesh\_from\_vertices\_faces}}
+\index{import\_mesh\_from\_vertices\_faces@{import\_mesh\_from\_vertices\_faces}!io.hpp@{io.hpp}}
+\doxysubsubsection{\texorpdfstring{import\_mesh\_from\_vertices\_faces()}{import\_mesh\_from\_vertices\_faces()}}
+{\footnotesize\ttfamily bool import\+\_\+mesh\+\_\+from\+\_\+vertices\+\_\+faces (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMesh}{Mesh}} \&}]{mesh,  }\item[{std\+::string}]{vertices\+Filepath,  }\item[{std\+::string}]{faces\+Filepath }\end{DoxyParamCaption})}
+
+
+
+Import a mesh from separate files containing vertices and faces. 
+
+This function reads vertices and faces from specified files and constructs a mesh.
+
+
+\begin{DoxyParams}{Parameters}
+{\em mesh} & The \mbox{\hyperlink{classMesh}{Mesh}} object to write vertices and faces data. \\
+\hline
+{\em vertices\+Filepath} & The file path of the vertices file. \\
+\hline
+{\em faces\+Filepath} & The file path of the faces file. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True if the mesh is successfully imported, false otherwise. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{io_8hpp_a13985e7083515b2e7a300857118cd682}\label{io_8hpp_a13985e7083515b2e7a300857118cd682}} 
+\index{io.hpp@{io.hpp}!import\_param\_file@{import\_param\_file}}
+\index{import\_param\_file@{import\_param\_file}!io.hpp@{io.hpp}}
+\doxysubsubsection{\texorpdfstring{import\_param\_file()}{import\_param\_file()}}
+{\footnotesize\ttfamily bool import\+\_\+param\+\_\+file (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{std\+::string}]{filepath }\end{DoxyParamCaption})}
+
+
+
+Import parameters from a file. 
+
+This function reads a parameter file specified by {\ttfamily filepath} and updates a {\ttfamily \mbox{\hyperlink{structParam}{Param}}} struct object\textquotesingle{}s variables using the information present in the file. The updated {\ttfamily \mbox{\hyperlink{structParam}{Param}}} object is passed as reference. If file reading and updating are successful, returns true, else false.
+
+
+\begin{DoxyParams}{Parameters}
+{\em param} & the \mbox{\hyperlink{structParam}{Param}} object to be updated \\
+\hline
+{\em filepath} & the path of the parameter file to be read\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if file reading and updating was successful, else false. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{io_8hpp_ae286f3abaa172d750a34bd8b5fb9ff1f}\label{io_8hpp_ae286f3abaa172d750a34bd8b5fb9ff1f}} 
+\index{io.hpp@{io.hpp}!import\_scaffolding\_mesh@{import\_scaffolding\_mesh}}
+\index{import\_scaffolding\_mesh@{import\_scaffolding\_mesh}!io.hpp@{io.hpp}}
+\doxysubsubsection{\texorpdfstring{import\_scaffolding\_mesh()}{import\_scaffolding\_mesh()}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ import\+\_\+scaffolding\+\_\+mesh (\begin{DoxyParamCaption}\item[{std\+::string}]{filepath }\end{DoxyParamCaption})}
+
+
+
+Import scaffolding mesh from a file. 
+
+This function reads a mesh file specified by {\ttfamily filepath} and returns a vector of matrices containing the vertices\textquotesingle{} coordinates of all triangular faces.
+
+
+\begin{DoxyParams}{Parameters}
+{\em filepath} & the path of the mesh file to be read\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A vector of matrices containing the vertices\textquotesingle{} coordinates of all triangular faces. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{io_8hpp_a5b002291f48bd673403545bc02a460a6}\label{io_8hpp_a5b002291f48bd673403545bc02a460a6}} 
+\index{io.hpp@{io.hpp}!pop\_space@{pop\_space}}
+\index{pop\_space@{pop\_space}!io.hpp@{io.hpp}}
+\doxysubsubsection{\texorpdfstring{pop\_space()}{pop\_space()}}
+{\footnotesize\ttfamily std\+::string pop\+\_\+space (\begin{DoxyParamCaption}\item[{std\+::string}]{raw\+String }\end{DoxyParamCaption})}
+
+
+
+Remove spaces from a string. 
+
+This function takes a raw string and removes any whitespace characters present in it. The modified string with no spaces is returned.
+
+
+\begin{DoxyParams}{Parameters}
+{\em raw\+String} & the original string to be processed\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The string with spaces removed. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{io_8hpp_ad33ab514f86fbd8b37a136feebfa4b0c}\label{io_8hpp_ad33ab514f86fbd8b37a136feebfa4b0c}} 
+\index{io.hpp@{io.hpp}!read\_data\_from\_csv@{read\_data\_from\_csv}}
+\index{read\_data\_from\_csv@{read\_data\_from\_csv}!io.hpp@{io.hpp}}
+\doxysubsubsection{\texorpdfstring{read\_data\_from\_csv()}{read\_data\_from\_csv()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+std\+::vector$<$ std\+::vector$<$ T $>$ $>$ read\+\_\+data\+\_\+from\+\_\+csv (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{filepath,  }\item[{char}]{separator = {\ttfamily \textquotesingle{},\textquotesingle{}} }\end{DoxyParamCaption})}
+
+
+
+Read data from a CSV file and store it in a vector of vectors with the specified data type. 
+
+This function reads data from a CSV file, where each line represents a row of data, and each value within a line is separated by the specified character.
+
+Generated by GPT 3.\+5.
+
+
+\begin{DoxyTemplParams}{Template Parameters}
+{\em T} & The data type (int, float, or double) to store in the resulting vector. \\
+\hline
+\end{DoxyTemplParams}
+
+\begin{DoxyParams}{Parameters}
+{\em filepath} & The file path of the CSV file. \\
+\hline
+{\em separator} & The character used as a separator in the CSV file (default is comma \textquotesingle{},\textquotesingle{} for typical CSV files). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A vector of vectors containing the read data. 
+\end{DoxyReturn}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::invalid\+\_\+argument} & If the data cannot be converted to the specified data type. \\
+\hline
+\end{DoxyExceptions}

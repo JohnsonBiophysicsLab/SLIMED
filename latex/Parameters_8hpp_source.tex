@@ -1,0 +1,150 @@
+\hypertarget{Parameters_8hpp_source}{}\doxysection{Parameters.\+hpp}
+\label{Parameters_8hpp_source}\index{include/Parameters.hpp@{include/Parameters.hpp}}
+\mbox{\hyperlink{Parameters_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_matrix.h>}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_blas.h>}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_linalg.h>}}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Energy_8hpp}{Energy.hpp}}"{}}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Force_8hpp}{Force.hpp}}"{}}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00036\ \textcolor{keyword}{enum\ class}\ \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}{BoundaryType}}}
+\DoxyCodeLine{00037\ \{}
+\DoxyCodeLine{00039\ \ \ \ \ \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8a4457d440870ad6d42bab9082d9bf9b61}{Fixed}},}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00042\ \ \ \ \ \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8acdcc32a064503184053bd2018d1c0e7e}{Periodic}},}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8ab24ce0cd392a5b0b8dedc66c25213594}{Free}}}
+\DoxyCodeLine{00046\ \};}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00059\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structDeformationCount}{DeformationCount}}}
+\DoxyCodeLine{00060\ \{}
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structDeformationCount_ab83c50d3cb2dc65f4ad22c546f9127e9}{shapeDeformCount}}\ =\ 0;\ }
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structDeformationCount_adc0707b8e8e84df4bd467d04aac8c7f8}{areaDeformCount}}\ =\ 0;\ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structDeformationCount_a34d23d9b95d193171c02d9305311e475}{noDeformCount}}\ =\ 0;\ \ \ \ }
+\DoxyCodeLine{00064\ \};}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00070\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSubdivisionMatrix}{SubdivisionMatrix}}}
+\DoxyCodeLine{00071\ \{}
+\DoxyCodeLine{00072\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structSubdivisionMatrix_a06a14d7074c06de46bdffa1f47a33017}{irregM}};}
+\DoxyCodeLine{00073\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structSubdivisionMatrix_a5dbbc58cde00125fb512db057e6e4ce9}{irregM1}};}
+\DoxyCodeLine{00074\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structSubdivisionMatrix_a8ff93ae958e845fde3b1984f8c7aeec7}{irregM2}};}
+\DoxyCodeLine{00075\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structSubdivisionMatrix_a65b8a0f14dc639233703c15ca1d8f2ff}{irregM3}};}
+\DoxyCodeLine{00076\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structSubdivisionMatrix_a343f19c2b5e149d9181a569f28c41649}{irregM4}};}
+\DoxyCodeLine{00077\ \};}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00087\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classParticle}{Particle}}}
+\DoxyCodeLine{00088\ \{}
+\DoxyCodeLine{00089\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classParticle_af583faf22ecb74e2356e012ab642ae80}{index}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00091\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classParticle_aefabf48159cbdc9b493fffce16ae1b58}{faceIndex}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00092\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classParticle_a99e6cb76ee538baf658d43cbbdeaa526}{vwu}}\ =\ \mbox{\hyperlink{classMatrix}{Matrix}}(3,\ 1);\ \ \ }
+\DoxyCodeLine{00093\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classParticle_ab137a623e368d38953f5009508b8be1f}{coord}}\ =\ \mbox{\hyperlink{classMatrix}{Matrix}}(3,\ 1);\ }
+\DoxyCodeLine{00094\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classParticle_a1f596563275aaddcb62f892799747590}{D}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00095\ \};}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00110\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structParam}{Param}}}
+\DoxyCodeLine{00111\ \{}
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{comment}{//\ developer\ options}}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_ad450793b18b22c2a72a8eb22a6b5bcc2}{VERBOSE\_MODE}}\ =\ \textcolor{keyword}{true};\ }
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_a9631f725f71203af562e72fc727b5e12}{maxIterations}}\ =\ 1E5;\ }
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00116\ \ \ \ \ \textcolor{comment}{//\ physical\ constants}}
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a73e37c8ee20932df2b4ac205d45cd781}{kCurv}}\ =\ 0.0;\ }
+\DoxyCodeLine{00118\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_aca6221e2515f001a33acc187308881d6}{uSurf}}\ =\ 0.0;\ }
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_ad9466f4b6515af5c5968cecdc71822d3}{uVol}}\ =\ 0.0;\ \ }
+\DoxyCodeLine{00120\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_adc3d6833d626ae110b67d508d67b9aad}{kReg}}\ =\ 0.0;\ \ }
+\DoxyCodeLine{00121\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a1d4cadccb8ae69e593e938c9d051dca5}{kSpring}};\ \ \ \ \ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_abe2c1a99f8a6682ff77b8c44c7104ae1}{area0}};\ \ \ \ \ \ \ }
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a827eb346dd30104fd06734cd8a98ac2a}{area}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00124\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_ad4c3757e3fd6738c06571aad5366439a}{vol0}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00125\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a42fbd32696c704fae6bb4d080a0fbadf}{vol}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00126\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_aadbdcdaddc4d9e262f273db1fc376e6a}{insertCurv}};\ \ }
+\DoxyCodeLine{00127\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a432e137b07a15257ff77bb260039fff8}{spontCurv}};\ \ \ }
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00129\ \ \ \ \ \textcolor{comment}{//\ membrane\ size\ and\ axes\ division}}
+\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_afe011accc7b5a22b9b5874105e09c796}{sideX}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00131\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_ac59ce2c914270a3f0fcc6ba1e039c6be}{sideY}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00132\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a4261fb5801202d44544e8f6849884d9f}{radius}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00133\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a3a0cf0dfa1659a7ded716427f3df1a68}{lFace}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00134\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_a191ab50a69a4c1d5f855208dc84b7f43}{nFaceX}}\ =\ -\/1;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_a240b24007b9835fb083076fbbc8141d7}{nFaceY}}\ =\ -\/1;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00136\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a1b2a40bcc4b761e5dd0e42faee6fc82e}{dFaceX}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00137\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a3096caf26a05aa5cedc4ef23d47264a1}{dFaceY}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00138\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_aa62fb70d387a69061872a40f52e6250e}{meanL}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00139\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a429a81da57de71744032b978d79c7015}{sigma}}\ =\ 0.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_a26045803a9d147fafb067975b0bc9959}{subDivideTimes}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00141\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a74701e09e26b7f8d1e5494176e372b07}{isInsertionAreaConstraint}}\ =\ \textcolor{keyword}{false};\ }
+\DoxyCodeLine{00142\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a3b692ffeae469210188dac8de9ae4f0b}{isAdditiveScheme}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00143\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a0add0625ea1a4c518927c57a2ec4cf2d}{isGlobalConstraint}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00144\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_aa1cdf24f7414942893ab6a7ac1b76a95}{elementTriangleArea0}};\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00145\ }
+\DoxyCodeLine{00146\ \ \ \ \ \textcolor{comment}{//\ gauss\ quadrature}}
+\DoxyCodeLine{00147\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_ac411932b1c05fd20578bf5b2d060f0ce}{gaussQuadratureN}}\ =\ 2;\ \ \ \ }
+\DoxyCodeLine{00148\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structParam_a4cdda54bb7cd16d41705acb063e852f9}{VWU}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00149\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{structParam_ac189b2cd9883a5434793287a0aafafa6}{gaussQuadratureCoeff}};\ }
+\DoxyCodeLine{00150\ }
+\DoxyCodeLine{00151\ \ \ \ \ \textcolor{comment}{//\ shape\ function}}
+\DoxyCodeLine{00152\ \ \ \ \ std::vector<Matrix>\ \mbox{\hyperlink{structParam_ac9a012f371efdaf9d1cf462c1573d1ab}{shapeFunctions}};\ }
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00154\ \ \ \ \ \textcolor{comment}{//\ irregular\ patch}}
+\DoxyCodeLine{00155\ \ \ \ \ \mbox{\hyperlink{structSubdivisionMatrix}{SubdivisionMatrix}}\ \mbox{\hyperlink{structParam_acde2d3895df992cfc2f0b8a0c9683d9a}{subMatrix}};\ }
+\DoxyCodeLine{00156\ }
+\DoxyCodeLine{00157\ \ \ \ \ \textcolor{comment}{//\ boundary\ conditions}}
+\DoxyCodeLine{00158\ \ \ \ \ \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}{BoundaryType}}\ \mbox{\hyperlink{structParam_a5627d55bed5bf1342a9405b1ad5c0e31}{boundaryCondition}}\ =\ BoundaryType::Periodic;\ }
+\DoxyCodeLine{00159\ }
+\DoxyCodeLine{00160\ \ \ \ \ \textcolor{comment}{//\ optimization\ methods}}
+\DoxyCodeLine{00161\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_aece8f49750a6c0f062569a49d4048851}{usingNCG}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ }
+\DoxyCodeLine{00162\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_ab1ac28a29aeb80f875a301467c879429}{isNCGstuck}}\ =\ \textcolor{keyword}{false};\ }
+\DoxyCodeLine{00163\ }
+\DoxyCodeLine{00164\ \ \ \ \ \textcolor{comment}{//\ regularization}}
+\DoxyCodeLine{00165\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_aa9a1b95bb61d6d4b6d5857170f8c9f33}{gamaShape}}\ =\ 0.2;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00166\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a73a54463e52ff466cd88ce9a1b106eb6}{gamaArea}}\ =\ 0.2;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00167\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_aa1c34abfb6c603bda7b9349d1488f722}{usingRpi}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00168\ }
+\DoxyCodeLine{00169\ \ \ \ \ \textcolor{comment}{//\ spline\ points}}
+\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a97fd559923927d966cf58457880f6094}{xyzOutput}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00171\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a8a0ea86cad3222ab3d0ee24db13c4840}{meshpointOutput}}\ =\ \textcolor{keyword}{true};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00172\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_aef07cefb6e33f10eb68e9fe9dbbbbfe6}{isEnergyHarmonicBondIncluded}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00173\ \ \ \ \ std::vector<Matrix>\ \mbox{\hyperlink{structParam_a48cbfe8b4ae87391c3e284d3b0e9c2d4}{scaffoldingPoints}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00174\ \ \ \ \ std::vector<int>\ \mbox{\hyperlink{structParam_a1ebd986c4c12ad597eaae6a9222a514b}{scaffoldingPoints\_correspondingVertexIndex}};\ }
+\DoxyCodeLine{00175\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a5560c3203377b2d010c5c5cc3355c07f}{springConst}}\ =\ 40.5;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00176\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a25a2b24a25ad221d1039697717c189f1}{springConstScaler}}\ =\ 3.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00177\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_a0129f49ad0acc7020a36064441af3ffd}{springConstScalingInterv}}\ =\ 200;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00178\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_ac2644deafe00390bd761a67daf85117f}{springConstUpperBound}}\ =\ 1000.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00179\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_abd9c74cbbb7df9bcab5fa24527998940}{splinePointsZcoordScaling}}\ =\ 0.04;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ for\ z\ scaling}}
+\DoxyCodeLine{00180\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a6a643efdde0c0fb3eaf763c51b885f23}{lbond}}\ =\ 9.0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00181\ \ \ \ \ std::string\ \mbox{\hyperlink{structParam_a81e6c54dd95a07cf893f9393199a57bd}{scaffoldingFileName}}\ =\ \textcolor{stringliteral}{"{}"{}};}
+\DoxyCodeLine{00182\ \ \ \ \ }
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00184\ \ \ \ \ \textcolor{comment}{//\ dynamics}}
+\DoxyCodeLine{00185\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a746ff861dd3158503a3b94d54d685929}{timeStep}}\ =\ 0.1;\ \ \ \textcolor{comment}{//\ us}}
+\DoxyCodeLine{00186\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_a7b56faf3c1279301ddca668142b07389}{diffConst}}\ =\ 0.01;\ \textcolor{comment}{//\ um\string^2/us}}
+\DoxyCodeLine{00187\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structParam_ab613719fe8566c6a7ee47260cf03b8f0}{KBT}}\ =\ 4.17;\ \ \ \ \ \ \ \textcolor{comment}{//\ 1KbT\ =\ 4.17\ pN.nm}}
+\DoxyCodeLine{00188\ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structParam_a405908708db9c4b7a93e7b8a54eec822}{randomSeed}}\ =\ 42;\ }
+\DoxyCodeLine{00189\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a28fe0a69cdcf33acd371228544633044}{surfacepointOutput}}\ =\ \textcolor{keyword}{true};\ }
+\DoxyCodeLine{00190\ }
+\DoxyCodeLine{00191\ \ \ \ \ \textcolor{comment}{//\ insertion}}
+\DoxyCodeLine{00192\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{structParam_a858374161e635ffa6b8a2aa0a5ede0c1}{isInsertionIncluded}}\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00193\ \ \ \ \ std::vector<std::vector<int>>\ \mbox{\hyperlink{structParam_a5019c998cbd397e328176d0d2e77e19a}{insertionPatch}};}
+\DoxyCodeLine{00194\ }
+\DoxyCodeLine{00195\ \ \ \ \ \mbox{\hyperlink{classEnergy}{Energy}}\ \mbox{\hyperlink{structParam_a0fe41e7ea70bed833696835a58ba77d2}{energy}};}
+\DoxyCodeLine{00196\ \ \ \ \ \mbox{\hyperlink{classEnergy}{Energy}}\ \mbox{\hyperlink{structParam_aab98632c8307044b776e5e11e4bea99b}{energyPrev}};}
+\DoxyCodeLine{00197\ \ \ \ \ \mbox{\hyperlink{structDeformationCount}{DeformationCount}}\ \mbox{\hyperlink{structParam_ab9c88da6a639e345af974b2853239c23}{deformationCount}};}
+\DoxyCodeLine{00198\ \};}
+\DoxyCodeLine{00199\ }
+\DoxyCodeLine{00207\ std::ostream\&\ \mbox{\hyperlink{Parameters_8hpp_a98c4b6e4d79e01bd56bfa6ec99176c63}{operator<<}}(std::ostream\&\ os,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structParam}{Param}}\&\ param);}
+
+\end{DoxyCode}

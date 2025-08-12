@@ -1,0 +1,710 @@
+\hypertarget{classMesh}{}\doxysection{Mesh Class Reference}
+\label{classMesh}\index{Mesh@{Mesh}}
+
+
+A class representing a triangular mesh that defines a limit surface.  
+
+
+
+
+{\ttfamily \#include $<$Mesh.\+hpp$>$}
+
+Inheritance diagram for Mesh\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classMesh}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMesh_a0685f9dfb74d633c092886d56afffb6e}{Mesh}} (\mbox{\hyperlink{structParam}{Param}} \&src\+Param)
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classMesh}{Mesh}} object with parameters. Initialize vertices and faces with other functions like set\+Vertices\+Flat. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMesh_aaab78f3a30742a937d9a387287ce323c}{Mesh}} (const std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&src\+Vertices, const std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&src\+Faces, \mbox{\hyperlink{structParam}{Param}} \&src\+Param) \+\_\+\+\_\+attribute\+\_\+\+\_\+((deprecated(\char`\"{}Initialize with \mbox{\hyperlink{classMesh}{Mesh}}(\mbox{\hyperlink{structParam}{Param}} \&src\+Param) and setup with \mbox{\hyperlink{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}{setup\+\_\+from\+\_\+vertices\+\_\+faces}} instead.\char`\"{})))
+\begin{DoxyCompactList}\small\item\em Construct a new mesh object with given vertices, faces, and parameters. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_affdc2aaee5e4762f56c6637b16506f2d}{setup\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Initialize halfedges based on the mesh\textquotesingle{}s vertices and faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}{setup\+\_\+from\+\_\+vertices\+\_\+faces}} (const std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&vertices\+Data, const std\+::vector$<$ std\+::vector$<$ int $>$ $>$ \&faces\+Data)
+\begin{DoxyCompactList}\small\item\em Initialize membrane with arbitrary vertices and faces imported from files. Sets up the membrane from data and then call\+: (1) this-\/\texorpdfstring{$>$}{>}set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted (2) this-\/\texorpdfstring{$>$}{>}determine\+\_\+ghost\+\_\+vertices\+\_\+faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a99b21ba1a874da6dc75cfa473d02a747}{set\+\_\+axes\+\_\+division\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Divide x,y axis to nx$\ast$dx (number of faces times length of each face) and ny$\ast$dy based on X, Y side length of the mesh and side length of faces in parameter. Note\+: \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ac531dabf200ff831464999c03f345707}{set\+\_\+vertices\+\_\+faces\+\_\+flat}} ()
+\begin{DoxyCompactList}\small\item\em Set vertices and faces according to mesh and face side lengths in param for flat mesh. This also sets adjacent vertices of faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_aed33be097663033bc75853c33c3333ed}{set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted}} ()
+\begin{DoxyCompactList}\small\item\em Set adjacent\+Faces properties based on the current vertices and mesh. Sort the adjacent vertices so that the adjacent vertices property of vertices follow the counterclockwise order and therefore the the adjacent faces with index number difference of one are adjacent to each other. This sorting streamlines the shapefunction calculation. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a3701b70db1a2940cbda09d8d8ae36dc0}{set\+\_\+adjacent\+\_\+vertices\+\_\+of\+\_\+vertices\+\_\+sorted}} ()
+\begin{DoxyCompactList}\small\item\em Set adjacent\+Vertices of vertices based on current mesh. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classMesh_ae93250c015872ef461069e436ec0d7be}{find\+\_\+opposite\+\_\+node\+\_\+index}} (const int \&node1, const int \&node2, const int \&node3)
+\begin{DoxyCompactList}\small\item\em Find the vertex that is adjacent to node1 and node2 but not node3. Particularly, when the three nodes are vertices of a triangle, then the function returns the the index of node4 that forms a parallegram with 1-\/\texorpdfstring{$>$}{>}3-\/\texorpdfstring{$>$}{>}2-\/\texorpdfstring{$>$}{>}4. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a83c95e1c6ae386b81d44558273b10a1e}{set\+\_\+one\+\_\+ring\+\_\+vertices\+\_\+sorted}} ()
+\begin{DoxyCompactList}\small\item\em find out the one-\/ring vertices aound face\+\_\+i. It should be 12 for the flat surface because we set it up only with regular patch. The boundary faces do not have complete one-\/ring, neither it will be called in the code, so no need to store their one-\/ring-\/vertex \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_aef5bfdb2d69c0d217dff5b1fd83ed0f5}{determine\+\_\+boundary\+\_\+vertices\+\_\+faces}} ()
+\begin{DoxyCompactList}\small\item\em Iterate through vertices and faces and set the is\+Boundary\} property of boundary vertices and faces to true\}. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a744de61088daa25cc58ae32c07020e5d}{determine\+\_\+ghost\+\_\+vertices\+\_\+faces}} ()
+\begin{DoxyCompactList}\small\item\em Iterate through vertices and faces and set the is\+Ghost property of ghost vertices and face to true. The number of layers of ghost vertices in a flat membrane is dependent upon the boundary conditions\+: free boundary condition has 1 layer of ghost vertices and faces while periodic bounary condition has 3 layers of ghost vertices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ae03d9aefdf5b321200fc4f1a6354c1c8}{set\+\_\+insertion\+\_\+patch}} (const vector$<$ vector$<$ int $>$ $>$ \&insertion\+Patch)
+\begin{DoxyCompactList}\small\item\em Sets the is\+Insertion\+Patch flag for each face in the insertion patch. This also sets with spontaneous curvature after setting the flag with set\+\_\+spontaneous\+\_\+curvature\+\_\+for\+\_\+face function. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ae3c686d28a291b262ca1c026dba2e817}{set\+\_\+spontaneous\+\_\+curvature\+\_\+for\+\_\+face}} (const double \&insert\+Curv, const double \&spont\+Curv)
+\begin{DoxyCompactList}\small\item\em Sets the spontaneous curvature for each face in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a0acaf454a27868a6ed2ff0ddf4aff64e}{calculate\+\_\+element\+\_\+area\+\_\+volume}} ()
+\begin{DoxyCompactList}\small\item\em Calculates the area and volume of each element in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_acbf7a146011c884429c5d5009850d834}{sum\+\_\+membrane\+\_\+area\+\_\+and\+\_\+volume}} (double \&area, double \&volume)
+\begin{DoxyCompactList}\small\item\em This function calculates the total membrane area and volume of non-\/ghost faces in a given set of faces. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_afe3b6819bae35b86e80ba1c4104c8269}{Compute\+\_\+\+Energy\+\_\+\+And\+\_\+\+Force}} ()
+\begin{DoxyCompactList}\small\item\em Computes the energy and force on each vertex and face of the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ab3e3994d78b0224d9759fe4ed4b4c6d5}{element\+\_\+energy\+\_\+force\+\_\+regular}} (const std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&coord\+One\+Ring\+Vertices, \mbox{\hyperlink{classFace}{Face}} \&face, const double spont\+Curv, double \&mean\+Curv, \mbox{\hyperlink{classMatrix}{Matrix}} \&norm\+Vector, double \&e\+Bend, \mbox{\hyperlink{classMatrix}{Matrix}} \&f\+Bend, \mbox{\hyperlink{classMatrix}{Matrix}} \&f\+Area, \mbox{\hyperlink{classMatrix}{Matrix}} \&f\+Volume)
+\begin{DoxyCompactList}\small\item\em The purpose of this function is to calculate the energy and forces for a regular element of a given mesh using the provided information about the element and its one-\/ring neighborhood. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a290b3c7dd1e39da6095b5d12da1b2c8c}{energy\+\_\+force\+\_\+regularization}} ()
+\begin{DoxyCompactList}\small\item\em Calculates the regularization energy and force for each face. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a5818bb84a71e7d6e4da2cd0a2da96cfb}{manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex}} ()
+\begin{DoxyCompactList}\small\item\em Manages forces depending on different boundary conditions. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_a0d9a489b9658c52c771d8aeb86761cff}{get\+\_\+max\+\_\+force\+\_\+magnitude}} ()
+\begin{DoxyCompactList}\small\item\em Get the max force scale of vertices.\+force.\+get\+\_\+total\+\_\+force\+\_\+magnitude() \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_ae709a12efd5127a80c9e53298d175b8b}{calculate\+\_\+mean\+\_\+force}} ()
+\begin{DoxyCompactList}\small\item\em Get the mean force magnitude on all vertices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ace8f4f14e01b2dc240eedb9ea4d71ff8}{update\+\_\+previous\+\_\+coord\+\_\+for\+\_\+vertex}} ()
+\begin{DoxyCompactList}\small\item\em This function updates the coord\+Prev member variable for each vertex in the mesh. It does this by copying the current value of coord to coord\+Prev. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a3789d9eb9e117406a17167c3b9cee1e4}{update\+\_\+reference\+\_\+coord\+\_\+from\+\_\+previous\+\_\+coord}} ()
+\begin{DoxyCompactList}\small\item\em Update the reference coordinates for each vertex in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a195aba6e11cd1d7a55604c2c337d65c4}{update\+\_\+previous\+\_\+force\+\_\+for\+\_\+vertex}} ()
+\begin{DoxyCompactList}\small\item\em Update the previous force vectors for each vertex in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a79e83327f9919ee1de80e19f0f3e38a6}{update\+\_\+previous\+\_\+energy\+\_\+for\+\_\+face}} ()
+\begin{DoxyCompactList}\small\item\em Update the previous energy values for each face in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a742357b9318965689249acd31601642e}{clear\+\_\+force\+\_\+on\+\_\+vertices\+\_\+and\+\_\+energy\+\_\+on\+\_\+faces}} ()
+\begin{DoxyCompactList}\small\item\em this function sets the force member variable of each vertex, and the energy member variable of each face to their default values. This is useful to clear out any residual forces or energies before computing new ones. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classMesh_a0dbefd57ee3d41858d212263d1dc8024}{move\+\_\+vertices\+\_\+based\+\_\+on\+\_\+scaffolding}} (bool fix\+Dir=true)
+\begin{DoxyCompactList}\small\item\em This method takes in the vector of spline point and calculate the average coordinates. Based on the difference between spline points and mesh vertices, a difference vector is calculated and compared to the target bond length. (Supposed only in Z direction). Afterwards, all the mesh points are moved in the direction of the target difference vector. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a6e11a64d5b45a2ce39b70325f7ff9a4e}{set\+\_\+scaffolding\+\_\+vertices\+\_\+correspondence}} ()
+\begin{DoxyCompactList}\small\item\em Get a vector of indexes of vertices that are closest to the scaffolding\+Points vector provided. Then set the param.\+scaffolding\+Points\+\_\+corresponding\+Vertex\+Index\} to represent the vertices bonded with each scaffolding point. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_a9d4290cf23bd9694e577e9ba73990df3}{calculate\+\_\+scaffolding\+\_\+energy\+\_\+force}} (bool do\+Local\+Search)
+\begin{DoxyCompactList}\small\item\em Calculates the energy and force due to the harmonic bond between scaffold points and membrane vertices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a5bb6aca91c6fbd690653536eced038bf}{write\+\_\+faces\+\_\+csv}} (const std\+::string \&outfile\+\_\+name)
+\begin{DoxyCompactList}\small\item\em Writes a csv file containing the adjacent vertices for each face in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_a24565ddc787b2fd6c78fc8715c5bbd0a}{write\+\_\+vertices\+\_\+csv}} (const std\+::string \&outfile\+\_\+name)
+\begin{DoxyCompactList}\small\item\em Writes a csv file containing the coordinates of each vertex in the mesh. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMesh_ac641af43730870056e0ba395856a771a}{write\+\_\+vertices\+\_\+csv\+\_\+with\+\_\+type}} (const std\+::string \&outfile\+\_\+name)
+\begin{DoxyCompactList}\small\item\em Writes a csv file containing the coordinates and types of each vertex in the mesh. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \mbox{\hyperlink{classMesh_a6465a888c97232a39e12aad008c969c3}{vertices}}
+\begin{DoxyCompactList}\small\item\em Vector to store all vertices in the mesh. \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \mbox{\hyperlink{classMesh_a9da199719905f2b213f8c0c8feba2d1f}{faces}}
+\begin{DoxyCompactList}\small\item\em Vector to store all faces in the mesh. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structParam}{Param}} \& \mbox{\hyperlink{classMesh_ae2ce6a4fa3c43202516e8de3504478bc}{param}}
+\begin{DoxyCompactList}\small\item\em Object of the \mbox{\hyperlink{structParam}{Param}} class containing all necessary parameters for building the \mbox{\hyperlink{classMesh}{Mesh}} object. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classMesh_a1820a26272a1ce4209a30032908c92d4}{enumerate\+\_\+gauss\+\_\+quadrature\+\_\+point\+\_\+area\+\_\+volume}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&dots, double \&area, double \&volume)
+\begin{DoxyCompactList}\small\item\em Private member used in calculating element area volume\+: Calculates the area and volume at a Gauss quadrature point for a given set of shape functions and dots. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classMesh_a43e1893669c41ee154462ceb0518a6b0}{get\+\_\+one\+\_\+ring\+\_\+vertex\+\_\+matrix}} (const \mbox{\hyperlink{classFace}{Face}} \&face)
+\begin{DoxyCompactList}\small\item\em Private member used in calculating element area volume\+: Computes a matrix containing the coordinates of the one-\/ring vertices for the input face. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMesh_a3a166003a4f1e86bbedfa5ee6867ff0d}{get\+\_\+squared\+\_\+distance\+\_\+sp\+\_\+and\+\_\+v}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&scaffolding\+Point, const \mbox{\hyperlink{classVertex}{Vertex}} \&vertex)
+\begin{DoxyCompactList}\small\item\em Private member used in calculating correspondence between scaffolding points and vertices Calculate the squared distance between two points denoted by (3,1) \mbox{\hyperlink{classMatrix}{Matrix}} and \mbox{\hyperlink{classVertex}{Vertex}} respectively. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+std\+::ostream \& \mbox{\hyperlink{classMesh_a859d91a1b2b14ee63c792c057d35295a}{operator$<$$<$}} (std\+::ostream \&stream, const \mbox{\hyperlink{classMesh}{Mesh}} \&mesh)
+\begin{DoxyCompactList}\small\item\em Overrides the operator \texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<} in ostream. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A class representing a triangular mesh that defines a limit surface. 
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classMesh_a0685f9dfb74d633c092886d56afffb6e}\label{classMesh_a0685f9dfb74d633c092886d56afffb6e}} 
+\index{Mesh@{Mesh}!Mesh@{Mesh}}
+\index{Mesh@{Mesh}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{Mesh()}{Mesh()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Mesh\+::\+Mesh (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{src\+Param }\end{DoxyParamCaption})}
+
+
+
+Construct a new \mbox{\hyperlink{classMesh}{Mesh}} object with parameters. Initialize vertices and faces with other functions like set\+Vertices\+Flat. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em param} & \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_aaab78f3a30742a937d9a387287ce323c}\label{classMesh_aaab78f3a30742a937d9a387287ce323c}} 
+\index{Mesh@{Mesh}!Mesh@{Mesh}}
+\index{Mesh@{Mesh}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{Mesh()}{Mesh()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Mesh\+::\+Mesh (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{src\+Vertices,  }\item[{const std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{src\+Faces,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{src\+Param }\end{DoxyParamCaption}) \&}
+
+
+
+Construct a new mesh object with given vertices, faces, and parameters. 
+
+\begin{DoxyRefDesc}{Deprecated}
+\item[\mbox{\hyperlink{deprecated__deprecated000003}{Deprecated}}]This function is deprecated, initialize with \mbox{\hyperlink{classMesh_a0685f9dfb74d633c092886d56afffb6e}{Mesh(\+Param \&src\+Param)}} and setup with setup\+\_\+from\+\_\+vertices\+\_\+faces instead. \end{DoxyRefDesc}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classMesh_a0acaf454a27868a6ed2ff0ddf4aff64e}\label{classMesh_a0acaf454a27868a6ed2ff0ddf4aff64e}} 
+\index{Mesh@{Mesh}!calculate\_element\_area\_volume@{calculate\_element\_area\_volume}}
+\index{calculate\_element\_area\_volume@{calculate\_element\_area\_volume}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{calculate\_element\_area\_volume()}{calculate\_element\_area\_volume()}}
+{\footnotesize\ttfamily void Mesh\+::calculate\+\_\+element\+\_\+area\+\_\+volume (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Calculates the area and volume of each element in the mesh. 
+
+This method computes and sets the area and volume of each element in the mesh, where an \char`\"{}element\char`\"{} refers to a face in the mesh. The method uses Gaussian quadrature to calculate the area and volume of each element, with 3 points used for regular patches and multiple iterations of subdivision used for irregular patches.
+
+The method first defines some matrices used for subdivision of the irregular patch, including {\ttfamily M}, {\ttfamily M1}, {\ttfamily M2}, {\ttfamily M3}, and {\ttfamily M4}. It then loops over all faces in the mesh in parallel using Open\+MP.
+
+For each face, the method checks whether it is a ghost face; if so, it skips to the next face. Otherwise, it initializes variables to accumulate the area and volume of the element and determines the number of one-\/ring vertices ({\ttfamily n\+One\+Ring\+Vertex}) for the face.
+
+If {\ttfamily n\+One\+Ring\+Vertex} is equal to 12, the face corresponds to a regular patch, and the method calls the {\ttfamily get\+\_\+one\+\_\+ring\+\_\+vertex\+\_\+matrix} function to compute a matrix representing the coordinates of the one-\/ring vertices. It then uses Gaussian quadrature with 3 points to compute the area and volume of the element.
+
+If {\ttfamily n\+One\+Ring\+Vertex} is equal to 11, the face corresponds to an irregular patch. In this case, the method again calls {\ttfamily get\+\_\+one\+\_\+ring\+\_\+vertex\+\_\+matrix} to compute the matrix of one-\/ring vertex coordinates, but then performs multiple iterations of subdivision using the {\ttfamily M}, {\ttfamily M1}, {\ttfamily M2}, {\ttfamily M3}, and {\ttfamily M4} matrices to estimate the area and volume of the element.
+
+Finally, the method sets the {\ttfamily element\+Area} and {\ttfamily element\+Volume} member variables of the face to the computed area and volume, respectively. \mbox{\Hypertarget{classMesh_ae709a12efd5127a80c9e53298d175b8b}\label{classMesh_ae709a12efd5127a80c9e53298d175b8b}} 
+\index{Mesh@{Mesh}!calculate\_mean\_force@{calculate\_mean\_force}}
+\index{calculate\_mean\_force@{calculate\_mean\_force}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{calculate\_mean\_force()}{calculate\_mean\_force()}}
+{\footnotesize\ttfamily double Mesh\+::calculate\+\_\+mean\+\_\+force (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get the mean force magnitude on all vertices. 
+
+\begin{DoxyReturn}{Returns}
+mean force magnitude 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_a9d4290cf23bd9694e577e9ba73990df3}\label{classMesh_a9d4290cf23bd9694e577e9ba73990df3}} 
+\index{Mesh@{Mesh}!calculate\_scaffolding\_energy\_force@{calculate\_scaffolding\_energy\_force}}
+\index{calculate\_scaffolding\_energy\_force@{calculate\_scaffolding\_energy\_force}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{calculate\_scaffolding\_energy\_force()}{calculate\_scaffolding\_energy\_force()}}
+{\footnotesize\ttfamily double Mesh\+::calculate\+\_\+scaffolding\+\_\+energy\+\_\+force (\begin{DoxyParamCaption}\item[{bool}]{do\+Local\+Search }\end{DoxyParamCaption})}
+
+
+
+Calculates the energy and force due to the harmonic bond between scaffold points and membrane vertices. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em do\+Local\+Search} & Flag indicating whether or not to perform a local search for each vertex (default=false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+double The total energy of the system due to the scaffold-\/membrane interactions.
+\end{DoxyReturn}
+The function iterates over each scaffold point, calculates the distance between the point and its corresponding vertex, and calculates the energy and force due to the harmonic bond between the two. If the energy flag is not set to include harmonic bonding, the function returns 0.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em do\+Local\+Search} & Flag to indicate whether a local search should be performed for each vertex (default=false).\\
+\hline
+\end{DoxyParams}
+\begin{DoxyNote}{Note}
+The energy is calculated according to the formula\+: E = 0.\+5 $\ast$ k $\ast$ (r -\/ l)$^\wedge$2, where k is the spring constant, r is the distance between the scaffold point and vertex, and l is the resting length of the bond. 
+
+The force is calculated according to the formula\+: F = -\/k $\ast$ (r -\/ l) $\ast$ (unit vector pointing from vertex to scaffold point). 
+
+If the distance between the scaffold point and vertex is negative, the force is multiplied by -\/1 in order to prevent overlapping between the scaffold and membrane. 
+
+If the verbose flag is set, the function prints out information about each vertex\textquotesingle{}s force due to the scaffold-\/membrane bond. 
+\end{DoxyNote}
+\mbox{\Hypertarget{classMesh_a742357b9318965689249acd31601642e}\label{classMesh_a742357b9318965689249acd31601642e}} 
+\index{Mesh@{Mesh}!clear\_force\_on\_vertices\_and\_energy\_on\_faces@{clear\_force\_on\_vertices\_and\_energy\_on\_faces}}
+\index{clear\_force\_on\_vertices\_and\_energy\_on\_faces@{clear\_force\_on\_vertices\_and\_energy\_on\_faces}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{clear\_force\_on\_vertices\_and\_energy\_on\_faces()}{clear\_force\_on\_vertices\_and\_energy\_on\_faces()}}
+{\footnotesize\ttfamily void Mesh\+::clear\+\_\+force\+\_\+on\+\_\+vertices\+\_\+and\+\_\+energy\+\_\+on\+\_\+faces (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+this function sets the force member variable of each vertex, and the energy member variable of each face to their default values. This is useful to clear out any residual forces or energies before computing new ones. 
+
+\mbox{\Hypertarget{classMesh_afe3b6819bae35b86e80ba1c4104c8269}\label{classMesh_afe3b6819bae35b86e80ba1c4104c8269}} 
+\index{Mesh@{Mesh}!Compute\_Energy\_And\_Force@{Compute\_Energy\_And\_Force}}
+\index{Compute\_Energy\_And\_Force@{Compute\_Energy\_And\_Force}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{Compute\_Energy\_And\_Force()}{Compute\_Energy\_And\_Force()}}
+{\footnotesize\ttfamily void Mesh\+::\+Compute\+\_\+\+Energy\+\_\+\+And\+\_\+\+Force (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Computes the energy and force on each vertex and face of the mesh. 
+
+This function performs the following steps\+: Calculates the area and volume of each element triangle and sums up the total area and volume of the membrane. Iterates through faces and calculates the energy and force on each triangular patch. Regularizes the force and energy. Sums up the energy and force on each vertex and face. Calculates the energy due to area constraint. Calculates the energy due to volume constraint. Calculates the energy due to scaffolding.
+
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_aef5bfdb2d69c0d217dff5b1fd83ed0f5}\label{classMesh_aef5bfdb2d69c0d217dff5b1fd83ed0f5}} 
+\index{Mesh@{Mesh}!determine\_boundary\_vertices\_faces@{determine\_boundary\_vertices\_faces}}
+\index{determine\_boundary\_vertices\_faces@{determine\_boundary\_vertices\_faces}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{determine\_boundary\_vertices\_faces()}{determine\_boundary\_vertices\_faces()}}
+{\footnotesize\ttfamily void Mesh\+::determine\+\_\+boundary\+\_\+vertices\+\_\+faces (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Iterate through vertices and faces and set the is\+Boundary\} property of boundary vertices and faces to true\}. 
+
+\begin{DoxyRefDesc}{Deprecated}
+\item[\mbox{\hyperlink{deprecated__deprecated000004}{Deprecated}}]Currently the is\+Boundary property is not used in any part of the model. This is a placeholder in case any future functions need the property. \end{DoxyRefDesc}
+\mbox{\Hypertarget{classMesh_a744de61088daa25cc58ae32c07020e5d}\label{classMesh_a744de61088daa25cc58ae32c07020e5d}} 
+\index{Mesh@{Mesh}!determine\_ghost\_vertices\_faces@{determine\_ghost\_vertices\_faces}}
+\index{determine\_ghost\_vertices\_faces@{determine\_ghost\_vertices\_faces}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{determine\_ghost\_vertices\_faces()}{determine\_ghost\_vertices\_faces()}}
+{\footnotesize\ttfamily void Mesh\+::determine\+\_\+ghost\+\_\+vertices\+\_\+faces (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Iterate through vertices and faces and set the is\+Ghost property of ghost vertices and face to true. The number of layers of ghost vertices in a flat membrane is dependent upon the boundary conditions\+: free boundary condition has 1 layer of ghost vertices and faces while periodic bounary condition has 3 layers of ghost vertices. 
+
+\mbox{\Hypertarget{classMesh_ab3e3994d78b0224d9759fe4ed4b4c6d5}\label{classMesh_ab3e3994d78b0224d9759fe4ed4b4c6d5}} 
+\index{Mesh@{Mesh}!element\_energy\_force\_regular@{element\_energy\_force\_regular}}
+\index{element\_energy\_force\_regular@{element\_energy\_force\_regular}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{element\_energy\_force\_regular()}{element\_energy\_force\_regular()}}
+{\footnotesize\ttfamily void Mesh\+::element\+\_\+energy\+\_\+force\+\_\+regular (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&}]{coord\+One\+Ring\+Vertices,  }\item[{\mbox{\hyperlink{classFace}{Face}} \&}]{face,  }\item[{const double}]{spont\+Curv,  }\item[{double \&}]{mean\+Curv,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{norm\+Vector,  }\item[{double \&}]{e\+Bend,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{f\+Bend,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{f\+Area,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{f\+Volume }\end{DoxyParamCaption})}
+
+
+
+The purpose of this function is to calculate the energy and forces for a regular element of a given mesh using the provided information about the element and its one-\/ring neighborhood. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em coord\+One\+Ring\+Vertices} & a constant reference to a vector of matrices representing the coordinates of the vertices in the mesh\textquotesingle{}s one-\/ring neighborhood. \\
+\hline
+{\em spont\+Curv} & a constant double representing the spontaneous curvature. \\
+\hline
+{\em mean\+Curv} & a non-\/constant double reference representing the mean curvature of the element. \\
+\hline
+{\em norm\+Vector} & a non-\/constant matrix reference representing the normal vector of the element. \\
+\hline
+{\em e\+Bend} & a non-\/constant double reference representing the bending energy of the element. \\
+\hline
+{\em f\+Bend} & a non-\/constant matrix reference representing the bending force of the element. \\
+\hline
+{\em f\+Area} & a non-\/constant matrix reference representing the area constraint force of the element. \\
+\hline
+{\em f\+Volume} & a non-\/constant matrix reference representing the volume constraint force of the element. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_a290b3c7dd1e39da6095b5d12da1b2c8c}\label{classMesh_a290b3c7dd1e39da6095b5d12da1b2c8c}} 
+\index{Mesh@{Mesh}!energy\_force\_regularization@{energy\_force\_regularization}}
+\index{energy\_force\_regularization@{energy\_force\_regularization}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{energy\_force\_regularization()}{energy\_force\_regularization()}}
+{\footnotesize\ttfamily void Mesh\+::energy\+\_\+force\+\_\+regularization (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Calculates the regularization energy and force for each face. 
+
+This function calculates the regularization energy and force for each face in the mesh. The regularization energy is calculated based on the deformation of the face\textquotesingle{}s shape and area relative to an equilateral triangle with the same side length. The regularization force is then calculated based on the energy and applied to the vertices of the face. The function also updates the deformation counts for shapes and areas.
+
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_a1820a26272a1ce4209a30032908c92d4}\label{classMesh_a1820a26272a1ce4209a30032908c92d4}} 
+\index{Mesh@{Mesh}!enumerate\_gauss\_quadrature\_point\_area\_volume@{enumerate\_gauss\_quadrature\_point\_area\_volume}}
+\index{enumerate\_gauss\_quadrature\_point\_area\_volume@{enumerate\_gauss\_quadrature\_point\_area\_volume}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{enumerate\_gauss\_quadrature\_point\_area\_volume()}{enumerate\_gauss\_quadrature\_point\_area\_volume()}}
+{\footnotesize\ttfamily void Mesh\+::enumerate\+\_\+gauss\+\_\+quadrature\+\_\+point\+\_\+area\+\_\+volume (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{dots,  }\item[{double \&}]{area,  }\item[{double \&}]{volume }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+Private member used in calculating element area volume\+: Calculates the area and volume at a Gauss quadrature point for a given set of shape functions and dots. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em dots} & The matrix of dots representing the coordinates of the quadrature point. \\
+\hline
+{\em gauss\+Quadrature\+Coeff} & The matrix of Gauss quadrature coefficients. \\
+\hline
+{\em area} & A reference to a double variable storing the accumulated area. \\
+\hline
+{\em volume} & A reference to a double variable storing the accumulated volume. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_ae93250c015872ef461069e436ec0d7be}\label{classMesh_ae93250c015872ef461069e436ec0d7be}} 
+\index{Mesh@{Mesh}!find\_opposite\_node\_index@{find\_opposite\_node\_index}}
+\index{find\_opposite\_node\_index@{find\_opposite\_node\_index}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{find\_opposite\_node\_index()}{find\_opposite\_node\_index()}}
+{\footnotesize\ttfamily int Mesh\+::find\+\_\+opposite\+\_\+node\+\_\+index (\begin{DoxyParamCaption}\item[{const int \&}]{node1,  }\item[{const int \&}]{node2,  }\item[{const int \&}]{node3 }\end{DoxyParamCaption})}
+
+
+
+Find the vertex that is adjacent to node1 and node2 but not node3. Particularly, when the three nodes are vertices of a triangle, then the function returns the the index of node4 that forms a parallegram with 1-\/\texorpdfstring{$>$}{>}3-\/\texorpdfstring{$>$}{>}2-\/\texorpdfstring{$>$}{>}4. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em node1} & \\
+\hline
+{\em node2} & \\
+\hline
+{\em node3} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+int vertex index 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_a0d9a489b9658c52c771d8aeb86761cff}\label{classMesh_a0d9a489b9658c52c771d8aeb86761cff}} 
+\index{Mesh@{Mesh}!get\_max\_force\_magnitude@{get\_max\_force\_magnitude}}
+\index{get\_max\_force\_magnitude@{get\_max\_force\_magnitude}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_max\_force\_magnitude()}{get\_max\_force\_magnitude()}}
+{\footnotesize\ttfamily double Mesh\+::get\+\_\+max\+\_\+force\+\_\+magnitude (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get the max force scale of vertices.\+force.\+get\+\_\+total\+\_\+force\+\_\+magnitude() 
+
+\begin{DoxyReturn}{Returns}
+double max force magnitude 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_a43e1893669c41ee154462ceb0518a6b0}\label{classMesh_a43e1893669c41ee154462ceb0518a6b0}} 
+\index{Mesh@{Mesh}!get\_one\_ring\_vertex\_matrix@{get\_one\_ring\_vertex\_matrix}}
+\index{get\_one\_ring\_vertex\_matrix@{get\_one\_ring\_vertex\_matrix}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_one\_ring\_vertex\_matrix()}{get\_one\_ring\_vertex\_matrix()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Mesh\+::get\+\_\+one\+\_\+ring\+\_\+vertex\+\_\+matrix (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classFace}{Face}} \&}]{face }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+Private member used in calculating element area volume\+: Computes a matrix containing the coordinates of the one-\/ring vertices for the input face. 
+
+\mbox{\Hypertarget{classMesh_a3a166003a4f1e86bbedfa5ee6867ff0d}\label{classMesh_a3a166003a4f1e86bbedfa5ee6867ff0d}} 
+\index{Mesh@{Mesh}!get\_squared\_distance\_sp\_and\_v@{get\_squared\_distance\_sp\_and\_v}}
+\index{get\_squared\_distance\_sp\_and\_v@{get\_squared\_distance\_sp\_and\_v}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_squared\_distance\_sp\_and\_v()}{get\_squared\_distance\_sp\_and\_v()}}
+{\footnotesize\ttfamily double Mesh\+::get\+\_\+squared\+\_\+distance\+\_\+sp\+\_\+and\+\_\+v (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{scaffolding\+Point,  }\item[{const \mbox{\hyperlink{classVertex}{Vertex}} \&}]{vertex }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+Private member used in calculating correspondence between scaffolding points and vertices Calculate the squared distance between two points denoted by (3,1) \mbox{\hyperlink{classMatrix}{Matrix}} and \mbox{\hyperlink{classVertex}{Vertex}} respectively. 
+
+\begin{DoxyReturn}{Returns}
+the squared distance 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_a5818bb84a71e7d6e4da2cd0a2da96cfb}\label{classMesh_a5818bb84a71e7d6e4da2cd0a2da96cfb}} 
+\index{Mesh@{Mesh}!manage\_force\_for\_boundary\_ghost\_vertex@{manage\_force\_for\_boundary\_ghost\_vertex}}
+\index{manage\_force\_for\_boundary\_ghost\_vertex@{manage\_force\_for\_boundary\_ghost\_vertex}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{manage\_force\_for\_boundary\_ghost\_vertex()}{manage\_force\_for\_boundary\_ghost\_vertex()}}
+{\footnotesize\ttfamily void Mesh\+::manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Manages forces depending on different boundary conditions. 
+
+This method sets the force of nodes that are part of the mesh\textquotesingle{}s boundaries and ghost vertices to zero, based on the type of boundary condition specified in the input parameters.
+
+\begin{DoxyNote}{Note}
+See enum Boundary\+Type in \mbox{\hyperlink{Parameters_8hpp}{Parameters.\+hpp}} 
+\end{DoxyNote}
+\mbox{\Hypertarget{classMesh_a0dbefd57ee3d41858d212263d1dc8024}\label{classMesh_a0dbefd57ee3d41858d212263d1dc8024}} 
+\index{Mesh@{Mesh}!move\_vertices\_based\_on\_scaffolding@{move\_vertices\_based\_on\_scaffolding}}
+\index{move\_vertices\_based\_on\_scaffolding@{move\_vertices\_based\_on\_scaffolding}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{move\_vertices\_based\_on\_scaffolding()}{move\_vertices\_based\_on\_scaffolding()}}
+{\footnotesize\ttfamily bool Mesh\+::move\+\_\+vertices\+\_\+based\+\_\+on\+\_\+scaffolding (\begin{DoxyParamCaption}\item[{bool}]{fix\+Dir = {\ttfamily true} }\end{DoxyParamCaption})}
+
+
+
+This method takes in the vector of spline point and calculate the average coordinates. Based on the difference between spline points and mesh vertices, a difference vector is calculated and compared to the target bond length. (Supposed only in Z direction). Afterwards, all the mesh points are moved in the direction of the target difference vector. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fix\+Dir} & default to true; fix move vector to (0, 0, 50) if set to true; otherwise move vector is determined based on average scaffolding points \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if success 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMesh_aed33be097663033bc75853c33c3333ed}\label{classMesh_aed33be097663033bc75853c33c3333ed}} 
+\index{Mesh@{Mesh}!set\_adjacent\_faces\_of\_vertices\_sorted@{set\_adjacent\_faces\_of\_vertices\_sorted}}
+\index{set\_adjacent\_faces\_of\_vertices\_sorted@{set\_adjacent\_faces\_of\_vertices\_sorted}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_adjacent\_faces\_of\_vertices\_sorted()}{set\_adjacent\_faces\_of\_vertices\_sorted()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Set adjacent\+Faces properties based on the current vertices and mesh. Sort the adjacent vertices so that the adjacent vertices property of vertices follow the counterclockwise order and therefore the the adjacent faces with index number difference of one are adjacent to each other. This sorting streamlines the shapefunction calculation. 
+
+\mbox{\Hypertarget{classMesh_a3701b70db1a2940cbda09d8d8ae36dc0}\label{classMesh_a3701b70db1a2940cbda09d8d8ae36dc0}} 
+\index{Mesh@{Mesh}!set\_adjacent\_vertices\_of\_vertices\_sorted@{set\_adjacent\_vertices\_of\_vertices\_sorted}}
+\index{set\_adjacent\_vertices\_of\_vertices\_sorted@{set\_adjacent\_vertices\_of\_vertices\_sorted}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_adjacent\_vertices\_of\_vertices\_sorted()}{set\_adjacent\_vertices\_of\_vertices\_sorted()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+adjacent\+\_\+vertices\+\_\+of\+\_\+vertices\+\_\+sorted (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Set adjacent\+Vertices of vertices based on current mesh. 
+
+\begin{DoxyRefDesc}{Todo}
+\item[\mbox{\hyperlink{todo__todo000003}{Todo}}]Sorting to be implemented.\end{DoxyRefDesc}
+\mbox{\Hypertarget{classMesh_a99b21ba1a874da6dc75cfa473d02a747}\label{classMesh_a99b21ba1a874da6dc75cfa473d02a747}} 
+\index{Mesh@{Mesh}!set\_axes\_division\_flat@{set\_axes\_division\_flat}}
+\index{set\_axes\_division\_flat@{set\_axes\_division\_flat}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_axes\_division\_flat()}{set\_axes\_division\_flat()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+axes\+\_\+division\+\_\+flat (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Divide x,y axis to nx$\ast$dx (number of faces times length of each face) and ny$\ast$dy based on X, Y side length of the mesh and side length of faces in parameter. Note\+: 
+
+(1) y-\/axis is in a zig-\/zag shape and in perpendicular direction, h(y) = sqrt(3)/2 $\ast$ h(x) assuming equilateral triangles (2) number of vertices along axes = number of faces (edges) + 1 \mbox{\Hypertarget{classMesh_ae03d9aefdf5b321200fc4f1a6354c1c8}\label{classMesh_ae03d9aefdf5b321200fc4f1a6354c1c8}} 
+\index{Mesh@{Mesh}!set\_insertion\_patch@{set\_insertion\_patch}}
+\index{set\_insertion\_patch@{set\_insertion\_patch}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_insertion\_patch()}{set\_insertion\_patch()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+insertion\+\_\+patch (\begin{DoxyParamCaption}\item[{const vector$<$ vector$<$ int $>$ $>$ \&}]{insertion\+Patch }\end{DoxyParamCaption})}
+
+
+
+Sets the is\+Insertion\+Patch flag for each face in the insertion patch. This also sets with spontaneous curvature after setting the flag with set\+\_\+spontaneous\+\_\+curvature\+\_\+for\+\_\+face function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em insertion\+Patch} & A vector of vectors containing the indices of faces in the insertion patch \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_a83c95e1c6ae386b81d44558273b10a1e}\label{classMesh_a83c95e1c6ae386b81d44558273b10a1e}} 
+\index{Mesh@{Mesh}!set\_one\_ring\_vertices\_sorted@{set\_one\_ring\_vertices\_sorted}}
+\index{set\_one\_ring\_vertices\_sorted@{set\_one\_ring\_vertices\_sorted}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_one\_ring\_vertices\_sorted()}{set\_one\_ring\_vertices\_sorted()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+one\+\_\+ring\+\_\+vertices\+\_\+sorted (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+find out the one-\/ring vertices aound face\+\_\+i. It should be 12 for the flat surface because we set it up only with regular patch. The boundary faces do not have complete one-\/ring, neither it will be called in the code, so no need to store their one-\/ring-\/vertex 
+
+\mbox{\Hypertarget{classMesh_a6e11a64d5b45a2ce39b70325f7ff9a4e}\label{classMesh_a6e11a64d5b45a2ce39b70325f7ff9a4e}} 
+\index{Mesh@{Mesh}!set\_scaffolding\_vertices\_correspondence@{set\_scaffolding\_vertices\_correspondence}}
+\index{set\_scaffolding\_vertices\_correspondence@{set\_scaffolding\_vertices\_correspondence}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_scaffolding\_vertices\_correspondence()}{set\_scaffolding\_vertices\_correspondence()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+scaffolding\+\_\+vertices\+\_\+correspondence (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get a vector of indexes of vertices that are closest to the scaffolding\+Points vector provided. Then set the param.\+scaffolding\+Points\+\_\+corresponding\+Vertex\+Index\} to represent the vertices bonded with each scaffolding point. 
+
+\mbox{\Hypertarget{classMesh_ae3c686d28a291b262ca1c026dba2e817}\label{classMesh_ae3c686d28a291b262ca1c026dba2e817}} 
+\index{Mesh@{Mesh}!set\_spontaneous\_curvature\_for\_face@{set\_spontaneous\_curvature\_for\_face}}
+\index{set\_spontaneous\_curvature\_for\_face@{set\_spontaneous\_curvature\_for\_face}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_spontaneous\_curvature\_for\_face()}{set\_spontaneous\_curvature\_for\_face()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+spontaneous\+\_\+curvature\+\_\+for\+\_\+face (\begin{DoxyParamCaption}\item[{const double \&}]{insert\+Curv,  }\item[{const double \&}]{spont\+Curv }\end{DoxyParamCaption})}
+
+
+
+Sets the spontaneous curvature for each face in the mesh. 
+
+This method sets the \char`\"{}spontaneous curvature\char`\"{} of each face in the mesh, which is a parameter used to describe the shape and behavior of lipid membranes. The spontaneous curvature can be different for faces inside and outside of an \char`\"{}insertion patch,\char`\"{} which are specified by the {\ttfamily insert\+Curv} and {\ttfamily spont\+Curv} parameters, respectively.
+
+The method takes two double parameters\+: {\ttfamily insert\+Curv} and {\ttfamily spont\+Curv}. The former specifies the spontaneous curvature for faces within the insertion patch, while the latter specifies the spontaneous curvature for faces outside of the insertion patch.
+
+The method loops over all faces in the mesh and sets the {\ttfamily spont\+Curvature} member variable of each face to either {\ttfamily insert\+Curv} or {\ttfamily spont\+Curv}, depending on whether the face is part of the insertion patch or not. 
+\begin{DoxyParams}{Parameters}
+{\em insert\+Curv} & The spontaneous curvature for faces in the insertion patch \\
+\hline
+{\em spont\+Curv} & The spontaneous curvature for faces outside the insertion patch \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_ac531dabf200ff831464999c03f345707}\label{classMesh_ac531dabf200ff831464999c03f345707}} 
+\index{Mesh@{Mesh}!set\_vertices\_faces\_flat@{set\_vertices\_faces\_flat}}
+\index{set\_vertices\_faces\_flat@{set\_vertices\_faces\_flat}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_vertices\_faces\_flat()}{set\_vertices\_faces\_flat()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+vertices\+\_\+faces\+\_\+flat (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Set vertices and faces according to mesh and face side lengths in param for flat mesh. This also sets adjacent vertices of faces. 
+
+\mbox{\Hypertarget{classMesh_affdc2aaee5e4762f56c6637b16506f2d}\label{classMesh_affdc2aaee5e4762f56c6637b16506f2d}} 
+\index{Mesh@{Mesh}!setup\_flat@{setup\_flat}}
+\index{setup\_flat@{setup\_flat}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setup\_flat()}{setup\_flat()}}
+{\footnotesize\ttfamily void Mesh\+::setup\+\_\+flat (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Initialize halfedges based on the mesh\textquotesingle{}s vertices and faces. 
+
+Helper function to create a new halfedge.
+
+
+\begin{DoxyParams}{Parameters}
+{\em vertex\+Index} & Index of the vertex associated with the halfedge. \\
+\hline
+{\em face\+Index} & Index of the face associated with the halfedge. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Halfedge$\ast$ Pointer to the created halfedge.
+\end{DoxyReturn}
+Initialize flat membrane with properities specified in the param\} member variable. Equivalent to call\+: (1) this-\/\texorpdfstring{$>$}{>}set\+\_\+axes\+\_\+division\+\_\+flat (2) this-\/\texorpdfstring{$>$}{>}set\+\_\+vertices\+\_\+faces\+\_\+flat (3) this-\/\texorpdfstring{$>$}{>}set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted (4) this-\/\texorpdfstring{$>$}{>}determine\+\_\+ghost\+\_\+vertices\+\_\+faces \mbox{\Hypertarget{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}\label{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}} 
+\index{Mesh@{Mesh}!setup\_from\_vertices\_faces@{setup\_from\_vertices\_faces}}
+\index{setup\_from\_vertices\_faces@{setup\_from\_vertices\_faces}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setup\_from\_vertices\_faces()}{setup\_from\_vertices\_faces()}}
+{\footnotesize\ttfamily void Mesh\+::setup\+\_\+from\+\_\+vertices\+\_\+faces (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{vertices\+Data,  }\item[{const std\+::vector$<$ std\+::vector$<$ int $>$ $>$ \&}]{faces\+Data }\end{DoxyParamCaption})}
+
+
+
+Initialize membrane with arbitrary vertices and faces imported from files. Sets up the membrane from data and then call\+: (1) this-\/\texorpdfstring{$>$}{>}set\+\_\+adjacent\+\_\+faces\+\_\+of\+\_\+vertices\+\_\+sorted (2) this-\/\texorpdfstring{$>$}{>}determine\+\_\+ghost\+\_\+vertices\+\_\+faces. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em vertices\+Data} & 2D double vector containing the coordinates of vertices \\
+\hline
+{\em faces\+Data} & 2D int vector containing the indices of vertices on each face \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_acbf7a146011c884429c5d5009850d834}\label{classMesh_acbf7a146011c884429c5d5009850d834}} 
+\index{Mesh@{Mesh}!sum\_membrane\_area\_and\_volume@{sum\_membrane\_area\_and\_volume}}
+\index{sum\_membrane\_area\_and\_volume@{sum\_membrane\_area\_and\_volume}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{sum\_membrane\_area\_and\_volume()}{sum\_membrane\_area\_and\_volume()}}
+{\footnotesize\ttfamily void Mesh\+::sum\+\_\+membrane\+\_\+area\+\_\+and\+\_\+volume (\begin{DoxyParamCaption}\item[{double \&}]{area,  }\item[{double \&}]{volume }\end{DoxyParamCaption})}
+
+
+
+This function calculates the total membrane area and volume of non-\/ghost faces in a given set of faces. 
+
+\begin{DoxyNote}{Note}
+This function only sums up to element area and volume of all faces. It does not update the element area and volume based on the current state of the mesh. If you need to update and calculate the total area and volume of the mesh, please call calculate\+\_\+element\+\_\+area\+\_\+volume first before calling this function.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em area} & a reference to a double variable to store the computed area \\
+\hline
+{\em volume} & a reference to a double variable to store the computed volume \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_ace8f4f14e01b2dc240eedb9ea4d71ff8}\label{classMesh_ace8f4f14e01b2dc240eedb9ea4d71ff8}} 
+\index{Mesh@{Mesh}!update\_previous\_coord\_for\_vertex@{update\_previous\_coord\_for\_vertex}}
+\index{update\_previous\_coord\_for\_vertex@{update\_previous\_coord\_for\_vertex}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{update\_previous\_coord\_for\_vertex()}{update\_previous\_coord\_for\_vertex()}}
+{\footnotesize\ttfamily void Mesh\+::update\+\_\+previous\+\_\+coord\+\_\+for\+\_\+vertex (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+This function updates the coord\+Prev member variable for each vertex in the mesh. It does this by copying the current value of coord to coord\+Prev. 
+
+\mbox{\Hypertarget{classMesh_a79e83327f9919ee1de80e19f0f3e38a6}\label{classMesh_a79e83327f9919ee1de80e19f0f3e38a6}} 
+\index{Mesh@{Mesh}!update\_previous\_energy\_for\_face@{update\_previous\_energy\_for\_face}}
+\index{update\_previous\_energy\_for\_face@{update\_previous\_energy\_for\_face}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{update\_previous\_energy\_for\_face()}{update\_previous\_energy\_for\_face()}}
+{\footnotesize\ttfamily void Mesh\+::update\+\_\+previous\+\_\+energy\+\_\+for\+\_\+face (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Update the previous energy values for each face in the mesh. 
+
+The {\ttfamily energy\+Prev} member variable for each face is updated with the current value of {\ttfamily energy}. \mbox{\Hypertarget{classMesh_a195aba6e11cd1d7a55604c2c337d65c4}\label{classMesh_a195aba6e11cd1d7a55604c2c337d65c4}} 
+\index{Mesh@{Mesh}!update\_previous\_force\_for\_vertex@{update\_previous\_force\_for\_vertex}}
+\index{update\_previous\_force\_for\_vertex@{update\_previous\_force\_for\_vertex}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{update\_previous\_force\_for\_vertex()}{update\_previous\_force\_for\_vertex()}}
+{\footnotesize\ttfamily void Mesh\+::update\+\_\+previous\+\_\+force\+\_\+for\+\_\+vertex (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Update the previous force vectors for each vertex in the mesh. 
+
+The {\ttfamily force\+Prev} member variable for each vertex is updated with the current value of {\ttfamily force}. \mbox{\Hypertarget{classMesh_a3789d9eb9e117406a17167c3b9cee1e4}\label{classMesh_a3789d9eb9e117406a17167c3b9cee1e4}} 
+\index{Mesh@{Mesh}!update\_reference\_coord\_from\_previous\_coord@{update\_reference\_coord\_from\_previous\_coord}}
+\index{update\_reference\_coord\_from\_previous\_coord@{update\_reference\_coord\_from\_previous\_coord}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{update\_reference\_coord\_from\_previous\_coord()}{update\_reference\_coord\_from\_previous\_coord()}}
+{\footnotesize\ttfamily void Mesh\+::update\+\_\+reference\+\_\+coord\+\_\+from\+\_\+previous\+\_\+coord (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Update the reference coordinates for each vertex in the mesh. 
+
+The {\ttfamily coord\+Ref} member variable for each vertex is updated with the current value of {\ttfamily coord\+Prev}. \mbox{\Hypertarget{classMesh_a5bb6aca91c6fbd690653536eced038bf}\label{classMesh_a5bb6aca91c6fbd690653536eced038bf}} 
+\index{Mesh@{Mesh}!write\_faces\_csv@{write\_faces\_csv}}
+\index{write\_faces\_csv@{write\_faces\_csv}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{write\_faces\_csv()}{write\_faces\_csv()}}
+{\footnotesize\ttfamily void Mesh\+::write\+\_\+faces\+\_\+csv (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{outfile\+\_\+name }\end{DoxyParamCaption})}
+
+
+
+Writes a csv file containing the adjacent vertices for each face in the mesh. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em outfile\+\_\+name} & The name of the output csv file \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_a24565ddc787b2fd6c78fc8715c5bbd0a}\label{classMesh_a24565ddc787b2fd6c78fc8715c5bbd0a}} 
+\index{Mesh@{Mesh}!write\_vertices\_csv@{write\_vertices\_csv}}
+\index{write\_vertices\_csv@{write\_vertices\_csv}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{write\_vertices\_csv()}{write\_vertices\_csv()}}
+{\footnotesize\ttfamily void Mesh\+::write\+\_\+vertices\+\_\+csv (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{outfile\+\_\+name }\end{DoxyParamCaption})}
+
+
+
+Writes a csv file containing the coordinates of each vertex in the mesh. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em outfile\+\_\+name} & The name of the output csv file \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMesh_ac641af43730870056e0ba395856a771a}\label{classMesh_ac641af43730870056e0ba395856a771a}} 
+\index{Mesh@{Mesh}!write\_vertices\_csv\_with\_type@{write\_vertices\_csv\_with\_type}}
+\index{write\_vertices\_csv\_with\_type@{write\_vertices\_csv\_with\_type}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{write\_vertices\_csv\_with\_type()}{write\_vertices\_csv\_with\_type()}}
+{\footnotesize\ttfamily void Mesh\+::write\+\_\+vertices\+\_\+csv\+\_\+with\+\_\+type (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{outfile\+\_\+name }\end{DoxyParamCaption})}
+
+
+
+Writes a csv file containing the coordinates and types of each vertex in the mesh. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em outfile\+\_\+name} & The name of the output csv file \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Friends And Related Function Documentation}
+\mbox{\Hypertarget{classMesh_a859d91a1b2b14ee63c792c057d35295a}\label{classMesh_a859d91a1b2b14ee63c792c057d35295a}} 
+\index{Mesh@{Mesh}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$}{operator<<}}
+{\footnotesize\ttfamily std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{stream,  }\item[{const \mbox{\hyperlink{classMesh}{Mesh}} \&}]{mesh }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [friend]}}
+
+
+
+Overrides the operator \texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<} in ostream. 
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classMesh_a9da199719905f2b213f8c0c8feba2d1f}\label{classMesh_a9da199719905f2b213f8c0c8feba2d1f}} 
+\index{Mesh@{Mesh}!faces@{faces}}
+\index{faces@{faces}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{faces}{faces}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classFace}{Face}}$>$ Mesh\+::faces}
+
+
+
+Vector to store all faces in the mesh. 
+
+\mbox{\Hypertarget{classMesh_ae2ce6a4fa3c43202516e8de3504478bc}\label{classMesh_ae2ce6a4fa3c43202516e8de3504478bc}} 
+\index{Mesh@{Mesh}!param@{param}}
+\index{param@{param}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{param}{param}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structParam}{Param}}\& Mesh\+::param}
+
+
+
+Object of the \mbox{\hyperlink{structParam}{Param}} class containing all necessary parameters for building the \mbox{\hyperlink{classMesh}{Mesh}} object. 
+
+\mbox{\Hypertarget{classMesh_a6465a888c97232a39e12aad008c969c3}\label{classMesh_a6465a888c97232a39e12aad008c969c3}} 
+\index{Mesh@{Mesh}!vertices@{vertices}}
+\index{vertices@{vertices}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{vertices}{vertices}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classVertex}{Vertex}}$>$ Mesh\+::vertices}
+
+
+
+Vector to store all vertices in the mesh. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Mesh_8hpp}{Mesh.\+hpp}}\end{DoxyCompactItemize}

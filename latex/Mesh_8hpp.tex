@@ -1,0 +1,41 @@
+\hypertarget{Mesh_8hpp}{}\doxysection{include/\+Mesh.hpp File Reference}
+\label{Mesh_8hpp}\index{include/Mesh.hpp@{include/Mesh.hpp}}
+
+
+This file defines mesh class containing a vector of vertices and a vector of faces that are required to build up a triangular mesh that represents a limit surface. It provides functions to calculate limit surface from control mesh and control mesh from limit surface.  
+
+
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$sstream$>$}\newline
+{\ttfamily \#include $<$omp.\+h$>$}\newline
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include \char`\"{}Face.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Vertex.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Energy.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Force.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Gauss\+\_\+quadrature.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Parameters.\+hpp\char`\"{}}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classMesh}{Mesh}}
+\begin{DoxyCompactList}\small\item\em A class representing a triangular mesh that defines a limit surface. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines mesh class containing a vector of vertices and a vector of faces that are required to build up a triangular mesh that represents a limit surface. It provides functions to calculate limit surface from control mesh and control mesh from limit surface. 
+
+\begin{DoxyAuthor}{Author}
+Y Ying 
+\end{DoxyAuthor}
+The model class combines mesh and parameter to provide a full environment for simulation. \begin{DoxyDate}{Date}
+2023-\/02-\/01
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}

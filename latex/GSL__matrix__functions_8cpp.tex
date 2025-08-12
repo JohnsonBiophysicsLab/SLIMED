@@ -1,0 +1,294 @@
+\hypertarget{GSL__matrix__functions_8cpp}{}\doxysection{src/gsl\+\_\+matrix\+\_\+functions/\+GSL\+\_\+matrix\+\_\+functions.cpp File Reference}
+\label{GSL__matrix__functions_8cpp}\index{src/gsl\_matrix\_functions/GSL\_matrix\_functions.cpp@{src/gsl\_matrix\_functions/GSL\_matrix\_functions.cpp}}
+{\ttfamily \#include \char`\"{}GSL\+\_\+matrix\+\_\+functions.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_afd421390be5dc690073ef91173c1595a}{invert\+\_\+a\+\_\+matrix}} (gsl\+\_\+matrix $\ast$matrix)
+\begin{DoxyCompactList}\small\item\em This function uses LU decomposition to calculate the inverse of the given square matrix, i.\+e. A = LU -\/\texorpdfstring{$>$}{>} A$^\wedge$\{-\/1\} = U$^\wedge$\{-\/1\}L$^\wedge$\{-\/1\}. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a4052e043c8233036e0b223537bd0afe5}{inverse\+\_\+cholesky}} (const gsl\+\_\+matrix $\ast$const matrix)
+\begin{DoxyCompactList}\small\item\em This function uses cholesky decomposition to solve for the inverse of the input square matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{GSL__matrix__functions_8cpp_aba27a8e37e09451882bdc7646e8d3fa5}{copy\+\_\+vertex\+\_\+to\+\_\+gsl\+\_\+matrix}} (vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, gsl\+\_\+matrix $\ast$matrix)
+\item 
+vector$<$ double $>$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_af654dd5a6cd2b7758b401834b9476614}{least\+Square\+Plane}} (vector$<$ vector$<$ double $>$ $>$ \&scaffolding\+Points)
+\item 
+std\+::ostream \& \mbox{\hyperlink{GSL__matrix__functions_8cpp_a0ef4a516c3e18ad92fc2c88a1462b9e0}{operator$<$$<$}} (std\+::ostream \&stream, const gsl\+\_\+matrix $\ast$const matrix)
+\begin{DoxyCompactList}\small\item\em Bit push all element of a matrix in the format of\+: \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a67e49c4c27e6af117dfdb5f4586d3383}{operator$\ast$}} (const double scalar, gsl\+\_\+matrix $\ast$matrix)
+\begin{DoxyCompactList}\small\item\em This operator takes a double scalar and a gsl\+\_\+matrix$\ast$ as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the scalar. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a3b07551ea87ebab4520ea6d48e4f9335}{operator$\ast$}} (gsl\+\_\+matrix $\ast$matrix, const double scalar)
+\begin{DoxyCompactList}\small\item\em This operator takes a double scalar and a gsl\+\_\+matrix$\ast$ as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the scalar. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_ae201e2d24b0659737a1633aef00711a1}{operator$\ast$=}} (gsl\+\_\+matrix $\ast$mat, double scalar)
+\begin{DoxyCompactList}\small\item\em This implementation uses the gsl\+\_\+matrix\+\_\+scale function to scale each element in the matrix by the scalar value. The function returns the modified matrix, which allows for method chaining when using the $\ast$= operator. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_ab79a14fdee8c9c2e6f4e22ee0ce8220e}{operator/}} (gsl\+\_\+matrix $\ast$matrix, const double scalar)
+\begin{DoxyCompactList}\small\item\em This operator takes a double scalar and a gsl\+\_\+matrix$\ast$ as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the 1/scalar. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a3f7200ba5b89b6f24ba0c792e9d56db3}{operator/=}} (gsl\+\_\+matrix $\ast$mat, double scalar)
+\begin{DoxyCompactList}\small\item\em This implementation uses the gsl\+\_\+matrix\+\_\+scale function to scale each element in the matrix by 1/the scalar value. The function returns the modified matrix, which allows for method chaining when using the $\ast$= operator. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_ae40cae92dc1d28d98833d77fbbd1efb3}{operator+=}} (gsl\+\_\+matrix $\ast$m1, gsl\+\_\+matrix $\ast$m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two gsl\+\_\+matrix pointers as arguments and adds the elements of the second matrix to the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a6e8d6a117e7f0c3e63e95647df19ef27}{operator+}} (gsl\+\_\+matrix $\ast$m1, gsl\+\_\+matrix $\ast$m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have the same dimensions and allocates memory for the result of the addition. It then adds the matrices element-\/wise and stores the result in a newly allocated matrix result, which is then returned. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a07431e0b4b15fa43bf576ed5ec0df3e3}{operator$\ast$=}} (gsl\+\_\+matrix $\ast$m1, gsl\+\_\+matrix $\ast$m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a temporary matrix, which is then copied back into m1. Finally, the temporary memory is freed before returning m1. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_ad9e3d95c9f9eec7f5399529ab0861437}{operator$\ast$}} (gsl\+\_\+matrix $\ast$m1, gsl\+\_\+matrix $\ast$m2)
+\begin{DoxyCompactList}\small\item\em This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a newly allocated matrix result, which is then returned. The temporary memory is not freed here, and it is the responsibility of the caller to free the memory once the result is no longer needed. \end{DoxyCompactList}\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{GSL__matrix__functions_8cpp_a53b984c4f6360e78a747551cced64468}{cross\+\_\+product}} (gsl\+\_\+matrix $\ast$m1, gsl\+\_\+matrix $\ast$m2)
+\begin{DoxyCompactList}\small\item\em This implementation takes two gsl\+\_\+matrix pointers as arguments and returns their cross product as a new gsl\+\_\+matrix. It first checks that the matrices have dimensions 3xN and Nx3 respectively, and throws an exception if they do not. Then it calculates the cross product of the two matrices and returns the result. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{GSL__matrix__functions_8cpp_a243a7678657c7a5b79bcc0f0024d50b5}{norm\+\_\+row\+\_\+matrix}} (const gsl\+\_\+matrix m1)
+\begin{DoxyCompactList}\small\item\em Calculates the Euclidean norm of a matrix. This function calculates the Euclidean norm of a matrix by treating it as a vector. It assumes that the matrix is a column matrix, i.\+e., it has only one column. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_aba27a8e37e09451882bdc7646e8d3fa5}\label{GSL__matrix__functions_8cpp_aba27a8e37e09451882bdc7646e8d3fa5}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!copy\_vertex\_to\_gsl\_matrix@{copy\_vertex\_to\_gsl\_matrix}}
+\index{copy\_vertex\_to\_gsl\_matrix@{copy\_vertex\_to\_gsl\_matrix}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{copy\_vertex\_to\_gsl\_matrix()}{copy\_vertex\_to\_gsl\_matrix()}}
+{\footnotesize\ttfamily void copy\+\_\+vertex\+\_\+to\+\_\+gsl\+\_\+matrix (\begin{DoxyParamCaption}\item[{vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{gsl\+\_\+matrix $\ast$}]{matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a53b984c4f6360e78a747551cced64468}\label{GSL__matrix__functions_8cpp_a53b984c4f6360e78a747551cced64468}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!cross\_product@{cross\_product}}
+\index{cross\_product@{cross\_product}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{cross\_product()}{cross\_product()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ cross\+\_\+product (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{m1,  }\item[{gsl\+\_\+matrix $\ast$}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two gsl\+\_\+matrix pointers as arguments and returns their cross product as a new gsl\+\_\+matrix. It first checks that the matrices have dimensions 3xN and Nx3 respectively, and throws an exception if they do not. Then it calculates the cross product of the two matrices and returns the result. 
+
+Note that this implementation assumes that the input matrices are already column vectors, so no additional transposition is necessary. \mbox{\Hypertarget{GSL__matrix__functions_8cpp_a4052e043c8233036e0b223537bd0afe5}\label{GSL__matrix__functions_8cpp_a4052e043c8233036e0b223537bd0afe5}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!inverse\_cholesky@{inverse\_cholesky}}
+\index{inverse\_cholesky@{inverse\_cholesky}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{inverse\_cholesky()}{inverse\_cholesky()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ inverse\+\_\+cholesky (\begin{DoxyParamCaption}\item[{const gsl\+\_\+matrix $\ast$const}]{matrix }\end{DoxyParamCaption})}
+
+
+
+This function uses cholesky decomposition to solve for the inverse of the input square matrix. 
+
+\href{https://www.gnu.org/software/gsl/doc/html/linalg.html\#c.gsl_linalg_cholesky_decomp1}{\texttt{ https\+://www.\+gnu.\+org/software/gsl/doc/html/linalg.\+html\#c.\+gsl\+\_\+linalg\+\_\+cholesky\+\_\+decomp1}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_afd421390be5dc690073ef91173c1595a}\label{GSL__matrix__functions_8cpp_afd421390be5dc690073ef91173c1595a}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!invert\_a\_matrix@{invert\_a\_matrix}}
+\index{invert\_a\_matrix@{invert\_a\_matrix}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{invert\_a\_matrix()}{invert\_a\_matrix()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ invert\+\_\+a\+\_\+matrix (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{matrix }\end{DoxyParamCaption})}
+
+
+
+This function uses LU decomposition to calculate the inverse of the given square matrix, i.\+e. A = LU -\/\texorpdfstring{$>$}{>} A$^\wedge$\{-\/1\} = U$^\wedge$\{-\/1\}L$^\wedge$\{-\/1\}. 
+
+\begin{DoxyRefDesc}{Deprecated}
+\item[\mbox{\hyperlink{deprecated__deprecated000001}{Deprecated}}]\end{DoxyRefDesc}
+
+
+Note that this functions is deprecated. Please use SV\+\_\+solve\+\_\+inverse for efficiency.
+
+\href{https://stackoverflow.com/questions/30728708/generalized-inverse-function-in-gsl}{\texttt{ https\+://stackoverflow.\+com/questions/30728708/generalized-\/inverse-\/function-\/in-\/gsl}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ inverse of the matrix 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_af654dd5a6cd2b7758b401834b9476614}\label{GSL__matrix__functions_8cpp_af654dd5a6cd2b7758b401834b9476614}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!leastSquarePlane@{leastSquarePlane}}
+\index{leastSquarePlane@{leastSquarePlane}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{leastSquarePlane()}{leastSquarePlane()}}
+{\footnotesize\ttfamily vector$<$ double $>$ least\+Square\+Plane (\begin{DoxyParamCaption}\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{scaffolding\+Points }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a243a7678657c7a5b79bcc0f0024d50b5}\label{GSL__matrix__functions_8cpp_a243a7678657c7a5b79bcc0f0024d50b5}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!norm\_row\_matrix@{norm\_row\_matrix}}
+\index{norm\_row\_matrix@{norm\_row\_matrix}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{norm\_row\_matrix()}{norm\_row\_matrix()}}
+{\footnotesize\ttfamily double norm\+\_\+row\+\_\+matrix (\begin{DoxyParamCaption}\item[{const gsl\+\_\+matrix}]{m1 }\end{DoxyParamCaption})}
+
+
+
+Calculates the Euclidean norm of a matrix. This function calculates the Euclidean norm of a matrix by treating it as a vector. It assumes that the matrix is a column matrix, i.\+e., it has only one column. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & A pointer to the matrix. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The Euclidean norm of the matrix. 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+This function assumes that the matrix has only one column. If the matrix has more than one column, the function prints an error message and exits the program. 
+\end{DoxyNote}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a67e49c4c27e6af117dfdb5f4586d3383}\label{GSL__matrix__functions_8cpp_a67e49c4c27e6af117dfdb5f4586d3383}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator$\ast$ (\begin{DoxyParamCaption}\item[{const double}]{scalar,  }\item[{gsl\+\_\+matrix $\ast$}]{matrix }\end{DoxyParamCaption})}
+
+
+
+This operator takes a double scalar and a gsl\+\_\+matrix$\ast$ as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the scalar. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scalar} & \\
+\hline
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_ad9e3d95c9f9eec7f5399529ab0861437}\label{GSL__matrix__functions_8cpp_ad9e3d95c9f9eec7f5399529ab0861437}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator$\ast$ (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{m1,  }\item[{gsl\+\_\+matrix $\ast$}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a newly allocated matrix result, which is then returned. The temporary memory is not freed here, and it is the responsibility of the caller to free the memory once the result is no longer needed. 
+
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a3b07551ea87ebab4520ea6d48e4f9335}\label{GSL__matrix__functions_8cpp_a3b07551ea87ebab4520ea6d48e4f9335}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator$\ast$ (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{matrix,  }\item[{const double}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This operator takes a double scalar and a gsl\+\_\+matrix$\ast$ as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the scalar. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scalar} & \\
+\hline
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a07431e0b4b15fa43bf576ed5ec0df3e3}\label{GSL__matrix__functions_8cpp_a07431e0b4b15fa43bf576ed5ec0df3e3}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator$\ast$=@{operator$\ast$=}}
+\index{operator$\ast$=@{operator$\ast$=}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$=()}{operator*=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator$\ast$= (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{m1,  }\item[{gsl\+\_\+matrix $\ast$}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have compatible dimensions for multiplication and uses the BLAS library to perform the matrix multiplication. The result is stored in a temporary matrix, which is then copied back into m1. Finally, the temporary memory is freed before returning m1. 
+
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_ae201e2d24b0659737a1633aef00711a1}\label{GSL__matrix__functions_8cpp_ae201e2d24b0659737a1633aef00711a1}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator$\ast$=@{operator$\ast$=}}
+\index{operator$\ast$=@{operator$\ast$=}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$=()}{operator*=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator$\ast$= (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{mat,  }\item[{double}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This implementation uses the gsl\+\_\+matrix\+\_\+scale function to scale each element in the matrix by the scalar value. The function returns the modified matrix, which allows for method chaining when using the $\ast$= operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mat} & \\
+\hline
+{\em scalar} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a6e8d6a117e7f0c3e63e95647df19ef27}\label{GSL__matrix__functions_8cpp_a6e8d6a117e7f0c3e63e95647df19ef27}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator+@{operator+}}
+\index{operator+@{operator+}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator+()}{operator+()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator+ (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{m1,  }\item[{gsl\+\_\+matrix $\ast$}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation checks that the matrices have the same dimensions and allocates memory for the result of the addition. It then adds the matrices element-\/wise and stores the result in a newly allocated matrix result, which is then returned. 
+
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_ae40cae92dc1d28d98833d77fbbd1efb3}\label{GSL__matrix__functions_8cpp_ae40cae92dc1d28d98833d77fbbd1efb3}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator+=()}{operator+=()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator+= (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{m1,  }\item[{gsl\+\_\+matrix $\ast$}]{m2 }\end{DoxyParamCaption})}
+
+
+
+This implementation takes two gsl\+\_\+matrix pointers as arguments and adds the elements of the second matrix to the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. 
+
+This implementation takes two gsl\+\_\+matrix pointers as arguments and adds the elements of the second matrix to the first matrix. It first checks that the matrices have the same dimensions, and throws an exception if they do not. Then it iterates over the elements of the matrices and adds the corresponding elements. Finally, it returns a pointer to the modified first matrix. Note that this implementation modifies the first matrix in place, rather than creating a new matrix. If you want to create a new matrix instead, you could modify the implementation accordingly.
+
+Note that this implementation modifies the first matrix in place, rather than creating a new matrix. If you want to create a new matrix instead, you could modify the implementation accordingly. \mbox{\Hypertarget{GSL__matrix__functions_8cpp_ab79a14fdee8c9c2e6f4e22ee0ce8220e}\label{GSL__matrix__functions_8cpp_ab79a14fdee8c9c2e6f4e22ee0ce8220e}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator/@{operator/}}
+\index{operator/@{operator/}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator/()}{operator/()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator/ (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{matrix,  }\item[{const double}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This operator takes a double scalar and a gsl\+\_\+matrix$\ast$ as its operands. It returns a new gsl\+\_\+matrix$\ast$ that is the result of scaling the input matrix by the 1/scalar. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em scalar} & \\
+\hline
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a3f7200ba5b89b6f24ba0c792e9d56db3}\label{GSL__matrix__functions_8cpp_a3f7200ba5b89b6f24ba0c792e9d56db3}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator/=@{operator/=}}
+\index{operator/=@{operator/=}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator/=()}{operator/=()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ operator/= (\begin{DoxyParamCaption}\item[{gsl\+\_\+matrix $\ast$}]{mat,  }\item[{double}]{scalar }\end{DoxyParamCaption})}
+
+
+
+This implementation uses the gsl\+\_\+matrix\+\_\+scale function to scale each element in the matrix by 1/the scalar value. The function returns the modified matrix, which allows for method chaining when using the $\ast$= operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mat} & \\
+\hline
+{\em scalar} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix$\ast$ 
+\end{DoxyReturn}
+\mbox{\Hypertarget{GSL__matrix__functions_8cpp_a0ef4a516c3e18ad92fc2c88a1462b9e0}\label{GSL__matrix__functions_8cpp_a0ef4a516c3e18ad92fc2c88a1462b9e0}} 
+\index{GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!GSL\_matrix\_functions.cpp@{GSL\_matrix\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}}
+{\footnotesize\ttfamily std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{stream,  }\item[{const gsl\+\_\+matrix $\ast$const}]{matrix }\end{DoxyParamCaption})}
+
+
+
+Bit push all element of a matrix in the format of\+: 
+
+a11, a12, a13, ..., a21, a22, a23, ..., ...,
+
+
+\begin{DoxyParams}{Parameters}
+{\em stream} & ostream \\
+\hline
+{\em matrix} & matrix to be output as string \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+std\+::ostream\& 
+\end{DoxyReturn}

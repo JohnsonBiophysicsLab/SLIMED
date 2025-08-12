@@ -1,0 +1,64 @@
+\hypertarget{GSL__matrix__functions_8hpp_source}{}\doxysection{GSL\+\_\+matrix\+\_\+functions.\+hpp}
+\label{GSL__matrix__functions_8hpp_source}\index{include/GSL\_matrix\_functions.hpp@{include/GSL\_matrix\_functions.hpp}}
+\mbox{\hyperlink{GSL__matrix__functions_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \#include\ <math.h>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ \#include\ <cmath>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <omp.h>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <iomanip>}}
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ \#include\ <ctime>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Mesh_8hpp}{Mesh.hpp}}"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{vector__math_8hpp}{vector\_math.hpp}}"{}}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}"{}}}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_matrix.h>}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_blas.h>}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <gsl/gsl\_linalg.h>}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00024\ \textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ \&\mbox{\hyperlink{GSL__matrix__functions_8hpp_a2cf223271d5ac1cc9fe3488821817d05}{get}}\ =\ gsl\_matrix\_get;}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00040\ gsl\_matrix\ *\mbox{\hyperlink{GSL__matrix__functions_8hpp_afd421390be5dc690073ef91173c1595a}{invert\_a\_matrix}}(gsl\_matrix\ *matrix);}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00051\ gsl\_matrix\ *\mbox{\hyperlink{GSL__matrix__functions_8hpp_a4052e043c8233036e0b223537bd0afe5}{inverse\_cholesky}}(\textcolor{keyword}{const}\ gsl\_matrix\ *\textcolor{keyword}{const}\ matrix);}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00053\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_aae888350c4da78e49393cc60090e7642}{copy\_vertex\_to\_gsl\_matrix}}(std::vector<Vertex>\ \&vertex,\ gsl\_matrix\ *matrix);}
+\DoxyCodeLine{00054\ std::vector<double>\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_aff533a293a62d25cfcf6fb0ac08d879a}{leastSquarePlane}}(std::vector<std::vector<double>>\ \&splinePoints);}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00067\ std::ostream\ \&\mbox{\hyperlink{GSL__matrix__functions_8hpp_a0ef4a516c3e18ad92fc2c88a1462b9e0}{operator<<}}(std::ostream\ \&stream,\ \textcolor{keyword}{const}\ gsl\_matrix\ *\textcolor{keyword}{const}\ matrix);}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00077\ gsl\_matrix*\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_a67e49c4c27e6af117dfdb5f4586d3383}{operator*}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ scalar,\ gsl\_matrix*\ matrix);}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00087\ gsl\_matrix*\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_a67e49c4c27e6af117dfdb5f4586d3383}{operator*}}(gsl\_matrix*\ matrix,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ scalar);}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00098\ gsl\_matrix*\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_ae201e2d24b0659737a1633aef00711a1}{operator*=}}(gsl\_matrix*\ mat,\ \textcolor{keywordtype}{double}\ scalar);}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00109\ gsl\_matrix*\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_ab79a14fdee8c9c2e6f4e22ee0ce8220e}{operator/}}(gsl\_matrix*\ matrix,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ scalar)\ \{}
+\DoxyCodeLine{00110\ \ \ \ \ gsl\_matrix*\ result\ =\ gsl\_matrix\_alloc(matrix-\/>size1,\ matrix-\/>size2);}
+\DoxyCodeLine{00111\ \ \ \ \ gsl\_matrix\_memcpy(result,\ matrix);}
+\DoxyCodeLine{00112\ \ \ \ \ gsl\_matrix\_scale(result,\ 1.0/scalar);}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keywordflow}{return}\ result;}
+\DoxyCodeLine{00114\ \}}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00125\ gsl\_matrix*\ \mbox{\hyperlink{GSL__matrix__functions_8hpp_a3f7200ba5b89b6f24ba0c792e9d56db3}{operator/=}}(gsl\_matrix*\ mat,\ \textcolor{keywordtype}{double}\ scalar);}
+\DoxyCodeLine{00126\ }
+\DoxyCodeLine{00138\ gsl\_matrix\ *\mbox{\hyperlink{GSL__matrix__functions_8hpp_ae40cae92dc1d28d98833d77fbbd1efb3}{operator+=}}(gsl\_matrix\ *m1,\ gsl\_matrix\ *m2);}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00148\ gsl\_matrix\ *\mbox{\hyperlink{GSL__matrix__functions_8hpp_a6e8d6a117e7f0c3e63e95647df19ef27}{operator+}}(gsl\_matrix\ *m1,\ gsl\_matrix\ *m2);}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00159\ gsl\_matrix\ *\mbox{\hyperlink{GSL__matrix__functions_8hpp_ae201e2d24b0659737a1633aef00711a1}{operator*=}}(gsl\_matrix\ *m1,\ gsl\_matrix\ *m2);}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00171\ gsl\_matrix\ *\mbox{\hyperlink{GSL__matrix__functions_8hpp_a67e49c4c27e6af117dfdb5f4586d3383}{operator*}}(gsl\_matrix\ *m1,\ gsl\_matrix\ *m2);}
+\DoxyCodeLine{00172\ }
+\DoxyCodeLine{00184\ gsl\_matrix*\ cross\_product(gsl\_matrix*\ m1,\ gsl\_matrix*\ m2)}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ }
+\DoxyCodeLine{00196\ gsl\_matrix\ *convert\_vector\_to\_gsl\_matrix(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\ \&vec);}
+\DoxyCodeLine{00197\ }
+\DoxyCodeLine{00210\ gsl\_matrix*\ get\_row\_as\_matrix(\textcolor{keyword}{const}\ gsl\_matrix*\ mat,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ row\_idx);}
+
+\end{DoxyCode}

@@ -1,0 +1,103 @@
+\hypertarget{input_8cpp}{}\doxysection{src/io/input.cpp File Reference}
+\label{input_8cpp}\index{src/io/input.cpp@{src/io/input.cpp}}
+{\ttfamily \#include \char`\"{}io.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{input_8cpp_a5b002291f48bd673403545bc02a460a6}{pop\+\_\+space}} (std\+::string raw\+String)
+\begin{DoxyCompactList}\small\item\em Remove spaces from a string. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{input_8cpp_a294030742b383eda09c4dc87fbfb7b14}{import\+\_\+kv\+\_\+string}} (std\+::string variable\+Name\+Str, std\+::string variable\+Value\+Str, Param \&param)
+\begin{DoxyCompactList}\small\item\em Import key-\/value pairs from a string. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{input_8cpp_a13985e7083515b2e7a300857118cd682}{import\+\_\+param\+\_\+file}} (Param \&param, std\+::string filepath)
+\begin{DoxyCompactList}\small\item\em Import parameters from a file. \end{DoxyCompactList}\item 
+vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \mbox{\hyperlink{input_8cpp_aa9bda02a5e31d647ecd400bcb6ad5c3c}{import\+\_\+scaffolding\+\_\+mesh}} (std\+::string filepath)
+\begin{DoxyCompactList}\small\item\em Import scaffolding mesh from a file. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{input_8cpp_a294030742b383eda09c4dc87fbfb7b14}\label{input_8cpp_a294030742b383eda09c4dc87fbfb7b14}} 
+\index{input.cpp@{input.cpp}!import\_kv\_string@{import\_kv\_string}}
+\index{import\_kv\_string@{import\_kv\_string}!input.cpp@{input.cpp}}
+\doxysubsubsection{\texorpdfstring{import\_kv\_string()}{import\_kv\_string()}}
+{\footnotesize\ttfamily bool import\+\_\+kv\+\_\+string (\begin{DoxyParamCaption}\item[{std\+::string}]{variable\+Name\+Str,  }\item[{std\+::string}]{variable\+Value\+Str,  }\item[{Param \&}]{param }\end{DoxyParamCaption})}
+
+
+
+Import key-\/value pairs from a string. 
+
+This function takes two strings, {\ttfamily variable\+Name\+Str} and {\ttfamily variable\+Value\+Str}, which are expected to contain name-\/value pairs separated by an \char`\"{}=\char`\"{} sign. It then parses these variables and uses them to update a {\ttfamily Param} struct object\textquotesingle{}s variables, which is passed as reference. If parsing and updating are successful, returns true, else returns false.
+
+
+\begin{DoxyParams}{Parameters}
+{\em variable\+Name\+Str} & the string containing names of the variables \\
+\hline
+{\em variable\+Value\+Str} & the string containing values of the variables \\
+\hline
+{\em param} & the Param object to be updated\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if parsing and updating was successful, else false. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{input_8cpp_a13985e7083515b2e7a300857118cd682}\label{input_8cpp_a13985e7083515b2e7a300857118cd682}} 
+\index{input.cpp@{input.cpp}!import\_param\_file@{import\_param\_file}}
+\index{import\_param\_file@{import\_param\_file}!input.cpp@{input.cpp}}
+\doxysubsubsection{\texorpdfstring{import\_param\_file()}{import\_param\_file()}}
+{\footnotesize\ttfamily bool import\+\_\+param\+\_\+file (\begin{DoxyParamCaption}\item[{Param \&}]{param,  }\item[{std\+::string}]{filepath }\end{DoxyParamCaption})}
+
+
+
+Import parameters from a file. 
+
+This function reads a parameter file specified by {\ttfamily filepath} and updates a {\ttfamily Param} struct object\textquotesingle{}s variables using the information present in the file. The updated {\ttfamily Param} object is passed as reference. If file reading and updating are successful, returns true, else false.
+
+
+\begin{DoxyParams}{Parameters}
+{\em param} & the Param object to be updated \\
+\hline
+{\em filepath} & the path of the parameter file to be read\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if file reading and updating was successful, else false. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{input_8cpp_aa9bda02a5e31d647ecd400bcb6ad5c3c}\label{input_8cpp_aa9bda02a5e31d647ecd400bcb6ad5c3c}} 
+\index{input.cpp@{input.cpp}!import\_scaffolding\_mesh@{import\_scaffolding\_mesh}}
+\index{import\_scaffolding\_mesh@{import\_scaffolding\_mesh}!input.cpp@{input.cpp}}
+\doxysubsubsection{\texorpdfstring{import\_scaffolding\_mesh()}{import\_scaffolding\_mesh()}}
+{\footnotesize\ttfamily vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ import\+\_\+scaffolding\+\_\+mesh (\begin{DoxyParamCaption}\item[{std\+::string}]{filepath }\end{DoxyParamCaption})}
+
+
+
+Import scaffolding mesh from a file. 
+
+This function reads a mesh file specified by {\ttfamily filepath} and returns a vector of matrices containing the vertices\textquotesingle{} coordinates of all triangular faces.
+
+
+\begin{DoxyParams}{Parameters}
+{\em filepath} & the path of the mesh file to be read\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A vector of matrices containing the vertices\textquotesingle{} coordinates of all triangular faces. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{input_8cpp_a5b002291f48bd673403545bc02a460a6}\label{input_8cpp_a5b002291f48bd673403545bc02a460a6}} 
+\index{input.cpp@{input.cpp}!pop\_space@{pop\_space}}
+\index{pop\_space@{pop\_space}!input.cpp@{input.cpp}}
+\doxysubsubsection{\texorpdfstring{pop\_space()}{pop\_space()}}
+{\footnotesize\ttfamily std\+::string pop\+\_\+space (\begin{DoxyParamCaption}\item[{std\+::string}]{raw\+String }\end{DoxyParamCaption})}
+
+
+
+Remove spaces from a string. 
+
+This function takes a raw string and removes any whitespace characters present in it. The modified string with no spaces is returned.
+
+
+\begin{DoxyParams}{Parameters}
+{\em raw\+String} & the original string to be processed\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The string with spaces removed. 
+\end{DoxyReturn}

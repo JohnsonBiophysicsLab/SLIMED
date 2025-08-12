@@ -1,0 +1,145 @@
+\hypertarget{classDynamicModel}{}\doxysection{Dynamic\+Model Class Reference}
+\label{classDynamicModel}\index{DynamicModel@{DynamicModel}}
+
+
+{\ttfamily \#include $<$Dynamics.\+hpp$>$}
+
+Inheritance diagram for Dynamic\+Model\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classDynamicModel}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classDynamicModel_a39ca44c73cd614e9b7e5dc41a6443062}{Dynamic\+Model}} (\mbox{\hyperlink{classDynamicMesh}{Dynamic\+Mesh}} \&mesh\+\_\+, \mbox{\hyperlink{classRecord}{Record}} \&record\+\_\+)
+\begin{DoxyCompactList}\small\item\em Constructs a new \mbox{\hyperlink{classModel}{Model}} object. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classDynamicModel_ac3cac48622c5bd011f97ec0dde928255}{next\+\_\+step}} ()
+\begin{DoxyCompactList}\small\item\em This code iterates over all vertices in a mesh and displaces them randomly based on a force term and a random term. The displacement is added to the original vertex position. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions inherited from \mbox{\hyperlink{classModel}{Model}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classModel_aa903f67f485d09e5815b59aec7e63897}{Model}} (\mbox{\hyperlink{classMesh}{Mesh}} \&mesh\+\_\+, \mbox{\hyperlink{classRecord}{Record}} \&record\+\_\+)
+\begin{DoxyCompactList}\small\item\em Constructs a new \mbox{\hyperlink{classModel}{Model}} object. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classModel_a7f90416049f50239b6c5969d6d515b8b}{should\+\_\+continue\+\_\+optimization}} ()
+\begin{DoxyCompactList}\small\item\em Determines whether the optimization algorithm should continue running. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classModel_ad8c4b04a27c60afdc2986fcbf340349b}{determine\+\_\+trial\+\_\+step\+\_\+size}} ()
+\begin{DoxyCompactList}\small\item\em This code determines the step size used in an optimization algorithm. The step size is used to calculate how far to move in each iteration of the optimization algorithm to minimize an energy function. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{classModel_a13aec43d55c406aecdb69381a00da6ca}{to\+\_\+string\+\_\+current\+\_\+step}} ()
+\begin{DoxyCompactList}\small\item\em Returns a string representation of the current step\textquotesingle{}s iteration number, trial step size, and optimal step size. The function concatenates the values of model.\+iteration, model.\+oa.\+trial\+Step\+Size, and model.\+step\+Size to the following format\+: \char`\"{}step\+: , trial Step\+Size = , Step\+Size = \char`\"{}. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classModel_a0615dca43529762c6c2faf7a4b045964}{update\+\_\+ncg\+\_\+direction}} ()
+\begin{DoxyCompactList}\small\item\em Updates the direction for nonlinear conjugate gradient (NCG) optimization. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classModel_a68dccc91b5766f9ea23c1fce192b63a8}{linear\+\_\+search\+\_\+for\+\_\+stepsize\+\_\+to\+\_\+minimize\+\_\+energy}} ()
+\begin{DoxyCompactList}\small\item\em Performs a linear search to find the optimal step size that minimizes energy using either nonlinear conjugate gradient method or simple line search. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classModel_a0dcc60b9238108d2d43c24a6df86ea02}{update\+\_\+vertex\+\_\+using\+\_\+\+NCG}} ()
+\begin{DoxyCompactList}\small\item\em Update vertex coordinates using a non-\/linear conjugate gradient method. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classDynamicMesh}{Dynamic\+Mesh}} \& \mbox{\hyperlink{classDynamicModel_a413da1373cbf8e2c80239712dca57a8a}{mesh}}
+\item 
+double \mbox{\hyperlink{classDynamicModel_a4ba89c77d9fe49808445b717a7f8291d}{rand\+Scale\+Const}}
+\item 
+double \mbox{\hyperlink{classDynamicModel_ae714bbd2aa0c8790cfbf27afe06dc68e}{force\+Scale\+Const}}
+\item 
+unsigned int \mbox{\hyperlink{classDynamicModel_acb80d9dfabba8208ed9e46a3fb8dda8a}{random\+Seed}}
+\item 
+std\+::mt19937 \mbox{\hyperlink{classDynamicModel_ab92f18722ac0ce37eb0f8381742826cf}{gen}}
+\item 
+std\+::normal\+\_\+distribution \mbox{\hyperlink{classDynamicModel_a167e0b9ded6f7f2ce2613baa921cf073}{normal\+\_\+dist}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes inherited from \mbox{\hyperlink{classModel}{Model}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMesh}{Mesh}} \& \mbox{\hyperlink{classModel_a71c5bc5c140ccf73b32e516908bdb780}{mesh}}
+\item 
+\mbox{\hyperlink{classRecord}{Record}} \& \mbox{\hyperlink{classModel_af42bc28b7c6bb489bf71bb21f59a8912}{record}}
+\item 
+int \mbox{\hyperlink{classModel_af5b6157364a0fe7610b3b8ace65095aa}{iteration}}
+\item 
+double \mbox{\hyperlink{classModel_a3594da5a1ede2964c3f3becae5a553b1}{step\+Size}}
+\item 
+\mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} \mbox{\hyperlink{classModel_a290f10d67b74dcfac182e9a5abd7ae31}{oa}}
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classForce}{Force}} $>$ \mbox{\hyperlink{classModel_a39e556caad02cc7510ae157af0602d57}{ncg\+Direction0}}
+\begin{DoxyCompactList}\small\item\em vector to store the initial direction for nonlinear conjugate gradient optimization \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classDynamicModel_a39ca44c73cd614e9b7e5dc41a6443062}\label{classDynamicModel_a39ca44c73cd614e9b7e5dc41a6443062}} 
+\index{DynamicModel@{DynamicModel}!DynamicModel@{DynamicModel}}
+\index{DynamicModel@{DynamicModel}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{DynamicModel()}{DynamicModel()}}
+{\footnotesize\ttfamily Dynamic\+Model\+::\+Dynamic\+Model (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classDynamicMesh}{Dynamic\+Mesh}} \&}]{mesh\+\_\+,  }\item[{\mbox{\hyperlink{classRecord}{Record}} \&}]{record\+\_\+ }\end{DoxyParamCaption})}
+
+
+
+Constructs a new \mbox{\hyperlink{classModel}{Model}} object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mesh\+\_\+} & The mesh object to be encapsulated. \\
+\hline
+{\em record\+\_\+} & The record object to be encapsulated. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classDynamicModel_ac3cac48622c5bd011f97ec0dde928255}\label{classDynamicModel_ac3cac48622c5bd011f97ec0dde928255}} 
+\index{DynamicModel@{DynamicModel}!next\_step@{next\_step}}
+\index{next\_step@{next\_step}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{next\_step()}{next\_step()}}
+{\footnotesize\ttfamily void Dynamic\+Model\+::next\+\_\+step (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+This code iterates over all vertices in a mesh and displaces them randomly based on a force term and a random term. The displacement is added to the original vertex position. 
+
+The boundary conditions are checked for each vertex before displacement, and if the vertex is a ghost or boundary, and not part of a periodic boundary condition, then the displacement is set to 0.
+
+The displacement amount, along with the vertex index, whether it is a boundary or ghost vertex, and the dimension being displaced (x, y, z) is printed to the console using std\+::cout. 
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classDynamicModel_ae714bbd2aa0c8790cfbf27afe06dc68e}\label{classDynamicModel_ae714bbd2aa0c8790cfbf27afe06dc68e}} 
+\index{DynamicModel@{DynamicModel}!forceScaleConst@{forceScaleConst}}
+\index{forceScaleConst@{forceScaleConst}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{forceScaleConst}{forceScaleConst}}
+{\footnotesize\ttfamily double Dynamic\+Model\+::force\+Scale\+Const}
+
+\mbox{\Hypertarget{classDynamicModel_ab92f18722ac0ce37eb0f8381742826cf}\label{classDynamicModel_ab92f18722ac0ce37eb0f8381742826cf}} 
+\index{DynamicModel@{DynamicModel}!gen@{gen}}
+\index{gen@{gen}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{gen}{gen}}
+{\footnotesize\ttfamily std\+::mt19937 Dynamic\+Model\+::gen}
+
+\mbox{\Hypertarget{classDynamicModel_a413da1373cbf8e2c80239712dca57a8a}\label{classDynamicModel_a413da1373cbf8e2c80239712dca57a8a}} 
+\index{DynamicModel@{DynamicModel}!mesh@{mesh}}
+\index{mesh@{mesh}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{mesh}{mesh}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classDynamicMesh}{Dynamic\+Mesh}}\& Dynamic\+Model\+::mesh}
+
+Hides \mbox{\hyperlink{classModel_a71c5bc5c140ccf73b32e516908bdb780}{Model\+::mesh}}; The mesh object. \mbox{\Hypertarget{classDynamicModel_a167e0b9ded6f7f2ce2613baa921cf073}\label{classDynamicModel_a167e0b9ded6f7f2ce2613baa921cf073}} 
+\index{DynamicModel@{DynamicModel}!normal\_dist@{normal\_dist}}
+\index{normal\_dist@{normal\_dist}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{normal\_dist}{normal\_dist}}
+{\footnotesize\ttfamily std\+::normal\+\_\+distribution Dynamic\+Model\+::normal\+\_\+dist}
+
+\mbox{\Hypertarget{classDynamicModel_acb80d9dfabba8208ed9e46a3fb8dda8a}\label{classDynamicModel_acb80d9dfabba8208ed9e46a3fb8dda8a}} 
+\index{DynamicModel@{DynamicModel}!randomSeed@{randomSeed}}
+\index{randomSeed@{randomSeed}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{randomSeed}{randomSeed}}
+{\footnotesize\ttfamily unsigned int Dynamic\+Model\+::random\+Seed}
+
+\mbox{\Hypertarget{classDynamicModel_a4ba89c77d9fe49808445b717a7f8291d}\label{classDynamicModel_a4ba89c77d9fe49808445b717a7f8291d}} 
+\index{DynamicModel@{DynamicModel}!randScaleConst@{randScaleConst}}
+\index{randScaleConst@{randScaleConst}!DynamicModel@{DynamicModel}}
+\doxysubsubsection{\texorpdfstring{randScaleConst}{randScaleConst}}
+{\footnotesize\ttfamily double Dynamic\+Model\+::rand\+Scale\+Const}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Dynamics_8hpp}{Dynamics.\+hpp}}\end{DoxyCompactItemize}

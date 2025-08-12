@@ -1,0 +1,390 @@
+\hypertarget{appended__functions_8cpp}{}\doxysection{src/linear\+\_\+algebra/appended\+\_\+functions.cpp File Reference}
+\label{appended__functions_8cpp}\index{src/linear\_algebra/appended\_functions.cpp@{src/linear\_algebra/appended\_functions.cpp}}
+
+
+This file includes appended functions to linear algebra package that does not change when switching between LA packages. This mostly includes alias for functions and nested functions.  
+
+
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{appended__functions_8cpp_ae5fa66935b125fb2613ffe2ce57e935f}{negative}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, \mbox{\hyperlink{classMatrix}{Matrix}} \&m\+\_\+neg)
+\begin{DoxyCompactList}\small\item\em Computes the negative of a given matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a8dbae684151ea1f1318867f6f52f21b8}{get\+Unit\+Vector}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, \mbox{\hyperlink{classMatrix}{Matrix}} \&m\+\_\+unit)
+\begin{DoxyCompactList}\small\item\em Get the unit vector in the direction of m1 which is a (3, 1) \mbox{\hyperlink{classMatrix}{Matrix}}. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_aa61de292b027fd1d36cd57eb8a679c65}{cross}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2, \mbox{\hyperlink{classMatrix}{Matrix}} \&temp)
+\begin{DoxyCompactList}\small\item\em Compute the cross product of two 3D vectors represented as 3x1 matrices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a27119e610bb0a9292cc9f7ed26a4b173}{addition}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp)
+\begin{DoxyCompactList}\small\item\em Compute the element-\/wise addition of two matrices and store the result in a third matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a16c686d2f9ed45866109caffe69b246b}{subtraction}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp)
+\begin{DoxyCompactList}\small\item\em Compute the element-\/wise subtraction of two matrices and store the result in a third matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a7babd9d5d81db0f04b3e8fccc0ca0e76}{multiplication}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m2, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp)
+\begin{DoxyCompactList}\small\item\em Compute the matrix multiplication of two matrices and store the result in a third matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_ae8380f2d0eae7bf33cdb07560747ea72}{const\+\_\+multiplication}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const double num, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp)
+\begin{DoxyCompactList}\small\item\em Multiply a matrix by a constant and store the result in a second matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a91de41df159ee60f4eecc860c7089c9b}{const\+\_\+division}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, const double num, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp)
+\begin{DoxyCompactList}\small\item\em Divide a matrix by a constant and store the result in a second matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a71cbe43985593c79552d1e40002e5bbb}{colvec\+\_\+matrix\+\_\+multiplication}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&v1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&m1, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp)
+\begin{DoxyCompactList}\small\item\em Multiply a row vector by a matrix and store the result in a row vector. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_ac7c84697d49c2cea18a34661658336ce}{kron}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&v1, const \mbox{\hyperlink{classMatrix}{Matrix}} \&v2, \mbox{\hyperlink{classMatrix}{Matrix}} \&m\+\_\+result)
+\begin{DoxyCompactList}\small\item\em the Kronecker product between two column matrices and stores the result in an output matrix. The Kronecker product is defined as follows\+: \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{appended__functions_8cpp_ae19df5533c4af952dfe47bb010b66646}{assign\+\_\+row\+Vec\+\_\+to\+\_\+col\+Vec}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&src\+Row\+Vec, \mbox{\hyperlink{classMatrix}{Matrix}} \&dest\+Col\+Vec)
+\item 
+void \mbox{\hyperlink{appended__functions_8cpp_a2f238a65f9bad9ee75cd16eeae374eda}{a\+\_\+cross\+\_\+b\+\_\+plus\+\_\+c\+\_\+cross\+\_\+d}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&a, const \mbox{\hyperlink{classMatrix}{Matrix}} \&b, const \mbox{\hyperlink{classMatrix}{Matrix}} \&c, const \mbox{\hyperlink{classMatrix}{Matrix}} \&d, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp\+\_\+f, \mbox{\hyperlink{classMatrix}{Matrix}} \&tmp\+\_\+l, \mbox{\hyperlink{classMatrix}{Matrix}} \&v\+\_\+result)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file includes appended functions to linear algebra package that does not change when switching between LA packages. This mostly includes alias for functions and nested functions. 
+
+\begin{DoxyAuthor}{Author}
+Y Ying (\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}}) 
+\end{DoxyAuthor}
+Note that this section is frequently used in energy and force calculation so improvement of efficiency is highly recommended.
+
+Note that all the functions are in the format of func($\ast$args, result) to avoid allocating new memory to optimize performance.
+
+The error checks are removed in this section for optimized performance by reducing the number of if statements in frequently referenced functions. Therefore, it is unrecommended to use functions in this file in newly implemented section other than energy and force calculation.
+
+\begin{DoxyDate}{Date}
+2023-\/03-\/28
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{appended__functions_8cpp_a2f238a65f9bad9ee75cd16eeae374eda}\label{appended__functions_8cpp_a2f238a65f9bad9ee75cd16eeae374eda}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!a\_cross\_b\_plus\_c\_cross\_d@{a\_cross\_b\_plus\_c\_cross\_d}}
+\index{a\_cross\_b\_plus\_c\_cross\_d@{a\_cross\_b\_plus\_c\_cross\_d}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{a\_cross\_b\_plus\_c\_cross\_d()}{a\_cross\_b\_plus\_c\_cross\_d()}}
+{\footnotesize\ttfamily void a\+\_\+cross\+\_\+b\+\_\+plus\+\_\+c\+\_\+cross\+\_\+d (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{a,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{b,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{c,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{d,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp\+\_\+f,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp\+\_\+l,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{v\+\_\+result }\end{DoxyParamCaption})}
+
+Computes the sum of two cross products and stores the result in an output matrix.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em a} & First input column matrix. \\
+\hline
+\mbox{\texttt{ in}}  & {\em b} & Second input column matrix. \\
+\hline
+\mbox{\texttt{ in}}  & {\em c} & Third input column matrix. \\
+\hline
+\mbox{\texttt{ in}}  & {\em d} & Fourth input column matrix. \\
+\hline
+\mbox{\texttt{ in,out}}  & {\em tmp\+\_\+f} & Temporary matrix for storing the first cross product. \\
+\hline
+\mbox{\texttt{ in,out}}  & {\em tmp\+\_\+l} & Temporary matrix for storing the second cross product. \\
+\hline
+\mbox{\texttt{ out}}  & {\em v\+\_\+result} & Output matrix to store the final result.\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::invalid\+\_\+argument} & if the input matrices have incompatible dimensions. \\
+\hline
+\end{DoxyExceptions}
+\mbox{\Hypertarget{appended__functions_8cpp_a27119e610bb0a9292cc9f7ed26a4b173}\label{appended__functions_8cpp_a27119e610bb0a9292cc9f7ed26a4b173}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!addition@{addition}}
+\index{addition@{addition}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{addition()}{addition()}}
+{\footnotesize\ttfamily void addition (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp }\end{DoxyParamCaption})}
+
+
+
+Compute the element-\/wise addition of two matrices and store the result in a third matrix. 
+
+This function computes the element-\/wise addition of two input matrices of equal dimensions and stores the result in a third matrix. All input matrices are assumed to be of type \mbox{\hyperlink{classMatrix}{Matrix}}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The first input matrix. \\
+\hline
+{\em m2} & The second input matrix. \\
+\hline
+{\em tmp} & The output matrix to store the resulting sum.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+All input matrices must have the same dimensions.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}tmp\textquotesingle{} contains the element-\/wise sum of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}m2\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_ae19df5533c4af952dfe47bb010b66646}\label{appended__functions_8cpp_ae19df5533c4af952dfe47bb010b66646}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!assign\_rowVec\_to\_colVec@{assign\_rowVec\_to\_colVec}}
+\index{assign\_rowVec\_to\_colVec@{assign\_rowVec\_to\_colVec}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{assign\_rowVec\_to\_colVec()}{assign\_rowVec\_to\_colVec()}}
+{\footnotesize\ttfamily void assign\+\_\+row\+Vec\+\_\+to\+\_\+col\+Vec (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{src\+Row\+Vec,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{dest\+Col\+Vec }\end{DoxyParamCaption})}
+
+Copies the values in a row vector to a column vector.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em src\+Row\+Vec} & Row vector containing the values to be copied. \\
+\hline
+\mbox{\texttt{ in,out}}  & {\em dest\+Col\+Vec} & Column vector to receive the copied values.\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::invalid\+\_\+argument} & if the input matrices have incompatible dimensions. \\
+\hline
+\end{DoxyExceptions}
+\mbox{\Hypertarget{appended__functions_8cpp_a71cbe43985593c79552d1e40002e5bbb}\label{appended__functions_8cpp_a71cbe43985593c79552d1e40002e5bbb}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!colvec\_matrix\_multiplication@{colvec\_matrix\_multiplication}}
+\index{colvec\_matrix\_multiplication@{colvec\_matrix\_multiplication}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{colvec\_matrix\_multiplication()}{colvec\_matrix\_multiplication()}}
+{\footnotesize\ttfamily void colvec\+\_\+matrix\+\_\+multiplication (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{v1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp }\end{DoxyParamCaption})}
+
+
+
+Multiply a row vector by a matrix and store the result in a row vector. 
+
+This function multiplies a row vector tranposed from input column vector with a matrix and stores the resulting product in another row vector. All input matrices are assumed to be of type \mbox{\hyperlink{classMatrix}{Matrix}}, which internally contains a gsl\+\_\+matrix pointer for efficiency.
+
+
+\begin{DoxyParams}{Parameters}
+{\em v1} & The input row vector to be multiplied. \\
+\hline
+{\em m1} & The input matrix. \\
+\hline
+{\em tmp} & The output row vector to store the resulting product.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The number of columns of \textquotesingle{}v1\textquotesingle{} must match the number of rows of \textquotesingle{}m1\textquotesingle{}, and the dimensions of \textquotesingle{}tmp\textquotesingle{} must match the number of columns of \textquotesingle{}m1\textquotesingle{}.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output row vector \textquotesingle{}tmp\textquotesingle{} contains the product of the input row vector \textquotesingle{}v1\textquotesingle{} and the input matrix \textquotesingle{}m1\textquotesingle{}.
+\end{DoxyPostcond}
+\begin{DoxyRefDesc}{Todo}
+\item[\mbox{\hyperlink{todo__todo000004}{Todo}}]benchmark -\/ In this case, if my matrices are small (\texorpdfstring{$<$}{<} 12 $\ast$ 3), but I need to repeat these matrices calculation for a large number of times, is gsl\+\_\+blas\+\_\+dgemm still more eifficent?\end{DoxyRefDesc}
+
+
+For small matrices like the ones you\textquotesingle{}ve described, it\textquotesingle{}s possible that an element-\/wise implementation could be faster than using gsl\+\_\+blas\+\_\+dgemm() due to the overhead associated with setting up the function call and memory management. However, this depends on the context in which the function is being used and the specific hardware being used.
+
+If the calculation of these small matrices is being repeated a large number of times, then the overhead of setting up the function call and memory management might be amortized over multiple calculations, making gsl\+\_\+blas\+\_\+dgemm() more efficient.
+
+Ultimately, the best approach would be to benchmark both implementations (element-\/wise and using gsl\+\_\+blas\+\_\+dgemm() on your specific system and compare their performance for your use case. \mbox{\Hypertarget{appended__functions_8cpp_a91de41df159ee60f4eecc860c7089c9b}\label{appended__functions_8cpp_a91de41df159ee60f4eecc860c7089c9b}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!const\_division@{const\_division}}
+\index{const\_division@{const\_division}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{const\_division()}{const\_division()}}
+{\footnotesize\ttfamily void const\+\_\+division (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const double}]{num,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp }\end{DoxyParamCaption})}
+
+
+
+Divide a matrix by a constant and store the result in a second matrix. 
+
+This function divides the elements of an input matrix by a scalar constant and stores the result in a second output matrix. All input matrices are assumed to be of type \mbox{\hyperlink{classMatrix}{Matrix}}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The input matrix to be divided. \\
+\hline
+{\em num} & The scalar constant to divide by. \\
+\hline
+{\em tmp} & The output matrix to store the resulting quotient.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The dimensions of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}tmp\textquotesingle{} must match.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}tmp\textquotesingle{} contains the element-\/wise division of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}num\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_ae8380f2d0eae7bf33cdb07560747ea72}\label{appended__functions_8cpp_ae8380f2d0eae7bf33cdb07560747ea72}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!const\_multiplication@{const\_multiplication}}
+\index{const\_multiplication@{const\_multiplication}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{const\_multiplication()}{const\_multiplication()}}
+{\footnotesize\ttfamily void const\+\_\+multiplication (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const double}]{num,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp }\end{DoxyParamCaption})}
+
+
+
+Multiply a matrix by a constant and store the result in a second matrix. 
+
+This function multiplies the elements of an input matrix with a scalar constant and stores the result in a second output matrix. All input matrices are assumed to be of type \mbox{\hyperlink{classMatrix}{Matrix}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The input matrix to be multiplied. \\
+\hline
+{\em num} & The scalar constant to multiply with. \\
+\hline
+{\em tmp} & The output matrix to store the resulting product.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The dimensions of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}tmp\textquotesingle{} must match.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}tmp\textquotesingle{} contains the element-\/wise multiplication of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}num\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_aa61de292b027fd1d36cd57eb8a679c65}\label{appended__functions_8cpp_aa61de292b027fd1d36cd57eb8a679c65}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!cross@{cross}}
+\index{cross@{cross}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{cross()}{cross()}}
+{\footnotesize\ttfamily void cross (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{temp }\end{DoxyParamCaption})}
+
+
+
+Compute the cross product of two 3D vectors represented as 3x1 matrices. 
+
+This function computes the cross product of two input vectors, which are assumed to be 3x1 matrices. The result is stored in another 3x1 matrix passed in as an argument.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The first input vector as a 3x1 matrix. \\
+\hline
+{\em m2} & The second input vector as a 3x1 matrix. \\
+\hline
+{\em temp} & The output matrix to store the resulting cross product.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+All input matrices must have 3 rows and 1 column.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}temp\textquotesingle{} contains the cross product of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}m2\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_a8dbae684151ea1f1318867f6f52f21b8}\label{appended__functions_8cpp_a8dbae684151ea1f1318867f6f52f21b8}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!getUnitVector@{getUnitVector}}
+\index{getUnitVector@{getUnitVector}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{getUnitVector()}{getUnitVector()}}
+{\footnotesize\ttfamily void get\+Unit\+Vector (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m\+\_\+unit }\end{DoxyParamCaption})}
+
+
+
+Get the unit vector in the direction of m1 which is a (3, 1) \mbox{\hyperlink{classMatrix}{Matrix}}. 
+
+This function computes the unit vector in the direction of a given input vector, which is assumed to be a 3x1 matrix. The result is stored in another 3x1 matrix.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The input vector to compute the unit vector of. \\
+\hline
+{\em m\+\_\+unit} & The output matrix to store the resulting unit vector.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The input matrix \textquotesingle{}m1\textquotesingle{} must be a 3x1 matrix.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}m\+\_\+unit\textquotesingle{} contains the unit vector in the direction of \textquotesingle{}m1\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_ac7c84697d49c2cea18a34661658336ce}\label{appended__functions_8cpp_ac7c84697d49c2cea18a34661658336ce}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!kron@{kron}}
+\index{kron@{kron}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{kron()}{kron()}}
+{\footnotesize\ttfamily void kron (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{v1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{v2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m\+\_\+result }\end{DoxyParamCaption})}
+
+
+
+the Kronecker product between two column matrices and stores the result in an output matrix. The Kronecker product is defined as follows\+: 
+
+\begin{DoxyVerb}kron(v1, v2) = [v1(1)*v2(1)  v1(1)*v2(2)  ...  v1(1)*v2(n2)
+                v1(2)*v2(1)  v1(2)*v2(2)  ...  v1(2)*v2(n2)
+                ...          ...          ...  ...
+                v1(n1)*v2(1)  v1(n1)*v2(2)  ...  v1(n1)*v2(n2)]
+\end{DoxyVerb}
+ where v1 and v2 are column matrices of size n1 and n2 respectively, and the output matrix has size n1$\ast$n2 x n1$\ast$n2.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em v1} & First input column matrix. \\
+\hline
+\mbox{\texttt{ in}}  & {\em v2} & Second input column matrix. \\
+\hline
+\mbox{\texttt{ out}}  & {\em m\+\_\+result} & Output matrix to store the result.\\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::invalid\+\_\+argument} & if the output matrix has incompatible dimensions. \\
+\hline
+\end{DoxyExceptions}
+\mbox{\Hypertarget{appended__functions_8cpp_a7babd9d5d81db0f04b3e8fccc0ca0e76}\label{appended__functions_8cpp_a7babd9d5d81db0f04b3e8fccc0ca0e76}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!multiplication@{multiplication}}
+\index{multiplication@{multiplication}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{multiplication()}{multiplication()}}
+{\footnotesize\ttfamily void multiplication (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp }\end{DoxyParamCaption})}
+
+
+
+Compute the matrix multiplication of two matrices and store the result in a third matrix. 
+
+Multiply a matrix by a constant and store the result in a second matrix.
+
+This function computes the matrix multiplication of two input matrices and stores the result in a third matrix. All input matrices are assumed to be of type \mbox{\hyperlink{classMatrix}{Matrix}}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The first input matrix. \\
+\hline
+{\em m2} & The second input matrix. \\
+\hline
+{\em tmp} & The output matrix to store the resulting product.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The number of columns of \textquotesingle{}m1\textquotesingle{} must match the number of rows of \textquotesingle{}m2\textquotesingle{}.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}tmp\textquotesingle{} contains the matrix product of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}m2\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_ae5fa66935b125fb2613ffe2ce57e935f}\label{appended__functions_8cpp_ae5fa66935b125fb2613ffe2ce57e935f}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!negative@{negative}}
+\index{negative@{negative}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{negative()}{negative()}}
+{\footnotesize\ttfamily void negative (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m\+\_\+neg }\end{DoxyParamCaption})}
+
+
+
+Computes the negative of a given matrix. 
+
+This function computes the element-\/wise negative of a given matrix and stores the result in another matrix. Element-\/wise negative is defined as multiplying each element of the matrix with -\/1. The input matrix \textquotesingle{}m1\textquotesingle{} is not modified by this function.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The matrix to compute the negative of. \\
+\hline
+{\em m\+\_\+neg} & The matrix to store the result in.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+Both matrices \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}m\+\_\+neg\textquotesingle{} must have been allocated memory and initialized properly. 
+
+Both matrices \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}m\+\_\+neg\textquotesingle{} must have the same dimensions.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The matrix \textquotesingle{}m\+\_\+neg\textquotesingle{} contains the element-\/wise negative of \textquotesingle{}m1\textquotesingle{}. 
+\end{DoxyPostcond}
+\mbox{\Hypertarget{appended__functions_8cpp_a16c686d2f9ed45866109caffe69b246b}\label{appended__functions_8cpp_a16c686d2f9ed45866109caffe69b246b}} 
+\index{appended\_functions.cpp@{appended\_functions.cpp}!subtraction@{subtraction}}
+\index{subtraction@{subtraction}!appended\_functions.cpp@{appended\_functions.cpp}}
+\doxysubsubsection{\texorpdfstring{subtraction()}{subtraction()}}
+{\footnotesize\ttfamily void subtraction (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m1,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{m2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{tmp }\end{DoxyParamCaption})}
+
+
+
+Compute the element-\/wise subtraction of two matrices and store the result in a third matrix. 
+
+This function computes the element-\/wise subtraction of two input matrices of equal dimensions and stores the result in a third matrix. All input matrices are assumed to be of type \mbox{\hyperlink{classMatrix}{Matrix}}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em m1} & The first input matrix. \\
+\hline
+{\em m2} & The second input matrix. \\
+\hline
+{\em tmp} & The output matrix to store the resulting difference.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+All input matrices must have the same dimensions.
+\end{DoxyPrecond}
+\begin{DoxyPostcond}{Postcondition}
+The output matrix \textquotesingle{}tmp\textquotesingle{} contains the element-\/wise difference of \textquotesingle{}m1\textquotesingle{} and \textquotesingle{}m2\textquotesingle{}. 
+\end{DoxyPostcond}

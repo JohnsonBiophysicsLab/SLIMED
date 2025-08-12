@@ -1,0 +1,262 @@
+\hypertarget{energy__force_8hpp}{}\doxysection{include/energy\+\_\+force.hpp File Reference}
+\label{energy__force_8hpp}\index{include/energy\_force.hpp@{include/energy\_force.hpp}}
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$omp.\+h$>$}\newline
+{\ttfamily \#include $<$iomanip$>$}\newline
+{\ttfamily \#include $<$ctime$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+matrix.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+blas.\+h$>$}\newline
+{\ttfamily \#include $<$gsl/gsl\+\_\+linalg.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}mesh.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}vector\+\_\+math.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}parameters.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}gsl\+\_\+matrix\+\_\+methods.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_ab9cb3477178c0e25c91c69e4544637d1}{determine\+\_\+\+Is\+Insertion\+Patch\+\_\+for\+\_\+face}} (std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, std\+::vector$<$ std\+::vector$<$ int $>$ $>$ \&Insertion\+Patch)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a0211dcbd2aeacefa5033e2fe4f7473b2}{determine\+\_\+\+Spontaneous\+Curvature\+\_\+for\+\_\+face}} (double perturbed\+\_\+c0, double unperturbed\+\_\+c0, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a8df48dc62037a26db38692971d07b054}{calculate\+\_\+element\+\_\+area\+\_\+volume}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, int \mbox{\hyperlink{membrane__dynamics_8cpp_afb32136076548aa5049d24de570fae2d}{sub\+Divide\+Times}}, std\+::vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, std\+::vector$<$ Shapefunctions $>$ \&Shape\+Functions, Sub\+Matrix \&sub\+Matrix)
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_ab4560541fb4b1fefd6dbe789f8cbfa87}{sum\+\_\+\+Membrane\+\_\+\+Area}} (std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_aebb664c601ee6c077c16fe265fb915b2}{sum\+\_\+\+Membrane\+\_\+\+Volume}} (std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_af04b63ac27935a2e85ee79ada4dbb7f5}{clear\+\_\+force\+ONvertex\+\_\+and\+\_\+energy\+ONface}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a551f7ecbe676f6ff9a4912ecaf65a07c}{update\+\_\+\+Previous\+Coord\+\_\+for\+\_\+vertex}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a5987ce7008eeb06ef3c829a8f7db0acc}{update\+\_\+reference\+\_\+from\+\_\+\+Coord\+Previous}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_ae95138d341e58cc44a36fbdd17e24abb}{update\+\_\+\+Previous\+Force\+\_\+for\+\_\+vertex}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_af1e295b21bdcbfb145707fb3a5f9d019}{update\+\_\+\+Previous\+Energy\+\_\+for\+\_\+face}} (std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face)
+\item 
+std\+::vector$<$ double $>$ \mbox{\hyperlink{energy__force_8hpp_a6638f7619efbec66c5ea997312d2f3d2}{Force\+Scale}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&\mbox{\hyperlink{classForce}{Force}})
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_adfd52855afb05961c98a0d0f091f9b09}{calculate\+\_\+mean\+\_\+force}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_acee43f37e70d53ac949f2a22d28ecae0}{manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, \mbox{\hyperlink{structParam}{Param}} \&param)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_ab457db22fde9d609ac89bb2868cfcec7}{update\+\_\+vertex\+\_\+from\+\_\+\+Nonlinear\+Conjugate\+Gradient\+\_\+s0}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, double a, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&\mbox{\hyperlink{classForce}{Force}}, \mbox{\hyperlink{structParam}{Param}} \&param)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a3c213a34c95a355ab166ff478e1fadd2}{element\+\_\+energy\+\_\+force\+\_\+regular}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&dots, \mbox{\hyperlink{structParam}{Param}} \&param, double \mbox{\hyperlink{membrane__dynamics_8cpp_a1d23aed57ae21b2856939bd1b932763f}{c0}}, double \&Hmean, std\+::vector$<$ double $>$ \&norm\+Vector, double \&Ebe, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&F\+\_\+be, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&F\+\_\+s, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&F\+\_\+v, std\+::vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, std\+::vector$<$ Shapefunctions $>$ \&Shape\+Functions)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_ab8890a13d1761a9641e2949f329e7e87}{element\+\_\+energy\+\_\+force\+\_\+irregular}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&Dots, \mbox{\hyperlink{structParam}{Param}} \&param, double \mbox{\hyperlink{membrane__dynamics_8cpp_a1d23aed57ae21b2856939bd1b932763f}{c0}}, double \&Hmean, std\+::vector$<$ double $>$ \&norm\+Vector, double \&E\+\_\+bending, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&F\+\_\+be, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&F\+\_\+s, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&F\+\_\+v, std\+::vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, std\+::vector$<$ Shapefunctions $>$ \&Shape\+Functions, Sub\+Matrix sub\+Matrix)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a505ed090bba8615f87aae8011e8b3c48}{energy\+\_\+force\+\_\+regularization}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, \mbox{\hyperlink{structParam}{Param}} \&param)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a7e44f5003c644adff2caa8b739e8e85b}{Energy\+\_\+and\+\_\+\+Force}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, \mbox{\hyperlink{structParam}{Param}} \&param, std\+::vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, std\+::vector$<$ Shapefunctions $>$ \&Shape\+Functions, Sub\+Matrix \&sub\+Matrix)
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_ab2967069a25034a7b71dab46032dfab4}{line\+Search\+\_\+for\+\_\+\+Step\+Size\+\_\+to\+\_\+minimize\+\_\+energy}} (double a0, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&s0, std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, \mbox{\hyperlink{structParam}{Param}} \&param, std\+::vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, std\+::vector$<$ Shapefunctions $>$ \&Shape\+Functions, Sub\+Matrix \&sub\+Matrix)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_adddba78e93fe996342acd4bd6f6323c6}{check\+\_\+nodal\+\_\+force}} (std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertex, std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&face, \mbox{\hyperlink{structParam}{Param}} \&param, std\+::vector$<$ double $>$ \&Gauss\+Quadrature\+Coeff, std\+::vector$<$ Shapefunctions $>$ \&Shape\+Functions, Sub\+Matrix \&sub\+Matrix)
+\item 
+bool \mbox{\hyperlink{energy__force_8hpp_ae134860a075c37ad13df71bd628cca22}{move\+Vertices\+Based\+On\+Spline}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&spline\+Points, std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertices, double lbond)
+\item 
+bool \mbox{\hyperlink{energy__force_8hpp_a9d8faa7d987d313261843a5e8d785a81}{get\+Average\+Vector}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&in\+Vec2D, std\+::vector$<$ double $>$ \&avg\+Vec)
+\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{energy__force_8hpp_a48c6fc5d52dd2ae03d6e134be6baf197}{get\+Closest\+Vertex\+Index}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&spline\+Points, std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertices)
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_ac1514d2a8af5f784cf83dcc222283308}{get\+Distance}} (std\+::vector$<$ double $>$ \&spline\+Point, \mbox{\hyperlink{classVertex}{Vertex}} \&vertex)
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_a9733ec68d81d39c6a2e4f12c1363c3ba}{get\+Squared\+Distance}} (std\+::vector$<$ double $>$ \&spline\+Point, \mbox{\hyperlink{classVertex}{Vertex}} \&vertex)
+\item 
+double \mbox{\hyperlink{energy__force_8hpp_a74f5b46b5069f3de08be693a8aa6b409}{calculate\+Spline\+Energy\+Force}} (std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&spline\+Points, std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertices, std\+::vector$<$ int $>$ spline\+Points\+\_\+corresponding\+Vertex\+Index, double lbond, double spring\+Const, bool do\+Local\+Search, double spline\+Points\+Zcoord\+Scaling)
+\item 
+void \mbox{\hyperlink{energy__force_8hpp_a89bfb108e0ee858121c8416a75b3df8a}{calculate\+\_\+rigid\+\_\+force\+\_\+and\+\_\+torque}} (const \mbox{\hyperlink{structParam}{Param}} \&param, std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&spline\+Points, const std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertices, const std\+::vector$<$ int $>$ spline\+Points\+\_\+corresponding\+Vertex\+Index)
+\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{energy__force_8hpp_a99ca2c5b931b3593798786d8d1ce743d}{get\+\_\+rotation\+\_\+matrix}} (const std\+::vector$<$ double $>$ \&rot\+Angles)
+\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{energy__force_8hpp_aa17fcf4e08bb907c16b5409c59876277}{vec\+\_\+to\+\_\+col\+\_\+matrix}} (const std\+::vector$<$ double $>$ \&vec)
+\item 
+std\+::vector$<$ double $>$ \mbox{\hyperlink{energy__force_8hpp_aa73b9077b88f9be60787d9c1918184df}{col\+\_\+matrix\+\_\+to\+\_\+vec}} (const gsl\+\_\+matrix $\ast$const mat)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{energy__force_8hpp_a8df48dc62037a26db38692971d07b054}\label{energy__force_8hpp_a8df48dc62037a26db38692971d07b054}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!calculate\_element\_area\_volume@{calculate\_element\_area\_volume}}
+\index{calculate\_element\_area\_volume@{calculate\_element\_area\_volume}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{calculate\_element\_area\_volume()}{calculate\_element\_area\_volume()}}
+{\footnotesize\ttfamily void calculate\+\_\+element\+\_\+area\+\_\+volume (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{int}]{sub\+Divide\+Times,  }\item[{std\+::vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{std\+::vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Sub\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_adfd52855afb05961c98a0d0f091f9b09}\label{energy__force_8hpp_adfd52855afb05961c98a0d0f091f9b09}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!calculate\_mean\_force@{calculate\_mean\_force}}
+\index{calculate\_mean\_force@{calculate\_mean\_force}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{calculate\_mean\_force()}{calculate\_mean\_force()}}
+{\footnotesize\ttfamily double calculate\+\_\+mean\+\_\+force (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a89bfb108e0ee858121c8416a75b3df8a}\label{energy__force_8hpp_a89bfb108e0ee858121c8416a75b3df8a}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!calculate\_rigid\_force\_and\_torque@{calculate\_rigid\_force\_and\_torque}}
+\index{calculate\_rigid\_force\_and\_torque@{calculate\_rigid\_force\_and\_torque}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{calculate\_rigid\_force\_and\_torque()}{calculate\_rigid\_force\_and\_torque()}}
+{\footnotesize\ttfamily void calculate\+\_\+rigid\+\_\+force\+\_\+and\+\_\+torque (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{spline\+Points,  }\item[{const std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertices,  }\item[{const std\+::vector$<$ int $>$}]{spline\+Points\+\_\+corresponding\+Vertex\+Index }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a74f5b46b5069f3de08be693a8aa6b409}\label{energy__force_8hpp_a74f5b46b5069f3de08be693a8aa6b409}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!calculateSplineEnergyForce@{calculateSplineEnergyForce}}
+\index{calculateSplineEnergyForce@{calculateSplineEnergyForce}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{calculateSplineEnergyForce()}{calculateSplineEnergyForce()}}
+{\footnotesize\ttfamily double calculate\+Spline\+Energy\+Force (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{spline\+Points,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertices,  }\item[{std\+::vector$<$ int $>$}]{spline\+Points\+\_\+corresponding\+Vertex\+Index,  }\item[{double}]{lbond,  }\item[{double}]{spring\+Const,  }\item[{bool}]{do\+Local\+Search,  }\item[{double}]{spline\+Points\+Zcoord\+Scaling }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_adddba78e93fe996342acd4bd6f6323c6}\label{energy__force_8hpp_adddba78e93fe996342acd4bd6f6323c6}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!check\_nodal\_force@{check\_nodal\_force}}
+\index{check\_nodal\_force@{check\_nodal\_force}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{check\_nodal\_force()}{check\_nodal\_force()}}
+{\footnotesize\ttfamily void check\+\_\+nodal\+\_\+force (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{std\+::vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{std\+::vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Sub\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_af04b63ac27935a2e85ee79ada4dbb7f5}\label{energy__force_8hpp_af04b63ac27935a2e85ee79ada4dbb7f5}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!clear\_forceONvertex\_and\_energyONface@{clear\_forceONvertex\_and\_energyONface}}
+\index{clear\_forceONvertex\_and\_energyONface@{clear\_forceONvertex\_and\_energyONface}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{clear\_forceONvertex\_and\_energyONface()}{clear\_forceONvertex\_and\_energyONface()}}
+{\footnotesize\ttfamily void clear\+\_\+force\+ONvertex\+\_\+and\+\_\+energy\+ONface (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_aa73b9077b88f9be60787d9c1918184df}\label{energy__force_8hpp_aa73b9077b88f9be60787d9c1918184df}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!col\_matrix\_to\_vec@{col\_matrix\_to\_vec}}
+\index{col\_matrix\_to\_vec@{col\_matrix\_to\_vec}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{col\_matrix\_to\_vec()}{col\_matrix\_to\_vec()}}
+{\footnotesize\ttfamily std\+::vector$<$ double $>$ col\+\_\+matrix\+\_\+to\+\_\+vec (\begin{DoxyParamCaption}\item[{const gsl\+\_\+matrix $\ast$const}]{mat }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ab9cb3477178c0e25c91c69e4544637d1}\label{energy__force_8hpp_ab9cb3477178c0e25c91c69e4544637d1}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!determine\_IsInsertionPatch\_for\_face@{determine\_IsInsertionPatch\_for\_face}}
+\index{determine\_IsInsertionPatch\_for\_face@{determine\_IsInsertionPatch\_for\_face}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{determine\_IsInsertionPatch\_for\_face()}{determine\_IsInsertionPatch\_for\_face()}}
+{\footnotesize\ttfamily void determine\+\_\+\+Is\+Insertion\+Patch\+\_\+for\+\_\+face (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{std\+::vector$<$ std\+::vector$<$ int $>$ $>$ \&}]{Insertion\+Patch }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a0211dcbd2aeacefa5033e2fe4f7473b2}\label{energy__force_8hpp_a0211dcbd2aeacefa5033e2fe4f7473b2}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!determine\_SpontaneousCurvature\_for\_face@{determine\_SpontaneousCurvature\_for\_face}}
+\index{determine\_SpontaneousCurvature\_for\_face@{determine\_SpontaneousCurvature\_for\_face}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{determine\_SpontaneousCurvature\_for\_face()}{determine\_SpontaneousCurvature\_for\_face()}}
+{\footnotesize\ttfamily void determine\+\_\+\+Spontaneous\+Curvature\+\_\+for\+\_\+face (\begin{DoxyParamCaption}\item[{double}]{perturbed\+\_\+c0,  }\item[{double}]{unperturbed\+\_\+c0,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ab8890a13d1761a9641e2949f329e7e87}\label{energy__force_8hpp_ab8890a13d1761a9641e2949f329e7e87}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!element\_energy\_force\_irregular@{element\_energy\_force\_irregular}}
+\index{element\_energy\_force\_irregular@{element\_energy\_force\_irregular}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{element\_energy\_force\_irregular()}{element\_energy\_force\_irregular()}}
+{\footnotesize\ttfamily void element\+\_\+energy\+\_\+force\+\_\+irregular (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{Dots,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{double}]{c0,  }\item[{double \&}]{Hmean,  }\item[{std\+::vector$<$ double $>$ \&}]{norm\+Vector,  }\item[{double \&}]{E\+\_\+bending,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{F\+\_\+be,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{F\+\_\+s,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{F\+\_\+v,  }\item[{std\+::vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{std\+::vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Sub\+Matrix}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a3c213a34c95a355ab166ff478e1fadd2}\label{energy__force_8hpp_a3c213a34c95a355ab166ff478e1fadd2}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!element\_energy\_force\_regular@{element\_energy\_force\_regular}}
+\index{element\_energy\_force\_regular@{element\_energy\_force\_regular}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{element\_energy\_force\_regular()}{element\_energy\_force\_regular()}}
+{\footnotesize\ttfamily void element\+\_\+energy\+\_\+force\+\_\+regular (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{dots,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{double}]{c0,  }\item[{double \&}]{Hmean,  }\item[{std\+::vector$<$ double $>$ \&}]{norm\+Vector,  }\item[{double \&}]{Ebe,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{F\+\_\+be,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{F\+\_\+s,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{F\+\_\+v,  }\item[{std\+::vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{std\+::vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a7e44f5003c644adff2caa8b739e8e85b}\label{energy__force_8hpp_a7e44f5003c644adff2caa8b739e8e85b}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!Energy\_and\_Force@{Energy\_and\_Force}}
+\index{Energy\_and\_Force@{Energy\_and\_Force}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{Energy\_and\_Force()}{Energy\_and\_Force()}}
+{\footnotesize\ttfamily void Energy\+\_\+and\+\_\+\+Force (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{std\+::vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{std\+::vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Sub\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a505ed090bba8615f87aae8011e8b3c48}\label{energy__force_8hpp_a505ed090bba8615f87aae8011e8b3c48}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!energy\_force\_regularization@{energy\_force\_regularization}}
+\index{energy\_force\_regularization@{energy\_force\_regularization}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{energy\_force\_regularization()}{energy\_force\_regularization()}}
+{\footnotesize\ttfamily void energy\+\_\+force\+\_\+regularization (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a6638f7619efbec66c5ea997312d2f3d2}\label{energy__force_8hpp_a6638f7619efbec66c5ea997312d2f3d2}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!ForceScale@{ForceScale}}
+\index{ForceScale@{ForceScale}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{ForceScale()}{ForceScale()}}
+{\footnotesize\ttfamily std\+::vector$<$ double $>$ Force\+Scale (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{Force }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a99ca2c5b931b3593798786d8d1ce743d}\label{energy__force_8hpp_a99ca2c5b931b3593798786d8d1ce743d}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!get\_rotation\_matrix@{get\_rotation\_matrix}}
+\index{get\_rotation\_matrix@{get\_rotation\_matrix}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{get\_rotation\_matrix()}{get\_rotation\_matrix()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ get\+\_\+rotation\+\_\+matrix (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ double $>$ \&}]{rot\+Angles }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a9d8faa7d987d313261843a5e8d785a81}\label{energy__force_8hpp_a9d8faa7d987d313261843a5e8d785a81}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!getAverageVector@{getAverageVector}}
+\index{getAverageVector@{getAverageVector}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{getAverageVector()}{getAverageVector()}}
+{\footnotesize\ttfamily bool get\+Average\+Vector (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{in\+Vec2D,  }\item[{std\+::vector$<$ double $>$ \&}]{avg\+Vec }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a48c6fc5d52dd2ae03d6e134be6baf197}\label{energy__force_8hpp_a48c6fc5d52dd2ae03d6e134be6baf197}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!getClosestVertexIndex@{getClosestVertexIndex}}
+\index{getClosestVertexIndex@{getClosestVertexIndex}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{getClosestVertexIndex()}{getClosestVertexIndex()}}
+{\footnotesize\ttfamily std\+::vector$<$ int $>$ get\+Closest\+Vertex\+Index (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{spline\+Points,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertices }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ac1514d2a8af5f784cf83dcc222283308}\label{energy__force_8hpp_ac1514d2a8af5f784cf83dcc222283308}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!getDistance@{getDistance}}
+\index{getDistance@{getDistance}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{getDistance()}{getDistance()}}
+{\footnotesize\ttfamily double get\+Distance (\begin{DoxyParamCaption}\item[{std\+::vector$<$ double $>$ \&}]{spline\+Point,  }\item[{\mbox{\hyperlink{classVertex}{Vertex}} \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a9733ec68d81d39c6a2e4f12c1363c3ba}\label{energy__force_8hpp_a9733ec68d81d39c6a2e4f12c1363c3ba}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!getSquaredDistance@{getSquaredDistance}}
+\index{getSquaredDistance@{getSquaredDistance}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{getSquaredDistance()}{getSquaredDistance()}}
+{\footnotesize\ttfamily double get\+Squared\+Distance (\begin{DoxyParamCaption}\item[{std\+::vector$<$ double $>$ \&}]{spline\+Point,  }\item[{\mbox{\hyperlink{classVertex}{Vertex}} \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ab2967069a25034a7b71dab46032dfab4}\label{energy__force_8hpp_ab2967069a25034a7b71dab46032dfab4}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!lineSearch\_for\_StepSize\_to\_minimize\_energy@{lineSearch\_for\_StepSize\_to\_minimize\_energy}}
+\index{lineSearch\_for\_StepSize\_to\_minimize\_energy@{lineSearch\_for\_StepSize\_to\_minimize\_energy}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{lineSearch\_for\_StepSize\_to\_minimize\_energy()}{lineSearch\_for\_StepSize\_to\_minimize\_energy()}}
+{\footnotesize\ttfamily double line\+Search\+\_\+for\+\_\+\+Step\+Size\+\_\+to\+\_\+minimize\+\_\+energy (\begin{DoxyParamCaption}\item[{double}]{a0,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{s0,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param,  }\item[{std\+::vector$<$ double $>$ \&}]{Gauss\+Quadrature\+Coeff,  }\item[{std\+::vector$<$ Shapefunctions $>$ \&}]{Shape\+Functions,  }\item[{Sub\+Matrix \&}]{sub\+Matrix }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_acee43f37e70d53ac949f2a22d28ecae0}\label{energy__force_8hpp_acee43f37e70d53ac949f2a22d28ecae0}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!manage\_force\_for\_boundary\_ghost\_vertex@{manage\_force\_for\_boundary\_ghost\_vertex}}
+\index{manage\_force\_for\_boundary\_ghost\_vertex@{manage\_force\_for\_boundary\_ghost\_vertex}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{manage\_force\_for\_boundary\_ghost\_vertex()}{manage\_force\_for\_boundary\_ghost\_vertex()}}
+{\footnotesize\ttfamily void manage\+\_\+force\+\_\+for\+\_\+boundary\+\_\+ghost\+\_\+vertex (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ae134860a075c37ad13df71bd628cca22}\label{energy__force_8hpp_ae134860a075c37ad13df71bd628cca22}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!moveVerticesBasedOnSpline@{moveVerticesBasedOnSpline}}
+\index{moveVerticesBasedOnSpline@{moveVerticesBasedOnSpline}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{moveVerticesBasedOnSpline()}{moveVerticesBasedOnSpline()}}
+{\footnotesize\ttfamily bool move\+Vertices\+Based\+On\+Spline (\begin{DoxyParamCaption}\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{spline\+Points,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertices,  }\item[{double}]{lbond }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ab4560541fb4b1fefd6dbe789f8cbfa87}\label{energy__force_8hpp_ab4560541fb4b1fefd6dbe789f8cbfa87}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!sum\_Membrane\_Area@{sum\_Membrane\_Area}}
+\index{sum\_Membrane\_Area@{sum\_Membrane\_Area}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{sum\_Membrane\_Area()}{sum\_Membrane\_Area()}}
+{\footnotesize\ttfamily double sum\+\_\+\+Membrane\+\_\+\+Area (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_aebb664c601ee6c077c16fe265fb915b2}\label{energy__force_8hpp_aebb664c601ee6c077c16fe265fb915b2}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!sum\_Membrane\_Volume@{sum\_Membrane\_Volume}}
+\index{sum\_Membrane\_Volume@{sum\_Membrane\_Volume}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{sum\_Membrane\_Volume()}{sum\_Membrane\_Volume()}}
+{\footnotesize\ttfamily double sum\+\_\+\+Membrane\+\_\+\+Volume (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a551f7ecbe676f6ff9a4912ecaf65a07c}\label{energy__force_8hpp_a551f7ecbe676f6ff9a4912ecaf65a07c}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!update\_PreviousCoord\_for\_vertex@{update\_PreviousCoord\_for\_vertex}}
+\index{update\_PreviousCoord\_for\_vertex@{update\_PreviousCoord\_for\_vertex}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{update\_PreviousCoord\_for\_vertex()}{update\_PreviousCoord\_for\_vertex()}}
+{\footnotesize\ttfamily void update\+\_\+\+Previous\+Coord\+\_\+for\+\_\+vertex (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_af1e295b21bdcbfb145707fb3a5f9d019}\label{energy__force_8hpp_af1e295b21bdcbfb145707fb3a5f9d019}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!update\_PreviousEnergy\_for\_face@{update\_PreviousEnergy\_for\_face}}
+\index{update\_PreviousEnergy\_for\_face@{update\_PreviousEnergy\_for\_face}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{update\_PreviousEnergy\_for\_face()}{update\_PreviousEnergy\_for\_face()}}
+{\footnotesize\ttfamily void update\+\_\+\+Previous\+Energy\+\_\+for\+\_\+face (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ae95138d341e58cc44a36fbdd17e24abb}\label{energy__force_8hpp_ae95138d341e58cc44a36fbdd17e24abb}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!update\_PreviousForce\_for\_vertex@{update\_PreviousForce\_for\_vertex}}
+\index{update\_PreviousForce\_for\_vertex@{update\_PreviousForce\_for\_vertex}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{update\_PreviousForce\_for\_vertex()}{update\_PreviousForce\_for\_vertex()}}
+{\footnotesize\ttfamily void update\+\_\+\+Previous\+Force\+\_\+for\+\_\+vertex (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_a5987ce7008eeb06ef3c829a8f7db0acc}\label{energy__force_8hpp_a5987ce7008eeb06ef3c829a8f7db0acc}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!update\_reference\_from\_CoordPrevious@{update\_reference\_from\_CoordPrevious}}
+\index{update\_reference\_from\_CoordPrevious@{update\_reference\_from\_CoordPrevious}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{update\_reference\_from\_CoordPrevious()}{update\_reference\_from\_CoordPrevious()}}
+{\footnotesize\ttfamily void update\+\_\+reference\+\_\+from\+\_\+\+Coord\+Previous (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_ab457db22fde9d609ac89bb2868cfcec7}\label{energy__force_8hpp_ab457db22fde9d609ac89bb2868cfcec7}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!update\_vertex\_from\_NonlinearConjugateGradient\_s0@{update\_vertex\_from\_NonlinearConjugateGradient\_s0}}
+\index{update\_vertex\_from\_NonlinearConjugateGradient\_s0@{update\_vertex\_from\_NonlinearConjugateGradient\_s0}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{update\_vertex\_from\_NonlinearConjugateGradient\_s0()}{update\_vertex\_from\_NonlinearConjugateGradient\_s0()}}
+{\footnotesize\ttfamily void update\+\_\+vertex\+\_\+from\+\_\+\+Nonlinear\+Conjugate\+Gradient\+\_\+s0 (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertex,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{face,  }\item[{double}]{a,  }\item[{std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{Force,  }\item[{\mbox{\hyperlink{structParam}{Param}} \&}]{param }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{energy__force_8hpp_aa17fcf4e08bb907c16b5409c59876277}\label{energy__force_8hpp_aa17fcf4e08bb907c16b5409c59876277}} 
+\index{energy\_force.hpp@{energy\_force.hpp}!vec\_to\_col\_matrix@{vec\_to\_col\_matrix}}
+\index{vec\_to\_col\_matrix@{vec\_to\_col\_matrix}!energy\_force.hpp@{energy\_force.hpp}}
+\doxysubsubsection{\texorpdfstring{vec\_to\_col\_matrix()}{vec\_to\_col\_matrix()}}
+{\footnotesize\ttfamily gsl\+\_\+matrix $\ast$ vec\+\_\+to\+\_\+col\+\_\+matrix (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ double $>$ \&}]{vec }\end{DoxyParamCaption})}
+

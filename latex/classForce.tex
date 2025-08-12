@@ -1,0 +1,247 @@
+\hypertarget{classForce}{}\doxysection{Force Class Reference}
+\label{classForce}\index{Force@{Force}}
+
+
+This class includes 7 components in calculating force exerted on vertrices\+: force due to membrane bending, area constraint, volume constraint, membrane thickness constraint, lipid tilting, regularization, and spline.  
+
+
+
+
+{\ttfamily \#include $<$Force.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classForce_a00983e3bbc206a00bb9253deafc4e424}{Force}} ()
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classForce}{Force}} object with all force components set to zero. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classForce_ab116476d6119b002ddfad551987826ef}{Force}} (const \mbox{\hyperlink{classForce}{Force}} \&force)
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classForce}{Force}} object with all force components set to the same as the input force, i.\+e. create a deepcopy of the input force. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \& \mbox{\hyperlink{classForce_a3f2bfef63af70521dbf494772e0368be}{calculate\+\_\+total\+\_\+force}} ()
+\begin{DoxyCompactList}\small\item\em Set force\+Total to the sum of 7 force components. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classForce_a7c6d23d95fa6a3c53d7c7aed2c351588}{get\+\_\+total\+\_\+force\+\_\+magnitude}} ()
+\begin{DoxyCompactList}\small\item\em Get the magnitude (norm) of total force. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{classForce_a3644fa44423cedb88bfe701dcd6520b7}{to\+\_\+string\+\_\+full}} ()
+\begin{DoxyCompactList}\small\item\em Returns a string representation of the force values for various properties. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{classForce_af6eb9bcb0598f03b80c890533ad9646e}{to\+\_\+string\+\_\+full\+\_\+at\+\_\+vertex}} (const int i)
+\begin{DoxyCompactList}\small\item\em Returns a string representation of the forces acting on a vertex for each property. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_a27beaa4895f6e9f9fdfa63d04c39c1f5}{force\+Curvature}}
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classForce}{Force}} due to membrane bending. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_ad705959161e70f62686dfe2fa9a32f5f}{force\+Area}}
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classForce}{Force}} due to area constraint. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_a9f30d1cd6683a492fd48a911c58a9911}{force\+Volume}}
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classForce}{Force}} due to volume constraint; set 0 if membrane is flat. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_af9b4e54fddd0d6360726c9fc2b85a8cf}{force\+Thickness}}
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classForce}{Force}} due to membrane thickness change. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_a013fe3de6bd136f65d9222ff5815aae8}{force\+Tilt}}
+\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classForce}{Force}} due to lipid tilting. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_a08bac5511cd6cf5a94081f4886ee1d68}{force\+Regularization}}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_a582f686f48ccc6fcd7a00e5780b4579f}{force\+Harmonic\+Bond}}
+\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classForce_a910b4d4baf1e424b8f055ca491f41314}{force\+Total}}
+\begin{DoxyCompactList}\small\item\em Total force by summing up the 7 force terms. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+std\+::ostream \& \mbox{\hyperlink{classForce_a58e97ab831e03e564f42a7900f2da7be}{operator$<$$<$}} (std\+::ostream \&stream, const \mbox{\hyperlink{classForce}{Force}} \&force)
+\begin{DoxyCompactList}\small\item\em Overrides the operator\texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<} in ostream. Outputs force in the format of (force\+Total\mbox{[}0\mbox{]}, force\+Total\mbox{[}1\mbox{]}, force\+Total\mbox{[}2\mbox{]}). Used in command line output. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This class includes 7 components in calculating force exerted on vertrices\+: force due to membrane bending, area constraint, volume constraint, membrane thickness constraint, lipid tilting, regularization, and spline. 
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classForce_a00983e3bbc206a00bb9253deafc4e424}\label{classForce_a00983e3bbc206a00bb9253deafc4e424}} 
+\index{Force@{Force}!Force@{Force}}
+\index{Force@{Force}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{Force()}{Force()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Force\+::\+Force (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Construct a new \mbox{\hyperlink{classForce}{Force}} object with all force components set to zero. 
+
+\mbox{\Hypertarget{classForce_ab116476d6119b002ddfad551987826ef}\label{classForce_ab116476d6119b002ddfad551987826ef}} 
+\index{Force@{Force}!Force@{Force}}
+\index{Force@{Force}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{Force()}{Force()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Force\+::\+Force (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classForce}{Force}} \&}]{force }\end{DoxyParamCaption})}
+
+
+
+Construct a new \mbox{\hyperlink{classForce}{Force}} object with all force components set to the same as the input force, i.\+e. create a deepcopy of the input force. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em force} & \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classForce_a3f2bfef63af70521dbf494772e0368be}\label{classForce_a3f2bfef63af70521dbf494772e0368be}} 
+\index{Force@{Force}!calculate\_total\_force@{calculate\_total\_force}}
+\index{calculate\_total\_force@{calculate\_total\_force}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{calculate\_total\_force()}{calculate\_total\_force()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} \& Force\+::calculate\+\_\+total\+\_\+force (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Set force\+Total to the sum of 7 force components. 
+
+\begin{DoxyReturn}{Returns}
+gsl\+\_\+matrix of calculated total force. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classForce_a7c6d23d95fa6a3c53d7c7aed2c351588}\label{classForce_a7c6d23d95fa6a3c53d7c7aed2c351588}} 
+\index{Force@{Force}!get\_total\_force\_magnitude@{get\_total\_force\_magnitude}}
+\index{get\_total\_force\_magnitude@{get\_total\_force\_magnitude}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{get\_total\_force\_magnitude()}{get\_total\_force\_magnitude()}}
+{\footnotesize\ttfamily double Force\+::get\+\_\+total\+\_\+force\+\_\+magnitude (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get the magnitude (norm) of total force. 
+
+\begin{DoxyReturn}{Returns}
+double magnitude of the total force 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+This method assumes total force is up to date. If not, please use \mbox{\hyperlink{classForce_a3f2bfef63af70521dbf494772e0368be}{calculate\+\_\+total\+\_\+force()}} to update the total force. 
+\end{DoxyNote}
+\mbox{\Hypertarget{classForce_a3644fa44423cedb88bfe701dcd6520b7}\label{classForce_a3644fa44423cedb88bfe701dcd6520b7}} 
+\index{Force@{Force}!to\_string\_full@{to\_string\_full}}
+\index{to\_string\_full@{to\_string\_full}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{to\_string\_full()}{to\_string\_full()}}
+{\footnotesize\ttfamily std\+::string Force\+::to\+\_\+string\+\_\+full (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Returns a string representation of the force values for various properties. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em force} & A {\ttfamily \mbox{\hyperlink{classForce}{Force}}} object to extract the force values from.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A string containing the force values for each property, separated by newlines. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classForce_af6eb9bcb0598f03b80c890533ad9646e}\label{classForce_af6eb9bcb0598f03b80c890533ad9646e}} 
+\index{Force@{Force}!to\_string\_full\_at\_vertex@{to\_string\_full\_at\_vertex}}
+\index{to\_string\_full\_at\_vertex@{to\_string\_full\_at\_vertex}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{to\_string\_full\_at\_vertex()}{to\_string\_full\_at\_vertex()}}
+{\footnotesize\ttfamily std\+::string Force\+::to\+\_\+string\+\_\+full\+\_\+at\+\_\+vertex (\begin{DoxyParamCaption}\item[{const int}]{i }\end{DoxyParamCaption})}
+
+
+
+Returns a string representation of the forces acting on a vertex for each property. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em i} & The index of the vertex to extract the forces from.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A string containing the force values for each property at the specified vertex, separated by newlines. 
+\end{DoxyReturn}
+
+
+\doxysubsection{Friends And Related Function Documentation}
+\mbox{\Hypertarget{classForce_a58e97ab831e03e564f42a7900f2da7be}\label{classForce_a58e97ab831e03e564f42a7900f2da7be}} 
+\index{Force@{Force}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$}{operator<<}}
+{\footnotesize\ttfamily std\+::ostream \& operator$<$$<$ (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{stream,  }\item[{const \mbox{\hyperlink{classForce}{Force}} \&}]{force }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [friend]}}
+
+
+
+Overrides the operator\texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<} in ostream. Outputs force in the format of (force\+Total\mbox{[}0\mbox{]}, force\+Total\mbox{[}1\mbox{]}, force\+Total\mbox{[}2\mbox{]}). Used in command line output. 
+
+\begin{DoxyNote}{Note}
+Only outputs force\+Total. Please use Force\+::to\+\_\+full\+\_\+string() or Force\+::to\+\_\+full\+\_\+string\+\_\+at\+\_\+vertex() for all components. 
+\end{DoxyNote}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classForce_ad705959161e70f62686dfe2fa9a32f5f}\label{classForce_ad705959161e70f62686dfe2fa9a32f5f}} 
+\index{Force@{Force}!forceArea@{forceArea}}
+\index{forceArea@{forceArea}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceArea}{forceArea}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Area}
+
+
+
+\mbox{\hyperlink{classForce}{Force}} due to area constraint. 
+
+\mbox{\Hypertarget{classForce_a27beaa4895f6e9f9fdfa63d04c39c1f5}\label{classForce_a27beaa4895f6e9f9fdfa63d04c39c1f5}} 
+\index{Force@{Force}!forceCurvature@{forceCurvature}}
+\index{forceCurvature@{forceCurvature}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceCurvature}{forceCurvature}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Curvature}
+
+
+
+\mbox{\hyperlink{classForce}{Force}} due to membrane bending. 
+
+\mbox{\Hypertarget{classForce_a582f686f48ccc6fcd7a00e5780b4579f}\label{classForce_a582f686f48ccc6fcd7a00e5780b4579f}} 
+\index{Force@{Force}!forceHarmonicBond@{forceHarmonicBond}}
+\index{forceHarmonicBond@{forceHarmonicBond}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceHarmonicBond}{forceHarmonicBond}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Harmonic\+Bond}
+
+\mbox{\hyperlink{classForce}{Force}} due to harmonic bond between the membrane and the attached spline, which can be a single particle or a lattice. The calculations are defined separately in spline\+\_\+points.\+cpp due to it requiring the coordinate information of the spline points. \mbox{\Hypertarget{classForce_a08bac5511cd6cf5a94081f4886ee1d68}\label{classForce_a08bac5511cd6cf5a94081f4886ee1d68}} 
+\index{Force@{Force}!forceRegularization@{forceRegularization}}
+\index{forceRegularization@{forceRegularization}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceRegularization}{forceRegularization}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Regularization}
+
+Regularization force; this does not change the geometry of actual limit surface. Instead, it restrains the shape of each mesh triangle to be as close to equilateral triangle as possible to avoid deformation of the triangular mesh. \mbox{\Hypertarget{classForce_af9b4e54fddd0d6360726c9fc2b85a8cf}\label{classForce_af9b4e54fddd0d6360726c9fc2b85a8cf}} 
+\index{Force@{Force}!forceThickness@{forceThickness}}
+\index{forceThickness@{forceThickness}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceThickness}{forceThickness}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Thickness}
+
+
+
+\mbox{\hyperlink{classForce}{Force}} due to membrane thickness change. 
+
+\mbox{\Hypertarget{classForce_a013fe3de6bd136f65d9222ff5815aae8}\label{classForce_a013fe3de6bd136f65d9222ff5815aae8}} 
+\index{Force@{Force}!forceTilt@{forceTilt}}
+\index{forceTilt@{forceTilt}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceTilt}{forceTilt}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Tilt}
+
+
+
+\mbox{\hyperlink{classForce}{Force}} due to lipid tilting. 
+
+\mbox{\Hypertarget{classForce_a910b4d4baf1e424b8f055ca491f41314}\label{classForce_a910b4d4baf1e424b8f055ca491f41314}} 
+\index{Force@{Force}!forceTotal@{forceTotal}}
+\index{forceTotal@{forceTotal}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceTotal}{forceTotal}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Total}
+
+
+
+Total force by summing up the 7 force terms. 
+
+\mbox{\Hypertarget{classForce_a9f30d1cd6683a492fd48a911c58a9911}\label{classForce_a9f30d1cd6683a492fd48a911c58a9911}} 
+\index{Force@{Force}!forceVolume@{forceVolume}}
+\index{forceVolume@{forceVolume}!Force@{Force}}
+\doxysubsubsection{\texorpdfstring{forceVolume}{forceVolume}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Force\+::force\+Volume}
+
+
+
+\mbox{\hyperlink{classForce}{Force}} due to volume constraint; set 0 if membrane is flat. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Force_8hpp}{Force.\+hpp}}\end{DoxyCompactItemize}

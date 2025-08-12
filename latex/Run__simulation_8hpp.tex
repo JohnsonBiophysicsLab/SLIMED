@@ -1,0 +1,81 @@
+\hypertarget{Run__simulation_8hpp}{}\doxysection{include/\+Run\+\_\+simulation.hpp File Reference}
+\label{Run__simulation_8hpp}\index{include/Run\_simulation.hpp@{include/Run\_simulation.hpp}}
+
+
+This file includes all main simulation function depending on the geometry of the membrane. (Currently only flat)  
+
+
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$iomanip$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$numeric$>$}\newline
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Vertex.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Face.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Mesh.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Energy.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Force.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Gauss\+\_\+quadrature.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Model.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Record.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Dynamics.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}io.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Parameters.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{Run__simulation_8hpp_ac762690aa9c48bd28e72abd779cef0f8}{run\+\_\+flat}} (std\+::string param\+\_\+filename)
+\begin{DoxyCompactList}\small\item\em Run continuum membrane model on a flat membrane. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Run__simulation_8hpp_a121dc8dfbff98923b531be69be20296b}{run\+\_\+dynamics\+\_\+flat}} (std\+::string param\+\_\+filename)
+\begin{DoxyCompactList}\small\item\em Run membrane dynamics model on a flat membrane. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file includes all main simulation function depending on the geometry of the membrane. (Currently only flat) 
+
+\begin{DoxyAuthor}{Author}
+Y Fu (\href{mailto:yfu31@jh.edu}{\texttt{ yfu31@jh.\+edu}}) 
+
+Y Ying (\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}}) 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2023-\/04-\/04
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Run__simulation_8hpp_a121dc8dfbff98923b531be69be20296b}\label{Run__simulation_8hpp_a121dc8dfbff98923b531be69be20296b}} 
+\index{Run\_simulation.hpp@{Run\_simulation.hpp}!run\_dynamics\_flat@{run\_dynamics\_flat}}
+\index{run\_dynamics\_flat@{run\_dynamics\_flat}!Run\_simulation.hpp@{Run\_simulation.hpp}}
+\doxysubsubsection{\texorpdfstring{run\_dynamics\_flat()}{run\_dynamics\_flat()}}
+{\footnotesize\ttfamily void run\+\_\+dynamics\+\_\+flat (\begin{DoxyParamCaption}\item[{std\+::string}]{param\+\_\+filename }\end{DoxyParamCaption})}
+
+
+
+Run membrane dynamics model on a flat membrane. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em param\+\_\+filename} & \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{Run__simulation_8hpp_ac762690aa9c48bd28e72abd779cef0f8}\label{Run__simulation_8hpp_ac762690aa9c48bd28e72abd779cef0f8}} 
+\index{Run\_simulation.hpp@{Run\_simulation.hpp}!run\_flat@{run\_flat}}
+\index{run\_flat@{run\_flat}!Run\_simulation.hpp@{Run\_simulation.hpp}}
+\doxysubsubsection{\texorpdfstring{run\_flat()}{run\_flat()}}
+{\footnotesize\ttfamily void run\+\_\+flat (\begin{DoxyParamCaption}\item[{std\+::string}]{param\+\_\+filename }\end{DoxyParamCaption})}
+
+
+
+Run continuum membrane model on a flat membrane. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em param\+\_\+filename} & \\
+\hline
+\end{DoxyParams}

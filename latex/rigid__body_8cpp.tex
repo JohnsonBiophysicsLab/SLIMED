@@ -1,0 +1,18 @@
+\hypertarget{rigid__body_8cpp}{}\doxysection{src/energy\+\_\+force/rigid\+\_\+body.cpp File Reference}
+\label{rigid__body_8cpp}\index{src/energy\_force/rigid\_body.cpp@{src/energy\_force/rigid\_body.cpp}}
+{\ttfamily \#include \char`\"{}energy\+\_\+force.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{rigid__body_8cpp_a981e53e52184eb0d86296d78499c04fc}{calculate\+\_\+rigid\+\_\+force\+\_\+and\+\_\+torque}} (const Param \&param, const vector$<$ vector$<$ double $>$ $>$ \&scaffolding\+Points, const vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&vertices, const vector$<$ int $>$ scaffolding\+Points\+\_\+corresponding\+Vertex\+Index, vector$<$ vector$<$ double $>$ $>$ \&rigid\+Body\+Forces, vector$<$ vector$<$ double $>$ $>$ \&rigid\+Body\+Torques)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{rigid__body_8cpp_a981e53e52184eb0d86296d78499c04fc}\label{rigid__body_8cpp_a981e53e52184eb0d86296d78499c04fc}} 
+\index{rigid\_body.cpp@{rigid\_body.cpp}!calculate\_rigid\_force\_and\_torque@{calculate\_rigid\_force\_and\_torque}}
+\index{calculate\_rigid\_force\_and\_torque@{calculate\_rigid\_force\_and\_torque}!rigid\_body.cpp@{rigid\_body.cpp}}
+\doxysubsubsection{\texorpdfstring{calculate\_rigid\_force\_and\_torque()}{calculate\_rigid\_force\_and\_torque()}}
+{\footnotesize\ttfamily void calculate\+\_\+rigid\+\_\+force\+\_\+and\+\_\+torque (\begin{DoxyParamCaption}\item[{const Param \&}]{param,  }\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{scaffolding\+Points,  }\item[{const vector$<$ \mbox{\hyperlink{classVertex}{Vertex}} $>$ \&}]{vertices,  }\item[{const vector$<$ int $>$}]{scaffolding\+Points\+\_\+corresponding\+Vertex\+Index,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{rigid\+Body\+Forces,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{rigid\+Body\+Torques }\end{DoxyParamCaption})}
+
+calculate force and torque applied on the scaffolding lattice by the membrane, assuming that\+: F(lattice-\/\texorpdfstring{$>$}{>}membrane) = F(membrane-\/\texorpdfstring{$>$}{>}lattice)

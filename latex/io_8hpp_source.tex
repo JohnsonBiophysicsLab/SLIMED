@@ -1,0 +1,88 @@
+\hypertarget{io_8hpp_source}{}\doxysection{io.\+hpp}
+\label{io_8hpp_source}\index{include/io.hpp@{include/io.hpp}}
+\mbox{\hyperlink{io_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#pragma\ once\ }}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <stdlib.h>}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ <sys/stat.h>}}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Mesh_8hpp}{Mesh.hpp}}"{}}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Record_8hpp}{Record.hpp}}"{}}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Model_8hpp}{Model.hpp}}"{}}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Vertex_8hpp}{Vertex.hpp}}"{}}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}"{}}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Dynamics_8hpp}{Dynamics.hpp}}"{}}}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00040\ std::string\ \mbox{\hyperlink{io_8hpp_a5b002291f48bd673403545bc02a460a6}{pop\_space}}(std::string\ rawString);}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{io_8hpp_a294030742b383eda09c4dc87fbfb7b14}{import\_kv\_string}}(std::string\ variableNameStr,\ std::string\ variableValueStr,\ \mbox{\hyperlink{structParam}{Param}}\&\ param);}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00068\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{io_8hpp_a13985e7083515b2e7a300857118cd682}{import\_param\_file}}(\mbox{\hyperlink{structParam}{Param}}\&\ param,\ std::string\ filepath);}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00084\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>}
+\DoxyCodeLine{00085\ std::vector<std::vector<T>>\ \mbox{\hyperlink{io_8hpp_ad33ab514f86fbd8b37a136feebfa4b0c}{read\_data\_from\_csv}}(\textcolor{keyword}{const}\ std::string\&\ filepath,\ \textcolor{keywordtype}{char}\ separator\ =\ \textcolor{charliteral}{','})\ \{}
+\DoxyCodeLine{00086\ \ \ \ \ \textcolor{comment}{//\ Open\ and\ read\ CSV\ file}}
+\DoxyCodeLine{00087\ \ \ \ \ std::ifstream\ csvFile(filepath);}
+\DoxyCodeLine{00088\ \ \ \ \ \textcolor{keywordflow}{if}\ (!csvFile.is\_open())\ \{}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Handle\ error:\ Unable\ to\ open\ CSV\ file}}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::invalid\_argument(\textcolor{stringliteral}{"{}Unable\ to\ open\ CSV\ file."{}});}
+\DoxyCodeLine{00091\ \ \ \ \ \}}
+\DoxyCodeLine{00092\ }
+\DoxyCodeLine{00093\ \ \ \ \ \textcolor{comment}{//\ Data\ structure\ to\ store\ data}}
+\DoxyCodeLine{00094\ \ \ \ \ std::vector<std::vector<T>>\ data;}
+\DoxyCodeLine{00095\ }
+\DoxyCodeLine{00096\ \ \ \ \ \textcolor{comment}{//\ Read\ each\ line\ from\ the\ CSV\ file}}
+\DoxyCodeLine{00097\ \ \ \ \ std::string\ line;}
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordflow}{while}\ (std::getline(csvFile,\ line))\ \{}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ std::vector<T>\ row;}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ std::istringstream\ iss(line);}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ std::string\ value;}
+\DoxyCodeLine{00102\ }
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Parse\ the\ line\ using\ the\ specified\ separator}}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (std::getline(iss,\ value,\ separator))\ \{}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{try}\ \{}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ T\ typedValue\ =\ \textcolor{keyword}{static\_cast<}T\textcolor{keyword}{>}(std::stod(value));}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ row.push\_back(typedValue);}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ \}\ \textcolor{keywordflow}{catch}\ (\textcolor{keyword}{const}\ std::invalid\_argument\&\ e)\ \{}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Handle\ error:\ Unable\ to\ convert\ to\ the\ specified\ data\ type}}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ csvFile.close();\ \textcolor{comment}{//\ Close\ CSV\ file\ before\ throwing\ exception}}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::invalid\_argument(\textcolor{stringliteral}{"{}Unable\ to\ convert\ data\ to\ the\ specified\ data\ type."{}});}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00114\ }
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Add\ the\ row\ to\ the\ data\ vector}}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ data.push\_back(row);}
+\DoxyCodeLine{00117\ \ \ \ \ \}}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{comment}{//\ Close\ the\ CSV\ file}}
+\DoxyCodeLine{00120\ \ \ \ \ csvFile.close();}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keywordflow}{return}\ data;}
+\DoxyCodeLine{00123\ \}}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00135\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{io_8hpp_abec5fb0a800f49ce307cb251a0d310e8}{import\_mesh\_from\_vertices\_faces}}(\mbox{\hyperlink{classMesh}{Mesh}}\&\ mesh,\ std::string\ verticesFilepath,\ std::string\ facesFilepath);}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00147\ std::vector<Matrix>\ \mbox{\hyperlink{io_8hpp_ae286f3abaa172d750a34bd8b5fb9ff1f}{import\_scaffolding\_mesh}}(std::string\ filepath);}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00168\ \textcolor{keywordtype}{void}\ write\_vertex\_data\_to\_csv(\textcolor{keyword}{const}\ \mbox{\hyperlink{classMesh}{Mesh}}\ \&mesh,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ iteration)}
+\DoxyCodeLine{00169\ \_\_attribute\_\_((deprecated(\textcolor{stringliteral}{"{}Use\ Mesh::write\_vertex\_data\_to\_csv\ instead."{}})));}
+\DoxyCodeLine{00170\ }
+\DoxyCodeLine{00183\ \textcolor{keywordtype}{void}\ write\_energy\_force\_data\_to\_csv(\textcolor{keyword}{const}\ \mbox{\hyperlink{classModel}{Model}}\ \&model);}
+\DoxyCodeLine{00184\ }
+\DoxyCodeLine{00201\ \textcolor{keywordtype}{void}\ write\_final\_vertex\_data\_to\_csv(\textcolor{keyword}{const}\ \mbox{\hyperlink{classMesh}{Mesh}}\ \&mesh);}
+\DoxyCodeLine{00202\ }
+\DoxyCodeLine{00210\ \textcolor{keywordtype}{void}\ dynamics\_create\_trajectory\_files(\mbox{\hyperlink{classDynamicMesh}{DynamicMesh}}\ \&mesh,\ \textcolor{keyword}{const}\ std::string\ \&filename);}
+\DoxyCodeLine{00211\ }
+\DoxyCodeLine{00221\ \textcolor{keywordtype}{void}\ dynamics\_output\_trajectory\_files(\mbox{\hyperlink{classDynamicMesh}{DynamicMesh}}\ \&mesh,\ \textcolor{keyword}{const}\ std::string\ \&filename);}
+\DoxyCodeLine{00222\ }
+
+\end{DoxyCode}

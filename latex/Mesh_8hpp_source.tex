@@ -1,0 +1,145 @@
+\hypertarget{Mesh_8hpp_source}{}\doxysection{Mesh.\+hpp}
+\label{Mesh_8hpp_source}\index{include/Mesh.hpp@{include/Mesh.hpp}}
+\mbox{\hyperlink{Mesh_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ <omp.h>}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00029\ \textcolor{comment}{//\ model\ setup}}
+\DoxyCodeLine{00030\ \textcolor{comment}{//\#include\ "{}Edge.hpp"{}}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Face_8hpp}{Face.hpp}}"{}}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Vertex_8hpp}{Vertex.hpp}}"{}}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Energy_8hpp}{Energy.hpp}}"{}}}
+\DoxyCodeLine{00034\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Force_8hpp}{Force.hpp}}"{}}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Gauss__quadrature_8hpp}{Gauss\_quadrature.hpp}}"{}}}
+\DoxyCodeLine{00036\ \textcolor{comment}{//\ matrix\ math}}
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00038\ \textcolor{comment}{//\ parameters}}
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}"{}}}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00043\ \textcolor{keyword}{using\ namespace\ }std;}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00050\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classMesh}{Mesh}}}
+\DoxyCodeLine{00051\ \{}
+\DoxyCodeLine{00052\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00053\ \ \ \ \ std::vector<Vertex>\ \mbox{\hyperlink{classMesh_a6465a888c97232a39e12aad008c969c3}{vertices}};\ }
+\DoxyCodeLine{00054\ \ \ \ \ std::vector<Face>\ \mbox{\hyperlink{classMesh_a9da199719905f2b213f8c0c8feba2d1f}{faces}};\ \ \ \ \ \ }
+\DoxyCodeLine{00055\ \ \ \ \ \mbox{\hyperlink{structParam}{Param}}\&\ \mbox{\hyperlink{classMesh_ae2ce6a4fa3c43202516e8de3504478bc}{param}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{comment}{//\ New\ members...\ for\ halfedge\ mesh}}
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{comment}{//std::vector<Edge>\ edges;\ ///<\ Vector\ to\ store\ all\ edges\ in\ the\ mesh}}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{comment}{//std::vector<Halfedge>\ halfedges;\ ///<\ Vector\ to\ store\ all\ halfedges\ in\ the\ mesh}}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00068\ \ \ \ \ \mbox{\hyperlink{classMesh_a0685f9dfb74d633c092886d56afffb6e}{Mesh}}(\mbox{\hyperlink{structParam}{Param}}\ \&srcParam);}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00077\ \ \ \ \ \mbox{\hyperlink{classMesh_aaab78f3a30742a937d9a387287ce323c}{Mesh}}(\textcolor{keyword}{const}\ std::vector<Vertex>\ \&srcVertices,\ \textcolor{keyword}{const}\ std::vector<Face>\ \&srcFaces,\ \mbox{\hyperlink{structParam}{Param}}\ \&srcParam)}
+\DoxyCodeLine{00078\ \ \ \ \ \_\_attribute\_\_((deprecated(\textcolor{stringliteral}{"{}Initialize\ with\ Mesh(Param\ \&srcParam)\ and\ setup\ with\ setup\_from\_vertices\_faces\ instead."{}})));}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00084\ \ \ \ \ \textcolor{comment}{//void\ initializeHalfedges();}}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00093\ \ \ \ \ \textcolor{comment}{//Halfedge*\ createHalfedge(int\ vertexIndex,\ int\ faceIndex);}}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00095\ \ \ \ \ \textcolor{comment}{//\ setup}}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_affdc2aaee5e4762f56c6637b16506f2d}{setup\_flat}}();}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a9573e3cbf642233168d9a6e70d5a1a57}{setup\_from\_vertices\_faces}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ verticesData,\ }
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<std::vector<int>>\&\ facesData);}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a99b21ba1a874da6dc75cfa473d02a747}{set\_axes\_division\_flat}}();}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00137\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_ac531dabf200ff831464999c03f345707}{set\_vertices\_faces\_flat}}();}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00148\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_aed33be097663033bc75853c33c3333ed}{set\_adjacent\_faces\_of\_vertices\_sorted}}();}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00156\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a3701b70db1a2940cbda09d8d8ae36dc0}{set\_adjacent\_vertices\_of\_vertices\_sorted}}();}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00169\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classMesh_ae93250c015872ef461069e436ec0d7be}{find\_opposite\_node\_index}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \&node1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \&node2,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \&node3);}
+\DoxyCodeLine{00170\ }
+\DoxyCodeLine{00176\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a83c95e1c6ae386b81d44558273b10a1e}{set\_one\_ring\_vertices\_sorted}}();}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00186\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_aef5bfdb2d69c0d217dff5b1fd83ed0f5}{determine\_boundary\_vertices\_faces}}();}
+\DoxyCodeLine{00187\ }
+\DoxyCodeLine{00196\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a744de61088daa25cc58ae32c07020e5d}{determine\_ghost\_vertices\_faces}}();}
+\DoxyCodeLine{00197\ }
+\DoxyCodeLine{00205\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_ae03d9aefdf5b321200fc4f1a6354c1c8}{set\_insertion\_patch}}(\textcolor{keyword}{const}\ vector<vector<int>>\ \&insertionPatch);}
+\DoxyCodeLine{00206\ }
+\DoxyCodeLine{00225\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_ae3c686d28a291b262ca1c026dba2e817}{set\_spontaneous\_curvature\_for\_face}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ \&insertCurv,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ \&spontCurv);}
+\DoxyCodeLine{00226\ }
+\DoxyCodeLine{00256\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a0acaf454a27868a6ed2ff0ddf4aff64e}{calculate\_element\_area\_volume}}();}
+\DoxyCodeLine{00257\ }
+\DoxyCodeLine{00268\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_acbf7a146011c884429c5d5009850d834}{sum\_membrane\_area\_and\_volume}}(\textcolor{keywordtype}{double}\ \&area,\ \textcolor{keywordtype}{double}\ \&volume);}
+\DoxyCodeLine{00269\ }
+\DoxyCodeLine{00285\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_afe3b6819bae35b86e80ba1c4104c8269}{Compute\_Energy\_And\_Force}}();}
+\DoxyCodeLine{00286\ }
+\DoxyCodeLine{00302\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_ab3e3994d78b0224d9759fe4ed4b4c6d5}{element\_energy\_force\_regular}}(\textcolor{keyword}{const}\ std::vector<Matrix>\ \&coordOneRingVertices,}
+\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classFace}{Face}}\&\ face,}
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ spontCurv,}
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \&meanCurv,}
+\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&normVector,}
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \&eBend,}
+\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&fBend,}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&fArea,}
+\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&fVolume);}
+\DoxyCodeLine{00311\ }
+\DoxyCodeLine{00326\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a290b3c7dd1e39da6095b5d12da1b2c8c}{energy\_force\_regularization}}();}
+\DoxyCodeLine{00327\ }
+\DoxyCodeLine{00337\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a5818bb84a71e7d6e4da2cd0a2da96cfb}{manage\_force\_for\_boundary\_ghost\_vertex}}();}
+\DoxyCodeLine{00338\ }
+\DoxyCodeLine{00344\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classMesh_a0d9a489b9658c52c771d8aeb86761cff}{get\_max\_force\_magnitude}}();}
+\DoxyCodeLine{00345\ }
+\DoxyCodeLine{00352\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classMesh_ae709a12efd5127a80c9e53298d175b8b}{calculate\_mean\_force}}();}
+\DoxyCodeLine{00353\ }
+\DoxyCodeLine{00354\ \ \ \ \ \textcolor{comment}{//\ defines\ in\ update.cpp}}
+\DoxyCodeLine{00355\ }
+\DoxyCodeLine{00361\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_ace8f4f14e01b2dc240eedb9ea4d71ff8}{update\_previous\_coord\_for\_vertex}}();}
+\DoxyCodeLine{00362\ }
+\DoxyCodeLine{00369\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a3789d9eb9e117406a17167c3b9cee1e4}{update\_reference\_coord\_from\_previous\_coord}}();}
+\DoxyCodeLine{00370\ }
+\DoxyCodeLine{00377\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a195aba6e11cd1d7a55604c2c337d65c4}{update\_previous\_force\_for\_vertex}}();}
+\DoxyCodeLine{00378\ }
+\DoxyCodeLine{00385\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a79e83327f9919ee1de80e19f0f3e38a6}{update\_previous\_energy\_for\_face}}();}
+\DoxyCodeLine{00386\ }
+\DoxyCodeLine{00393\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a742357b9318965689249acd31601642e}{clear\_force\_on\_vertices\_and\_energy\_on\_faces}}();}
+\DoxyCodeLine{00394\ }
+\DoxyCodeLine{00395\ \ \ \ \ \textcolor{comment}{//\ implemented\ in\ scaffolding\_points.cpp}}
+\DoxyCodeLine{00396\ }
+\DoxyCodeLine{00410\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classMesh_a0dbefd57ee3d41858d212263d1dc8024}{move\_vertices\_based\_on\_scaffolding}}(\textcolor{keywordtype}{bool}\ fixDir\ =\ \textcolor{keyword}{true});}
+\DoxyCodeLine{00411\ }
+\DoxyCodeLine{00420\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a6e11a64d5b45a2ce39b70325f7ff9a4e}{set\_scaffolding\_vertices\_correspondence}}();}
+\DoxyCodeLine{00421\ }
+\DoxyCodeLine{00442\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classMesh_a9d4290cf23bd9694e577e9ba73990df3}{calculate\_scaffolding\_energy\_force}}(\textcolor{keywordtype}{bool}\ doLocalSearch);}
+\DoxyCodeLine{00443\ }
+\DoxyCodeLine{00444\ \ \ \ \ \textcolor{comment}{//\ io}}
+\DoxyCodeLine{00445\ }
+\DoxyCodeLine{00451\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a5bb6aca91c6fbd690653536eced038bf}{write\_faces\_csv}}(\textcolor{keyword}{const}\ std::string\ \&outfile\_name);}
+\DoxyCodeLine{00452\ }
+\DoxyCodeLine{00458\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a24565ddc787b2fd6c78fc8715c5bbd0a}{write\_vertices\_csv}}(\textcolor{keyword}{const}\ std::string\ \&outfile\_name);}
+\DoxyCodeLine{00459\ }
+\DoxyCodeLine{00465\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_ac641af43730870056e0ba395856a771a}{write\_vertices\_csv\_with\_type}}(\textcolor{keyword}{const}\ std::string\ \&outfile\_name);}
+\DoxyCodeLine{00466\ }
+\DoxyCodeLine{00470\ \ \ \ \ \textcolor{keyword}{friend}\ std::ostream\ \&\mbox{\hyperlink{classMesh_a859d91a1b2b14ee63c792c057d35295a}{operator<<}}(std::ostream\ \&stream,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classMesh}{Mesh}}\ \&mesh);}
+\DoxyCodeLine{00471\ }
+\DoxyCodeLine{00472\ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00483\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classMesh_a1820a26272a1ce4209a30032908c92d4}{enumerate\_gauss\_quadrature\_point\_area\_volume}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&dots,}
+\DoxyCodeLine{00484\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \&area,}
+\DoxyCodeLine{00485\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \&volume);}
+\DoxyCodeLine{00486\ }
+\DoxyCodeLine{00493\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classMesh_a43e1893669c41ee154462ceb0518a6b0}{get\_one\_ring\_vertex\_matrix}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classFace}{Face}}\ \&face);}
+\DoxyCodeLine{00494\ }
+\DoxyCodeLine{00503\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{classMesh_a3a166003a4f1e86bbedfa5ee6867ff0d}{get\_squared\_distance\_sp\_and\_v}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&scaffoldingPoint,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classVertex}{Vertex}}\ \&vertex);}
+\DoxyCodeLine{00504\ \};}
+
+\end{DoxyCode}

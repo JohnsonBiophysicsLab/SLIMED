@@ -1,0 +1,73 @@
+# input parameters for continuum membrane model @author YY Oct 19, 2021
+# please do not change the variable name strings
+# @TODO separate out BCs; physical properties (bending modulus); geometry (sphere, cylindrical, planar)
+# for advanced usesrs: more technical values (mesh side); 
+# algorithmic parameters; 
+
+############################################
+## Dynamics Model Parameters
+############################################
+
+maxIterations = 10000          # total number of iterations
+meshpointOutput = true			# outputs meshpoint.csv 
+xyzOutput = true				# outputs trajectory.xyz
+
+############################################
+## Boundary Conditions
+############################################
+
+boundaryType = Periodic          # boundary condition type : Fixed, Free or Periodic
+
+############################################
+## Geometric Parameters
+############################################
+
+lFace = 5.0 				# target side length of triangular mesh (nm)
+
+# Sphere model not implemented
+# isSphere = false					# sphere mode
+# rSphere = 20.0					# target radius of sphere (nm)
+
+# Flat model
+isFlat = true                                         # flat mode
+sideX = 100.0                                  # target X side length of flat membrane (nm)
+sideY = 100.0                                  # target Y side length of flat membrane (nm)
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.8				# spontaneous curvature of insertion
+c0Membrane = 0.0				# spontaneous curvature of membrane
+kcMembraneBending = 83.4		# membrane bending constant (pN.nm)
+usMembraneStretching = 250.0	# membrane streching modulus (pN/nm)
+uvVolumeConstraint = 0.0		# volume constraint coefficient (pN/nm^2)
+isGlobalConstraint = false      # true to enable global mode for area and volume
+KBT = 4.17                      # 1KbT = 4.17 pN.nm
+
+# dynamics model parameters
+timeStep = 0.001                  # in us
+diffConst = 1.0                # diffusion constant, nm^2/us
+
+
+############################################
+## Insertion Mode
+############################################
+
+isInsertionIncluded = false		# true to enable insertions
+sigma = 0.0						# 2*sigma is the length scale of decaying spontaneous curvature, 
+								# expansion of nonzero curvature due to insertion (nm)
+
+
+############################################
+## Scaffolding Mode
+############################################
+
+isEnergyHarmonicBondIncluded = false  # true to enable harmonic bound energy for scaffolding
+scaffoldingFileName = COM.csv        # spline point file for calculation of spline energy
+
+############################################
+## Developer options
+############################################
+
+VERBOSE_MODE = false          # true to enable verbose commandline output

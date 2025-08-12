@@ -1,0 +1,30 @@
+\hypertarget{Gauss__quadrature_8hpp_source}{}\doxysection{Gauss\+\_\+quadrature.\+hpp}
+\label{Gauss__quadrature_8hpp_source}\index{include/Gauss\_quadrature.hpp@{include/Gauss\_quadrature.hpp}}
+\mbox{\hyperlink{Gauss__quadrature_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ <omp.h>}}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \textcolor{comment}{//\ matrix\ math}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}"{}}}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00040\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{Gauss__quadrature_8hpp_af6d5f7f1d13ac2bb815d033de4fcb47c}{get\_gauss\_quadrature\_weight\_VWU}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \&gaussQuadratureN,\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&vwu,\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&weight);}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00060\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{Gauss__quadrature_8hpp_a570974266236a0667ff1dd541accdb3e}{get\_shapefunction}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&vwu,\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&shapefunction);}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00072\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{Gauss__quadrature_8hpp_a2b03dabbaa2e4d8c78db3a5c65d5d403}{get\_shapefunction\_vector}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&vwuMat,\ std::vector<Matrix>\ \&sfVec);}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00086\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{Gauss__quadrature_8hpp_adcd7a735ed010efb781ccffe48a79292}{get\_subdivision\_matrices}}(\mbox{\hyperlink{classMatrix}{Matrix}}\ \&mat,}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&subMat1,}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&subMat2,}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&subMat3,}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&subMat4);}
+
+\end{DoxyCode}

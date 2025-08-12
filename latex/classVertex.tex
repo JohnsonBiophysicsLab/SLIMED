@@ -1,0 +1,278 @@
+\hypertarget{classVertex}{}\doxysection{Vertex Class Reference}
+\label{classVertex}\index{Vertex@{Vertex}}
+
+
+Defines a vertex in \mbox{\hyperlink{classMesh}{Mesh}}.  
+
+
+
+
+{\ttfamily \#include $<$Vertex.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classVertex_a97488994a2482d70da74e1b91d40e169}{Vertex}} ()
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classVertex}{Vertex}} object with members declared not initialized. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classVertex_a348392086f6705137a038eb5eef04be8}{Vertex}} (const int \mbox{\hyperlink{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}{index}}, const double x, const double y, const double z)
+\begin{DoxyCompactList}\small\item\em Constructs a new \mbox{\hyperlink{classVertex}{Vertex}} object with x,y,z coordinates. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classVertex_a02e767d0702ade0ea158afc91d2ca809}{Vertex}} (const int \mbox{\hyperlink{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}{index}}, const \mbox{\hyperlink{classMatrix}{Matrix}} \&\mbox{\hyperlink{classVertex_a72f490be625c03958164304aafe3ad45}{coord}})
+\begin{DoxyCompactList}\small\item\em Constructs a new \mbox{\hyperlink{classVertex}{Vertex}} object with \mbox{\hyperlink{classMatrix}{Matrix}} of size (3,1) \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classVertex_a73c6c1e8a66514a9361b0f6bc24aac76}{update\+\_\+coord\+\_\+with\+\_\+prev\+\_\+coord}} ()
+\begin{DoxyCompactList}\small\item\em Update the current vertex coordinate with the previous coordinate by copying the values of the previous coordinate matrix to the current coordinate. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classVertex_a2489523353dd076e27542821fcdc51b2}{approximate\+\_\+unit\+\_\+normal\+\_\+vector}} (std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&faces)
+\begin{DoxyCompactList}\small\item\em Approximate the normal vector of the current vertex by averaging the normal vector of all surrounding faces. The output will be store in member variable norm\+Vector. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}{index}}
+\begin{DoxyCompactList}\small\item\em index number of the vertex \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classVertex_a72f490be625c03958164304aafe3ad45}{coord}}
+\begin{DoxyCompactList}\small\item\em coordinate of the vertex \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classVertex_adb9d60e1c80cd65b05777b9882cda7a0}{coord\+Prev}}
+\begin{DoxyCompactList}\small\item\em coordinate of previous step \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classVertex_aab320c9c1cec2c4bb1b0807866e6f398}{coord\+Ref}}
+\begin{DoxyCompactList}\small\item\em reference coordinate \end{DoxyCompactList}\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{classVertex_a89c1dc7beca76de64df76f59e1c5b851}{adjacent\+Vertices}}
+\begin{DoxyCompactList}\small\item\em index of adjacent vertices \end{DoxyCompactList}\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{classVertex_a4e9fddc9ce03816985012b3f0d8eabd8}{adjacent\+Faces}}
+\begin{DoxyCompactList}\small\item\em inde of adjacent faces \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classVertex_a8eac6da55f7b1954fc7edcc6d69f63d8}{norm\+Vector}}
+\begin{DoxyCompactList}\small\item\em normal vector to the corresponding point on limit surface \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classVertex_af4c09640f5af5c78748bc191eccfce45}{layer\+Index}} = 0
+\begin{DoxyCompactList}\small\item\em used in multi-\/layer (a.\+k.\+a. leaflet) model; 0 for middle layer; +1 for upper layer \end{DoxyCompactList}\item 
+\mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}{Vertex\+Type}} \mbox{\hyperlink{classVertex_a9ffe6d14cbd961ec755048b417622865}{type}} = Vertex\+Type\+::\+Real
+\begin{DoxyCompactList}\small\item\em used in boundary condition \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classVertex_a92108657a5cb619c3c85a95b4d022679}{reflective\+Vertex\+Index}} = -\/1
+\begin{DoxyCompactList}\small\item\em reflective vertex used in periodic boundary condition \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classVertex_a750a2c4ba0ecccad4a94fea85624330b}{is\+Boundary}} = false
+\item 
+\mbox{\hyperlink{classForce}{Force}} \mbox{\hyperlink{classVertex_afa4bd1614e437035d748780cc132969d}{force}}
+\begin{DoxyCompactList}\small\item\em force exerted on the vertex \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classForce}{Force}} \mbox{\hyperlink{classVertex_a01b0f71176e76e5bbfdbc626edf31c4a}{force\+Prev}}
+\begin{DoxyCompactList}\small\item\em force exerted on the vertex from the previous iteration \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classVertex_a6b57d0e767a6bceae3250f70d599c733}{is\+Ghost}} = false
+\begin{DoxyCompactList}\small\item\em “\+Ghost vertices” are defined as points on the boundary of the triangular mesh that only serve to provide reference when calculating limit surface on the boundary, as calculating position of a point on the limit surface require the coordinates of 12 neighboring vertices (if regular). However, the “ghost vertices” themselves do not correspond to real points on the surface. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Defines a vertex in \mbox{\hyperlink{classMesh}{Mesh}}. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classVertex_a97488994a2482d70da74e1b91d40e169}\label{classVertex_a97488994a2482d70da74e1b91d40e169}} 
+\index{Vertex@{Vertex}!Vertex@{Vertex}}
+\index{Vertex@{Vertex}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{Vertex()}{Vertex()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily Vertex\+::\+Vertex (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Construct a new \mbox{\hyperlink{classVertex}{Vertex}} object with members declared not initialized. 
+
+\mbox{\Hypertarget{classVertex_a348392086f6705137a038eb5eef04be8}\label{classVertex_a348392086f6705137a038eb5eef04be8}} 
+\index{Vertex@{Vertex}!Vertex@{Vertex}}
+\index{Vertex@{Vertex}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{Vertex()}{Vertex()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily Vertex\+::\+Vertex (\begin{DoxyParamCaption}\item[{const int}]{index,  }\item[{const double}]{x,  }\item[{const double}]{y,  }\item[{const double}]{z }\end{DoxyParamCaption})}
+
+
+
+Constructs a new \mbox{\hyperlink{classVertex}{Vertex}} object with x,y,z coordinates. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em index} & The index of the vertex. \\
+\hline
+{\em x} & The x coordinate of the vertex. \\
+\hline
+{\em y} & The y coordinate of the vertex. \\
+\hline
+{\em z} & The z coordinate of the vertex. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classVertex_a02e767d0702ade0ea158afc91d2ca809}\label{classVertex_a02e767d0702ade0ea158afc91d2ca809}} 
+\index{Vertex@{Vertex}!Vertex@{Vertex}}
+\index{Vertex@{Vertex}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{Vertex()}{Vertex()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily Vertex\+::\+Vertex (\begin{DoxyParamCaption}\item[{const int}]{index,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{coord }\end{DoxyParamCaption})}
+
+
+
+Constructs a new \mbox{\hyperlink{classVertex}{Vertex}} object with \mbox{\hyperlink{classMatrix}{Matrix}} of size (3,1) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em index} & The index of the vertex \\
+\hline
+{\em coord} & \mbox{\hyperlink{classMatrix}{Matrix(3,1)}} coordinates of the vertex \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classVertex_a2489523353dd076e27542821fcdc51b2}\label{classVertex_a2489523353dd076e27542821fcdc51b2}} 
+\index{Vertex@{Vertex}!approximate\_unit\_normal\_vector@{approximate\_unit\_normal\_vector}}
+\index{approximate\_unit\_normal\_vector@{approximate\_unit\_normal\_vector}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{approximate\_unit\_normal\_vector()}{approximate\_unit\_normal\_vector()}}
+{\footnotesize\ttfamily void Vertex\+::approximate\+\_\+unit\+\_\+normal\+\_\+vector (\begin{DoxyParamCaption}\item[{std\+::vector$<$ \mbox{\hyperlink{classFace}{Face}} $>$ \&}]{faces }\end{DoxyParamCaption})}
+
+
+
+Approximate the normal vector of the current vertex by averaging the normal vector of all surrounding faces. The output will be store in member variable norm\+Vector. 
+
+\mbox{\Hypertarget{classVertex_a73c6c1e8a66514a9361b0f6bc24aac76}\label{classVertex_a73c6c1e8a66514a9361b0f6bc24aac76}} 
+\index{Vertex@{Vertex}!update\_coord\_with\_prev\_coord@{update\_coord\_with\_prev\_coord}}
+\index{update\_coord\_with\_prev\_coord@{update\_coord\_with\_prev\_coord}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{update\_coord\_with\_prev\_coord()}{update\_coord\_with\_prev\_coord()}}
+{\footnotesize\ttfamily void Vertex\+::update\+\_\+coord\+\_\+with\+\_\+prev\+\_\+coord (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Update the current vertex coordinate with the previous coordinate by copying the values of the previous coordinate matrix to the current coordinate. 
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classVertex_a4e9fddc9ce03816985012b3f0d8eabd8}\label{classVertex_a4e9fddc9ce03816985012b3f0d8eabd8}} 
+\index{Vertex@{Vertex}!adjacentFaces@{adjacentFaces}}
+\index{adjacentFaces@{adjacentFaces}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{adjacentFaces}{adjacentFaces}}
+{\footnotesize\ttfamily std\+::vector$<$int$>$ Vertex\+::adjacent\+Faces}
+
+
+
+inde of adjacent faces 
+
+\mbox{\Hypertarget{classVertex_a89c1dc7beca76de64df76f59e1c5b851}\label{classVertex_a89c1dc7beca76de64df76f59e1c5b851}} 
+\index{Vertex@{Vertex}!adjacentVertices@{adjacentVertices}}
+\index{adjacentVertices@{adjacentVertices}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{adjacentVertices}{adjacentVertices}}
+{\footnotesize\ttfamily std\+::vector$<$int$>$ Vertex\+::adjacent\+Vertices}
+
+
+
+index of adjacent vertices 
+
+\mbox{\Hypertarget{classVertex_a72f490be625c03958164304aafe3ad45}\label{classVertex_a72f490be625c03958164304aafe3ad45}} 
+\index{Vertex@{Vertex}!coord@{coord}}
+\index{coord@{coord}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{coord}{coord}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Vertex\+::coord}
+
+
+
+coordinate of the vertex 
+
+\mbox{\Hypertarget{classVertex_adb9d60e1c80cd65b05777b9882cda7a0}\label{classVertex_adb9d60e1c80cd65b05777b9882cda7a0}} 
+\index{Vertex@{Vertex}!coordPrev@{coordPrev}}
+\index{coordPrev@{coordPrev}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{coordPrev}{coordPrev}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Vertex\+::coord\+Prev}
+
+
+
+coordinate of previous step 
+
+\mbox{\Hypertarget{classVertex_aab320c9c1cec2c4bb1b0807866e6f398}\label{classVertex_aab320c9c1cec2c4bb1b0807866e6f398}} 
+\index{Vertex@{Vertex}!coordRef@{coordRef}}
+\index{coordRef@{coordRef}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{coordRef}{coordRef}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Vertex\+::coord\+Ref}
+
+
+
+reference coordinate 
+
+\mbox{\Hypertarget{classVertex_afa4bd1614e437035d748780cc132969d}\label{classVertex_afa4bd1614e437035d748780cc132969d}} 
+\index{Vertex@{Vertex}!force@{force}}
+\index{force@{force}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{force}{force}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classForce}{Force}} Vertex\+::force}
+
+
+
+force exerted on the vertex 
+
+\mbox{\Hypertarget{classVertex_a01b0f71176e76e5bbfdbc626edf31c4a}\label{classVertex_a01b0f71176e76e5bbfdbc626edf31c4a}} 
+\index{Vertex@{Vertex}!forcePrev@{forcePrev}}
+\index{forcePrev@{forcePrev}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{forcePrev}{forcePrev}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classForce}{Force}} Vertex\+::force\+Prev}
+
+
+
+force exerted on the vertex from the previous iteration 
+
+\mbox{\Hypertarget{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}\label{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}} 
+\index{Vertex@{Vertex}!index@{index}}
+\index{index@{index}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{index}{index}}
+{\footnotesize\ttfamily int Vertex\+::index}
+
+
+
+index number of the vertex 
+
+\mbox{\Hypertarget{classVertex_a750a2c4ba0ecccad4a94fea85624330b}\label{classVertex_a750a2c4ba0ecccad4a94fea85624330b}} 
+\index{Vertex@{Vertex}!isBoundary@{isBoundary}}
+\index{isBoundary@{isBoundary}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{isBoundary}{isBoundary}}
+{\footnotesize\ttfamily bool Vertex\+::is\+Boundary = false}
+
+\begin{DoxyRefDesc}{Deprecated}
+\item[\mbox{\hyperlink{deprecated__deprecated000005}{Deprecated}}]point on boundary of the membrane; determined by boundary condition \end{DoxyRefDesc}
+\mbox{\Hypertarget{classVertex_a6b57d0e767a6bceae3250f70d599c733}\label{classVertex_a6b57d0e767a6bceae3250f70d599c733}} 
+\index{Vertex@{Vertex}!isGhost@{isGhost}}
+\index{isGhost@{isGhost}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{isGhost}{isGhost}}
+{\footnotesize\ttfamily bool Vertex\+::is\+Ghost = false}
+
+
+
+“\+Ghost vertices” are defined as points on the boundary of the triangular mesh that only serve to provide reference when calculating limit surface on the boundary, as calculating position of a point on the limit surface require the coordinates of 12 neighboring vertices (if regular). However, the “ghost vertices” themselves do not correspond to real points on the surface. 
+
+\mbox{\Hypertarget{classVertex_af4c09640f5af5c78748bc191eccfce45}\label{classVertex_af4c09640f5af5c78748bc191eccfce45}} 
+\index{Vertex@{Vertex}!layerIndex@{layerIndex}}
+\index{layerIndex@{layerIndex}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{layerIndex}{layerIndex}}
+{\footnotesize\ttfamily int Vertex\+::layer\+Index = 0}
+
+
+
+used in multi-\/layer (a.\+k.\+a. leaflet) model; 0 for middle layer; +1 for upper layer 
+
+\mbox{\Hypertarget{classVertex_a8eac6da55f7b1954fc7edcc6d69f63d8}\label{classVertex_a8eac6da55f7b1954fc7edcc6d69f63d8}} 
+\index{Vertex@{Vertex}!normVector@{normVector}}
+\index{normVector@{normVector}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{normVector}{normVector}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Vertex\+::norm\+Vector}
+
+
+
+normal vector to the corresponding point on limit surface 
+
+\mbox{\Hypertarget{classVertex_a92108657a5cb619c3c85a95b4d022679}\label{classVertex_a92108657a5cb619c3c85a95b4d022679}} 
+\index{Vertex@{Vertex}!reflectiveVertexIndex@{reflectiveVertexIndex}}
+\index{reflectiveVertexIndex@{reflectiveVertexIndex}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{reflectiveVertexIndex}{reflectiveVertexIndex}}
+{\footnotesize\ttfamily int Vertex\+::reflective\+Vertex\+Index = -\/1}
+
+
+
+reflective vertex used in periodic boundary condition 
+
+\mbox{\Hypertarget{classVertex_a9ffe6d14cbd961ec755048b417622865}\label{classVertex_a9ffe6d14cbd961ec755048b417622865}} 
+\index{Vertex@{Vertex}!type@{type}}
+\index{type@{type}!Vertex@{Vertex}}
+\doxysubsubsection{\texorpdfstring{type}{type}}
+{\footnotesize\ttfamily \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}{Vertex\+Type}} Vertex\+::type = Vertex\+Type\+::\+Real}
+
+
+
+used in boundary condition 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Vertex_8hpp}{Vertex.\+hpp}}\end{DoxyCompactItemize}

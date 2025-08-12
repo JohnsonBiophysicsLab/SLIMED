@@ -1,0 +1,41 @@
+\hypertarget{Gauss__quadrature_8cpp}{}\doxysection{src/mesh/\+Gauss\+\_\+quadrature.cpp File Reference}
+\label{Gauss__quadrature_8cpp}\index{src/mesh/Gauss\_quadrature.cpp@{src/mesh/Gauss\_quadrature.cpp}}
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \mbox{\hyperlink{Gauss__quadrature_8cpp_ab437295477c7a37ba0eb0fda280f8d02}{get\+\_\+gauss\+\_\+quadrature\+\_\+weight\+\_\+\+VWU}} (const int \&gauss\+QuadratureN, \mbox{\hyperlink{classMatrix}{Matrix}} \&vwu, \mbox{\hyperlink{classMatrix}{Matrix}} \&weight)
+\item 
+static void \mbox{\hyperlink{Gauss__quadrature_8cpp_a8a0c3633c773f974df747960add96f82}{get\+\_\+shapefunction}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&vwu, \mbox{\hyperlink{classMatrix}{Matrix}} \&shapefunction)
+\item 
+static void \mbox{\hyperlink{Gauss__quadrature_8cpp_a2d30cbdeb2442096453df2d0a220d9af}{get\+\_\+shapefunction\+\_\+vector}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&vwu\+Mat, std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&sf\+Vec)
+\item 
+static void \mbox{\hyperlink{Gauss__quadrature_8cpp_a230a3a99c00c1a03e988e3cd993520fb}{get\+\_\+subdivision\+\_\+matrices}} (\mbox{\hyperlink{classMatrix}{Matrix}} \&mat, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat1, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat2, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat3, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat4)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Gauss__quadrature_8cpp_ab437295477c7a37ba0eb0fda280f8d02}\label{Gauss__quadrature_8cpp_ab437295477c7a37ba0eb0fda280f8d02}} 
+\index{Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}!get\_gauss\_quadrature\_weight\_VWU@{get\_gauss\_quadrature\_weight\_VWU}}
+\index{get\_gauss\_quadrature\_weight\_VWU@{get\_gauss\_quadrature\_weight\_VWU}!Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}}
+\doxysubsubsection{\texorpdfstring{get\_gauss\_quadrature\_weight\_VWU()}{get\_gauss\_quadrature\_weight\_VWU()}}
+{\footnotesize\ttfamily static void get\+\_\+gauss\+\_\+quadrature\+\_\+weight\+\_\+\+VWU (\begin{DoxyParamCaption}\item[{const int \&}]{gauss\+QuadratureN,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{vwu,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{weight }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+\mbox{\Hypertarget{Gauss__quadrature_8cpp_a8a0c3633c773f974df747960add96f82}\label{Gauss__quadrature_8cpp_a8a0c3633c773f974df747960add96f82}} 
+\index{Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}!get\_shapefunction@{get\_shapefunction}}
+\index{get\_shapefunction@{get\_shapefunction}!Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}}
+\doxysubsubsection{\texorpdfstring{get\_shapefunction()}{get\_shapefunction()}}
+{\footnotesize\ttfamily static void get\+\_\+shapefunction (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{vwu,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{shapefunction }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+\mbox{\Hypertarget{Gauss__quadrature_8cpp_a2d30cbdeb2442096453df2d0a220d9af}\label{Gauss__quadrature_8cpp_a2d30cbdeb2442096453df2d0a220d9af}} 
+\index{Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}!get\_shapefunction\_vector@{get\_shapefunction\_vector}}
+\index{get\_shapefunction\_vector@{get\_shapefunction\_vector}!Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}}
+\doxysubsubsection{\texorpdfstring{get\_shapefunction\_vector()}{get\_shapefunction\_vector()}}
+{\footnotesize\ttfamily static void get\+\_\+shapefunction\+\_\+vector (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{vwu\+Mat,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&}]{sf\+Vec }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+\mbox{\Hypertarget{Gauss__quadrature_8cpp_a230a3a99c00c1a03e988e3cd993520fb}\label{Gauss__quadrature_8cpp_a230a3a99c00c1a03e988e3cd993520fb}} 
+\index{Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}!get\_subdivision\_matrices@{get\_subdivision\_matrices}}
+\index{get\_subdivision\_matrices@{get\_subdivision\_matrices}!Gauss\_quadrature.cpp@{Gauss\_quadrature.cpp}}
+\doxysubsubsection{\texorpdfstring{get\_subdivision\_matrices()}{get\_subdivision\_matrices()}}
+{\footnotesize\ttfamily static void get\+\_\+subdivision\+\_\+matrices (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{mat,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat1,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat3,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat4 }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+

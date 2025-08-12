@@ -1,0 +1,87 @@
+\hypertarget{classParticle}{}\doxysection{Particle Class Reference}
+\label{classParticle}\index{Particle@{Particle}}
+
+
+Represents a single diffusing particle in a simulation.  
+
+
+
+
+{\ttfamily \#include $<$Parameters.\+hpp$>$}
+
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{classParticle_af583faf22ecb74e2356e012ab642ae80}{index}}
+\begin{DoxyCompactList}\small\item\em Index of the particle in the simulation. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classParticle_aefabf48159cbdc9b493fffce16ae1b58}{face\+Index}}
+\begin{DoxyCompactList}\small\item\em Index of the face that the particle is located on. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classParticle_a99e6cb76ee538baf658d43cbbdeaa526}{vwu}} = \mbox{\hyperlink{classMatrix}{Matrix}}(3, 1)
+\begin{DoxyCompactList}\small\item\em Velocity vector of the particle in nm/us. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classParticle_ab137a623e368d38953f5009508b8be1f}{coord}} = \mbox{\hyperlink{classMatrix}{Matrix}}(3, 1)
+\begin{DoxyCompactList}\small\item\em Coordinate vector of the particle in nm. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classParticle_a1f596563275aaddcb62f892799747590}{D}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Diffusion constant of the particle in nm$^\wedge$2/us. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Represents a single diffusing particle in a simulation. 
+
+A \mbox{\hyperlink{classParticle}{Particle}} object contains information about the particle\textquotesingle{}s position, velocity, and diffusion constant. The position is represented by a 3x1 matrix of coordinates, while the velocity is represented by another 3x1 matrix of velocities in the x, y, and z directions. 
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classParticle_ab137a623e368d38953f5009508b8be1f}\label{classParticle_ab137a623e368d38953f5009508b8be1f}} 
+\index{Particle@{Particle}!coord@{coord}}
+\index{coord@{coord}!Particle@{Particle}}
+\doxysubsubsection{\texorpdfstring{coord}{coord}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Particle\+::coord = \mbox{\hyperlink{classMatrix}{Matrix}}(3, 1)}
+
+
+
+Coordinate vector of the particle in nm. 
+
+\mbox{\Hypertarget{classParticle_a1f596563275aaddcb62f892799747590}\label{classParticle_a1f596563275aaddcb62f892799747590}} 
+\index{Particle@{Particle}!D@{D}}
+\index{D@{D}!Particle@{Particle}}
+\doxysubsubsection{\texorpdfstring{D}{D}}
+{\footnotesize\ttfamily double Particle\+::D = 0.\+0}
+
+
+
+Diffusion constant of the particle in nm$^\wedge$2/us. 
+
+\mbox{\Hypertarget{classParticle_aefabf48159cbdc9b493fffce16ae1b58}\label{classParticle_aefabf48159cbdc9b493fffce16ae1b58}} 
+\index{Particle@{Particle}!faceIndex@{faceIndex}}
+\index{faceIndex@{faceIndex}!Particle@{Particle}}
+\doxysubsubsection{\texorpdfstring{faceIndex}{faceIndex}}
+{\footnotesize\ttfamily int Particle\+::face\+Index}
+
+
+
+Index of the face that the particle is located on. 
+
+\mbox{\Hypertarget{classParticle_af583faf22ecb74e2356e012ab642ae80}\label{classParticle_af583faf22ecb74e2356e012ab642ae80}} 
+\index{Particle@{Particle}!index@{index}}
+\index{index@{index}!Particle@{Particle}}
+\doxysubsubsection{\texorpdfstring{index}{index}}
+{\footnotesize\ttfamily int Particle\+::index}
+
+
+
+Index of the particle in the simulation. 
+
+\mbox{\Hypertarget{classParticle_a99e6cb76ee538baf658d43cbbdeaa526}\label{classParticle_a99e6cb76ee538baf658d43cbbdeaa526}} 
+\index{Particle@{Particle}!vwu@{vwu}}
+\index{vwu@{vwu}!Particle@{Particle}}
+\doxysubsubsection{\texorpdfstring{vwu}{vwu}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Particle\+::vwu = \mbox{\hyperlink{classMatrix}{Matrix}}(3, 1)}
+
+
+
+Velocity vector of the particle in nm/us. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Parameters_8hpp}{Parameters.\+hpp}}\end{DoxyCompactItemize}

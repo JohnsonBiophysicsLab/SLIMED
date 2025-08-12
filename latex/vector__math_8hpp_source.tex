@@ -1,0 +1,72 @@
+\hypertarget{vector__math_8hpp_source}{}\doxysection{vector\+\_\+math.\+hpp}
+\label{vector__math_8hpp_source}\index{include/vector\_math.hpp@{include/vector\_math.hpp}}
+\mbox{\hyperlink{vector__math_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <\mbox{\hyperlink{Parameters_8hpp}{Parameters.hpp}}>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{comment}{//operator}}
+\DoxyCodeLine{00010\ \textcolor{comment}{}\textcolor{comment}{//\ vector\ calculation}}
+\DoxyCodeLine{00011\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_a409618fe3fd35155beeb3b521be09317}{operator+}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2);}
+\DoxyCodeLine{00012\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a242cad8ec4e27239bd3fc5f0695802c7}{operator+=}}(std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2);}
+\DoxyCodeLine{00013\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_ac1ee1c5fb0974a1279c5b7a9633efd8d}{operator-\/}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2);}
+\DoxyCodeLine{00014\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_aa12a71f0276162c570b0999c051ed6c1}{operator-\/=}}(std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2);}
+\DoxyCodeLine{00015\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_ac1ee1c5fb0974a1279c5b7a9633efd8d}{operator-\/}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1);}
+\DoxyCodeLine{00016\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_a772b823ca03493c95d0cb0f289fac133}{operator*}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num);}
+\DoxyCodeLine{00017\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_a772b823ca03493c95d0cb0f289fac133}{operator*}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v1);}
+\DoxyCodeLine{00018\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_a1ef3bcfbb0279da70e8685cd5cfe25c3}{operator/}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num);}
+\DoxyCodeLine{00019\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{vector__math_8hpp_a92422d819742580dbc61a523df4610aa}{dot}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2);}
+\DoxyCodeLine{00020\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_ac9759feaddf71b31f02938b6f60b7cc9}{cross}}(\textcolor{keyword}{const}\ std::vector<double>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ m2);}
+\DoxyCodeLine{00021\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{vector__math_8hpp_a71754a7e09185a1606602cace00f0ee1}{norm}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1);}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a409618fe3fd35155beeb3b521be09317}{operator+}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2);}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a242cad8ec4e27239bd3fc5f0695802c7}{operator+=}}(std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2);}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_ac1ee1c5fb0974a1279c5b7a9633efd8d}{operator-\/}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2);}
+\DoxyCodeLine{00028\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a772b823ca03493c95d0cb0f289fac133}{operator*}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2);}
+\DoxyCodeLine{00029\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a772b823ca03493c95d0cb0f289fac133}{operator*}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num);}
+\DoxyCodeLine{00030\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a772b823ca03493c95d0cb0f289fac133}{operator*}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1);}
+\DoxyCodeLine{00031\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a1ef3bcfbb0279da70e8685cd5cfe25c3}{operator/}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num);}
+\DoxyCodeLine{00032\ std::vector<double>\ \mbox{\hyperlink{vector__math_8hpp_a772b823ca03493c95d0cb0f289fac133}{operator*}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1);}
+\DoxyCodeLine{00033\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{vector__math_8hpp_a71754a7e09185a1606602cace00f0ee1}{norm}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1);}
+\DoxyCodeLine{00034\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a3f329f15178aaa921f744a32e7db125b}{transpose}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1);}
+\DoxyCodeLine{00035\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a3f329f15178aaa921f744a32e7db125b}{transpose}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1);}
+\DoxyCodeLine{00036\ std::vector<std::vector<double>>\ \mbox{\hyperlink{vector__math_8hpp_a02a65dd76226f21f4fecdb9da6f7f6db}{kron}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2);}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00039\ \textcolor{comment}{//\ define\ gauss\ randoms}}
+\DoxyCodeLine{00040\ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{vector__math_8hpp_accf3aec63bc20b3c99ab4881cb07c05b}{phase}}\ =\ 0;}
+\DoxyCodeLine{00041\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{vector__math_8hpp_a8daac669d436d2d6e7584439b6f224b5}{gr}}();}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \textcolor{comment}{//function}}
+\DoxyCodeLine{00045\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_ac780e1bc9989526bbf40bf761f09be85}{addition}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2,\ std::vector<double>\&\ v\_sum);}
+\DoxyCodeLine{00046\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_adaf89e72101f0ef157529bb3e805c443}{subtraction}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2,\ std::vector<double>\&\ v\_diff);}
+\DoxyCodeLine{00047\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a03d0ccb05108de328dbed96cc594bc10}{negative}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ std::vector<double>\&\ v\_neg);}
+\DoxyCodeLine{00048\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a347d3f4ccf6888ab40daff75f0527797}{getUnitVector}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ std::vector<double>\&\ v\_unit);}
+\DoxyCodeLine{00049\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a8bdf5af25c30e3951e8b9eea91b49933}{const\_multiplication}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num,\ std::vector<double>\&\ v\_result);}
+\DoxyCodeLine{00050\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a2c3de48508deb15dac88508564044660}{const\_division}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num,\ std::vector<double>\&\ tmp);}
+\DoxyCodeLine{00051\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_ac9759feaddf71b31f02938b6f60b7cc9}{cross}}(\textcolor{keyword}{const}\ std::vector<double>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ m2,\ std::vector<double>\&\ temp);}
+\DoxyCodeLine{00052\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_ac780e1bc9989526bbf40bf761f09be85}{addition}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2,\ std::vector<std::vector<double>>\&\ tmp);}
+\DoxyCodeLine{00053\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_adaf89e72101f0ef157529bb3e805c443}{subtraction}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2,\ std::vector<std::vector<double>>\&\ tmp);}
+\DoxyCodeLine{00054\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a0eb2f140471902185bfa49542a2a9fe0}{multiplication}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m2,\ std::vector<std::vector<double>>\&\ tmp);}
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a8bdf5af25c30e3951e8b9eea91b49933}{const\_multiplication}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num,\ std::vector<std::vector<double>>\&\ tmp);}
+\DoxyCodeLine{00056\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a2c3de48508deb15dac88508564044660}{const\_division}}(\textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ num,\ std::vector<std::vector<double>>\&\ tmp);}
+\DoxyCodeLine{00057\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_af145eeed45ab025641568dcbc8fc272c}{colvec\_matrix\_multiplication}}(\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<std::vector<double>>\&\ m1,\ std::vector<double>\&\ tmp);}
+\DoxyCodeLine{00058\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_a02a65dd76226f21f4fecdb9da6f7f6db}{kron}}\ (\textcolor{keyword}{const}\ std::vector<double>\&\ v1,\ \textcolor{keyword}{const}\ std::vector<double>\&\ v2,\ std::vector<std::vector<double>>\&\ m\_result);}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00060\ \textcolor{comment}{//complex\ functions}}
+\DoxyCodeLine{00061\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{vector__math_8hpp_adae9b5aaee0dff5855953b16e0b9a9a3}{a\_cross\_b\_plus\_c\_cross\_d}}(\ \ \textcolor{keyword}{const}\ std::vector<double>\&\ a,}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<double>\&\ b,}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<double>\&\ c,}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<double>\&\ d,}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<double>\&\ tmp\_f,}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<double>\&\ tmp\_l,}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<double>\&\ v\_result);}
+\DoxyCodeLine{00068\ \textcolor{comment}{//std::vector<std::vector<double>>\ down\_2nd\_dimension\_sf(const\ std::vector<Shapefunctions>\&\ sf,\ int\ j);}}
+
+\end{DoxyCode}

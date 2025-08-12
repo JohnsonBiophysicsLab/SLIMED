@@ -1,0 +1,66 @@
+\hypertarget{Vertex_8hpp_source}{}\doxysection{Vertex.\+hpp}
+\label{Vertex_8hpp_source}\index{include/Vertex.hpp@{include/Vertex.hpp}}
+\mbox{\hyperlink{Vertex_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <\mbox{\hyperlink{Force_8hpp}{Force.hpp}}>}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <\mbox{\hyperlink{Face_8hpp}{Face.hpp}}>}}
+\DoxyCodeLine{00017\ \textcolor{comment}{//\#include\ <Edge.hpp>}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\_algebra.hpp}}>}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00023\ \textcolor{keyword}{enum\ class}\ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}{VertexType}}}
+\DoxyCodeLine{00024\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7f80fcc452c2f1ed2bb51b39d0864df1}{Real}},}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00029\ \ \ \ \ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0abb1df1f5573ada06d99e065fd589da58}{FixedBoundary}},}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00032\ \ \ \ \ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a7868d01b6ec99878e50dec85649e03c9}{PeriodicBoundary}},}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00035\ \ \ \ \ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a95e44de3d0a9d4f2488482c88bc10046}{PeriodicReflectiveBoundary}},}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00038\ \ \ \ \ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0a401357e57c765967393ba391a338e89b}{Ghost}}}
+\DoxyCodeLine{00039\ \};}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00044\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classVertex}{Vertex}}}
+\DoxyCodeLine{00045\ \{}
+\DoxyCodeLine{00046\ }
+\DoxyCodeLine{00047\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}{index}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{comment}{//\ Coordinates}}
+\DoxyCodeLine{00050\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classVertex_a72f490be625c03958164304aafe3ad45}{coord}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00051\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classVertex_adb9d60e1c80cd65b05777b9882cda7a0}{coordPrev}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classVertex_aab320c9c1cec2c4bb1b0807866e6f398}{coordRef}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{comment}{//\ Geometry}}
+\DoxyCodeLine{00054\ \ \ \ \ std::vector<int>\ \mbox{\hyperlink{classVertex_a89c1dc7beca76de64df76f59e1c5b851}{adjacentVertices}};\ }
+\DoxyCodeLine{00055\ \ \ \ \ std::vector<int>\ \mbox{\hyperlink{classVertex_a4e9fddc9ce03816985012b3f0d8eabd8}{adjacentFaces}};\ \ \ \ }
+\DoxyCodeLine{00056\ \ \ \ \ \mbox{\hyperlink{classMatrix}{Matrix}}\ \mbox{\hyperlink{classVertex_a8eac6da55f7b1954fc7edcc6d69f63d8}{normVector}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00057\ \ \ \ \ \textcolor{comment}{//\ Layer\ and\ Boundary\ Condition}}
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classVertex_af4c09640f5af5c78748bc191eccfce45}{layerIndex}}\ =\ 0;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00059\ \ \ \ \ \mbox{\hyperlink{Vertex_8hpp_afa099a55c5746eff5a0e1ffc04f53cc0}{VertexType}}\ \mbox{\hyperlink{classVertex_a9ffe6d14cbd961ec755048b417622865}{type}}\ =\ VertexType::Real;}
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classVertex_a92108657a5cb619c3c85a95b4d022679}{reflectiveVertexIndex}}\ =\ -\/1;\ \ \ \ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classVertex_a750a2c4ba0ecccad4a94fea85624330b}{isBoundary}}\ =\ \textcolor{keyword}{false};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{comment}{//\ Forces}}
+\DoxyCodeLine{00064\ \ \ \ \ \mbox{\hyperlink{classForce}{Force}}\ \mbox{\hyperlink{classVertex_afa4bd1614e437035d748780cc132969d}{force}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00065\ \ \ \ \ \mbox{\hyperlink{classForce}{Force}}\ \mbox{\hyperlink{classVertex_a01b0f71176e76e5bbfdbc626edf31c4a}{forcePrev}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{comment}{//Halfedge*\ halfedge;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ///<\ one\ half\ edge}}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classVertex_a6b57d0e767a6bceae3250f70d599c733}{isGhost}}\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00082\ \ \ \ \ \mbox{\hyperlink{classVertex_a97488994a2482d70da74e1b91d40e169}{Vertex}}();}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00091\ \ \ \ \ \mbox{\hyperlink{classVertex_a348392086f6705137a038eb5eef04be8}{Vertex}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}{index}},\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ y,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ z);}
+\DoxyCodeLine{00092\ }
+\DoxyCodeLine{00098\ \ \ \ \ \mbox{\hyperlink{classVertex_a02e767d0702ade0ea158afc91d2ca809}{Vertex}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{classVertex_a2e35f7521dfd3fdee65dc26879c62f24}{index}},\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classMatrix}{Matrix}}\ \&\mbox{\hyperlink{classVertex_a72f490be625c03958164304aafe3ad45}{coord}});}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classVertex_a73c6c1e8a66514a9361b0f6bc24aac76}{update\_coord\_with\_prev\_coord}}();}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classVertex_a2489523353dd076e27542821fcdc51b2}{approximate\_unit\_normal\_vector}}(std::vector<Face>\ \&faces);}
+\DoxyCodeLine{00115\ \};}
+\DoxyCodeLine{00116\ }
+
+\end{DoxyCode}

@@ -1,0 +1,200 @@
+\hypertarget{classModel}{}\doxysection{Model Class Reference}
+\label{classModel}\index{Model@{Model}}
+
+
+The \mbox{\hyperlink{classModel}{Model}} class encapsulates a \mbox{\hyperlink{classMesh}{Mesh}} and a \mbox{\hyperlink{classRecord}{Record}} object.  
+
+
+
+
+{\ttfamily \#include $<$Model.\+hpp$>$}
+
+Inheritance diagram for Model\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classModel}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classModel_aa903f67f485d09e5815b59aec7e63897}{Model}} (\mbox{\hyperlink{classMesh}{Mesh}} \&mesh\+\_\+, \mbox{\hyperlink{classRecord}{Record}} \&record\+\_\+)
+\begin{DoxyCompactList}\small\item\em Constructs a new \mbox{\hyperlink{classModel}{Model}} object. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classModel_a7f90416049f50239b6c5969d6d515b8b}{should\+\_\+continue\+\_\+optimization}} ()
+\begin{DoxyCompactList}\small\item\em Determines whether the optimization algorithm should continue running. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classModel_ad8c4b04a27c60afdc2986fcbf340349b}{determine\+\_\+trial\+\_\+step\+\_\+size}} ()
+\begin{DoxyCompactList}\small\item\em This code determines the step size used in an optimization algorithm. The step size is used to calculate how far to move in each iteration of the optimization algorithm to minimize an energy function. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{classModel_a13aec43d55c406aecdb69381a00da6ca}{to\+\_\+string\+\_\+current\+\_\+step}} ()
+\begin{DoxyCompactList}\small\item\em Returns a string representation of the current step\textquotesingle{}s iteration number, trial step size, and optimal step size. The function concatenates the values of model.\+iteration, model.\+oa.\+trial\+Step\+Size, and model.\+step\+Size to the following format\+: \char`\"{}step\+: , trial Step\+Size = , Step\+Size = \char`\"{}. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classModel_a0615dca43529762c6c2faf7a4b045964}{update\+\_\+ncg\+\_\+direction}} ()
+\begin{DoxyCompactList}\small\item\em Updates the direction for nonlinear conjugate gradient (NCG) optimization. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classModel_a68dccc91b5766f9ea23c1fce192b63a8}{linear\+\_\+search\+\_\+for\+\_\+stepsize\+\_\+to\+\_\+minimize\+\_\+energy}} ()
+\begin{DoxyCompactList}\small\item\em Performs a linear search to find the optimal step size that minimizes energy using either nonlinear conjugate gradient method or simple line search. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classModel_a0dcc60b9238108d2d43c24a6df86ea02}{update\+\_\+vertex\+\_\+using\+\_\+\+NCG}} ()
+\begin{DoxyCompactList}\small\item\em Update vertex coordinates using a non-\/linear conjugate gradient method. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMesh}{Mesh}} \& \mbox{\hyperlink{classModel_a71c5bc5c140ccf73b32e516908bdb780}{mesh}}
+\item 
+\mbox{\hyperlink{classRecord}{Record}} \& \mbox{\hyperlink{classModel_af42bc28b7c6bb489bf71bb21f59a8912}{record}}
+\item 
+int \mbox{\hyperlink{classModel_af5b6157364a0fe7610b3b8ace65095aa}{iteration}}
+\item 
+double \mbox{\hyperlink{classModel_a3594da5a1ede2964c3f3becae5a553b1}{step\+Size}}
+\item 
+\mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} \mbox{\hyperlink{classModel_a290f10d67b74dcfac182e9a5abd7ae31}{oa}}
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classForce}{Force}} $>$ \mbox{\hyperlink{classModel_a39e556caad02cc7510ae157af0602d57}{ncg\+Direction0}}
+\begin{DoxyCompactList}\small\item\em vector to store the initial direction for nonlinear conjugate gradient optimization \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+The \mbox{\hyperlink{classModel}{Model}} class encapsulates a \mbox{\hyperlink{classMesh}{Mesh}} and a \mbox{\hyperlink{classRecord}{Record}} object. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classModel_aa903f67f485d09e5815b59aec7e63897}\label{classModel_aa903f67f485d09e5815b59aec7e63897}} 
+\index{Model@{Model}!Model@{Model}}
+\index{Model@{Model}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{Model()}{Model()}}
+{\footnotesize\ttfamily Model\+::\+Model (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMesh}{Mesh}} \&}]{mesh\+\_\+,  }\item[{\mbox{\hyperlink{classRecord}{Record}} \&}]{record\+\_\+ }\end{DoxyParamCaption})}
+
+
+
+Constructs a new \mbox{\hyperlink{classModel}{Model}} object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mesh\+\_\+} & The mesh object to be encapsulated. \\
+\hline
+{\em record\+\_\+} & The record object to be encapsulated. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classModel_ad8c4b04a27c60afdc2986fcbf340349b}\label{classModel_ad8c4b04a27c60afdc2986fcbf340349b}} 
+\index{Model@{Model}!determine\_trial\_step\_size@{determine\_trial\_step\_size}}
+\index{determine\_trial\_step\_size@{determine\_trial\_step\_size}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{determine\_trial\_step\_size()}{determine\_trial\_step\_size()}}
+{\footnotesize\ttfamily void Model\+::determine\+\_\+trial\+\_\+step\+\_\+size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+This code determines the step size used in an optimization algorithm. The step size is used to calculate how far to move in each iteration of the optimization algorithm to minimize an energy function. 
+
+\begin{DoxyReturn}{Returns}
+double trial\+Step\+Size 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classModel_a68dccc91b5766f9ea23c1fce192b63a8}\label{classModel_a68dccc91b5766f9ea23c1fce192b63a8}} 
+\index{Model@{Model}!linear\_search\_for\_stepsize\_to\_minimize\_energy@{linear\_search\_for\_stepsize\_to\_minimize\_energy}}
+\index{linear\_search\_for\_stepsize\_to\_minimize\_energy@{linear\_search\_for\_stepsize\_to\_minimize\_energy}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{linear\_search\_for\_stepsize\_to\_minimize\_energy()}{linear\_search\_for\_stepsize\_to\_minimize\_energy()}}
+{\footnotesize\ttfamily double Model\+::linear\+\_\+search\+\_\+for\+\_\+stepsize\+\_\+to\+\_\+minimize\+\_\+energy (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Performs a linear search to find the optimal step size that minimizes energy using either nonlinear conjugate gradient method or simple line search. 
+
+\begin{DoxyReturn}{Returns}
+double The optimal step size. Returns -\/1 if no efficient step size is found with the simple line search method. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classModel_a7f90416049f50239b6c5969d6d515b8b}\label{classModel_a7f90416049f50239b6c5969d6d515b8b}} 
+\index{Model@{Model}!should\_continue\_optimization@{should\_continue\_optimization}}
+\index{should\_continue\_optimization@{should\_continue\_optimization}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{should\_continue\_optimization()}{should\_continue\_optimization()}}
+{\footnotesize\ttfamily bool Model\+::should\+\_\+continue\+\_\+optimization (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Determines whether the optimization algorithm should continue running. 
+
+The function returns true if the model has not yet been optimized and the maximum number of iterations has not been reached. Otherwise, the function returns false and the optimization algorithm stops.
+
+\begin{DoxyNote}{Note}
+The implementation of this function can be changed to customize the optimization.
+\end{DoxyNote}
+\begin{DoxyReturn}{Returns}
+true if the optimization algorithm should continue running, false otherwise. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classModel_a13aec43d55c406aecdb69381a00da6ca}\label{classModel_a13aec43d55c406aecdb69381a00da6ca}} 
+\index{Model@{Model}!to\_string\_current\_step@{to\_string\_current\_step}}
+\index{to\_string\_current\_step@{to\_string\_current\_step}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{to\_string\_current\_step()}{to\_string\_current\_step()}}
+{\footnotesize\ttfamily std\+::string Model\+::to\+\_\+string\+\_\+current\+\_\+step (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Returns a string representation of the current step\textquotesingle{}s iteration number, trial step size, and optimal step size. The function concatenates the values of model.\+iteration, model.\+oa.\+trial\+Step\+Size, and model.\+step\+Size to the following format\+: \char`\"{}step\+: , trial Step\+Size = , Step\+Size = \char`\"{}. 
+
+\begin{DoxyReturn}{Returns}
+std\+::string A string representation of the current step\textquotesingle{}s information. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classModel_a0615dca43529762c6c2faf7a4b045964}\label{classModel_a0615dca43529762c6c2faf7a4b045964}} 
+\index{Model@{Model}!update\_ncg\_direction@{update\_ncg\_direction}}
+\index{update\_ncg\_direction@{update\_ncg\_direction}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{update\_ncg\_direction()}{update\_ncg\_direction()}}
+{\footnotesize\ttfamily void Model\+::update\+\_\+ncg\+\_\+direction (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Updates the direction for nonlinear conjugate gradient (NCG) optimization. 
+
+This function calculates the dot product of the previous and current forces to determine the NCG factor. It then updates the NCG direction either as a combination of the current force and the previous NCG direction, or just the current force depending on whether NCG optimization is being used. The NCG direction is updated in the input vector {\ttfamily ncg\+Directions}. \mbox{\Hypertarget{classModel_a0dcc60b9238108d2d43c24a6df86ea02}\label{classModel_a0dcc60b9238108d2d43c24a6df86ea02}} 
+\index{Model@{Model}!update\_vertex\_using\_NCG@{update\_vertex\_using\_NCG}}
+\index{update\_vertex\_using\_NCG@{update\_vertex\_using\_NCG}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{update\_vertex\_using\_NCG()}{update\_vertex\_using\_NCG()}}
+{\footnotesize\ttfamily void Model\+::update\+\_\+vertex\+\_\+using\+\_\+\+NCG (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Update vertex coordinates using a non-\/linear conjugate gradient method. 
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classModel_af5b6157364a0fe7610b3b8ace65095aa}\label{classModel_af5b6157364a0fe7610b3b8ace65095aa}} 
+\index{Model@{Model}!iteration@{iteration}}
+\index{iteration@{iteration}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{iteration}{iteration}}
+{\footnotesize\ttfamily int Model\+::iteration}
+
+The current iteration count of the optimization algorithm. \mbox{\Hypertarget{classModel_a71c5bc5c140ccf73b32e516908bdb780}\label{classModel_a71c5bc5c140ccf73b32e516908bdb780}} 
+\index{Model@{Model}!mesh@{mesh}}
+\index{mesh@{mesh}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{mesh}{mesh}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMesh}{Mesh}}\& Model\+::mesh}
+
+The mesh object. \mbox{\Hypertarget{classModel_a39e556caad02cc7510ae157af0602d57}\label{classModel_a39e556caad02cc7510ae157af0602d57}} 
+\index{Model@{Model}!ncgDirection0@{ncgDirection0}}
+\index{ncgDirection0@{ncgDirection0}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{ncgDirection0}{ncgDirection0}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classForce}{Force}}$>$ Model\+::ncg\+Direction0}
+
+
+
+vector to store the initial direction for nonlinear conjugate gradient optimization 
+
+\mbox{\Hypertarget{classModel_a290f10d67b74dcfac182e9a5abd7ae31}\label{classModel_a290f10d67b74dcfac182e9a5abd7ae31}} 
+\index{Model@{Model}!oa@{oa}}
+\index{oa@{oa}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{oa}{oa}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classOptimizationAlgorithm}{Optimization\+Algorithm}} Model\+::oa}
+
+The state for the optimization algorithm. \mbox{\Hypertarget{classModel_af42bc28b7c6bb489bf71bb21f59a8912}\label{classModel_af42bc28b7c6bb489bf71bb21f59a8912}} 
+\index{Model@{Model}!record@{record}}
+\index{record@{record}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{record}{record}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classRecord}{Record}}\& Model\+::record}
+
+The record object. \mbox{\Hypertarget{classModel_a3594da5a1ede2964c3f3becae5a553b1}\label{classModel_a3594da5a1ede2964c3f3becae5a553b1}} 
+\index{Model@{Model}!stepSize@{stepSize}}
+\index{stepSize@{stepSize}!Model@{Model}}
+\doxysubsubsection{\texorpdfstring{stepSize}{stepSize}}
+{\footnotesize\ttfamily double Model\+::step\+Size}
+
+The current step size 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Model_8hpp}{Model.\+hpp}}\end{DoxyCompactItemize}

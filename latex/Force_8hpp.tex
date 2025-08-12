@@ -1,0 +1,83 @@
+\hypertarget{Force_8hpp}{}\doxysection{include/\+Force.hpp File Reference}
+\label{Force_8hpp}\index{include/Force.hpp@{include/Force.hpp}}
+
+
+The \mbox{\hyperlink{classForce}{Force}} class defines corresponding force terms type. Note that all the forces are gsl matrices with a size of (3,1).  
+
+
+{\ttfamily \#include $<$sstream$>$}\newline
+{\ttfamily \#include $<$ostream$>$}\newline
+{\ttfamily \#include $<$omp.\+h$>$}\newline
+{\ttfamily \#include $<$iomanip$>$}\newline
+{\ttfamily \#include $<$algorithm$>$}\newline
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Parameters.\+hpp\char`\"{}}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classForce}{Force}}
+\begin{DoxyCompactList}\small\item\em This class includes 7 components in calculating force exerted on vertrices\+: force due to membrane bending, area constraint, volume constraint, membrane thickness constraint, lipid tilting, regularization, and spline. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classForce}{Force}} \mbox{\hyperlink{Force_8hpp_a4e462e1e5704e123e66caf7420081b87}{operator+}} (const \mbox{\hyperlink{classForce}{Force}} \&lhs, const \mbox{\hyperlink{classForce}{Force}} \&rhs)
+\begin{DoxyCompactList}\small\item\em This code defines a binary operator + for the \mbox{\hyperlink{classForce}{Force}} class. The operator takes two const references to \mbox{\hyperlink{classForce}{Force}} objects (lhs and rhs) as its arguments. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classForce}{Force}} \& \mbox{\hyperlink{Force_8hpp_aa86b26220667e08489b3fb1006d30b7a}{operator+=}} (\mbox{\hyperlink{classForce}{Force}} \&lhs, const \mbox{\hyperlink{classForce}{Force}} \&rhs)
+\begin{DoxyCompactList}\small\item\em This code defines a compound assignment operator += for the \mbox{\hyperlink{classForce}{Force}} class. The operator takes a reference to a \mbox{\hyperlink{classForce}{Force}} object (lhs) and a const reference to another \mbox{\hyperlink{classForce}{Force}} object (rhs) as its arguments. It modifies the lhs object by adding the components of the rhs object to it. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+The \mbox{\hyperlink{classForce}{Force}} class defines corresponding force terms type. Note that all the forces are gsl matrices with a size of (3,1). 
+
+\begin{DoxyAuthor}{Author}
+Y Ying (\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}}) 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2023-\/01-\/05
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Force_8hpp_a4e462e1e5704e123e66caf7420081b87}\label{Force_8hpp_a4e462e1e5704e123e66caf7420081b87}} 
+\index{Force.hpp@{Force.hpp}!operator+@{operator+}}
+\index{operator+@{operator+}!Force.hpp@{Force.hpp}}
+\doxysubsubsection{\texorpdfstring{operator+()}{operator+()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classForce}{Force}} operator+ (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classForce}{Force}} \&}]{lhs,  }\item[{const \mbox{\hyperlink{classForce}{Force}} \&}]{rhs }\end{DoxyParamCaption})}
+
+
+
+This code defines a binary operator + for the \mbox{\hyperlink{classForce}{Force}} class. The operator takes two const references to \mbox{\hyperlink{classForce}{Force}} objects (lhs and rhs) as its arguments. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lhs} & \\
+\hline
+{\em rhs} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classForce}{Force}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{Force_8hpp_aa86b26220667e08489b3fb1006d30b7a}\label{Force_8hpp_aa86b26220667e08489b3fb1006d30b7a}} 
+\index{Force.hpp@{Force.hpp}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!Force.hpp@{Force.hpp}}
+\doxysubsubsection{\texorpdfstring{operator+=()}{operator+=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classForce}{Force}} \& operator+= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classForce}{Force}} \&}]{lhs,  }\item[{const \mbox{\hyperlink{classForce}{Force}} \&}]{rhs }\end{DoxyParamCaption})}
+
+
+
+This code defines a compound assignment operator += for the \mbox{\hyperlink{classForce}{Force}} class. The operator takes a reference to a \mbox{\hyperlink{classForce}{Force}} object (lhs) and a const reference to another \mbox{\hyperlink{classForce}{Force}} object (rhs) as its arguments. It modifies the lhs object by adding the components of the rhs object to it. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lhs} & \\
+\hline
+{\em rhs} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classForce}{Force}}\& 
+\end{DoxyReturn}

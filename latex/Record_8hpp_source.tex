@@ -1,0 +1,29 @@
+\hypertarget{Record_8hpp_source}{}\doxysection{Record.\+hpp}
+\label{Record_8hpp_source}\index{include/Record.hpp@{include/Record.hpp}}
+\mbox{\hyperlink{Record_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Energy_8hpp}{Energy.hpp}}"{}}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00012\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classRecord}{Record}}}
+\DoxyCodeLine{00013\ \{}
+\DoxyCodeLine{00014\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00015\ \ \ \ \ std::vector<double>\ \mbox{\hyperlink{classRecord_a04e2a507a5790f3b3fb218504425ea65}{areaTotal}};\ }
+\DoxyCodeLine{00016\ \ \ \ \ std::vector<Energy>\ \mbox{\hyperlink{classRecord_ad0a05c2bbd22323c2e6e3ccf279e826a}{energyVec}};\ }
+\DoxyCodeLine{00017\ \ \ \ \ std::vector<double>\ \mbox{\hyperlink{classRecord_a443db73a5c1a3a06d71ca1d93b244c41}{meanForce}};\ }
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00022\ \ \ \ \ \mbox{\hyperlink{classRecord_ae8ee53ffec6ff4dac9911517d47e86a5}{Record}}();}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00029\ \ \ \ \ \mbox{\hyperlink{classRecord_afadb40d6df146349f7f0fa688bb9d9d9}{Record}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ numIterations);}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classRecord_a18144873ba64df082ba237c9629e24ac}{add}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ currentArea,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classEnergy}{Energy}}\ \&currentEnergy,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ currentMeanForce);}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classRecord_afea43ae0c95b9a2316cd55248657952e}{set}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ iteration,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ currentArea,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{classEnergy}{Energy}}\ \&currentEnergy,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{double}\ currentMeanForce);}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classRecord_aa4cf7dc94ac91b56a5009c22b7ab4b79}{print\_iteration}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ iteration);}
+\DoxyCodeLine{00070\ \};}
+
+\end{DoxyCode}

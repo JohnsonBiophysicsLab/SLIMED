@@ -1,0 +1,721 @@
+\hypertarget{structParam}{}\doxysection{Param Struct Reference}
+\label{structParam}\index{Param@{Param}}
+
+
+Contains simulation parameters and physical constants.  
+
+
+
+
+{\ttfamily \#include $<$Parameters.\+hpp$>$}
+
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{structParam_ad450793b18b22c2a72a8eb22a6b5bcc2}{VERBOSE\+\_\+\+MODE}} = true
+\begin{DoxyCompactList}\small\item\em Whether to print verbose output during simulation. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_a9631f725f71203af562e72fc727b5e12}{max\+Iterations}} = 1E5
+\begin{DoxyCompactList}\small\item\em Max number of iteration. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a73e37c8ee20932df2b4ac205d45cd781}{k\+Curv}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Bending modulus i.\+e. curvature constant (kc) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_aca6221e2515f001a33acc187308881d6}{u\+Surf}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Surface area constraint i.\+e. surface constant (us) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_ad9466f4b6515af5c5968cecdc71822d3}{u\+Vol}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Volume constraint i.\+e. volume constant (uv) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_adc3d6833d626ae110b67d508d67b9aad}{k\+Reg}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Coefficient of the regularization constraint (k) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a1d4cadccb8ae69e593e938c9d051dca5}{k\+Spring}}
+\begin{DoxyCompactList}\small\item\em Spring constant for insertion zones (K) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_abe2c1a99f8a6682ff77b8c44c7104ae1}{area0}}
+\begin{DoxyCompactList}\small\item\em Target area for membrane (S0) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a827eb346dd30104fd06734cd8a98ac2a}{area}}
+\begin{DoxyCompactList}\small\item\em Total area of the membrane (S) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_ad4c3757e3fd6738c06571aad5366439a}{vol0}}
+\begin{DoxyCompactList}\small\item\em Target volume for membrane (V0) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a42fbd32696c704fae6bb4d080a0fbadf}{vol}}
+\begin{DoxyCompactList}\small\item\em Total volume of the membrane (V) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_aadbdcdaddc4d9e262f273db1fc376e6a}{insert\+Curv}}
+\begin{DoxyCompactList}\small\item\em Spontaneous curvature of insertions (C0) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a432e137b07a15257ff77bb260039fff8}{spont\+Curv}}
+\begin{DoxyCompactList}\small\item\em Spontaneous curvature of membrane (c0) \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_afe011accc7b5a22b9b5874105e09c796}{sideX}}
+\begin{DoxyCompactList}\small\item\em X-\/axis length for flat membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_ac59ce2c914270a3f0fcc6ba1e039c6be}{sideY}}
+\begin{DoxyCompactList}\small\item\em Y-\/axis length for flat membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a4261fb5801202d44544e8f6849884d9f}{radius}}
+\begin{DoxyCompactList}\small\item\em Radius for spherical membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a3a0cf0dfa1659a7ded716427f3df1a68}{l\+Face}}
+\begin{DoxyCompactList}\small\item\em l\+Face \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_a191ab50a69a4c1d5f855208dc84b7f43}{n\+FaceX}} = -\/1
+\begin{DoxyCompactList}\small\item\em Number of faces (edges) along X axis for flat membrane. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_a240b24007b9835fb083076fbbc8141d7}{n\+FaceY}} = -\/1
+\begin{DoxyCompactList}\small\item\em Number of faces (edges) along Y axis for flat membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a1b2a40bcc4b761e5dd0e42faee6fc82e}{d\+FaceX}}
+\begin{DoxyCompactList}\small\item\em Initial actual face side length along X axis for flat membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a3096caf26a05aa5cedc4ef23d47264a1}{d\+FaceY}}
+\begin{DoxyCompactList}\small\item\em Initial actual face side length along Y axis for flat membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_aa62fb70d387a69061872a40f52e6250e}{meanL}}
+\begin{DoxyCompactList}\small\item\em Mean length of edges after subdivision. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a429a81da57de71744032b978d79c7015}{sigma}} = 0.\+0
+\begin{DoxyCompactList}\small\item\em Noise level for vertex positions. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_a26045803a9d147fafb067975b0bc9959}{sub\+Divide\+Times}}
+\begin{DoxyCompactList}\small\item\em Number of times to subdivide each edge. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a74701e09e26b7f8d1e5494176e372b07}{is\+Insertion\+Area\+Constraint}} = false
+\begin{DoxyCompactList}\small\item\em Whether to apply area constraint to insertions. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a3b692ffeae469210188dac8de9ae4f0b}{is\+Additive\+Scheme}} = false
+\begin{DoxyCompactList}\small\item\em Whether to use additive scheme for constraints. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a0add0625ea1a4c518927c57a2ec4cf2d}{is\+Global\+Constraint}} = true
+\begin{DoxyCompactList}\small\item\em Whether to apply global constraint across entire membrane. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_aa1cdf24f7414942893ab6a7ac1b76a95}{element\+Triangle\+Area0}}
+\begin{DoxyCompactList}\small\item\em Target area for individual triangles. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_ac411932b1c05fd20578bf5b2d060f0ce}{gauss\+QuadratureN}} = 2
+\begin{DoxyCompactList}\small\item\em Number of Gaussian quadrature points to use. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{structParam_a4cdda54bb7cd16d41705acb063e852f9}{VWU}}
+\begin{DoxyCompactList}\small\item\em (N,3) matrix of vertex coordinates and weights \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{structParam_ac189b2cd9883a5434793287a0aafafa6}{gauss\+Quadrature\+Coeff}}
+\begin{DoxyCompactList}\small\item\em (N,1) matrix of Gaussian quadrature coefficients \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \mbox{\hyperlink{structParam_ac9a012f371efdaf9d1cf462c1573d1ab}{shape\+Functions}}
+\begin{DoxyCompactList}\small\item\em List of shape functions for each triangle. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structSubdivisionMatrix}{Subdivision\+Matrix}} \mbox{\hyperlink{structParam_acde2d3895df992cfc2f0b8a0c9683d9a}{sub\+Matrix}}
+\begin{DoxyCompactList}\small\item\em Subdivision matrix for irregular patches. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}{Boundary\+Type}} \mbox{\hyperlink{structParam_a5627d55bed5bf1342a9405b1ad5c0e31}{boundary\+Condition}} = Boundary\+Type\+::\+Periodic
+\begin{DoxyCompactList}\small\item\em Type of boundary condition (\char`\"{}\+Fixed\char`\"{}, \char`\"{}\+Periodic\char`\"{}, \char`\"{}\+Free\char`\"{}) \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_aece8f49750a6c0f062569a49d4048851}{using\+NCG}} = true
+\begin{DoxyCompactList}\small\item\em Whether to use nonlinear conjugate gradient method. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_ab1ac28a29aeb80f875a301467c879429}{is\+NCGstuck}} = false
+\begin{DoxyCompactList}\small\item\em Whether NCG method has gotten stuck. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_aa9a1b95bb61d6d4b6d5857170f8c9f33}{gama\+Shape}} = 0.\+2
+\begin{DoxyCompactList}\small\item\em Shape deformation coefficient. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a73a54463e52ff466cd88ce9a1b106eb6}{gama\+Area}} = 0.\+2
+\begin{DoxyCompactList}\small\item\em Area deformation coefficient. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_aa1c34abfb6c603bda7b9349d1488f722}{using\+Rpi}} = true
+\begin{DoxyCompactList}\small\item\em Whether to use R-\/pi adaptive method for regularization energy;. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a97fd559923927d966cf58457880f6094}{xyz\+Output}} = true
+\begin{DoxyCompactList}\small\item\em Whether to output XYZ coordinates of vertices. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a8a0ea86cad3222ab3d0ee24db13c4840}{meshpoint\+Output}} = true
+\begin{DoxyCompactList}\small\item\em Whether to output meshpoints. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_aef07cefb6e33f10eb68e9fe9dbbbbfe6}{is\+Energy\+Harmonic\+Bond\+Included}} = false
+\begin{DoxyCompactList}\small\item\em Whether to include energy of spline points. \end{DoxyCompactList}\item 
+std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \mbox{\hyperlink{structParam_a48cbfe8b4ae87391c3e284d3b0e9c2d4}{scaffolding\+Points}}
+\begin{DoxyCompactList}\small\item\em List of spline points. \end{DoxyCompactList}\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{structParam_a1ebd986c4c12ad597eaae6a9222a514b}{scaffolding\+Points\+\_\+corresponding\+Vertex\+Index}}
+\begin{DoxyCompactList}\small\item\em Corresponding vertex indices for spline points. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a5560c3203377b2d010c5c5cc3355c07f}{spring\+Const}} = 40.\+5
+\begin{DoxyCompactList}\small\item\em Spring constant for harmonic bond potential. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_a25a2b24a25ad221d1039697717c189f1}{spring\+Const\+Scaler}} = 3.\+0
+\begin{DoxyCompactList}\small\item\em Spring constant scaler per iteration interval. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_a0129f49ad0acc7020a36064441af3ffd}{spring\+Const\+Scaling\+Interv}} = 200
+\begin{DoxyCompactList}\small\item\em Iteration interval for spring constant scaling. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{structParam_ac2644deafe00390bd761a67daf85117f}{spring\+Const\+Upper\+Bound}} = 1000.\+0
+\begin{DoxyCompactList}\small\item\em Max spring constant to stop scaling of spring constant. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{structParam_abd9c74cbbb7df9bcab5fa24527998940}{spline\+Points\+Zcoord\+Scaling}} = 0.\+04
+\item 
+double \mbox{\hyperlink{structParam_a6a643efdde0c0fb3eaf763c51b885f23}{lbond}} = 9.\+0
+\begin{DoxyCompactList}\small\item\em Harminc bond length in nm. \end{DoxyCompactList}\item 
+std\+::string \mbox{\hyperlink{structParam_a81e6c54dd95a07cf893f9393199a57bd}{scaffolding\+File\+Name}} = \char`\"{}\char`\"{}
+\item 
+double \mbox{\hyperlink{structParam_a746ff861dd3158503a3b94d54d685929}{time\+Step}} = 0.\+1
+\item 
+double \mbox{\hyperlink{structParam_a7b56faf3c1279301ddca668142b07389}{diff\+Const}} = 0.\+01
+\item 
+double \mbox{\hyperlink{structParam_ab613719fe8566c6a7ee47260cf03b8f0}{KBT}} = 4.\+17
+\item 
+unsigned int \mbox{\hyperlink{structParam_a405908708db9c4b7a93e7b8a54eec822}{random\+Seed}} = 42
+\begin{DoxyCompactList}\small\item\em random seed used in normal distribution \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a28fe0a69cdcf33acd371228544633044}{surfacepoint\+Output}} = true
+\begin{DoxyCompactList}\small\item\em whether to output surface point file \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{structParam_a858374161e635ffa6b8a2aa0a5ede0c1}{is\+Insertion\+Included}} = false
+\item 
+std\+::vector$<$ std\+::vector$<$ int $>$ $>$ \mbox{\hyperlink{structParam_a5019c998cbd397e328176d0d2e77e19a}{insertion\+Patch}}
+\item 
+\mbox{\hyperlink{classEnergy}{Energy}} \mbox{\hyperlink{structParam_a0fe41e7ea70bed833696835a58ba77d2}{energy}}
+\item 
+\mbox{\hyperlink{classEnergy}{Energy}} \mbox{\hyperlink{structParam_aab98632c8307044b776e5e11e4bea99b}{energy\+Prev}}
+\item 
+\mbox{\hyperlink{structDeformationCount}{Deformation\+Count}} \mbox{\hyperlink{structParam_ab9c88da6a639e345af974b2853239c23}{deformation\+Count}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Contains simulation parameters and physical constants. 
+
+The \mbox{\hyperlink{structParam}{Param}} struct stores a variety of parameters and physical constants that are used to initialize and run a membrane simulation. This includes properties like the membrane size, shape, and subdivision, as well as boundary conditions, time step, and diffusion constant. Many of these variables have default values but can be customized by changing the corresponding member variables in a \mbox{\hyperlink{structParam}{Param}} object.
+
+Note that some variables in this struct are deprecated or unused and should not be relied upon for correct behavior of the simulation. These variables may be removed or modified in future versions of the code. 
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{structParam_a827eb346dd30104fd06734cd8a98ac2a}\label{structParam_a827eb346dd30104fd06734cd8a98ac2a}} 
+\index{Param@{Param}!area@{area}}
+\index{area@{area}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{area}{area}}
+{\footnotesize\ttfamily double Param\+::area}
+
+
+
+Total area of the membrane (S) 
+
+\mbox{\Hypertarget{structParam_abe2c1a99f8a6682ff77b8c44c7104ae1}\label{structParam_abe2c1a99f8a6682ff77b8c44c7104ae1}} 
+\index{Param@{Param}!area0@{area0}}
+\index{area0@{area0}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{area0}{area0}}
+{\footnotesize\ttfamily double Param\+::area0}
+
+
+
+Target area for membrane (S0) 
+
+\mbox{\Hypertarget{structParam_a5627d55bed5bf1342a9405b1ad5c0e31}\label{structParam_a5627d55bed5bf1342a9405b1ad5c0e31}} 
+\index{Param@{Param}!boundaryCondition@{boundaryCondition}}
+\index{boundaryCondition@{boundaryCondition}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{boundaryCondition}{boundaryCondition}}
+{\footnotesize\ttfamily \mbox{\hyperlink{Parameters_8hpp_af75d5dd7322fa39ed0af4e7839e600f8}{Boundary\+Type}} Param\+::boundary\+Condition = Boundary\+Type\+::\+Periodic}
+
+
+
+Type of boundary condition (\char`\"{}\+Fixed\char`\"{}, \char`\"{}\+Periodic\char`\"{}, \char`\"{}\+Free\char`\"{}) 
+
+\mbox{\Hypertarget{structParam_ab9c88da6a639e345af974b2853239c23}\label{structParam_ab9c88da6a639e345af974b2853239c23}} 
+\index{Param@{Param}!deformationCount@{deformationCount}}
+\index{deformationCount@{deformationCount}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{deformationCount}{deformationCount}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structDeformationCount}{Deformation\+Count}} Param\+::deformation\+Count}
+
+\mbox{\Hypertarget{structParam_a1b2a40bcc4b761e5dd0e42faee6fc82e}\label{structParam_a1b2a40bcc4b761e5dd0e42faee6fc82e}} 
+\index{Param@{Param}!dFaceX@{dFaceX}}
+\index{dFaceX@{dFaceX}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{dFaceX}{dFaceX}}
+{\footnotesize\ttfamily double Param\+::d\+FaceX}
+
+
+
+Initial actual face side length along X axis for flat membrane. 
+
+\mbox{\Hypertarget{structParam_a3096caf26a05aa5cedc4ef23d47264a1}\label{structParam_a3096caf26a05aa5cedc4ef23d47264a1}} 
+\index{Param@{Param}!dFaceY@{dFaceY}}
+\index{dFaceY@{dFaceY}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{dFaceY}{dFaceY}}
+{\footnotesize\ttfamily double Param\+::d\+FaceY}
+
+
+
+Initial actual face side length along Y axis for flat membrane. 
+
+\mbox{\Hypertarget{structParam_a7b56faf3c1279301ddca668142b07389}\label{structParam_a7b56faf3c1279301ddca668142b07389}} 
+\index{Param@{Param}!diffConst@{diffConst}}
+\index{diffConst@{diffConst}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{diffConst}{diffConst}}
+{\footnotesize\ttfamily double Param\+::diff\+Const = 0.\+01}
+
+\mbox{\Hypertarget{structParam_aa1cdf24f7414942893ab6a7ac1b76a95}\label{structParam_aa1cdf24f7414942893ab6a7ac1b76a95}} 
+\index{Param@{Param}!elementTriangleArea0@{elementTriangleArea0}}
+\index{elementTriangleArea0@{elementTriangleArea0}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{elementTriangleArea0}{elementTriangleArea0}}
+{\footnotesize\ttfamily double Param\+::element\+Triangle\+Area0}
+
+
+
+Target area for individual triangles. 
+
+\mbox{\Hypertarget{structParam_a0fe41e7ea70bed833696835a58ba77d2}\label{structParam_a0fe41e7ea70bed833696835a58ba77d2}} 
+\index{Param@{Param}!energy@{energy}}
+\index{energy@{energy}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{energy}{energy}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classEnergy}{Energy}} Param\+::energy}
+
+\mbox{\Hypertarget{structParam_aab98632c8307044b776e5e11e4bea99b}\label{structParam_aab98632c8307044b776e5e11e4bea99b}} 
+\index{Param@{Param}!energyPrev@{energyPrev}}
+\index{energyPrev@{energyPrev}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{energyPrev}{energyPrev}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classEnergy}{Energy}} Param\+::energy\+Prev}
+
+\mbox{\Hypertarget{structParam_a73a54463e52ff466cd88ce9a1b106eb6}\label{structParam_a73a54463e52ff466cd88ce9a1b106eb6}} 
+\index{Param@{Param}!gamaArea@{gamaArea}}
+\index{gamaArea@{gamaArea}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{gamaArea}{gamaArea}}
+{\footnotesize\ttfamily double Param\+::gama\+Area = 0.\+2}
+
+
+
+Area deformation coefficient. 
+
+\mbox{\Hypertarget{structParam_aa9a1b95bb61d6d4b6d5857170f8c9f33}\label{structParam_aa9a1b95bb61d6d4b6d5857170f8c9f33}} 
+\index{Param@{Param}!gamaShape@{gamaShape}}
+\index{gamaShape@{gamaShape}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{gamaShape}{gamaShape}}
+{\footnotesize\ttfamily double Param\+::gama\+Shape = 0.\+2}
+
+
+
+Shape deformation coefficient. 
+
+\mbox{\Hypertarget{structParam_ac189b2cd9883a5434793287a0aafafa6}\label{structParam_ac189b2cd9883a5434793287a0aafafa6}} 
+\index{Param@{Param}!gaussQuadratureCoeff@{gaussQuadratureCoeff}}
+\index{gaussQuadratureCoeff@{gaussQuadratureCoeff}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{gaussQuadratureCoeff}{gaussQuadratureCoeff}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Param\+::gauss\+Quadrature\+Coeff}
+
+
+
+(N,1) matrix of Gaussian quadrature coefficients 
+
+\mbox{\Hypertarget{structParam_ac411932b1c05fd20578bf5b2d060f0ce}\label{structParam_ac411932b1c05fd20578bf5b2d060f0ce}} 
+\index{Param@{Param}!gaussQuadratureN@{gaussQuadratureN}}
+\index{gaussQuadratureN@{gaussQuadratureN}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{gaussQuadratureN}{gaussQuadratureN}}
+{\footnotesize\ttfamily int Param\+::gauss\+QuadratureN = 2}
+
+
+
+Number of Gaussian quadrature points to use. 
+
+\mbox{\Hypertarget{structParam_aadbdcdaddc4d9e262f273db1fc376e6a}\label{structParam_aadbdcdaddc4d9e262f273db1fc376e6a}} 
+\index{Param@{Param}!insertCurv@{insertCurv}}
+\index{insertCurv@{insertCurv}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{insertCurv}{insertCurv}}
+{\footnotesize\ttfamily double Param\+::insert\+Curv}
+
+
+
+Spontaneous curvature of insertions (C0) 
+
+\mbox{\Hypertarget{structParam_a5019c998cbd397e328176d0d2e77e19a}\label{structParam_a5019c998cbd397e328176d0d2e77e19a}} 
+\index{Param@{Param}!insertionPatch@{insertionPatch}}
+\index{insertionPatch@{insertionPatch}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{insertionPatch}{insertionPatch}}
+{\footnotesize\ttfamily std\+::vector$<$std\+::vector$<$int$>$ $>$ Param\+::insertion\+Patch}
+
+\mbox{\Hypertarget{structParam_a3b692ffeae469210188dac8de9ae4f0b}\label{structParam_a3b692ffeae469210188dac8de9ae4f0b}} 
+\index{Param@{Param}!isAdditiveScheme@{isAdditiveScheme}}
+\index{isAdditiveScheme@{isAdditiveScheme}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{isAdditiveScheme}{isAdditiveScheme}}
+{\footnotesize\ttfamily bool Param\+::is\+Additive\+Scheme = false}
+
+
+
+Whether to use additive scheme for constraints. 
+
+\mbox{\Hypertarget{structParam_aef07cefb6e33f10eb68e9fe9dbbbbfe6}\label{structParam_aef07cefb6e33f10eb68e9fe9dbbbbfe6}} 
+\index{Param@{Param}!isEnergyHarmonicBondIncluded@{isEnergyHarmonicBondIncluded}}
+\index{isEnergyHarmonicBondIncluded@{isEnergyHarmonicBondIncluded}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{isEnergyHarmonicBondIncluded}{isEnergyHarmonicBondIncluded}}
+{\footnotesize\ttfamily bool Param\+::is\+Energy\+Harmonic\+Bond\+Included = false}
+
+
+
+Whether to include energy of spline points. 
+
+\mbox{\Hypertarget{structParam_a0add0625ea1a4c518927c57a2ec4cf2d}\label{structParam_a0add0625ea1a4c518927c57a2ec4cf2d}} 
+\index{Param@{Param}!isGlobalConstraint@{isGlobalConstraint}}
+\index{isGlobalConstraint@{isGlobalConstraint}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{isGlobalConstraint}{isGlobalConstraint}}
+{\footnotesize\ttfamily bool Param\+::is\+Global\+Constraint = true}
+
+
+
+Whether to apply global constraint across entire membrane. 
+
+\mbox{\Hypertarget{structParam_a74701e09e26b7f8d1e5494176e372b07}\label{structParam_a74701e09e26b7f8d1e5494176e372b07}} 
+\index{Param@{Param}!isInsertionAreaConstraint@{isInsertionAreaConstraint}}
+\index{isInsertionAreaConstraint@{isInsertionAreaConstraint}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{isInsertionAreaConstraint}{isInsertionAreaConstraint}}
+{\footnotesize\ttfamily bool Param\+::is\+Insertion\+Area\+Constraint = false}
+
+
+
+Whether to apply area constraint to insertions. 
+
+\mbox{\Hypertarget{structParam_a858374161e635ffa6b8a2aa0a5ede0c1}\label{structParam_a858374161e635ffa6b8a2aa0a5ede0c1}} 
+\index{Param@{Param}!isInsertionIncluded@{isInsertionIncluded}}
+\index{isInsertionIncluded@{isInsertionIncluded}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{isInsertionIncluded}{isInsertionIncluded}}
+{\footnotesize\ttfamily bool Param\+::is\+Insertion\+Included = false}
+
+\mbox{\Hypertarget{structParam_ab1ac28a29aeb80f875a301467c879429}\label{structParam_ab1ac28a29aeb80f875a301467c879429}} 
+\index{Param@{Param}!isNCGstuck@{isNCGstuck}}
+\index{isNCGstuck@{isNCGstuck}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{isNCGstuck}{isNCGstuck}}
+{\footnotesize\ttfamily bool Param\+::is\+NCGstuck = false}
+
+
+
+Whether NCG method has gotten stuck. 
+
+\mbox{\Hypertarget{structParam_ab613719fe8566c6a7ee47260cf03b8f0}\label{structParam_ab613719fe8566c6a7ee47260cf03b8f0}} 
+\index{Param@{Param}!KBT@{KBT}}
+\index{KBT@{KBT}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{KBT}{KBT}}
+{\footnotesize\ttfamily double Param\+::\+KBT = 4.\+17}
+
+\mbox{\Hypertarget{structParam_a73e37c8ee20932df2b4ac205d45cd781}\label{structParam_a73e37c8ee20932df2b4ac205d45cd781}} 
+\index{Param@{Param}!kCurv@{kCurv}}
+\index{kCurv@{kCurv}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{kCurv}{kCurv}}
+{\footnotesize\ttfamily double Param\+::k\+Curv = 0.\+0}
+
+
+
+Bending modulus i.\+e. curvature constant (kc) 
+
+\mbox{\Hypertarget{structParam_adc3d6833d626ae110b67d508d67b9aad}\label{structParam_adc3d6833d626ae110b67d508d67b9aad}} 
+\index{Param@{Param}!kReg@{kReg}}
+\index{kReg@{kReg}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{kReg}{kReg}}
+{\footnotesize\ttfamily double Param\+::k\+Reg = 0.\+0}
+
+
+
+Coefficient of the regularization constraint (k) 
+
+\mbox{\Hypertarget{structParam_a1d4cadccb8ae69e593e938c9d051dca5}\label{structParam_a1d4cadccb8ae69e593e938c9d051dca5}} 
+\index{Param@{Param}!kSpring@{kSpring}}
+\index{kSpring@{kSpring}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{kSpring}{kSpring}}
+{\footnotesize\ttfamily double Param\+::k\+Spring}
+
+
+
+Spring constant for insertion zones (K) 
+
+\mbox{\Hypertarget{structParam_a6a643efdde0c0fb3eaf763c51b885f23}\label{structParam_a6a643efdde0c0fb3eaf763c51b885f23}} 
+\index{Param@{Param}!lbond@{lbond}}
+\index{lbond@{lbond}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{lbond}{lbond}}
+{\footnotesize\ttfamily double Param\+::lbond = 9.\+0}
+
+
+
+Harminc bond length in nm. 
+
+\mbox{\Hypertarget{structParam_a3a0cf0dfa1659a7ded716427f3df1a68}\label{structParam_a3a0cf0dfa1659a7ded716427f3df1a68}} 
+\index{Param@{Param}!lFace@{lFace}}
+\index{lFace@{lFace}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{lFace}{lFace}}
+{\footnotesize\ttfamily double Param\+::l\+Face}
+
+
+
+l\+Face 
+
+\mbox{\Hypertarget{structParam_a9631f725f71203af562e72fc727b5e12}\label{structParam_a9631f725f71203af562e72fc727b5e12}} 
+\index{Param@{Param}!maxIterations@{maxIterations}}
+\index{maxIterations@{maxIterations}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{maxIterations}{maxIterations}}
+{\footnotesize\ttfamily int Param\+::max\+Iterations = 1E5}
+
+
+
+Max number of iteration. 
+
+\mbox{\Hypertarget{structParam_aa62fb70d387a69061872a40f52e6250e}\label{structParam_aa62fb70d387a69061872a40f52e6250e}} 
+\index{Param@{Param}!meanL@{meanL}}
+\index{meanL@{meanL}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{meanL}{meanL}}
+{\footnotesize\ttfamily double Param\+::meanL}
+
+
+
+Mean length of edges after subdivision. 
+
+\mbox{\Hypertarget{structParam_a8a0ea86cad3222ab3d0ee24db13c4840}\label{structParam_a8a0ea86cad3222ab3d0ee24db13c4840}} 
+\index{Param@{Param}!meshpointOutput@{meshpointOutput}}
+\index{meshpointOutput@{meshpointOutput}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{meshpointOutput}{meshpointOutput}}
+{\footnotesize\ttfamily bool Param\+::meshpoint\+Output = true}
+
+
+
+Whether to output meshpoints. 
+
+\mbox{\Hypertarget{structParam_a191ab50a69a4c1d5f855208dc84b7f43}\label{structParam_a191ab50a69a4c1d5f855208dc84b7f43}} 
+\index{Param@{Param}!nFaceX@{nFaceX}}
+\index{nFaceX@{nFaceX}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{nFaceX}{nFaceX}}
+{\footnotesize\ttfamily int Param\+::n\+FaceX = -\/1}
+
+
+
+Number of faces (edges) along X axis for flat membrane. 
+
+\mbox{\Hypertarget{structParam_a240b24007b9835fb083076fbbc8141d7}\label{structParam_a240b24007b9835fb083076fbbc8141d7}} 
+\index{Param@{Param}!nFaceY@{nFaceY}}
+\index{nFaceY@{nFaceY}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{nFaceY}{nFaceY}}
+{\footnotesize\ttfamily int Param\+::n\+FaceY = -\/1}
+
+
+
+Number of faces (edges) along Y axis for flat membrane. 
+
+\mbox{\Hypertarget{structParam_a4261fb5801202d44544e8f6849884d9f}\label{structParam_a4261fb5801202d44544e8f6849884d9f}} 
+\index{Param@{Param}!radius@{radius}}
+\index{radius@{radius}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{radius}{radius}}
+{\footnotesize\ttfamily double Param\+::radius}
+
+
+
+Radius for spherical membrane. 
+
+\mbox{\Hypertarget{structParam_a405908708db9c4b7a93e7b8a54eec822}\label{structParam_a405908708db9c4b7a93e7b8a54eec822}} 
+\index{Param@{Param}!randomSeed@{randomSeed}}
+\index{randomSeed@{randomSeed}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{randomSeed}{randomSeed}}
+{\footnotesize\ttfamily unsigned int Param\+::random\+Seed = 42}
+
+
+
+random seed used in normal distribution 
+
+\mbox{\Hypertarget{structParam_a81e6c54dd95a07cf893f9393199a57bd}\label{structParam_a81e6c54dd95a07cf893f9393199a57bd}} 
+\index{Param@{Param}!scaffoldingFileName@{scaffoldingFileName}}
+\index{scaffoldingFileName@{scaffoldingFileName}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{scaffoldingFileName}{scaffoldingFileName}}
+{\footnotesize\ttfamily std\+::string Param\+::scaffolding\+File\+Name = \char`\"{}\char`\"{}}
+
+\mbox{\Hypertarget{structParam_a48cbfe8b4ae87391c3e284d3b0e9c2d4}\label{structParam_a48cbfe8b4ae87391c3e284d3b0e9c2d4}} 
+\index{Param@{Param}!scaffoldingPoints@{scaffoldingPoints}}
+\index{scaffoldingPoints@{scaffoldingPoints}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{scaffoldingPoints}{scaffoldingPoints}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classMatrix}{Matrix}}$>$ Param\+::scaffolding\+Points}
+
+
+
+List of spline points. 
+
+\mbox{\Hypertarget{structParam_a1ebd986c4c12ad597eaae6a9222a514b}\label{structParam_a1ebd986c4c12ad597eaae6a9222a514b}} 
+\index{Param@{Param}!scaffoldingPoints\_correspondingVertexIndex@{scaffoldingPoints\_correspondingVertexIndex}}
+\index{scaffoldingPoints\_correspondingVertexIndex@{scaffoldingPoints\_correspondingVertexIndex}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{scaffoldingPoints\_correspondingVertexIndex}{scaffoldingPoints\_correspondingVertexIndex}}
+{\footnotesize\ttfamily std\+::vector$<$int$>$ Param\+::scaffolding\+Points\+\_\+corresponding\+Vertex\+Index}
+
+
+
+Corresponding vertex indices for spline points. 
+
+\mbox{\Hypertarget{structParam_ac9a012f371efdaf9d1cf462c1573d1ab}\label{structParam_ac9a012f371efdaf9d1cf462c1573d1ab}} 
+\index{Param@{Param}!shapeFunctions@{shapeFunctions}}
+\index{shapeFunctions@{shapeFunctions}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{shapeFunctions}{shapeFunctions}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classMatrix}{Matrix}}$>$ Param\+::shape\+Functions}
+
+
+
+List of shape functions for each triangle. 
+
+\mbox{\Hypertarget{structParam_afe011accc7b5a22b9b5874105e09c796}\label{structParam_afe011accc7b5a22b9b5874105e09c796}} 
+\index{Param@{Param}!sideX@{sideX}}
+\index{sideX@{sideX}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{sideX}{sideX}}
+{\footnotesize\ttfamily double Param\+::sideX}
+
+
+
+X-\/axis length for flat membrane. 
+
+\mbox{\Hypertarget{structParam_ac59ce2c914270a3f0fcc6ba1e039c6be}\label{structParam_ac59ce2c914270a3f0fcc6ba1e039c6be}} 
+\index{Param@{Param}!sideY@{sideY}}
+\index{sideY@{sideY}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{sideY}{sideY}}
+{\footnotesize\ttfamily double Param\+::sideY}
+
+
+
+Y-\/axis length for flat membrane. 
+
+\mbox{\Hypertarget{structParam_a429a81da57de71744032b978d79c7015}\label{structParam_a429a81da57de71744032b978d79c7015}} 
+\index{Param@{Param}!sigma@{sigma}}
+\index{sigma@{sigma}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{sigma}{sigma}}
+{\footnotesize\ttfamily double Param\+::sigma = 0.\+0}
+
+
+
+Noise level for vertex positions. 
+
+\mbox{\Hypertarget{structParam_abd9c74cbbb7df9bcab5fa24527998940}\label{structParam_abd9c74cbbb7df9bcab5fa24527998940}} 
+\index{Param@{Param}!splinePointsZcoordScaling@{splinePointsZcoordScaling}}
+\index{splinePointsZcoordScaling@{splinePointsZcoordScaling}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{splinePointsZcoordScaling}{splinePointsZcoordScaling}}
+{\footnotesize\ttfamily double Param\+::spline\+Points\+Zcoord\+Scaling = 0.\+04}
+
+\mbox{\Hypertarget{structParam_a432e137b07a15257ff77bb260039fff8}\label{structParam_a432e137b07a15257ff77bb260039fff8}} 
+\index{Param@{Param}!spontCurv@{spontCurv}}
+\index{spontCurv@{spontCurv}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{spontCurv}{spontCurv}}
+{\footnotesize\ttfamily double Param\+::spont\+Curv}
+
+
+
+Spontaneous curvature of membrane (c0) 
+
+\mbox{\Hypertarget{structParam_a5560c3203377b2d010c5c5cc3355c07f}\label{structParam_a5560c3203377b2d010c5c5cc3355c07f}} 
+\index{Param@{Param}!springConst@{springConst}}
+\index{springConst@{springConst}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{springConst}{springConst}}
+{\footnotesize\ttfamily double Param\+::spring\+Const = 40.\+5}
+
+
+
+Spring constant for harmonic bond potential. 
+
+\mbox{\Hypertarget{structParam_a25a2b24a25ad221d1039697717c189f1}\label{structParam_a25a2b24a25ad221d1039697717c189f1}} 
+\index{Param@{Param}!springConstScaler@{springConstScaler}}
+\index{springConstScaler@{springConstScaler}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{springConstScaler}{springConstScaler}}
+{\footnotesize\ttfamily double Param\+::spring\+Const\+Scaler = 3.\+0}
+
+
+
+Spring constant scaler per iteration interval. 
+
+\mbox{\Hypertarget{structParam_a0129f49ad0acc7020a36064441af3ffd}\label{structParam_a0129f49ad0acc7020a36064441af3ffd}} 
+\index{Param@{Param}!springConstScalingInterv@{springConstScalingInterv}}
+\index{springConstScalingInterv@{springConstScalingInterv}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{springConstScalingInterv}{springConstScalingInterv}}
+{\footnotesize\ttfamily int Param\+::spring\+Const\+Scaling\+Interv = 200}
+
+
+
+Iteration interval for spring constant scaling. 
+
+\mbox{\Hypertarget{structParam_ac2644deafe00390bd761a67daf85117f}\label{structParam_ac2644deafe00390bd761a67daf85117f}} 
+\index{Param@{Param}!springConstUpperBound@{springConstUpperBound}}
+\index{springConstUpperBound@{springConstUpperBound}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{springConstUpperBound}{springConstUpperBound}}
+{\footnotesize\ttfamily int Param\+::spring\+Const\+Upper\+Bound = 1000.\+0}
+
+
+
+Max spring constant to stop scaling of spring constant. 
+
+\mbox{\Hypertarget{structParam_a26045803a9d147fafb067975b0bc9959}\label{structParam_a26045803a9d147fafb067975b0bc9959}} 
+\index{Param@{Param}!subDivideTimes@{subDivideTimes}}
+\index{subDivideTimes@{subDivideTimes}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{subDivideTimes}{subDivideTimes}}
+{\footnotesize\ttfamily int Param\+::sub\+Divide\+Times}
+
+
+
+Number of times to subdivide each edge. 
+
+\mbox{\Hypertarget{structParam_acde2d3895df992cfc2f0b8a0c9683d9a}\label{structParam_acde2d3895df992cfc2f0b8a0c9683d9a}} 
+\index{Param@{Param}!subMatrix@{subMatrix}}
+\index{subMatrix@{subMatrix}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{subMatrix}{subMatrix}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structSubdivisionMatrix}{Subdivision\+Matrix}} Param\+::sub\+Matrix}
+
+
+
+Subdivision matrix for irregular patches. 
+
+\mbox{\Hypertarget{structParam_a28fe0a69cdcf33acd371228544633044}\label{structParam_a28fe0a69cdcf33acd371228544633044}} 
+\index{Param@{Param}!surfacepointOutput@{surfacepointOutput}}
+\index{surfacepointOutput@{surfacepointOutput}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{surfacepointOutput}{surfacepointOutput}}
+{\footnotesize\ttfamily bool Param\+::surfacepoint\+Output = true}
+
+
+
+whether to output surface point file 
+
+\mbox{\Hypertarget{structParam_a746ff861dd3158503a3b94d54d685929}\label{structParam_a746ff861dd3158503a3b94d54d685929}} 
+\index{Param@{Param}!timeStep@{timeStep}}
+\index{timeStep@{timeStep}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{timeStep}{timeStep}}
+{\footnotesize\ttfamily double Param\+::time\+Step = 0.\+1}
+
+\mbox{\Hypertarget{structParam_aece8f49750a6c0f062569a49d4048851}\label{structParam_aece8f49750a6c0f062569a49d4048851}} 
+\index{Param@{Param}!usingNCG@{usingNCG}}
+\index{usingNCG@{usingNCG}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{usingNCG}{usingNCG}}
+{\footnotesize\ttfamily bool Param\+::using\+NCG = true}
+
+
+
+Whether to use nonlinear conjugate gradient method. 
+
+\mbox{\Hypertarget{structParam_aa1c34abfb6c603bda7b9349d1488f722}\label{structParam_aa1c34abfb6c603bda7b9349d1488f722}} 
+\index{Param@{Param}!usingRpi@{usingRpi}}
+\index{usingRpi@{usingRpi}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{usingRpi}{usingRpi}}
+{\footnotesize\ttfamily bool Param\+::using\+Rpi = true}
+
+
+
+Whether to use R-\/pi adaptive method for regularization energy;. 
+
+\mbox{\Hypertarget{structParam_aca6221e2515f001a33acc187308881d6}\label{structParam_aca6221e2515f001a33acc187308881d6}} 
+\index{Param@{Param}!uSurf@{uSurf}}
+\index{uSurf@{uSurf}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{uSurf}{uSurf}}
+{\footnotesize\ttfamily double Param\+::u\+Surf = 0.\+0}
+
+
+
+Surface area constraint i.\+e. surface constant (us) 
+
+\mbox{\Hypertarget{structParam_ad9466f4b6515af5c5968cecdc71822d3}\label{structParam_ad9466f4b6515af5c5968cecdc71822d3}} 
+\index{Param@{Param}!uVol@{uVol}}
+\index{uVol@{uVol}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{uVol}{uVol}}
+{\footnotesize\ttfamily double Param\+::u\+Vol = 0.\+0}
+
+
+
+Volume constraint i.\+e. volume constant (uv) 
+
+\mbox{\Hypertarget{structParam_ad450793b18b22c2a72a8eb22a6b5bcc2}\label{structParam_ad450793b18b22c2a72a8eb22a6b5bcc2}} 
+\index{Param@{Param}!VERBOSE\_MODE@{VERBOSE\_MODE}}
+\index{VERBOSE\_MODE@{VERBOSE\_MODE}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{VERBOSE\_MODE}{VERBOSE\_MODE}}
+{\footnotesize\ttfamily bool Param\+::\+VERBOSE\+\_\+\+MODE = true}
+
+
+
+Whether to print verbose output during simulation. 
+
+\mbox{\Hypertarget{structParam_a42fbd32696c704fae6bb4d080a0fbadf}\label{structParam_a42fbd32696c704fae6bb4d080a0fbadf}} 
+\index{Param@{Param}!vol@{vol}}
+\index{vol@{vol}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{vol}{vol}}
+{\footnotesize\ttfamily double Param\+::vol}
+
+
+
+Total volume of the membrane (V) 
+
+\mbox{\Hypertarget{structParam_ad4c3757e3fd6738c06571aad5366439a}\label{structParam_ad4c3757e3fd6738c06571aad5366439a}} 
+\index{Param@{Param}!vol0@{vol0}}
+\index{vol0@{vol0}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{vol0}{vol0}}
+{\footnotesize\ttfamily double Param\+::vol0}
+
+
+
+Target volume for membrane (V0) 
+
+\mbox{\Hypertarget{structParam_a4cdda54bb7cd16d41705acb063e852f9}\label{structParam_a4cdda54bb7cd16d41705acb063e852f9}} 
+\index{Param@{Param}!VWU@{VWU}}
+\index{VWU@{VWU}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{VWU}{VWU}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Param\+::\+VWU}
+
+
+
+(N,3) matrix of vertex coordinates and weights 
+
+\mbox{\Hypertarget{structParam_a97fd559923927d966cf58457880f6094}\label{structParam_a97fd559923927d966cf58457880f6094}} 
+\index{Param@{Param}!xyzOutput@{xyzOutput}}
+\index{xyzOutput@{xyzOutput}!Param@{Param}}
+\doxysubsubsection{\texorpdfstring{xyzOutput}{xyzOutput}}
+{\footnotesize\ttfamily bool Param\+::xyz\+Output = true}
+
+
+
+Whether to output XYZ coordinates of vertices. 
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Parameters_8hpp}{Parameters.\+hpp}}\end{DoxyCompactItemize}

@@ -1,0 +1,135 @@
+\hypertarget{Gauss__quadrature_8hpp}{}\doxysection{include/\+Gauss\+\_\+quadrature.hpp File Reference}
+\label{Gauss__quadrature_8hpp}\index{include/Gauss\_quadrature.hpp@{include/Gauss\_quadrature.hpp}}
+
+
+This file defines gauss quadrature and related functions.  
+
+
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$sstream$>$}\newline
+{\ttfamily \#include $<$omp.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}Linear\+\_\+algebra.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{Gauss__quadrature_8hpp_af6d5f7f1d13ac2bb815d033de4fcb47c}{get\+\_\+gauss\+\_\+quadrature\+\_\+weight\+\_\+\+VWU}} (const int \&gauss\+QuadratureN, \mbox{\hyperlink{classMatrix}{Matrix}} \&vwu, \mbox{\hyperlink{classMatrix}{Matrix}} \&weight)
+\begin{DoxyCompactList}\small\item\em Calculate the VMU (barycentric coordinates) and weight for a Gaussian quadrature point. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Gauss__quadrature_8hpp_a570974266236a0667ff1dd541accdb3e}{get\+\_\+shapefunction}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&vwu, \mbox{\hyperlink{classMatrix}{Matrix}} \&shapefunction)
+\begin{DoxyCompactList}\small\item\em Calculate the shape function and its derivatives at a given barycentric coordinate. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Gauss__quadrature_8hpp_a2b03dabbaa2e4d8c78db3a5c65d5d403}{get\+\_\+shapefunction\+\_\+vector}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&vwu\+Mat, std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&sf\+Vec)
+\begin{DoxyCompactList}\small\item\em Calculate the shape function and its derivatives at a set of barycentric coordinates. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Gauss__quadrature_8hpp_adcd7a735ed010efb781ccffe48a79292}{get\+\_\+subdivision\+\_\+matrices}} (\mbox{\hyperlink{classMatrix}{Matrix}} \&mat, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat1, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat2, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat3, \mbox{\hyperlink{classMatrix}{Matrix}} \&sub\+Mat4)
+\begin{DoxyCompactList}\small\item\em Calculate the four subdivision matrices for an irregular patch. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines gauss quadrature and related functions. 
+
+\begin{DoxyAuthor}{Author}
+Y Ying 
+
+Y Fu 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+0.\+1 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2023-\/03-\/10
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Gauss__quadrature_8hpp_af6d5f7f1d13ac2bb815d033de4fcb47c}\label{Gauss__quadrature_8hpp_af6d5f7f1d13ac2bb815d033de4fcb47c}} 
+\index{Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}!get\_gauss\_quadrature\_weight\_VWU@{get\_gauss\_quadrature\_weight\_VWU}}
+\index{get\_gauss\_quadrature\_weight\_VWU@{get\_gauss\_quadrature\_weight\_VWU}!Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}}
+\doxysubsubsection{\texorpdfstring{get\_gauss\_quadrature\_weight\_VWU()}{get\_gauss\_quadrature\_weight\_VWU()}}
+{\footnotesize\ttfamily void get\+\_\+gauss\+\_\+quadrature\+\_\+weight\+\_\+\+VWU (\begin{DoxyParamCaption}\item[{const int \&}]{gauss\+QuadratureN,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{vwu,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{weight }\end{DoxyParamCaption})}
+
+
+
+Calculate the VMU (barycentric coordinates) and weight for a Gaussian quadrature point. 
+
+This function calculates a matrix (N, 3) of VMUs based on the specified number of quadrature points, storing the result in the provided matrix {\ttfamily vmu}. It also calculates a matrix (N, 1) of weights for each point, storing the result in the provided matrix {\ttfamily weight}.
+
+Note that the {\ttfamily vmu} and {\ttfamily weight} matrices will be overwritten and should be initialized before calling this function.
+
+
+\begin{DoxyParams}{Parameters}
+{\em gauss\+QuadratureN} & The number of Gauss quadrature points to use. \\
+\hline
+{\em vwu} & A matrix for storing the calculated barycentric coordinates (N, 3). \\
+\hline
+{\em weight} & A matrix for storing the calculated weights (N, 1). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{Gauss__quadrature_8hpp_a570974266236a0667ff1dd541accdb3e}\label{Gauss__quadrature_8hpp_a570974266236a0667ff1dd541accdb3e}} 
+\index{Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}!get\_shapefunction@{get\_shapefunction}}
+\index{get\_shapefunction@{get\_shapefunction}!Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}}
+\doxysubsubsection{\texorpdfstring{get\_shapefunction()}{get\_shapefunction()}}
+{\footnotesize\ttfamily void get\+\_\+shapefunction (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{vwu,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{shapefunction }\end{DoxyParamCaption})}
+
+
+
+Calculate the shape function and its derivatives at a given barycentric coordinate. 
+
+This function calculates the shape function and its derivatives at a given barycentric coordinate {\ttfamily vwu}, storing the result in the provided matrix {\ttfamily shapefunction}. The shape function and its derivatives are stored in rows 0 to 6 of the matrix as follows\+:
+
+shapefunction(0,\+:), shape functions; shapefunction(1,\+:), differential to v; shapefunction(2,\+:), differential to w; shapefunction(3,\+:), double differential to v; shapefunction(4,\+:), double differential to w; shapefunction(5,\+:), differential to v and w; shapefunction(6,\+:), differential to w and v;
+
+
+\begin{DoxyParams}{Parameters}
+{\em vwu} & The barycentric (1, 3) coordinate to evaluate the shape function at. \\
+\hline
+{\em shapefunction} & A (7, 12) matrix for storing the calculated shape function and its derivatives (7, 12). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{Gauss__quadrature_8hpp_a2b03dabbaa2e4d8c78db3a5c65d5d403}\label{Gauss__quadrature_8hpp_a2b03dabbaa2e4d8c78db3a5c65d5d403}} 
+\index{Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}!get\_shapefunction\_vector@{get\_shapefunction\_vector}}
+\index{get\_shapefunction\_vector@{get\_shapefunction\_vector}!Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}}
+\doxysubsubsection{\texorpdfstring{get\_shapefunction\_vector()}{get\_shapefunction\_vector()}}
+{\footnotesize\ttfamily void get\+\_\+shapefunction\+\_\+vector (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{vwu\+Mat,  }\item[{std\+::vector$<$ \mbox{\hyperlink{classMatrix}{Matrix}} $>$ \&}]{sf\+Vec }\end{DoxyParamCaption})}
+
+
+
+Calculate the shape function and its derivatives at a set of barycentric coordinates. 
+
+This function calculates the shape function and its derivatives at each barycentric coordinate in the provided matrix {\ttfamily vwu\+Mat}, storing the result in the provided vector {\ttfamily sf\+Vec}. Each element of {\ttfamily sf\+Vec} is a matrix representing the shape function and its derivatives at one barycentric coordinate.
+
+
+\begin{DoxyParams}{Parameters}
+{\em vwu\+Mat} & A matrix of barycentric coordinates (N,3). \\
+\hline
+{\em sf\+Vec} & A vector for storing the calculated shape functions and their derivatives. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{Gauss__quadrature_8hpp_adcd7a735ed010efb781ccffe48a79292}\label{Gauss__quadrature_8hpp_adcd7a735ed010efb781ccffe48a79292}} 
+\index{Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}!get\_subdivision\_matrices@{get\_subdivision\_matrices}}
+\index{get\_subdivision\_matrices@{get\_subdivision\_matrices}!Gauss\_quadrature.hpp@{Gauss\_quadrature.hpp}}
+\doxysubsubsection{\texorpdfstring{get\_subdivision\_matrices()}{get\_subdivision\_matrices()}}
+{\footnotesize\ttfamily void get\+\_\+subdivision\+\_\+matrices (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{mat,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat1,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat2,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat3,  }\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{sub\+Mat4 }\end{DoxyParamCaption})}
+
+
+
+Calculate the four subdivision matrices for an irregular patch. 
+
+This function calculates the four subdivision matrices for an irregular patch using the provided matrix {\ttfamily mat}, storing the result in the provided matrices {\ttfamily sub\+Mat1}, {\ttfamily sub\+Mat2}, {\ttfamily sub\+Mat3}, and {\ttfamily sub\+Mat4}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em mat} & The input matrix from which to compute the subdivision matrices. \\
+\hline
+{\em sub\+Mat1} & A matrix for storing the first subdivision matrix. \\
+\hline
+{\em sub\+Mat2} & A matrix for storing the second subdivision matrix. \\
+\hline
+{\em sub\+Mat3} & A matrix for storing the third subdivision matrix. \\
+\hline
+{\em sub\+Mat4} & A matrix for storing the fourth subdivision matrix. \\
+\hline
+\end{DoxyParams}

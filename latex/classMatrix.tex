@@ -1,0 +1,409 @@
+\hypertarget{classMatrix}{}\doxysection{Matrix Class Reference}
+\label{classMatrix}\index{Matrix@{Matrix}}
+
+
+\mbox{\hyperlink{classMatrix}{Matrix}} used in continuum membrane model.  
+
+
+
+
+{\ttfamily \#include $<$Linear\+\_\+algebra.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMatrix_a6324cb7da1551c2adace24cc8f061cb7}{Matrix}} (const int \&\mbox{\hyperlink{classMatrix_af91e37ba428fd9f11cb8d0a5d7af499c}{nrow}}, const int \&\mbox{\hyperlink{classMatrix_ac67b2cb976c7578df783fbd2a0b9d699}{ncol}}, const bool \&set\+To\+Zero)
+\begin{DoxyCompactList}\small\item\em Construct a new \mbox{\hyperlink{classMatrix}{Matrix}} object and initialize the members to zeros. The set\+To\+Zero variable is a place holder to differentiate this function from a malloc or alloc function. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix_a2dba13c45127354c9f75ef576f49269b}{Matrix}} ()
+\begin{DoxyCompactList}\small\item\em Default constructor. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix_ad28a7520a493d4a0dc5980ed2ec302ca}{Matrix}} (const int \&\mbox{\hyperlink{classMatrix_af91e37ba428fd9f11cb8d0a5d7af499c}{nrow}})
+\begin{DoxyCompactList}\small\item\em Constructor for creating a \mbox{\hyperlink{classMatrix}{Matrix}} with a specified number of rows and one column. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix_a8d5baa0fc05a9dad49157a11a6f6e546}{Matrix}} (const int \&\mbox{\hyperlink{classMatrix_af91e37ba428fd9f11cb8d0a5d7af499c}{nrow}}, const int \&\mbox{\hyperlink{classMatrix_ac67b2cb976c7578df783fbd2a0b9d699}{ncol}})
+\begin{DoxyCompactList}\small\item\em Constructor for creating a \mbox{\hyperlink{classMatrix}{Matrix}} with a specified number of rows and columns. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix_a85e2231ef32aea956b85142fc338501c}{Matrix}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&mat\+\_\+src)
+\begin{DoxyCompactList}\small\item\em Copy constructor for creating a deep copy of a \mbox{\hyperlink{classMatrix}{Matrix}} object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix_ae86243ae11fed50c8364308a2ceb035a}{Matrix}} (const std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&vec)
+\begin{DoxyCompactList}\small\item\em Intialize a matrix with a 2d vector. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \& \mbox{\hyperlink{classMatrix_a33380972ada0c6cae924b2cf92027edc}{operator=}} (const \mbox{\hyperlink{classMatrix}{Matrix}} \&mat\+\_\+src)
+\begin{DoxyCompactList}\small\item\em Assignment operator. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix_a9b1c3627f573d78a2f08623fdfef990f}{$\sim$\+Matrix}} ()
+\begin{DoxyCompactList}\small\item\em Destructor for the \mbox{\hyperlink{classMatrix}{Matrix}} class that frees the memory allocated by the mat member. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_a7fa87bca98b8b17b266ebdf073a409fd}{free}} ()
+\begin{DoxyCompactList}\small\item\em Free memory allocation for a \mbox{\hyperlink{classMatrix}{Matrix}} object. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classMatrix_af91e37ba428fd9f11cb8d0a5d7af499c}{nrow}} () const
+\begin{DoxyCompactList}\small\item\em get number of rows \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classMatrix_ac67b2cb976c7578df783fbd2a0b9d699}{ncol}} () const
+\begin{DoxyCompactList}\small\item\em get number of columns \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMatrix_a132f6515d0a7181d3bf275e274fc8783}{get}} (const int \&i, const int \&j) const
+\begin{DoxyCompactList}\small\item\em Get element value at i,j. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMatrix_a37786b6a98dc023ea657edd46691f8d9}{operator()}} (const int \&i, const int \&j) const
+\begin{DoxyCompactList}\small\item\em Get element value at i,j. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_a20c71f15ca0fa73e87936d7a3c1d7b81}{set}} (const int \&i, const int \&j, const double \&v)
+\begin{DoxyCompactList}\small\item\em Set element value at i,j to v. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_a88f298ec90faae551e9b7ac47df2e58b}{set\+\_\+all}} (const double \&v)
+\begin{DoxyCompactList}\small\item\em Set all elements to v. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_aa753de1a2ed37c8eb934e06823fee179}{transpose}} ()
+\begin{DoxyCompactList}\small\item\em Transpose the matrix. This overwrites the original matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_aaedcd96c021741b82c878e26d4a67d2e}{set\+\_\+identity}} ()
+\begin{DoxyCompactList}\small\item\em Set the matrix to identity matrix. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classMatrix_a9692ed11e8a070d42418a1299eceb40a}{get\+\_\+row}} (const int \&irow) const
+\begin{DoxyCompactList}\small\item\em Get the row vector in the format of \mbox{\hyperlink{classMatrix}{Matrix(1, N)}} \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classMatrix_ad07b4c911f36eb3e6b9ebdab059d506a}{get\+\_\+col}} (const int \&icol) const
+\begin{DoxyCompactList}\small\item\em Get the col vector in the format of \mbox{\hyperlink{classMatrix}{Matrix(\+N, 1)}} \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_a53f42a3eaab16956008526d25226c97c}{set\+\_\+row\+\_\+from\+\_\+col}} (const int \&dest\+Row, const \mbox{\hyperlink{classMatrix}{Matrix}} \&src\+Mat, const int \&src\+Col)
+\begin{DoxyCompactList}\small\item\em Set the row vector from col vector. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classMatrix}{Matrix}} \mbox{\hyperlink{classMatrix_a9c8282a01a3e305d3786ecea62eb056c}{get\+\_\+transposed}} () const
+\begin{DoxyCompactList}\small\item\em Get the tranposed matrix. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classMatrix_a0cbc11a19f2f963795e70ee53becfd01}{get\+\_\+inverted}} (\mbox{\hyperlink{classMatrix}{Matrix}} \&mat\+Inverted)
+\begin{DoxyCompactList}\small\item\em This function uses cholesky decomposition to solve for the inverse of the input square matrix. \href{https://www.gnu.org/software/gsl/doc/html/linalg.html\#c.gsl_linalg_cholesky_decomp1}{\texttt{ https\+://www.\+gnu.\+org/software/gsl/doc/html/linalg.\+html\#c.\+gsl\+\_\+linalg\+\_\+cholesky\+\_\+decomp1}}. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classMatrix_a04feca35853cb634cffe03a12cdf4f12}{calculate\+\_\+norm}} () const
+\begin{DoxyCompactList}\small\item\em Calculates the Euclidean norm of the member matrix mat. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+gsl\+\_\+matrix $\ast$ \mbox{\hyperlink{classMatrix_a68959aaed7f0c3b27eb651e2ef9afdeb}{mat}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\mbox{\hyperlink{classMatrix}{Matrix}} used in continuum membrane model. 
+
+This class represents a N x M matrix. This header is an interface that can be implemented differently to support the use of different linear algebra pacakages. Currently gsl\+\_\+blas is used for matrix calculation. Note that it is important to double check the destructor \mbox{\hyperlink{classMatrix_a9b1c3627f573d78a2f08623fdfef990f}{$\sim$\+Matrix()}} and assign operator (operator=) if you would like to customize an implementation. Be careful of double free and memory leak that might be caused by misuse of pointers.
+\begin{DoxyItemize}
+\item Moon Ying
+\end{DoxyItemize}
+
+\begin{DoxyNote}{Note}
+To keep all the matrices definition consistent, all the coordinates and forces will be defined as 3 x 1 column vectors. 
+\end{DoxyNote}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classMatrix_a6324cb7da1551c2adace24cc8f061cb7}\label{classMatrix_a6324cb7da1551c2adace24cc8f061cb7}} 
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{Matrix()}{Matrix()}\hspace{0.1cm}{\footnotesize\ttfamily [1/6]}}
+{\footnotesize\ttfamily Matrix\+::\+Matrix (\begin{DoxyParamCaption}\item[{const int \&}]{nrow,  }\item[{const int \&}]{ncol,  }\item[{const bool \&}]{set\+To\+Zero }\end{DoxyParamCaption})}
+
+
+
+Construct a new \mbox{\hyperlink{classMatrix}{Matrix}} object and initialize the members to zeros. The set\+To\+Zero variable is a place holder to differentiate this function from a malloc or alloc function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em nrow} & \\
+\hline
+{\em ncol} & \\
+\hline
+{\em set\+To\+Zero} & \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMatrix_a2dba13c45127354c9f75ef576f49269b}\label{classMatrix_a2dba13c45127354c9f75ef576f49269b}} 
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{Matrix()}{Matrix()}\hspace{0.1cm}{\footnotesize\ttfamily [2/6]}}
+{\footnotesize\ttfamily Matrix\+::\+Matrix (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Default constructor. 
+
+\mbox{\Hypertarget{classMatrix_ad28a7520a493d4a0dc5980ed2ec302ca}\label{classMatrix_ad28a7520a493d4a0dc5980ed2ec302ca}} 
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{Matrix()}{Matrix()}\hspace{0.1cm}{\footnotesize\ttfamily [3/6]}}
+{\footnotesize\ttfamily Matrix\+::\+Matrix (\begin{DoxyParamCaption}\item[{const int \&}]{nrow }\end{DoxyParamCaption})}
+
+
+
+Constructor for creating a \mbox{\hyperlink{classMatrix}{Matrix}} with a specified number of rows and one column. 
+
+This constructor creates a new \mbox{\hyperlink{classMatrix}{Matrix}} object with the specified number of rows and one column. The elements of the matrix are uninitialized and may contain garbage values.
+
+
+\begin{DoxyParams}{Parameters}
+{\em nrow} & The number of rows in the matrix \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMatrix_a8d5baa0fc05a9dad49157a11a6f6e546}\label{classMatrix_a8d5baa0fc05a9dad49157a11a6f6e546}} 
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{Matrix()}{Matrix()}\hspace{0.1cm}{\footnotesize\ttfamily [4/6]}}
+{\footnotesize\ttfamily Matrix\+::\+Matrix (\begin{DoxyParamCaption}\item[{const int \&}]{nrow,  }\item[{const int \&}]{ncol }\end{DoxyParamCaption})}
+
+
+
+Constructor for creating a \mbox{\hyperlink{classMatrix}{Matrix}} with a specified number of rows and columns. 
+
+This constructor creates a new \mbox{\hyperlink{classMatrix}{Matrix}} object with the specified number of rows and columns. The elements of the matrix are uninitialized and may contain garbage values.
+
+
+\begin{DoxyParams}{Parameters}
+{\em nrow} & The number of rows in the matrix \\
+\hline
+{\em ncol} & The number of columns in the matrix \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMatrix_a85e2231ef32aea956b85142fc338501c}\label{classMatrix_a85e2231ef32aea956b85142fc338501c}} 
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{Matrix()}{Matrix()}\hspace{0.1cm}{\footnotesize\ttfamily [5/6]}}
+{\footnotesize\ttfamily Matrix\+::\+Matrix (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{mat\+\_\+src }\end{DoxyParamCaption})}
+
+
+
+Copy constructor for creating a deep copy of a \mbox{\hyperlink{classMatrix}{Matrix}} object. 
+
+This constructor creates a new \mbox{\hyperlink{classMatrix}{Matrix}} object that is a deep copy of the specified \mbox{\hyperlink{classMatrix}{Matrix}} object. All elements of the original matrix are copied to the new matrix, so the two matrices are completely independent.
+
+
+\begin{DoxyParams}{Parameters}
+{\em mat\+\_\+src} & The \mbox{\hyperlink{classMatrix}{Matrix}} object to be copied \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classMatrix_ae86243ae11fed50c8364308a2ceb035a}\label{classMatrix_ae86243ae11fed50c8364308a2ceb035a}} 
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\index{Matrix@{Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{Matrix()}{Matrix()}\hspace{0.1cm}{\footnotesize\ttfamily [6/6]}}
+{\footnotesize\ttfamily Matrix\+::\+Matrix (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \&}]{vec }\end{DoxyParamCaption})}
+
+
+
+Intialize a matrix with a 2d vector. 
+
+\mbox{\Hypertarget{classMatrix_a9b1c3627f573d78a2f08623fdfef990f}\label{classMatrix_a9b1c3627f573d78a2f08623fdfef990f}} 
+\index{Matrix@{Matrix}!````~Matrix@{$\sim$Matrix}}
+\index{````~Matrix@{$\sim$Matrix}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{$\sim$Matrix()}{~Matrix()}}
+{\footnotesize\ttfamily Matrix\+::$\sim$\+Matrix (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Destructor for the \mbox{\hyperlink{classMatrix}{Matrix}} class that frees the memory allocated by the mat member. 
+
+A destructor is a special member function of a C++ class that is called automatically when an object of the class goes out of scope or is otherwise destroyed. The purpose of the destructor is to release any resources or memory that the object was holding onto, to ensure that there are no memory leaks or other resource leaks caused by the object\textquotesingle{}s destruction. 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classMatrix_a04feca35853cb634cffe03a12cdf4f12}\label{classMatrix_a04feca35853cb634cffe03a12cdf4f12}} 
+\index{Matrix@{Matrix}!calculate\_norm@{calculate\_norm}}
+\index{calculate\_norm@{calculate\_norm}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{calculate\_norm()}{calculate\_norm()}}
+{\footnotesize\ttfamily double Matrix\+::calculate\+\_\+norm (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Calculates the Euclidean norm of the member matrix mat. 
+
+\mbox{\Hypertarget{classMatrix_a7fa87bca98b8b17b266ebdf073a409fd}\label{classMatrix_a7fa87bca98b8b17b266ebdf073a409fd}} 
+\index{Matrix@{Matrix}!free@{free}}
+\index{free@{free}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{free()}{free()}}
+{\footnotesize\ttfamily void Matrix\+::free (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Free memory allocation for a \mbox{\hyperlink{classMatrix}{Matrix}} object. 
+
+\mbox{\Hypertarget{classMatrix_a132f6515d0a7181d3bf275e274fc8783}\label{classMatrix_a132f6515d0a7181d3bf275e274fc8783}} 
+\index{Matrix@{Matrix}!get@{get}}
+\index{get@{get}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{get()}{get()}}
+{\footnotesize\ttfamily double Matrix\+::get (\begin{DoxyParamCaption}\item[{const int \&}]{i,  }\item[{const int \&}]{j }\end{DoxyParamCaption}) const}
+
+
+
+Get element value at i,j. 
+
+\mbox{\Hypertarget{classMatrix_ad07b4c911f36eb3e6b9ebdab059d506a}\label{classMatrix_ad07b4c911f36eb3e6b9ebdab059d506a}} 
+\index{Matrix@{Matrix}!get\_col@{get\_col}}
+\index{get\_col@{get\_col}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{get\_col()}{get\_col()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Matrix\+::get\+\_\+col (\begin{DoxyParamCaption}\item[{const int \&}]{icol }\end{DoxyParamCaption}) const}
+
+
+
+Get the col vector in the format of \mbox{\hyperlink{classMatrix}{Matrix(\+N, 1)}} 
+
+
+\begin{DoxyParams}{Parameters}
+{\em icol} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMatrix_a0cbc11a19f2f963795e70ee53becfd01}\label{classMatrix_a0cbc11a19f2f963795e70ee53becfd01}} 
+\index{Matrix@{Matrix}!get\_inverted@{get\_inverted}}
+\index{get\_inverted@{get\_inverted}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{get\_inverted()}{get\_inverted()}}
+{\footnotesize\ttfamily void Matrix\+::get\+\_\+inverted (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classMatrix}{Matrix}} \&}]{mat\+Inverted }\end{DoxyParamCaption})}
+
+
+
+This function uses cholesky decomposition to solve for the inverse of the input square matrix. \href{https://www.gnu.org/software/gsl/doc/html/linalg.html\#c.gsl_linalg_cholesky_decomp1}{\texttt{ https\+://www.\+gnu.\+org/software/gsl/doc/html/linalg.\+html\#c.\+gsl\+\_\+linalg\+\_\+cholesky\+\_\+decomp1}}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em matrix} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMatrix_a9692ed11e8a070d42418a1299eceb40a}\label{classMatrix_a9692ed11e8a070d42418a1299eceb40a}} 
+\index{Matrix@{Matrix}!get\_row@{get\_row}}
+\index{get\_row@{get\_row}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{get\_row()}{get\_row()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Matrix\+::get\+\_\+row (\begin{DoxyParamCaption}\item[{const int \&}]{irow }\end{DoxyParamCaption}) const}
+
+
+
+Get the row vector in the format of \mbox{\hyperlink{classMatrix}{Matrix(1, N)}} 
+
+
+\begin{DoxyParams}{Parameters}
+{\em irow} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMatrix_a9c8282a01a3e305d3786ecea62eb056c}\label{classMatrix_a9c8282a01a3e305d3786ecea62eb056c}} 
+\index{Matrix@{Matrix}!get\_transposed@{get\_transposed}}
+\index{get\_transposed@{get\_transposed}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{get\_transposed()}{get\_transposed()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} Matrix\+::get\+\_\+transposed (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the tranposed matrix. 
+
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMatrix_ac67b2cb976c7578df783fbd2a0b9d699}\label{classMatrix_ac67b2cb976c7578df783fbd2a0b9d699}} 
+\index{Matrix@{Matrix}!ncol@{ncol}}
+\index{ncol@{ncol}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{ncol()}{ncol()}}
+{\footnotesize\ttfamily int Matrix\+::ncol (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+get number of columns 
+
+\mbox{\Hypertarget{classMatrix_af91e37ba428fd9f11cb8d0a5d7af499c}\label{classMatrix_af91e37ba428fd9f11cb8d0a5d7af499c}} 
+\index{Matrix@{Matrix}!nrow@{nrow}}
+\index{nrow@{nrow}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{nrow()}{nrow()}}
+{\footnotesize\ttfamily int Matrix\+::nrow (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+get number of rows 
+
+\mbox{\Hypertarget{classMatrix_a37786b6a98dc023ea657edd46691f8d9}\label{classMatrix_a37786b6a98dc023ea657edd46691f8d9}} 
+\index{Matrix@{Matrix}!operator()@{operator()}}
+\index{operator()@{operator()}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{operator()()}{operator()()}}
+{\footnotesize\ttfamily double Matrix\+::operator() (\begin{DoxyParamCaption}\item[{const int \&}]{i,  }\item[{const int \&}]{j }\end{DoxyParamCaption}) const}
+
+
+
+Get element value at i,j. 
+
+\mbox{\Hypertarget{classMatrix_a33380972ada0c6cae924b2cf92027edc}\label{classMatrix_a33380972ada0c6cae924b2cf92027edc}} 
+\index{Matrix@{Matrix}!operator=@{operator=}}
+\index{operator=@{operator=}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMatrix}{Matrix}} \& Matrix\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{mat\+\_\+src }\end{DoxyParamCaption})}
+
+
+
+Assignment operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em mat\+\_\+src} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}}\& 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMatrix_a20c71f15ca0fa73e87936d7a3c1d7b81}\label{classMatrix_a20c71f15ca0fa73e87936d7a3c1d7b81}} 
+\index{Matrix@{Matrix}!set@{set}}
+\index{set@{set}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{set()}{set()}}
+{\footnotesize\ttfamily void Matrix\+::set (\begin{DoxyParamCaption}\item[{const int \&}]{i,  }\item[{const int \&}]{j,  }\item[{const double \&}]{v }\end{DoxyParamCaption})}
+
+
+
+Set element value at i,j to v. 
+
+\mbox{\Hypertarget{classMatrix_a88f298ec90faae551e9b7ac47df2e58b}\label{classMatrix_a88f298ec90faae551e9b7ac47df2e58b}} 
+\index{Matrix@{Matrix}!set\_all@{set\_all}}
+\index{set\_all@{set\_all}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{set\_all()}{set\_all()}}
+{\footnotesize\ttfamily void Matrix\+::set\+\_\+all (\begin{DoxyParamCaption}\item[{const double \&}]{v }\end{DoxyParamCaption})}
+
+
+
+Set all elements to v. 
+
+\mbox{\Hypertarget{classMatrix_aaedcd96c021741b82c878e26d4a67d2e}\label{classMatrix_aaedcd96c021741b82c878e26d4a67d2e}} 
+\index{Matrix@{Matrix}!set\_identity@{set\_identity}}
+\index{set\_identity@{set\_identity}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{set\_identity()}{set\_identity()}}
+{\footnotesize\ttfamily void Matrix\+::set\+\_\+identity (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Set the matrix to identity matrix. 
+
+\begin{DoxyNote}{Note}
+This function checks whether the matrix is a square matrix and will throw error if the matrix is not square 
+\end{DoxyNote}
+\mbox{\Hypertarget{classMatrix_a53f42a3eaab16956008526d25226c97c}\label{classMatrix_a53f42a3eaab16956008526d25226c97c}} 
+\index{Matrix@{Matrix}!set\_row\_from\_col@{set\_row\_from\_col}}
+\index{set\_row\_from\_col@{set\_row\_from\_col}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{set\_row\_from\_col()}{set\_row\_from\_col()}}
+{\footnotesize\ttfamily void Matrix\+::set\+\_\+row\+\_\+from\+\_\+col (\begin{DoxyParamCaption}\item[{const int \&}]{dest\+Row,  }\item[{const \mbox{\hyperlink{classMatrix}{Matrix}} \&}]{src\+Mat,  }\item[{const int \&}]{src\+Col }\end{DoxyParamCaption})}
+
+
+
+Set the row vector from col vector. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em irow} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classMatrix}{Matrix}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classMatrix_aa753de1a2ed37c8eb934e06823fee179}\label{classMatrix_aa753de1a2ed37c8eb934e06823fee179}} 
+\index{Matrix@{Matrix}!transpose@{transpose}}
+\index{transpose@{transpose}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{transpose()}{transpose()}}
+{\footnotesize\ttfamily void Matrix\+::transpose (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Transpose the matrix. This overwrites the original matrix. 
+
+\begin{DoxyNote}{Note}
+Use if the source matrix is needed. 
+\end{DoxyNote}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classMatrix_a68959aaed7f0c3b27eb651e2ef9afdeb}\label{classMatrix_a68959aaed7f0c3b27eb651e2ef9afdeb}} 
+\index{Matrix@{Matrix}!mat@{mat}}
+\index{mat@{mat}!Matrix@{Matrix}}
+\doxysubsubsection{\texorpdfstring{mat}{mat}}
+{\footnotesize\ttfamily gsl\+\_\+matrix$\ast$ Matrix\+::mat}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{Linear__algebra_8hpp}{Linear\+\_\+algebra.\+hpp}}\end{DoxyCompactItemize}

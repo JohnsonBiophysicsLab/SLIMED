@@ -1,0 +1,129 @@
+\hypertarget{vectorMath__function_8cpp}{}\doxysection{src/vector\+\_\+math/vector\+Math\+\_\+function.cpp File Reference}
+\label{vectorMath__function_8cpp}\index{src/vector\_math/vectorMath\_function.cpp@{src/vector\_math/vectorMath\_function.cpp}}
+{\ttfamily \#include \char`\"{}vector\+\_\+math.\+hpp\char`\"{}}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_af80550acb93dd2586ac79b83c3c66885}{addition}} (const vector$<$ double $>$ \&v1, const vector$<$ double $>$ \&v2, vector$<$ double $>$ \&v\+\_\+sum)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a858b6091f947646027105960f6cd5257}{subtraction}} (const vector$<$ double $>$ \&v1, const vector$<$ double $>$ \&v2, vector$<$ double $>$ \&v\+\_\+diff)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_af73c8c703e3b323814a484997e7e6814}{negative}} (const vector$<$ double $>$ \&v1, vector$<$ double $>$ \&v\+\_\+neg)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a9f2e917fe864f3e2f960929ac617bbdf}{const\+\_\+multiplication}} (const vector$<$ double $>$ \&v1, const double num, vector$<$ double $>$ \&v\+\_\+result)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_ae65c41d6c81f70e63c93a7f404a23ada}{const\+\_\+division}} (const vector$<$ double $>$ \&v1, const double num, vector$<$ double $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a15d6c6b5f886cd69e5556ce043f5d273}{cross}} (const vector$<$ double $>$ \&m1, const vector$<$ double $>$ \&m2, vector$<$ double $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_ad5d630a25045198f222adf1d260fccf2}{addition}} (const vector$<$ vector$<$ double $>$ $>$ \&m1, const vector$<$ vector$<$ double $>$ $>$ \&m2, vector$<$ vector$<$ double $>$ $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a2e1860ee57565717071f2fec266aac9d}{subtraction}} (const vector$<$ vector$<$ double $>$ $>$ \&m1, const vector$<$ vector$<$ double $>$ $>$ \&m2, vector$<$ vector$<$ double $>$ $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a71ace4d124e6f9ea58c1513eed32eb82}{multiplication}} (const vector$<$ vector$<$ double $>$ $>$ \&m1, const vector$<$ vector$<$ double $>$ $>$ \&m2, vector$<$ vector$<$ double $>$ $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_abe2a4de37ca2ad3c1c47c4ac77fd45f3}{get\+Unit\+Vector}} (const vector$<$ double $>$ \&v1, vector$<$ double $>$ \&v\+\_\+unit)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a87c3f740247faac3afc53cc6cd5d17d1}{const\+\_\+multiplication}} (const vector$<$ vector$<$ double $>$ $>$ \&m1, const double num, vector$<$ vector$<$ double $>$ $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a5eaae6ef0cd8cd561ebc7850b0a2a0c7}{const\+\_\+division}} (const vector$<$ vector$<$ double $>$ $>$ \&m1, const double num, vector$<$ vector$<$ double $>$ $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_a18413d548396d2882f3e344e1465a812}{colvec\+\_\+matrix\+\_\+multiplication}} (const vector$<$ double $>$ \&v1, const vector$<$ vector$<$ double $>$ $>$ \&m1, vector$<$ double $>$ \&tmp)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_aebcbdcb3b53c7d36f9d19fbbd6720c2a}{kron}} (const vector$<$ double $>$ \&v1, const vector$<$ double $>$ \&v2, vector$<$ vector$<$ double $>$ $>$ \&m\+\_\+result)
+\item 
+void \mbox{\hyperlink{vectorMath__function_8cpp_ab22b9e9613b30af593c6605b48a55d9b}{a\+\_\+cross\+\_\+b\+\_\+plus\+\_\+c\+\_\+cross\+\_\+d}} (const vector$<$ double $>$ \&a, const vector$<$ double $>$ \&b, const vector$<$ double $>$ \&c, const vector$<$ double $>$ \&d, vector$<$ double $>$ \&tmp\+\_\+f, vector$<$ double $>$ \&tmp\+\_\+l, vector$<$ double $>$ \&v\+\_\+result)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{vectorMath__function_8cpp_ab22b9e9613b30af593c6605b48a55d9b}\label{vectorMath__function_8cpp_ab22b9e9613b30af593c6605b48a55d9b}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!a\_cross\_b\_plus\_c\_cross\_d@{a\_cross\_b\_plus\_c\_cross\_d}}
+\index{a\_cross\_b\_plus\_c\_cross\_d@{a\_cross\_b\_plus\_c\_cross\_d}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{a\_cross\_b\_plus\_c\_cross\_d()}{a\_cross\_b\_plus\_c\_cross\_d()}}
+{\footnotesize\ttfamily void a\+\_\+cross\+\_\+b\+\_\+plus\+\_\+c\+\_\+cross\+\_\+d (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{a,  }\item[{const vector$<$ double $>$ \&}]{b,  }\item[{const vector$<$ double $>$ \&}]{c,  }\item[{const vector$<$ double $>$ \&}]{d,  }\item[{vector$<$ double $>$ \&}]{tmp\+\_\+f,  }\item[{vector$<$ double $>$ \&}]{tmp\+\_\+l,  }\item[{vector$<$ double $>$ \&}]{v\+\_\+result }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_af80550acb93dd2586ac79b83c3c66885}\label{vectorMath__function_8cpp_af80550acb93dd2586ac79b83c3c66885}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!addition@{addition}}
+\index{addition@{addition}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{addition()}{addition()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void addition (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{const vector$<$ double $>$ \&}]{v2,  }\item[{vector$<$ double $>$ \&}]{v\+\_\+sum }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_ad5d630a25045198f222adf1d260fccf2}\label{vectorMath__function_8cpp_ad5d630a25045198f222adf1d260fccf2}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!addition@{addition}}
+\index{addition@{addition}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{addition()}{addition()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void addition (\begin{DoxyParamCaption}\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m1,  }\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m2,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a18413d548396d2882f3e344e1465a812}\label{vectorMath__function_8cpp_a18413d548396d2882f3e344e1465a812}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!colvec\_matrix\_multiplication@{colvec\_matrix\_multiplication}}
+\index{colvec\_matrix\_multiplication@{colvec\_matrix\_multiplication}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{colvec\_matrix\_multiplication()}{colvec\_matrix\_multiplication()}}
+{\footnotesize\ttfamily void colvec\+\_\+matrix\+\_\+multiplication (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m1,  }\item[{vector$<$ double $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_ae65c41d6c81f70e63c93a7f404a23ada}\label{vectorMath__function_8cpp_ae65c41d6c81f70e63c93a7f404a23ada}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!const\_division@{const\_division}}
+\index{const\_division@{const\_division}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{const\_division()}{const\_division()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void const\+\_\+division (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{const double}]{num,  }\item[{vector$<$ double $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a5eaae6ef0cd8cd561ebc7850b0a2a0c7}\label{vectorMath__function_8cpp_a5eaae6ef0cd8cd561ebc7850b0a2a0c7}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!const\_division@{const\_division}}
+\index{const\_division@{const\_division}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{const\_division()}{const\_division()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void const\+\_\+division (\begin{DoxyParamCaption}\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m1,  }\item[{const double}]{num,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a9f2e917fe864f3e2f960929ac617bbdf}\label{vectorMath__function_8cpp_a9f2e917fe864f3e2f960929ac617bbdf}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!const\_multiplication@{const\_multiplication}}
+\index{const\_multiplication@{const\_multiplication}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{const\_multiplication()}{const\_multiplication()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void const\+\_\+multiplication (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{const double}]{num,  }\item[{vector$<$ double $>$ \&}]{v\+\_\+result }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a87c3f740247faac3afc53cc6cd5d17d1}\label{vectorMath__function_8cpp_a87c3f740247faac3afc53cc6cd5d17d1}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!const\_multiplication@{const\_multiplication}}
+\index{const\_multiplication@{const\_multiplication}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{const\_multiplication()}{const\_multiplication()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void const\+\_\+multiplication (\begin{DoxyParamCaption}\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m1,  }\item[{const double}]{num,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a15d6c6b5f886cd69e5556ce043f5d273}\label{vectorMath__function_8cpp_a15d6c6b5f886cd69e5556ce043f5d273}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!cross@{cross}}
+\index{cross@{cross}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{cross()}{cross()}}
+{\footnotesize\ttfamily void cross (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{m1,  }\item[{const vector$<$ double $>$ \&}]{m2,  }\item[{vector$<$ double $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_abe2a4de37ca2ad3c1c47c4ac77fd45f3}\label{vectorMath__function_8cpp_abe2a4de37ca2ad3c1c47c4ac77fd45f3}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!getUnitVector@{getUnitVector}}
+\index{getUnitVector@{getUnitVector}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{getUnitVector()}{getUnitVector()}}
+{\footnotesize\ttfamily void get\+Unit\+Vector (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{vector$<$ double $>$ \&}]{v\+\_\+unit }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_aebcbdcb3b53c7d36f9d19fbbd6720c2a}\label{vectorMath__function_8cpp_aebcbdcb3b53c7d36f9d19fbbd6720c2a}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!kron@{kron}}
+\index{kron@{kron}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{kron()}{kron()}}
+{\footnotesize\ttfamily void kron (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{const vector$<$ double $>$ \&}]{v2,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{m\+\_\+result }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a71ace4d124e6f9ea58c1513eed32eb82}\label{vectorMath__function_8cpp_a71ace4d124e6f9ea58c1513eed32eb82}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!multiplication@{multiplication}}
+\index{multiplication@{multiplication}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{multiplication()}{multiplication()}}
+{\footnotesize\ttfamily void multiplication (\begin{DoxyParamCaption}\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m1,  }\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m2,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{tmp }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_af73c8c703e3b323814a484997e7e6814}\label{vectorMath__function_8cpp_af73c8c703e3b323814a484997e7e6814}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!negative@{negative}}
+\index{negative@{negative}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{negative()}{negative()}}
+{\footnotesize\ttfamily void negative (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{vector$<$ double $>$ \&}]{v\+\_\+neg }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a858b6091f947646027105960f6cd5257}\label{vectorMath__function_8cpp_a858b6091f947646027105960f6cd5257}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!subtraction@{subtraction}}
+\index{subtraction@{subtraction}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{subtraction()}{subtraction()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void subtraction (\begin{DoxyParamCaption}\item[{const vector$<$ double $>$ \&}]{v1,  }\item[{const vector$<$ double $>$ \&}]{v2,  }\item[{vector$<$ double $>$ \&}]{v\+\_\+diff }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{vectorMath__function_8cpp_a2e1860ee57565717071f2fec266aac9d}\label{vectorMath__function_8cpp_a2e1860ee57565717071f2fec266aac9d}} 
+\index{vectorMath\_function.cpp@{vectorMath\_function.cpp}!subtraction@{subtraction}}
+\index{subtraction@{subtraction}!vectorMath\_function.cpp@{vectorMath\_function.cpp}}
+\doxysubsubsection{\texorpdfstring{subtraction()}{subtraction()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily void subtraction (\begin{DoxyParamCaption}\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m1,  }\item[{const vector$<$ vector$<$ double $>$ $>$ \&}]{m2,  }\item[{vector$<$ vector$<$ double $>$ $>$ \&}]{tmp }\end{DoxyParamCaption})}
+

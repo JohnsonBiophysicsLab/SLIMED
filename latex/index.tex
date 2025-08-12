@@ -1,0 +1,121 @@
+\label{index_md_README}%
+\Hypertarget{index_md_README}%
+ NERDSS -\/ Continuum Membrane \& Dynamics tool expands the model to continuum membranes established with triangular mesh and optimized using an energy function. The installation instructions and dependencies are provided in README.\+rst. The first step requires setting up the triangular mesh model to approximate the membrane\textquotesingle{}s geometry applying Loop\textquotesingle{}s subdivision method. The lowest energy search model minimizes the membrane energy evaluated by the energy function. The Brownian Dynamics model simulates the moving membrane\textquotesingle{}s surface with a displacement equation, performed on the limit surface with the help of a conversion matrix. Three types of boundary conditions are available\+: Fixed, Periodic, and Free, all defined for \char`\"{}ghost vertices\char`\"{} on the boundary of the triangular mesh.\hypertarget{index_autotoc_md1}{}\doxysection{Installation}\label{index_autotoc_md1}
+To install the model, follow these steps\+:
+
+
+\begin{DoxyEnumerate}
+\item Clone this repository to your local machine. You can use {\ttfamily git} as follows or download zip from github webpage.
+\end{DoxyEnumerate}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git\ clone\ https://github.com/mjohn218/continuum\_membrane.git}
+
+\end{DoxyCode}
+
+
+
+\begin{DoxyEnumerate}
+\item Install the required libraries\+: GSL (GNU scientific library) and Open\+MP (if parallelization is needed)
+\end{DoxyEnumerate}\hypertarget{index_autotoc_md2}{}\doxysection{Compile and Run}\label{index_autotoc_md2}
+To compile and run continuum membrane lowest energy conformation search with Open\+MP parallelization. See section 5 for model details.
+
+Open\+MP parallel\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make\ omp}
+\DoxyCodeLine{./bin/continuum\_membrane}
+
+\end{DoxyCode}
+
+
+Embarrasingly parallel for multiple parameter sets\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make\ multi}
+\DoxyCodeLine{./bin/continuum\_membrane\_multithreading}
+
+\end{DoxyCode}
+
+
+No parallel\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make\ serial}
+\DoxyCodeLine{./bin/continuum\_membrane}
+
+\end{DoxyCode}
+
+
+To compile and run membrane Brownian dynamics simulation. See section 6 for model details.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{make\ dyna}
+\DoxyCodeLine{./bin/membrane\_dynamics}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md3}{}\doxysection{Parameters}\label{index_autotoc_md3}
+Input parameter file is located in the root directory\+: {\ttfamily continuum\+\_\+membrane/input.\+params}\hypertarget{index_autotoc_md4}{}\doxysection{Energy Function and Lowest Energy Search}\label{index_autotoc_md4}
+The goal for the lowest energy search model is to minimize the membrane energy evaluated by the energy function, which is the sum of membrane bending energy, area constraint energy (or elastic area change energy), and volume constraint energy\+:
+
+{\ttfamily E = E\+\_\+B + E\+\_\+S + E\+\_\+V = \textbackslash{}int\+\_\+S \textbackslash{}frac\{1\}\{2\}\textbackslash{}kappa (2H-\/\+C\+\_\+0)$^\wedge$2 dS + \textbackslash{}frac\{1\}\{2\} \textbackslash{}mu\+\_\+S \textbackslash{}frac\{(S-\/\+S\+\_\+0)$^\wedge$2\}\{S\+\_\+0\} + \textbackslash{}frac\{1\}\{2\} \textbackslash{}mu\+\_\+V \textbackslash{}frac\{(V-\/\+V\+\_\+0)$^\wedge$2\}\{V\+\_\+0\}}
+
+where\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \textbackslash{}kappa} \+: membrane bending constant {\ttfamily kc\+Membrane\+Bending}
+\item {\ttfamily H} \+: mean membrane culvature
+\item {\ttfamily C\+\_\+0} \+: spontaneous curvature of the membrane {\ttfamily c0\+Membrane}
+\item {\ttfamily \textbackslash{}mu\+\_\+S} \+: membrane streching modulus {\ttfamily us\+Membrane\+Stretching}
+\item {\ttfamily S} \+: global membrane area
+\item {\ttfamily S\+\_\+0} \+: target membrane area
+\item {\ttfamily \textbackslash{}mu\+\_\+V} \+: volume constraint coefficient {\ttfamily uv\+Volume\+Constraint}
+\item {\ttfamily V} \+: global volume
+\item {\ttfamily V\+\_\+0} \+: target volume
+\end{DoxyItemize}\hypertarget{index_autotoc_md5}{}\doxysection{Membrane Brownian Dynamics}\label{index_autotoc_md5}
+Membrane Brownian Dynamics model runs a step-\/wise simulation of the moving membrane surface with the following equation\+:
+
+{\ttfamily \textbackslash{}Delta X = -\/\textbackslash{}frac\{D\textbackslash{}Delta t\}\{k\+\_\+b T\} \textbackslash{}nabla E + \textbackslash{}sqrt\{2D\textbackslash{}Delta t\} (N(0,1))}
+
+where\+:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily \textbackslash{}Delta X}\+: displacement of point on limit surface
+\item {\ttfamily D}\+: diffusion constant of the membrane
+\item {\ttfamily \textbackslash{}Delta t}\+: time step
+\item {\ttfamily N(0,1)}\+: standard normal distribution
+\end{DoxyItemize}
+
+Note that the displacement of membrane according to the equation above is performed on the limit surface, not the control mesh. In this case, a conversion matrix helps to convert between triangular mesh and limit surface, as currently the points on the limit surface represented by the mesh point are chosen to represent the surface.
+
+{\ttfamily M\+\_\+\{s\} = C M\+\_\+\{m\}}
+
+{\ttfamily M\+\_\+\{m\} = C$^\wedge$\{-\/1\} M\+\_\+\{s\}}\hypertarget{index_autotoc_md6}{}\doxysection{Boundary Conditions}\label{index_autotoc_md6}
+Three types of boundary conditions are provided currently in both models. Note that \char`\"{}ghost vertices\char`\"{} are defined as points on the boundary of the triangular mesh that only serve to provide reference when calculating limit surface on the boundary, as calculating position of a point on the limit surface require the coordinates of 12 neighboring vertices (if regular). However, the \char`\"{}ghost vertices\char`\"{} themselves do not correspond to real points on the surface.
+
+
+\begin{DoxyItemize}
+\item Fixed\+: 2 rings of ghost vertices are fixed in space
+\item Periodic\+: 3 rings of ghost vertices that mimics the movement of the vertices on the opposite side of the membrane.
+\item Free\+: 2 rings of ghost vertices are generated after movement by forming parallelogram extend from the real points on the control mesh
+\end{DoxyItemize}\hypertarget{index_autotoc_md7}{}\doxysection{For Developers}\label{index_autotoc_md7}
+A detailed doxygen style documentation is available in {\ttfamily continuum\+\_\+membrane/html/index.\+html}. We are working on getting the documentation online, but currently you will need to clone the repository and view it locally.\hypertarget{index_autotoc_md8}{}\doxysection{Cite Continuum Membrane}\label{index_autotoc_md8}
+If you use or modify continuum membrane model, in addition to citing NERDSS, please be kind and cite us\+:
+
+
+\begin{DoxyEnumerate}
+\item Continuum Membrane Implementation Fu, Y., Yogurtcu, O.\+N., Kothari, R., Thorkelsdottir, G., Sodt, A.\+J. \& Johnson, M.\+E. (2019) An implicit lipid model for efficient reaction-\/diffusion simulations of protein binding to surfaces of arbitrary topology. {\itshape J Chem Phys.} 151 (12), 124115. \texorpdfstring{$<$}{<}doi\+:\%6010.\+1063/1.5120516\%60\+\_\+\texorpdfstring{$>$}{>}
+\item Membrane energies and insertion Fu, Y., Zeno, W., Stachowiak, J. \& Johnson, M.\+E. A continuum membrane model predicts curvature sensing by helix insertion. Submitted (2021) Available on \href{https://www.biorxiv.org/content/10.1101/2021.04.22.440963v1.full}{\texttt{ bio\+Rxiv}}
+\end{DoxyEnumerate}\hypertarget{index_autotoc_md9}{}\doxysection{License}\label{index_autotoc_md9}
+This project is licensed under the MIT License -\/ see the LICENSE file for details.\hypertarget{index_autotoc_md10}{}\doxysection{Reference}\label{index_autotoc_md10}
+
+\begin{DoxyEnumerate}
+\item Helfrich, W. (1973). Elastic properties of lipid bilayers\+: theory and possible experiments. Zeitschrift fur Naturforschung C, 28(11), 693-\/703. 
+\end{DoxyEnumerate}

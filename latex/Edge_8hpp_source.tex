@@ -1,0 +1,38 @@
+\hypertarget{Edge_8hpp_source}{}\doxysection{Edge.\+hpp}
+\label{Edge_8hpp_source}\index{include/Edge.hpp@{include/Edge.hpp}}
+\mbox{\hyperlink{Edge_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00010\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00011\ \textcolor{comment}{\#pragma\ once}}
+\DoxyCodeLine{00012\ \textcolor{comment}{}}
+\DoxyCodeLine{00013\ \textcolor{comment}{\#include\ <vector>}}
+\DoxyCodeLine{00014\ \textcolor{comment}{\#include\ <Vertex.hpp>}}
+\DoxyCodeLine{00015\ \textcolor{comment}{\#include\ <Face.hpp>}}
+\DoxyCodeLine{00016\ \textcolor{comment}{}}
+\DoxyCodeLine{00017\ \textcolor{comment}{class\ Edge\{}}
+\DoxyCodeLine{00018\ \textcolor{comment}{public:}}
+\DoxyCodeLine{00019\ \textcolor{comment}{\ \ \ \ Halfedge*\ halfedge;}}
+\DoxyCodeLine{00020\ \textcolor{comment}{}}
+\DoxyCodeLine{00021\ \textcolor{comment}{\ \ \ \ //\ Function\ declarations}}
+\DoxyCodeLine{00022\ \textcolor{comment}{\ \ \ \ Edge();}}
+\DoxyCodeLine{00023\ \textcolor{comment}{\ \ \ \ \string~Edge();}}
+\DoxyCodeLine{00024\ \textcolor{comment}{\ \ \ \ //\ Add\ more\ functions\ as\ needed}}
+\DoxyCodeLine{00025\ \textcolor{comment}{\}}}
+\DoxyCodeLine{00026\ \textcolor{comment}{}}
+\DoxyCodeLine{00027\ \textcolor{comment}{class\ Halfedge\{}}
+\DoxyCodeLine{00028\ \textcolor{comment}{public:}}
+\DoxyCodeLine{00029\ \textcolor{comment}{\ \ \ \ Halfedge*\ twin;}}
+\DoxyCodeLine{00030\ \textcolor{comment}{\ \ \ \ Halfedge*\ next;}}
+\DoxyCodeLine{00031\ \textcolor{comment}{\ \ \ \ Edge*\ edge;}}
+\DoxyCodeLine{00032\ \textcolor{comment}{\ \ \ \ Face*\ face;}}
+\DoxyCodeLine{00033\ \textcolor{comment}{\ \ \ \ int\ faceIndex;}}
+\DoxyCodeLine{00034\ \textcolor{comment}{}}
+\DoxyCodeLine{00035\ \textcolor{comment}{\ \ \ \ //\ Function\ declarations}}
+\DoxyCodeLine{00036\ \textcolor{comment}{\ \ \ \ Halfedge();}}
+\DoxyCodeLine{00037\ \textcolor{comment}{\ \ \ \ \string~Halfedge();}}
+\DoxyCodeLine{00038\ \textcolor{comment}{\ \ \ \ //\ Add\ more\ functions\ as\ needed}}
+\DoxyCodeLine{00039\ \textcolor{comment}{\}}}
+\DoxyCodeLine{00040\ \textcolor{comment}{*/}}
+
+\end{DoxyCode}

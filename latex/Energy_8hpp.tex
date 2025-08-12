@@ -1,0 +1,58 @@
+\hypertarget{Energy_8hpp}{}\doxysection{include/\+Energy.hpp File Reference}
+\label{Energy_8hpp}\index{include/Energy.hpp@{include/Energy.hpp}}
+
+
+This file defines the \mbox{\hyperlink{classEnergy}{Energy}} class with 7 energy terms.  
+
+
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classEnergy}{Energy}}
+\begin{DoxyCompactList}\small\item\em This class includes 7 components in calculating energy on vertrices including membrane bending energy, area constraint energy, volume constraint energy, membrane thickness constraint energy, lipid tilting energy, regularization energy, and harmonic bonding energy. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classEnergy}{Energy}} \& \mbox{\hyperlink{Energy_8hpp_acbc1f7ad90e745ca360bf2d95b7ec689}{operator+=}} (\mbox{\hyperlink{classEnergy}{Energy}} \&e1, const \mbox{\hyperlink{classEnergy}{Energy}} \&e2)
+\begin{DoxyCompactList}\small\item\em Add the energy components of two \mbox{\hyperlink{classEnergy}{Energy}} objects together and update the first \mbox{\hyperlink{classEnergy}{Energy}} object with the result. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines the \mbox{\hyperlink{classEnergy}{Energy}} class with 7 energy terms. 
+
+\begin{DoxyAuthor}{Author}
+\href{mailto:yying7@jh.edu}{\texttt{ yying7@jh.\+edu}} 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2023-\/01-\/11
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{Energy_8hpp_acbc1f7ad90e745ca360bf2d95b7ec689}\label{Energy_8hpp_acbc1f7ad90e745ca360bf2d95b7ec689}} 
+\index{Energy.hpp@{Energy.hpp}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!Energy.hpp@{Energy.hpp}}
+\doxysubsubsection{\texorpdfstring{operator+=()}{operator+=()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classEnergy}{Energy}} \& operator+= (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classEnergy}{Energy}} \&}]{e1,  }\item[{const \mbox{\hyperlink{classEnergy}{Energy}} \&}]{e2 }\end{DoxyParamCaption})}
+
+
+
+Add the energy components of two \mbox{\hyperlink{classEnergy}{Energy}} objects together and update the first \mbox{\hyperlink{classEnergy}{Energy}} object with the result. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em e1} & \\
+\hline
+{\em e2} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{classEnergy}{Energy}} 
+\end{DoxyReturn}
