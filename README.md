@@ -23,7 +23,7 @@
   <!-- C++ standard -->
   <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-%E2%89%A514-blue">
   <!-- CMake minimum -->
-  <img alt="CMake" src="https://img.shields.io/badge/CMake-%E2%89%A53.20-informational">
+  <img alt="Make" src="https://img.shields.io/badge/Make-%E2%89%A53.79-informational">
   <!-- Package managers (optional) -->
   <!-- img alt="Conan" src="https://img.shields.io/badge/Conan-ready-0ea5e9">
   <!-- img alt="vcpkg" src="https://img.shields.io/badge/vcpkg-port-22c55e">
