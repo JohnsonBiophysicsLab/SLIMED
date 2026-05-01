@@ -55,11 +55,14 @@ void write_energy_force_data_to_csv(const Model &model)
     {
         if (j == 0)
         {
-            outfileEF << "E_Curvature, E_Area, E_Regularization, E_Total ((pN.nm)), Mean Force (pN)" << '\n';
+            outfileEF << "E_Curvature, E_Area, E_Regularization, E_HarmonicBond, E_GagScaffolding, E_IdealizedProteinLattice, E_Total ((pN.nm)), Mean Force (pN)" << '\n';
         }
         outfileEF << model.record.energyVec[j].energyCurvature << ", "
                   << model.record.energyVec[j].energyArea << ", "
                   << model.record.energyVec[j].energyRegularization << ", "
+                  << model.record.energyVec[j].energyHarmonicBond << ", "
+                  << model.record.energyVec[j].energyGagScaffolding << ", "
+                  << model.record.energyVec[j].energyIdealizedProteinLattice << ", "
                   << model.record.energyVec[j].energyTotal << ", "
                   << model.record.meanForce[j] << '\n';
     }

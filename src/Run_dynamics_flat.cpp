@@ -49,6 +49,12 @@ void run_dynamics_flat(std::string param_filename) {
     { 
         // read scaffolding file
         mesh.param.scaffoldingPoints = import_scaffolding_mesh(mesh.param.scaffoldingFileName);
+        if (mesh.param.isGagScaffoldingEnergyIncluded ||
+            mesh.param.isIdealizedProteinLatticeEnergyIncluded)
+        {
+            mesh.orient_scaffolding_plane_to_membrane();
+            mesh.pre_relax_gag_scaffolding();
+        }
         // move spline points upwards until the lower boundary is approximately z=0
         mesh.move_vertices_based_on_scaffolding();
         // find closest vertex point and save in vector

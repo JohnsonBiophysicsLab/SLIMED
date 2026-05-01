@@ -1,7 +1,7 @@
 /**
  * @file Energy.hpp
  * @author yying7@jh.edu
- * @brief This file defines the Energy class with 7 energy terms.
+ * @brief This file defines the Energy class with scaffold extensions.
  * @date 2023-01-11
  * 
  * @copyright Copyright (c) 2023
@@ -15,7 +15,7 @@
 #include <string>
 
 /**
- * @brief This class includes 7 components in calculating energy
+ * @brief This class includes components in calculating energy
  *        on vertrices including membrane bending energy,
  *        area constraint energy, volume constraint energy,
  *        membrane thickness constraint energy, lipid tilting energy,
@@ -32,6 +32,8 @@ public:
     double energyTilt = 0.0; ///< Variable to store tilt angle constraint energy
     double energyRegularization = 0.0; ///< Variable to store regularization energy
     double energyHarmonicBond = 0.0; ///< Variable to store harmonic bond energy
+    double energyGagScaffolding = 0.0; ///< Variable to store Gag-specific scaffold internal energy
+    double energyIdealizedProteinLattice = 0.0; ///< Variable to store idealized per-instance protein lattice energy
     double energyTotal = 0.0; ///< Variable to store total energy
 
     

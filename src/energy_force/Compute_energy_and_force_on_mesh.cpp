@@ -183,7 +183,12 @@ void Mesh::Compute_Energy_And_Force()
     // Step 7. Calculate scaffolding energy
     if (param.isEnergyHarmonicBondIncluded)
     {
-        param.energy.energyHarmonicBond = this->calculate_scaffolding_energy_force(false);
+        param.energy.energyGagScaffolding = 0.0;
+        param.energy.energyIdealizedProteinLattice = 0.0;
+        const double scaffoldingEnergyTotal = this->calculate_scaffolding_energy_force(false);
+        param.energy.energyHarmonicBond = scaffoldingEnergyTotal
+                                        - param.energy.energyGagScaffolding
+                                        - param.energy.energyIdealizedProteinLattice;
         param.energy.calculateTotalEnergy();
     }
 

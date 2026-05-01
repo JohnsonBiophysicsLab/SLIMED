@@ -26,6 +26,8 @@
 #include <sstream>
 #include <string>
 #include <stdexcept>
+#include <array>
+#include <unordered_map>
 #include <omp.h>
 #include <algorithm>
 // model setup
@@ -51,6 +53,66 @@ using namespace std;
 class Mesh
 {
 public:
+    struct GagReactionTarget
+    {
+        std::string interface1;
+        std::string interface2;
+        double sigma = 0.0;
+        std::array<double, 5> assocAngles = {{0.0, 0.0, 0.0, 0.0, 0.0}};
+    };
+
+    struct GagBond
+    {
+        int point1 = -1;
+        int point2 = -1;
+        std::string interface1;
+        std::string interface2;
+        double expectedLength = 0.0;
+        double thetaAtPoint1 = 0.0;
+        double thetaAtPoint2 = 0.0;
+        double expectedPhi = 0.0;
+        double expectedOmega = 0.0;
+    };
+
+    struct GagSubunit
+    {
+        int pointIndex = -1;
+        int moleculeId = -1;
+        Matrix rotation = Matrix(3, 3, true);
+        std::unordered_map<std::string, Matrix> localInterfaces;
+        Matrix localReferenceVector = Matrix(3, 1);
+        bool hasReferenceVector = false;
+    };
+
+    struct GagInteraction
+    {
+        int subunit1 = -1;
+        int subunit2 = -1;
+        std::string interface1;
+        std::string interface2;
+        double expectedSigma = 0.0;
+        std::array<double, 5> assocAngles = {{0.0, 0.0, 0.0, 0.0, 0.0}};
+    };
+
+    struct GagAngle
+    {
+        int point1 = -1;
+        int point2 = -1;
+        int point3 = -1;
+        double expectedAngle = 0.0;
+    };
+
+    struct GagTorsion
+    {
+        int point1 = -1;
+        int point2 = -1;
+        int point3 = -1;
+        int point4 = -1;
+        double expectedDihedral = 0.0;
+        double expectedPhi = 0.0;
+        double expectedOmega = 0.0;
+    };
+
     std::vector<Vertex> vertices; ///< Vector to store all vertices in the mesh
     std::vector<Face> faces;      ///< Vector to store all faces in the mesh
     Param& param;                  ///< Object of the Param class containing all necessary parameters for building the Mesh object
@@ -58,6 +120,14 @@ public:
     Matrix centerScaffoldingSphere; ///< Center of the scaffolding cap sphere
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
+    std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold
+    bool gagScaffoldingTopologyInitialized = false; ///< Whether Gag-specific reference geometry has been initialized
+    std::vector<GagBond> gagBonds; ///< Gag-specific COM bond list
+    std::vector<GagAngle> gagAngles; ///< Gag-specific COM angle list
+    std::vector<GagTorsion> gagTorsions; ///< Gag-specific COM torsion list
+    std::vector<GagSubunit> gagSubunits; ///< Gag rigid subunits whose COMs are the scaffolding points
+    std::vector<GagInteraction> gagInteractions; ///< Gag pair interactions defined on rigid subunits
+    Matrix gagInitialAlignmentRotation = Matrix(3, 3, true); ///< Initial lattice-to-membrane alignment rotation
 
     // New members... for halfedge mesh
     //std::vector<Edge> edges; ///< Vector to store all edges in the mesh
@@ -540,6 +610,61 @@ public:
     double calculate_scaffolding_energy_force(bool doLocalSearch);
 
     /**
+     * @brief Initializes the Gag-specific reference geometry from the selected complex file.
+     *
+     * @return true if the topology was successfully initialized
+     * @return false otherwise
+     */
+    bool initialize_gag_scaffolding_topology();
+
+    /**
+     * @brief Orients the imported scaffold COM cloud so its best-fit plane is parallel to the membrane plane.
+     */
+    bool orient_scaffolding_plane_to_membrane();
+
+    /**
+     * @brief Calculates the internal Gag scaffold energy for the current COM positions.
+     *
+     * @return double The internal Gag scaffold energy.
+     */
+    double calculate_gag_scaffolding_internal_energy() const;
+
+    /**
+     * @brief Calculates the internal Gag scaffold energy for an arbitrary set of COM positions.
+     *
+     * @param scaffoldingPoints The scaffold COM positions to evaluate.
+     * @return double The internal Gag scaffold energy.
+     */
+    double calculate_gag_scaffolding_internal_energy(const std::vector<Matrix> &scaffoldingPoints) const;
+
+    /**
+     * @brief Calculates the internal Gag scaffold energy for arbitrary COM positions and rigid-subunit orientations.
+     *
+     * @param scaffoldingPoints The scaffold COM positions to evaluate.
+     * @param subunits The rigid-subunit states to evaluate.
+     * @return double The internal Gag scaffold energy.
+     */
+    double calculate_gag_scaffolding_internal_energy(const std::vector<Matrix> &scaffoldingPoints,
+                                                     const std::vector<GagSubunit> &subunits) const;
+
+    /**
+     * @brief Computes per-point Gag scaffold forces using finite differences on the internal energy.
+     *
+     * @return std::vector<Matrix> The negative energy gradient on each scaffold point.
+     */
+    std::vector<Matrix> calculate_gag_scaffolding_forces_fd() const;
+
+    /**
+     * @brief Computes rigid-subunit COM translation forces from the Gag scaffold energy.
+     */
+    std::vector<Matrix> calculate_gag_subunit_translation_forces_fd();
+
+    /**
+     * @brief Computes rigid-subunit rotational torques from the Gag scaffold energy.
+     */
+    std::vector<Matrix> calculate_gag_subunit_rotation_torques_fd();
+
+    /**
      * @brief Propagate the scaffolding based on energy and force calculated from
      * calculate_scaffolding_energy_force(bool doLocalSearch).
      * 
@@ -547,6 +672,14 @@ public:
      * @return false 
      */
     bool propagate_scaffolding();
+
+    /**
+     * @brief Pre-relaxes the Gag scaffold using only internal Gag energy before membrane coupling is initialized.
+     *
+     * @return true if a pre-relaxation stage was executed
+     * @return false otherwise
+     */
+    bool pre_relax_gag_scaffolding();
 
     // io
 
@@ -570,6 +703,13 @@ public:
      * @param outfile_name The name of the output csv file
      */
     void write_vertices_csv_with_type(const std::string &outfile_name);
+
+    /**
+     * @brief Writes the current Gag scaffold state in a selected-complex style .dat layout.
+     *
+     * @param outfile_name The name of the output .dat file
+     */
+    void write_gag_scaffolding_state_dat(const std::string &outfile_name) const;
 
     /**
      * @brief Overrides the operator << in ostream.

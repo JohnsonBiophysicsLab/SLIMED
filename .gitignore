@@ -39,3 +39,19 @@
 
 # debug information files
 *.dwo
+vertex0.csv
+vertex100.csv
+vertex_begin.csv
+vertexfinal.csv
+gag_scaffold_0.dat
+COM.csv
+COM_445.csv
+EnergyForce.csv
+face.csv
+445_artificial_pairs.dat
+445_artificial_pairs_extended.dat
+445_artificial_pairs_extended_v2.dat
+445_crack_repair_stitched.dat
+445_crack_repair_stitched_dense.dat
+.DS_Store
+.vscode/settings.json

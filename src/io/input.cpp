@@ -219,6 +219,90 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("scaffoldingZeroPlaneZ") == 0)
+	{
+		param.scaffoldingZeroPlaneZ = std::stod(variableValueStr);
+		std::cout << "scaffoldingZeroPlaneZ set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("isGagScaffoldingEnergyIncluded") == 0)
+	{
+		param.isGagScaffoldingEnergyIncluded = (variableValueStr.compare("true") == 0);
+		std::cout << "GAG SCAFFOLDING ENERGY included : " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagReferenceStateFileName") == 0)
+	{
+		param.gagReferenceStateFileName = variableValueStr;
+		std::cout << "gagReferenceStateFileName set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagReactionFileName") == 0)
+	{
+		param.gagReactionFileName = variableValueStr;
+		std::cout << "gagReactionFileName set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("isIdealizedProteinLatticeEnergyIncluded") == 0)
+	{
+		param.isIdealizedProteinLatticeEnergyIncluded = (variableValueStr.compare("true") == 0);
+		std::cout << "IDEALIZED PROTEIN LATTICE ENERGY included : " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("idealizedProteinLatticeFileName") == 0)
+	{
+		param.idealizedProteinLatticeFileName = variableValueStr;
+		std::cout << "idealizedProteinLatticeFileName set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagKsigma") == 0)
+	{
+		param.gagKsigma = std::stod(variableValueStr);
+		std::cout << "gagKsigma set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagKtheta") == 0)
+	{
+		param.gagKtheta = std::stod(variableValueStr);
+		std::cout << "gagKtheta set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagKphi") == 0)
+	{
+		param.gagKphi = std::stod(variableValueStr);
+		std::cout << "gagKphi set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagKomega") == 0)
+	{
+		param.gagKomega = std::stod(variableValueStr);
+		std::cout << "gagKomega set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagFiniteDifferenceStep") == 0)
+	{
+		param.gagFiniteDifferenceStep = std::stod(variableValueStr);
+		std::cout << "gagFiniteDifferenceStep set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagPropagationStepSize") == 0)
+	{
+		param.gagPropagationStepSize = std::stod(variableValueStr);
+		std::cout << "gagPropagationStepSize set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gagPreRelaxSteps") == 0)
+	{
+		param.gagPreRelaxSteps = std::stoi(variableValueStr);
+		std::cout << "gagPreRelaxSteps set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("propagateScaffoldingInterv") == 0)
 	{
 		param.propagateScaffoldingInterv = std::stoi(variableValueStr);

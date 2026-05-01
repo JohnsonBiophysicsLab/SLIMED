@@ -49,6 +49,12 @@ void run_flat(std::string param_filename)
     { 
         // read scaffolding file
         mesh.param.scaffoldingPoints = import_scaffolding_mesh(mesh.param.scaffoldingFileName);
+        if (mesh.param.isGagScaffoldingEnergyIncluded ||
+            mesh.param.isIdealizedProteinLatticeEnergyIncluded)
+        {
+            mesh.orient_scaffolding_plane_to_membrane();
+            mesh.pre_relax_gag_scaffolding();
+        }
         // move spline points upwards until the lower boundary is approximately z=0
         mesh.move_vertices_based_on_scaffolding(false);
         // find closest vertex point and save in vector
@@ -140,8 +146,9 @@ void run_flat(std::string param_filename)
         record.add(mesh.param.area, mesh.param.energy, mesh.calculate_mean_force());
         
         // Update the reference if energy or force is not changing signficantly
-        if (abs(record.energyVec[model.iteration].energyTotal - record.energyVec[model.iteration - 1].energyTotal) < 1e-3 ||
-            abs(record.meanForce[model.iteration] - record.meanForce[model.iteration - 1]) < 1e-3)
+        if (model.iteration > 0 &&
+            (abs(record.energyVec[model.iteration].energyTotal - record.energyVec[model.iteration - 1].energyTotal) < 1e-3 ||
+             abs(record.meanForce[model.iteration] - record.meanForce[model.iteration - 1]) < 1e-3))
         {
             mesh.update_reference_coord_from_previous_coord();
             std::cout << "[main()] Small energy or force difference. Updated reference structure." << std::endl;
@@ -160,6 +167,11 @@ void run_flat(std::string param_filename)
         if (model.iteration % 10000 == 0)
         {
             write_vertex_data_to_csv(model.mesh, model.iteration);
+            if (mesh.param.isGagScaffoldingEnergyIncluded ||
+                mesh.param.isIdealizedProteinLatticeEnergyIncluded)
+            {
+                mesh.write_gag_scaffolding_state_dat("gag_scaffold_" + std::to_string(model.iteration) + ".dat");
+            }
         }
         model.iteration++;
     }
@@ -176,4 +188,9 @@ void run_flat(std::string param_filename)
 
     // Output the final structure
     write_final_vertex_data_to_csv(mesh);
+    if (mesh.param.isGagScaffoldingEnergyIncluded ||
+        mesh.param.isIdealizedProteinLatticeEnergyIncluded)
+    {
+        mesh.write_gag_scaffolding_state_dat("gag_scaffold_final.dat");
+    }
 }

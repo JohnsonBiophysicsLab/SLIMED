@@ -193,7 +193,20 @@ struct Param
     double splinePointsZcoordScaling = 0.0;                     // for z scaling
     double lbond = 9.0;                                          ///< Harminc bond length in nm
     double relaxLengthRatioApproximation = 1.0;                  ///< ratio of relax length to cap length approximation
+    double scaffoldingZeroPlaneZ = 0.0;                          ///< Height of the flat membrane plane around the Gag cap
     std::string scaffoldingFileName = "";
+    bool isGagScaffoldingEnergyIncluded = false;                 ///< Whether to include Gag-specific internal scaffold energy
+    std::string gagReferenceStateFileName = "";                  ///< Extracted selected/json/*.dat file used as Gag reference geometry
+    std::string gagReactionFileName = "";                        ///< NERDSS .inp file used to identify Gag reaction blocks
+    bool isIdealizedProteinLatticeEnergyIncluded = false;        ///< Whether to include idealized per-instance protein lattice energy
+    std::string idealizedProteinLatticeFileName = "";            ///< JSON / .dat file containing the initialized idealized lattice state
+    double gagKsigma = 0.0;                                      ///< Spring constant for COM-COM bond length term
+    double gagKtheta = 0.0;                                      ///< Spring constant for COM-COM bond angle term
+    double gagKphi = 0.0;                                        ///< Spring constant for COM-graph torsion term mapped from phi
+    double gagKomega = 0.0;                                      ///< Spring constant for COM-graph torsion term mapped from omega
+    double gagFiniteDifferenceStep = 1.0e-4;                     ///< Step size used for scaffold finite-difference gradients
+    double gagPropagationStepSize = 1.0e-6;                      ///< Step size used when propagating the scaffold with Gag forces
+    int gagPreRelaxSteps = 200;                                  ///< Number of Gag-only pre-relaxation steps before membrane coupling
     
 
     // dynamics

@@ -66,11 +66,28 @@ sigma = 0.0						# 2*sigma is the length scale of decaying spontaneous curvature
 ## Scaffolding Mode
 ############################################
 
-isEnergyHarmonicBondIncluded = true  # true to enable harmonic bound energy for scaffolding
-scaffoldingFileName = COM.csv        # spline point file for calculation of spline energy
+isEnergyHarmonicBondIncluded = true
+scaffoldingFileName = /Users/yueying/Workspace/mc_mesh_a25_b25.csv
+
+isGagScaffoldingEnergyIncluded = false
+gagReferenceStateFileName = /Users/yueying/Workspace/SLIMED/445_crack_repair_stitched_dense.dat
+gagReactionFileName = /Users/yueying/Downloads/parms7.inp
+
+isIdealizedProteinLatticeEnergyIncluded = true
+idealizedProteinLatticeFileName = /private/tmp/mc_mesh_a25_b25_binding.json
+
+gagKsigma = 1000.0
+gagKtheta = 1000.0
+gagKphi = 1000.0
+gagKomega = 1000.0
+gagFiniteDifferenceStep = 5e-4
+gagPropagationStepSize = 5e-5
+gagPreRelaxSteps = 0
+
 relaxLengthRatioApproximation = 1.0  # ratio of relax length to cap length approximation
-propagateScaffoldingInterv = 7;      # Iteration interval for repositioning scaffolding based on energy and force
-propagateScaffoldingNstep = 100;     # Number of steps every time propagating scaffolding
+scaffoldingZeroPlaneZ = 45.0         # height of the flat membrane plane around the Gag cap
+propagateScaffoldingInterv = 50       # Iteration interval for repositioning scaffolding based on energy and force
+propagateScaffoldingNstep = 10      # Number of steps every time propagating scaffolding
 
 ############################################
 ## Developer options

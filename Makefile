@@ -48,6 +48,33 @@ SDIR   = src
 EPDIR  = EXE_PAR
 ECDIR = EXE_CLUSTER
 
+# Detect Operating System
+UNAME_S := $(shell uname -s)
+
+# Default OpenMP settings (Ubuntu/Linux)
+OMP_INC   = 
+OMP_LIB   = 
+OMP_FLAGS = -fopenmp
+
+# MacOS compatibility
+ifeq ($(UNAME_S), Darwin)
+    # Use Homebrew GCC (which supports -fopenmp natively)
+    CC      = g++-15
+    CXX     = g++-15
+    OMP_FLAGS = -fopenmp
+
+    # Standard OMP paths
+    # Remove -Xclang or explicit Homebrew libomp paths for this setup
+    OMP_INC   = 
+    OMP_LIB   = 
+    
+    # 2. Force the compiler to use the correct C++ standard library and architecture
+    # This usually fixes the "Undefined symbols" for std::string/ostream
+    #CXXFLAGS += -stdlib=libc++ -arch arm64
+    
+endif
+
+
 # Add test to path if enabled
 ifeq (test,$(MAKECMDGOALS))
 	VPATH += tests
@@ -95,6 +122,9 @@ endif
 
 #               EXECUTABLE SETUP for serial, MPI, OpenMP (omp), cluster
 #
+INCS    = $(shell gsl-config --cflags) -Iinclude -Iinclude/*
+LIBS     = $(shell gsl-config --libs)
+
 ifeq (serial,$(MAKECMDGOALS))
 	_EXEC = continuum_membrane
 endif
@@ -109,9 +139,11 @@ ifeq (mpi,$(MAKECMDGOALS))
 endif
 
 ifeq (omp,$(MAKECMDGOALS))
-	_EXEC  = continuum_membrane
-         DEFS  = -DOMP
-         PLANG = -fopenmp
+    _EXEC  = continuum_membrane
+    DEFS   = -DOMP
+    PLANG  = $(OMP_FLAGS)
+    INCS  += $(OMP_INC)
+    LIBS  += $(OMP_LIB)
 endif
 
 ifeq (multi,$(MAKECMDGOALS))
@@ -119,9 +151,11 @@ ifeq (multi,$(MAKECMDGOALS))
 endif
 
 ifeq (dyna_omp,$(MAKECMDGOALS))
-	_EXEC = membrane_dynamics
-		 DEFS  = -DOMP
-		 PLANG = -fopenmp
+    _EXEC = membrane_dynamics
+    DEFS  = -DOMP
+    PLANG = $(OMP_FLAGS)
+    INCS += $(OMP_INC)
+    LIBS += $(OMP_LIB)
 endif
 
 ifeq (dyna_multi,$(MAKECMDGOALS))
@@ -143,8 +177,7 @@ OS    := $(shell uname)
 INTEL  = $(shell type icpc  >/dev/null 2>&1; echo $$?)
 GCC    = $(shell type g++   >/dev/null 2>&1; echo $$?)
 
-INCS    = $(shell gsl-config --cflags) -Iinclude -Iinclude/*
-LIBS     = $(shell gsl-config --libs)
+
 
 # Add pthread to library if multithreading (embarrassingly parallel) is needed
 ifeq (multi,$(MAKECMDGOALS))
@@ -164,25 +197,25 @@ endif
 
 #---------------COMPILER SETUP
 
-#               comment out next statement to allow profiling with gprof
-override PROF   = 
+# Only run this logic if NOT on Darwin (macOS)
+ifneq ($(UNAME_S), Darwin)
+    ifeq ($(GCC),0)
+        CC      = g++
+        MPCC    = mpicxx
+        CFLAGS  = -O3
+        PROF    = -pg -g
+    endif
 
-ifeq ($(GCC),0)          # Will use GCC. (See Intel below.)
-	CC      = g++
-	MPCC    = mpicxx
-	CFLAGS  = -O3
-	PROF    = -pg -g
-#	MPCFLAG = -I /cm/shared/mpi/openmpi/2.1/intel/17.0/include
+    ifeq ($(INTEL),0)
+        CC      = icpc
+        MPCC    = mpicxx
+        CFLAGS  = -O3
+        PROF    = -pg -g
+    endif
 endif
 
-
-ifeq ($(INTEL),0)        # Will use Intel, overrides GCC if both present.
-	CC      = icpc
-	MPCC    = mpicxx
-	CFLAGS  = -O3
-	PROF    = -pg -g
-endif
-
+# Ensure CXX always follows CC
+CXX = $(CC)
 
 #---------------OBJECT FILES
 
@@ -211,14 +244,14 @@ $(MAKECMDGOALS):$(EXEC)
 	@echo "Finished making (re-)building $(MAKECMDGOALS) version, $(EXEC)."
 
 $(EXEC): $(OBJS) $(TEST_OBJ)
-	@echo "Compiling $(EDIR)/$(@F).cpp"
-	$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) $(LDFLAGS) -o $@ $(EDIR)/$(@F).cpp $(OBJS) $(LIBS) $(PLANG)
-	@echo "------------"
+	@echo "Linking $@"
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) $(LDFLAGS) -o $@ $(EDIR)/$(@F).cpp $(OBJS) $(PLANG) $(LIBS)
+
 
 obj/%.o: %.cpp
 	@echo "Compiling $< at $(<F) $(<D)"
-	$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) $(LDFLAGS) -c $< -o $@ $(PLANG) $(DEFS)
-	@echo "------------"
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCS) $(PROF) -c $< -o $@ $(PLANG) $(DEFS)
+
 
 clean:
 	rm -rf $(ODIR) bin

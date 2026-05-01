@@ -412,6 +412,11 @@ void get_unit_vector(Matrix &m)
 {
     // Compute the magntidue of the input vector
     double mag = m.calculate_norm();
+    if (mag == 0.0)
+    {
+        m.set_all(0.0);
+        return;
+    }
 
     // Compute the unit vector and store it in m
     gsl_matrix_scale(m.mat, 1.0 / mag);
@@ -437,6 +442,11 @@ void get_unit_vector(const Matrix &m1, Matrix &m_unit)
 
     // Compute the unit vector and store it in m_unit
     gsl_matrix_memcpy(m_unit.mat, m1.mat);
+    if (mag == 0.0)
+    {
+        m_unit.set_all(0.0);
+        return;
+    }
     gsl_matrix_scale(m_unit.mat, 1.0 / mag);
 }
 

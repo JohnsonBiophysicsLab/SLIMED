@@ -58,6 +58,11 @@ void Record::set(const int iteration, const double currentArea, const Energy &cu
  */
 void Record::print_iteration(const int iteration)
 {
-    std::cout << "[Record::print_iteration()] Step: " << iteration << ". energy= " << energyVec[iteration].energyTotal << ". meanF= "
-              << meanForce[iteration] << ". area= " << areaTotal[iteration] << std::endl;
+    std::cout << "[Record::print_iteration()] Step: " << iteration
+              << ". energy= " << energyVec[iteration].energyTotal
+              << ". eHBond= " << energyVec[iteration].energyHarmonicBond
+              << ". eGag= " << energyVec[iteration].energyGagScaffolding
+              << ". eIdeal= " << energyVec[iteration].energyIdealizedProteinLattice
+              << ". meanF= " << meanForce[iteration]
+              << ". area= " << areaTotal[iteration] << std::endl;
 }

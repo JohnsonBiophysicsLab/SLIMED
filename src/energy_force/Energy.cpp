@@ -8,6 +8,8 @@ Energy::Energy():
     energyTilt(0.0),
     energyRegularization(0.0),
     energyHarmonicBond(0.0),
+    energyGagScaffolding(0.0),
+    energyIdealizedProteinLattice(0.0),
     energyTotal(0.0)
 {
 }
@@ -20,12 +22,16 @@ Energy::Energy(const Energy& energy):
     energyTilt(energy.energyTilt),
     energyRegularization(energy.energyRegularization),
     energyHarmonicBond(energy.energyHarmonicBond),
+    energyGagScaffolding(energy.energyGagScaffolding),
+    energyIdealizedProteinLattice(energy.energyIdealizedProteinLattice),
     energyTotal(energy.energyTotal)
 {
 }
 
 double Energy::calculateTotalEnergy() {
-    energyTotal = energyCurvature + energyArea + energyVolume + energyThickness + energyTilt + energyRegularization + energyHarmonicBond;
+    energyTotal = energyCurvature + energyArea + energyVolume + energyThickness
+                + energyTilt + energyRegularization + energyHarmonicBond
+                + energyGagScaffolding + energyIdealizedProteinLattice;
     return energyTotal;
 }
 
@@ -42,6 +48,8 @@ Energy& operator+=(Energy& e1, const Energy& e2) {
     e1.energyTilt += e2.energyTilt;
     e1.energyRegularization += e2.energyRegularization;
     e1.energyHarmonicBond += e2.energyHarmonicBond;
+    e1.energyGagScaffolding += e2.energyGagScaffolding;
+    e1.energyIdealizedProteinLattice += e2.energyIdealizedProteinLattice;
     e1.energyTotal += e2.energyTotal;
 
     return e1;
