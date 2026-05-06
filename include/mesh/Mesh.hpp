@@ -588,6 +588,12 @@ public:
     void set_scaffolding_vertices_correspondence();
 
     /**
+     * @brief Sets insertion spontaneous curvature on faces adjacent to
+     * scaffold-bonded membrane vertices.
+     */
+    void set_scaffolding_insertion_curvature();
+
+    /**
      *
      * @brief Calculates the energy and force due to the harmonic bond between scaffold points and membrane vertices.
      * @param doLocalSearch Flag indicating whether or not to perform a local search for each vertex (default=false).

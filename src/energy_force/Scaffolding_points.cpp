@@ -989,6 +989,34 @@ void Mesh::set_scaffolding_vertices_correspondence()
         }
     }
     param.scaffoldingPoints_correspondingVertexIndex = scaffoldingPoints_correspondingVertexIndex;
+    set_scaffolding_insertion_curvature();
+}
+
+void Mesh::set_scaffolding_insertion_curvature()
+{
+    set_spontaneous_curvature_for_face(param.insertCurv, param.spontCurv);
+
+    if (!param.isEnergyHarmonicBondIncluded)
+    {
+        return;
+    }
+
+    for (int vertexIndex : param.scaffoldingPoints_correspondingVertexIndex)
+    {
+        if (vertexIndex < 0 || vertexIndex >= vertices.size())
+        {
+            continue;
+        }
+
+        for (int faceIndex : vertices[vertexIndex].adjacentFaces)
+        {
+            if (faceIndex < 0 || faceIndex >= faces.size() || faces[faceIndex].isGhost)
+            {
+                continue;
+            }
+            faces[faceIndex].spontCurvature = param.insertCurv;
+        }
+    }
 }
 
 /*

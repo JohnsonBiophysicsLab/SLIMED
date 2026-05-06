@@ -132,8 +132,9 @@ void Mesh::set_spontaneous_curvature_for_face(const double &insertCurv, const do
     // for all faces; set spontaneous curvature to insertion curvature if
     // they are insertion patch; otherwise set to global spontaneous curvature
 #pragma omp parallel for
-    for (Face face : faces)
+    for (int iFace = 0; iFace < faces.size(); iFace++)
     {
+        Face& face = faces[iFace];
         // changed to isGhost - Y Ying
         if (face.isGhost)
         {
@@ -316,4 +317,3 @@ void Mesh::sum_membrane_area_and_volume(double &area, double &volume)
         }
     }
 }
-
