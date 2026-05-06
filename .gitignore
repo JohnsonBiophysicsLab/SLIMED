@@ -55,3 +55,4 @@ face.csv
 445_crack_repair_stitched_dense.dat
 .DS_Store
 .vscode/settings.json
+*.pyc
