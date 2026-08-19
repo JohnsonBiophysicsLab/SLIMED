@@ -23,7 +23,7 @@
   <!-- C++ standard -->
   <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-%E2%89%A514-blue">
   <!-- CMake minimum -->
-  <img alt="Make" src="https://img.shields.io/badge/Make-%E2%89%A53.79-informational">
+  <img alt="CMake" src="https://img.shields.io/badge/CMake-%E2%89%A53.16-informational">
   <!-- Package managers (optional) -->
   <!-- img alt="Conan" src="https://img.shields.io/badge/Conan-ready-0ea5e9">
   <!-- img alt="vcpkg" src="https://img.shields.io/badge/vcpkg-port-22c55e">
@@ -34,7 +34,7 @@
 </p>
 
 
-SLIMED (Subdivision-limit membrane dynamics) model is established with triangular mesh and optimized using an energy function. The installation instructions and dependencies are provided in README.rst. The first step requires setting up the triangular mesh model to approximate the membrane's geometry applying Loop's subdivision method. The lowest energy search model minimizes the membrane energy evaluated by the energy function. The Brownian Dynamics model simulates the moving membrane's surface with a displacement equation, performed on the limit surface with the help of a conversion matrix. Three types of boundary conditions are available: Fixed, Periodic, and Free, all defined for "ghost vertices" on the boundary of the triangular mesh.
+SLIMED (Subdivision-limit membrane dynamics) model is established with triangular mesh and optimized using an energy function. The installation instructions and dependencies are provided in the [Installation](#installation) section below. The first step requires setting up the triangular mesh model to approximate the membrane's geometry applying Loop's subdivision method. The lowest energy search model minimizes the membrane energy evaluated by the energy function. The Brownian Dynamics model simulates the moving membrane's surface with a displacement equation, performed on the limit surface with the help of a conversion matrix. Three types of boundary conditions are available: Fixed, Periodic, and Free, all defined for "ghost vertices" on the boundary of the triangular mesh.
 
 ## Installation
 To install the model, follow these steps:
@@ -49,8 +49,11 @@ git clone https://github.com/mjohn218/continuum_membrane.git
 
 This project depends on:
 
+* **CMake** 3.16 or newer
 * **GSL** (GNU Scientific Library)
-* **OpenMP** (only for the `omp`/parallel build)
+* **OpenMP** -- required for the parallel build; its headers are needed even for
+  a serial build, because several headers include `<omp.h>` unconditionally
+* **GoogleTest** (optional, for the unit tests)
 
 ### Ubuntu (apt)
 
@@ -64,8 +67,8 @@ sudo apt-get install -y libgsl-dev
 # Compilers
 sudo apt-get install -y build-essential clang
 
-# Build system (only needed when building from a git checkout)
-sudo apt-get install -y autoconf automake
+# Build system
+sudo apt-get install -y cmake
 
 # Unit tests (optional)
 sudo apt-get install -y libgtest-dev
@@ -84,8 +87,8 @@ sudo apt-get install -y libomp-dev
 # GSL
 brew install gsl
 
-# Build system (only needed when building from a git checkout)
-brew install autoconf automake
+# Build system
+brew install cmake
 
 # Unit tests (optional)
 brew install googletest
@@ -105,40 +108,53 @@ brew --prefix libomp
 
 ## Compile and Run
 
-SLIMED uses a GNU Autotools (autoconf + automake) build. From a git checkout,
-generate `configure` once, then use the usual three-step incantation:
+SLIMED builds with CMake. Configure once into a build directory, then build:
 
 ```console
-./autogen.sh
-mkdir -p build && cd build
-../configure
-make -j
+cmake -S . -B build
+cmake --build build -j8
 ```
 
-`configure` locates GSL, picks the C++14 flag your compiler wants, and reports
-what it found. Release tarballs from `make dist` already ship `configure`, so
-`./autogen.sh` is only for git checkouts and after editing `configure.ac` or
-`Makefile.am`.
+`cmake` locates GSL, sets the C++14 standard, resolves OpenMP, and prints a
+summary of what it found. The executables are written to `build/bin/`.
 
-Building in a separate `build/` directory is recommended but optional; running
-`../configure` from the top of the source tree works too.
+To rebuild after editing code, only the second command is needed:
+
+```console
+cmake --build build -j8
+```
+
+The configure step re-runs itself when `CMakeLists.txt` changes, and sources are
+globbed with `CONFIGURE_DEPENDS`, so adding or removing a `.cpp` under `src/` is
+picked up automatically.
 
 ### Build options
 
-| Option | Effect |
-| --- | --- |
-| `--enable-openmp` | Compile the OpenMP code paths (`-DOMP`). Off by default. |
-| `--enable-coverage` | Instrument for `gcov`/`lcov`. Off by default. |
-| `--with-gsl-prefix=DIR` | Look for GSL under `DIR` instead of asking `gsl-config`. |
-| `--with-gtest[=DIR]` | Force the unit tests on, optionally from a given prefix. Auto-detected by default. |
-| `--prefix=DIR` | Where `make install` puts the programs. Defaults to `/usr/local`. |
+Options are cached in the build directory, so they are set once rather than on
+every invocation.
 
-Standard variables work as usual: `../configure CXX=g++-15 CXXFLAGS="-O3 -march=native"`.
-When `CXXFLAGS` is not set, SLIMED defaults it to `-O3`.
+| Option | Default | Effect |
+| --- | --- | --- |
+| `SLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
+| `SLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
+| `SLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
+
+Standard CMake variables work as usual:
+
+```console
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native"
+```
+
+`CMAKE_BUILD_TYPE` defaults to `Release` (`-O3`), matching the hand-written
+Makefile. To inspect what a build directory is currently set to:
+
+```console
+cmake -LH -N -B build | grep -A1 SLIMED_
+```
 
 ### The four programs
 
-`make` builds all four; each replaces one goal of the old hand-written Makefile.
+One build produces all four; each replaces one goal of the hand-written Makefile.
 
 | Program | Old target | What it does |
 | --- | --- | --- |
@@ -147,61 +163,120 @@ When `CXXFLAGS` is not set, SLIMED defaults it to `-O3`.
 | `membrane_dynamics` | `make dyna` / `make dyna_omp` | Membrane Brownian dynamics |
 | `membrane_dynamics_multithreading` | `make dyna_multi` | Same, embarrassingly parallel |
 
-Serial and OpenMP builds are no longer separate targets: OpenMP is a
-configure-time choice, so `../configure --enable-openmp && make` produces the
-OpenMP `continuum_membrane` and a plain `../configure && make` produces the
-serial one.
+Serial and OpenMP are no longer separate targets. OpenMP is a configure-time
+choice, so the same program name covers both:
 
 ```console
-# OpenMP
-../configure --enable-openmp && make -j
-./continuum_membrane
-
 # Serial
-../configure && make -j
-./continuum_membrane
+cmake -S . -B build
+cmake --build build -j8
 
-# Brownian dynamics
-./membrane_dynamics
+# OpenMP
+cmake -S . -B build-omp -DSLIMED_ENABLE_OPENMP=ON
+cmake --build build-omp -j8
 ```
 
-On macOS, Apple Clang has no bundled OpenMP runtime. Either point the build at
-Homebrew GCC or supply the `libomp` paths:
+Flipping `SLIMED_ENABLE_OPENMP` on an existing build directory also works, but
+it recompiles everything -- keeping two build directories avoids that.
+
+To build a single program instead of all four:
 
 ```console
-../configure --enable-openmp CXX=g++-15
-# or
-../configure --enable-openmp \
-    CPPFLAGS="-I$(brew --prefix libomp)/include" \
-    LDFLAGS="-L$(brew --prefix libomp)/lib"
+cmake --build build --target membrane_dynamics
 ```
 
-### Tests, install, and packaging
+### Running the programs
+
+The programs read `input.params` from the **current working directory**, so run
+them from the top of the source tree rather than from the build directory:
 
 ```console
-make check              # build and run the GoogleTest suite
-make install            # install the programs under --prefix
-make dist               # roll a slimed-<version>.tar.gz release tarball
-make distcheck          # prove that tarball configures, builds, and tests clean
-make coverage-html      # after ../configure --enable-coverage; writes coverage/index.html
+./build/bin/continuum_membrane
+./build/bin/membrane_dynamics
 ```
 
-`make check` is skipped with a warning if GoogleTest is not installed; the
-simulation programs build either way.
+Running them from inside `build/bin` prints `There was a problem opening the
+parameter file!` and silently falls back to built-in defaults.
+
+### OpenMP notes
+
+`-fopenmp` and `-DOMP` are always enabled together and never separately. Most
+`#pragma omp parallel for` directives in `src/` are unguarded, but the loop
+bodies that need a thread id read it from `omp_get_thread_num()` only under
+`#ifdef OMP` and otherwise hard-code `0`, so enabling the flag without the
+define would race on the per-thread accumulation buffers.
+
+Serial builds still need `omp.h` on the include path, because `Mesh.hpp`,
+`Dynamics.hpp`, `Force.hpp` and `Gauss_quadrature.hpp` include it
+unconditionally. CMake attaches the OpenMP include directories without the
+`-fopenmp` flag to cover this.
+
+On macOS, Apple Clang has no bundled OpenMP runtime and Homebrew keeps `libomp`
+keg-only. CMake retries a failed probe against `brew --prefix libomp`
+automatically, so `brew install libomp` is normally all that is required.
+Homebrew GCC also works for the simulation programs:
+
+```console
+cmake -S . -B build-gcc -DCMAKE_CXX_COMPILER=g++-15
+```
+
+Note that the compiler cannot be changed in an existing build directory --
+delete it and configure again. Under Homebrew GCC the unit tests will not link,
+because Homebrew's `libgtest.a` is built against libc++ while GCC uses
+libstdc++; use the default Apple Clang when you need the tests.
+
+### Tests
+
+```console
+ctest --test-dir build --output-on-failure
+```
+
+Each GoogleTest case is registered with CTest individually. Several tests open
+fixture files by paths relative to the working directory, so CTest runs
+`test_main` from the top of the source tree automatically. The binary can also
+be run directly, from the source root:
+
+```console
+./build/bin/test_main
+```
+
+If GoogleTest is not installed, CMake prints a warning and skips the test
+target; the simulation programs build either way. Configure with
+`-DSLIMED_BUILD_TESTS=OFF` to silence the warning.
+
+For coverage:
+
+```console
+cmake -S . -B build-cov -DSLIMED_ENABLE_COVERAGE=ON
+cmake --build build-cov -j8
+ctest --test-dir build-cov
+```
+
+`.gcda`/`.gcno` files are left in the build tree for `lcov` or `gcov` to
+collect. There is no packaged `coverage-html` target yet.
+
+### Cleaning
+
+```console
+cmake --build build --target clean   # like "make clean"; keeps the configuration
+rm -rf build                         # full reset, forgets all cached options
+```
 
 ### The previous Makefile
 
-The old hand-written Makefile is still in the tree as `Makefile.legacy` (it had
-to move aside, because `configure` generates `Makefile`). It still works:
+The hand-written Makefile is still in the tree as `Makefile.legacy` and still
+works; CMake neither uses nor interferes with it:
 
 ```console
 make -f Makefile.legacy serial
 ./bin/continuum_membrane
 ```
 
-Its `mpi` target was not carried over to the autotools build: it only added
-`-DMPI`, which no source file tests, and its `MPCC` variable was never used by
-any rule.
+Its `mpi` target is not carried over to the CMake build: it only added `-DMPI`,
+which no source file tests, and its `MPCC` variable was never used by any rule.
+
+There are no `install` or packaging targets in the CMake build yet -- the
+programs are run from the build tree, as they were with the Makefile.
 
 ## Input Parameters
 
