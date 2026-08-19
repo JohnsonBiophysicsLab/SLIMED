@@ -72,15 +72,19 @@ sigma = 0.0						# 2*sigma is the length scale of decaying spontaneous curvature
 ## Scaffolding Mode
 ############################################
 
-isEnergyHarmonicBondIncluded = true
-scaffoldingFileName = /Users/yueying/Workspace/mc_mesh_a25_b25.csv
+# File paths below are resolved relative to the working directory the
+# executable is launched from (the repository root for the shipped defaults).
+# Each file is only opened when its corresponding flag above it is true.
 
-isGagScaffoldingEnergyIncluded = false
-gagReferenceStateFileName = /Users/yueying/Workspace/SLIMED/445_crack_repair_stitched_dense.dat
-gagReactionFileName = /Users/yueying/Downloads/parms7.inp
+isEnergyHarmonicBondIncluded = false   # true to enable harmonic bond energy for scaffolding
+scaffoldingFileName = data/COM.csv     # scaffolding point cloud, one "x,y,z" per line
 
-isIdealizedProteinLatticeEnergyIncluded = true
-idealizedProteinLatticeFileName = /private/tmp/mc_mesh_a25_b25_binding.json
+isGagScaffoldingEnergyIncluded = false # true to enable the Gag scaffolding energy term
+gagReferenceStateFileName =            # NERDSS-extracted .dat reference geometry (required if the flag above is true)
+gagReactionFileName =                  # NERDSS .inp reaction file defining Gag interfaces (required if the flag above is true)
+
+isIdealizedProteinLatticeEnergyIncluded = false  # true to enable the idealized protein lattice energy term
+idealizedProteinLatticeFileName =                # idealized lattice .json/.dat state (required if the flag above is true)
 
 gagKsigma = 1000.0
 gagKtheta = 1000.0
