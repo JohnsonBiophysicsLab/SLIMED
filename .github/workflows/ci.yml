@@ -6,41 +6,64 @@ on:
   pull_request:
     branches: [ main ]
 
+# A superseded push has nothing left to prove; stop paying for its runner.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - name: Install deps (GTest, lcov)
+        uses: ./.github/actions/apt-install
+        with:
+          packages: lcov libgtest-dev cmake pkg-config libgsl-dev
+
+      # Ubuntu ships GoogleTest as sources; build and install them so that
+      # tests/CMakeLists.txt's find_package(GTest) resolves.
+      - name: Build and install GoogleTest
         run: |
-          sudo apt-get update
-          sudo apt-get install -y lcov libgtest-dev cmake pkg-config libgsl-dev
-          # Build GoogleTest (if you vendor it, skip this)
-          sudo apt-get install -y cmake
           sudo cmake -S /usr/src/googletest -B /usr/src/googletest/build
           sudo cmake --build /usr/src/googletest/build --target install
 
-      - name: Build tests with coverage
-        run: |
-          make clean
-          make test COVERAGE=1 CXX=g++
+      - name: Configure with coverage
+        run: cmake -S . -B build -DSLIMED_ENABLE_COVERAGE=ON -DCMAKE_CXX_COMPILER=g++
 
+      - name: Build tests with coverage
+        run: cmake --build build -j"$(nproc)"
+
+      # tests/CMakeLists.txt only warns and returns when GoogleTest is missing,
+      # which would otherwise turn a build with no tests at all into a green run.
       - name: Run tests
-        run: ./bin/test_main
+        run: |
+          ctest --test-dir build -N
+          ctest --test-dir build -N | grep -qE 'Total Tests: [1-9]' || {
+            echo "::error::No tests discovered -- GoogleTest was not found at configure time."
+            exit 1
+          }
+          ctest --test-dir build --output-on-failure -j"$(nproc)"
 
       - name: Generate coverage (LCOV)
         run: |
+          # Pin gcov to the compiler that produced the .gcno files rather than
+          # to a hard-coded version, so a runner image bump cannot desync them.
+          gcov_tool="gcov-$(g++ -dumpversion | cut -d. -f1)"
           lcov --capture \
-               --directory obj --directory bin \
-               --gcov-tool gcov-13 \
+               --directory build \
+               --gcov-tool "$gcov_tool" \
                --rc geninfo_unexecuted_blocks=1 \
-               --ignore-errors empty,mismatch \
+               --ignore-errors empty,mismatch,negative \
                --output-file coverage.raw.info
 
           # Then prune noise (tests and system headers)
           lcov --remove coverage.raw.info '/usr/*' '*/tests/*' \
+               --ignore-errors unused \
                --output-file coverage.info
+          lcov --list coverage.info
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4

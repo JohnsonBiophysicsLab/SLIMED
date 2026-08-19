@@ -1,0 +1,29 @@
+name: apt-install
+description: Install Debian packages, working around the runner's flaky apt mirror.
+
+inputs:
+  packages:
+    description: Space-separated list of packages to install.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        # The runner image lists azure.archive.ubuntu.com first in its mirror
+        # list, and that host intermittently blackholes connections. Left alone,
+        # "apt-get update" stalls with no output and the job sits until the
+        # 6-hour limit. Pinning to the canonical archive and bounding every
+        # retry keeps a bad mirror from hanging the build.
+        if [ -f /etc/apt/apt-mirrors.txt ]; then
+          echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt
+        fi
+        for i in 1 2 3; do
+          sudo timeout 300 apt-get -o Acquire::Retries=3 \
+                                   -o Acquire::http::Timeout=20 \
+                                   -o Acquire::https::Timeout=20 update && break
+          echo "apt-get update failed (attempt $i of 3); retrying"
+          sleep 15
+        done
+        sudo apt-get install -y ${{ inputs.packages }}

@@ -1,0 +1,51 @@
+name: Docs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Only the newest commit's docs are worth publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Doxygen
+        uses: ./.github/actions/apt-install
+        with:
+          packages: doxygen
+
+      # The Doxyfile writes HTML to ./html and also builds LaTeX, which Pages
+      # never serves -- switch that off here rather than editing the Doxyfile.
+      - name: Generate API documentation
+        run: |
+          { cat Doxyfile
+            echo 'GENERATE_LATEX = NO'
+            echo 'PROJECT_NUMBER = ${{ github.sha }}'
+          } | doxygen -
+          test -f html/index.html
+
+      # Serving the artifact directly means no Jekyll pass, so Doxygen's
+      # underscore-prefixed files need no .nojekyll marker.
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: html
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
