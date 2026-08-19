@@ -85,6 +85,7 @@ submit_relax_area_*.sbatch
 # Common simulation outputs at the repository root
 /COM*.csv
 /EnergyForce.csv
+/ElementFaceEnergy.csv
 /face.csv
 /vertex*.csv
 /gag_scaffold_*.dat

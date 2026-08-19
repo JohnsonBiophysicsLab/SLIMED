@@ -458,6 +458,7 @@ void write_element_face_energy_to_csv(const Model &model)
         outfileEFE << face.index << ","
                 << face.energy.energyCurvature << ","
                 << face.energy.energyArea << ","
+                << face.energy.energyRegularization << ","
                 << face.energy.energyTotal << "\n";
     }
     outfileEFE.close();
