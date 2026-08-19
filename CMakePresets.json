@@ -1,0 +1,90 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "serial",
+      "inherits": "base",
+      "displayName": "Serial",
+      "description": "Default build, no OpenMP (was: make serial / make dyna)",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": { "SLIMED_ENABLE_OPENMP": "OFF" }
+    },
+    {
+      "name": "omp",
+      "inherits": "base",
+      "displayName": "OpenMP",
+      "description": "OpenMP build, -fopenmp and -DOMP (was: make omp / make dyna_omp)",
+      "binaryDir": "${sourceDir}/build-omp",
+      "cacheVariables": { "SLIMED_ENABLE_OPENMP": "ON" }
+    },
+    {
+      "name": "coverage",
+      "inherits": "base",
+      "displayName": "Coverage",
+      "description": "Serial build instrumented for gcov/lcov (was: make test COVERAGE=1)",
+      "binaryDir": "${sourceDir}/build-cov",
+      "cacheVariables": {
+        "SLIMED_ENABLE_OPENMP": "OFF",
+        "SLIMED_ENABLE_COVERAGE": "ON"
+      }
+    }
+  ],
+
+  "buildPresets": [
+    { "name": "serial",   "configurePreset": "serial",   "jobs": 0 },
+    { "name": "omp",      "configurePreset": "omp",      "jobs": 0 },
+    { "name": "coverage", "configurePreset": "coverage", "jobs": 0 }
+  ],
+
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true }
+    },
+    { "name": "serial",   "inherits": "base", "configurePreset": "serial" },
+    { "name": "omp",      "inherits": "base", "configurePreset": "omp" },
+    { "name": "coverage", "inherits": "base", "configurePreset": "coverage" }
+  ],
+
+  "workflowPresets": [
+    {
+      "name": "serial",
+      "displayName": "Configure, build and test the serial version",
+      "steps": [
+        { "type": "configure", "name": "serial" },
+        { "type": "build",     "name": "serial" },
+        { "type": "test",      "name": "serial" }
+      ]
+    },
+    {
+      "name": "omp",
+      "displayName": "Configure, build and test the OpenMP version",
+      "steps": [
+        { "type": "configure", "name": "omp" },
+        { "type": "build",     "name": "omp" },
+        { "type": "test",      "name": "omp" }
+      ]
+    },
+    {
+      "name": "coverage",
+      "displayName": "Configure, build and test with coverage instrumentation",
+      "steps": [
+        { "type": "configure", "name": "coverage" },
+        { "type": "build",     "name": "coverage" },
+        { "type": "test",      "name": "coverage" }
+      ]
+    }
+  ]
+}
