@@ -338,12 +338,7 @@ void run_flat(std::string param_filename)
     }
 
     // Output element face energy
-    // write_element_face_energy_to_csv(model);
-    std::cout << "====element face energy====" << std::endl;
-    std::cout << "face index, eb, ea, et" << std::endl;
-    for (Face& face : model.mesh.faces){
-        std::cout << face.index << "," << face.energy.energyCurvature << "," << face.energy.energyArea << "," << face.energy.energyTotal << std::endl;
-    }
+    write_element_face_energy_to_csv(model);
 
     // Output the final structure
     write_final_vertex_data_to_csv(mesh);

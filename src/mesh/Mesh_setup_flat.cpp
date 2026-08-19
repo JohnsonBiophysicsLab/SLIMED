@@ -60,7 +60,10 @@ void Mesh::set_vertices_faces_flat()
         set_axes_division_flat(); // divide axes if not done yet
     }
 
-    std::cout << "[Mesh::param]" << std::endl << param << std::endl;
+    if (param.VERBOSE_MODE)
+    {
+        std::cout << "[Mesh::param]" << std::endl << param << std::endl;
+    }
 
     // half lengths used to shift the membrane around (0, 0, 0)
     double lxHalf = param.nFaceX * param.dFaceX * 0.5; // half of actual initial length in x-dir
