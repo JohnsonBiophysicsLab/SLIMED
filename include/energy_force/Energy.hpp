@@ -13,6 +13,7 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <ostream>
 
 /**
  * @brief This class includes components in calculating energy
