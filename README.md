@@ -106,7 +106,7 @@ brew --prefix llvm
 brew --prefix libomp
 ```
 
-3. Comile with CMake
+## Compile with CMake
 
 SLIMED builds with CMake. Executables are present in the respective `bin` directory.
 
