@@ -108,27 +108,9 @@ brew --prefix libomp
 
 ## Compile and Run
 
-SLIMED builds with CMake. Configure once into a build directory, then build:
+SLIMED builds with CMake. 
 
-```console
-cmake -S . -B build
-cmake --build build -j8
-```
-
-`cmake` locates GSL, sets the C++14 standard, resolves OpenMP, and prints a
-summary of what it found. The executables are written to `build/bin/`.
-
-To rebuild after editing code, only the second command is needed:
-
-```console
-cmake --build build -j8
-```
-
-The configure step re-runs itself when `CMakeLists.txt` changes, and sources are
-globbed with `CONFIGURE_DEPENDS`, so adding or removing a `.cpp` under `src/` is
-picked up automatically.
-
-### Presets (quick way to switch between serial and OpenMP)
+### Presets (quick way to build and switch between serial and OpenMP)
 
 Because serial and OpenMP builds are both used routinely, `CMakePresets.json`
 defines them as named presets, each with its own build directory:
@@ -169,6 +151,28 @@ cmake --list-presets
 Presets require CMake 3.25 or newer. With an older CMake, use the `-D` options
 below instead -- they are exactly what the presets set. For personal presets
 that are not shared, create a `CMakeUserPresets.json`; it is gitignored.
+
+### Configure and build separately
+
+Configure once into a build directory, then build:
+
+```console
+cmake -S . -B build
+cmake --build build -j8
+```
+
+`cmake` locates GSL, sets the C++14 standard, resolves OpenMP, and prints a
+summary of what it found. The executables are written to `build/bin/`.
+
+To rebuild after editing code, only the second command is needed:
+
+```console
+cmake --build build -j8
+```
+
+The configure step re-runs itself when `CMakeLists.txt` changes, and sources are
+globbed with `CONFIGURE_DEPENDS`, so adding or removing a `.cpp` under `src/` is
+picked up automatically.
 
 ### Build options
 
