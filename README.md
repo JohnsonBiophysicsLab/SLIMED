@@ -148,9 +148,9 @@ every invocation.
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `SLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
-| `SLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
-| `SLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
+| `-DSLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
+| `-DSLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
+| `-DSLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
 
 Standard CMake variables work as usual:
 
