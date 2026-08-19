@@ -128,6 +128,48 @@ The configure step re-runs itself when `CMakeLists.txt` changes, and sources are
 globbed with `CONFIGURE_DEPENDS`, so adding or removing a `.cpp` under `src/` is
 picked up automatically.
 
+### Presets (quick way to switch between serial and OpenMP)
+
+Because serial and OpenMP builds are both used routinely, `CMakePresets.json`
+defines them as named presets, each with its own build directory:
+
+| Preset | Build directory | Equivalent to |
+| --- | --- | --- |
+| `serial` | `build/` | `make serial` / `make dyna` |
+| `omp` | `build-omp/` | `make omp` / `make dyna_omp` |
+| `coverage` | `build-cov/` | `make test COVERAGE=1` |
+
+Configure, build and test in one command:
+
+```console
+cmake --workflow --preset omp
+cmake --workflow --preset serial
+```
+
+Or drive the steps separately:
+
+```console
+cmake --preset omp           # configure
+cmake --build --preset omp   # build (all cores)
+ctest --preset omp           # test
+```
+
+Because each preset owns a separate build directory, switching back and forth
+recompiles nothing -- both trees persist side by side. Setting
+`-DSLIMED_ENABLE_OPENMP` on a single build directory works too, but changes the
+`-DOMP` define for every target and so triggers a full rebuild each time you
+flip it.
+
+To list what is available:
+
+```console
+cmake --list-presets
+```
+
+Presets require CMake 3.25 or newer. With an older CMake, use the `-D` options
+below instead -- they are exactly what the presets set. For personal presets
+that are not shared, create a `CMakeUserPresets.json`; it is gitignored.
+
 ### Build options
 
 Options are cached in the build directory, so they are set once rather than on
@@ -175,6 +217,9 @@ cmake --build build -j8
 cmake -S . -B build-omp -DSLIMED_ENABLE_OPENMP=ON
 cmake --build build-omp -j8
 ```
+
+These two are what the `serial` and `omp` presets above do, so
+`cmake --workflow --preset omp` is the shorter equivalent.
 
 Flipping `SLIMED_ENABLE_OPENMP` on an existing build directory also works, but
 it recompiles everything -- keeping two build directories avoids that.
@@ -252,6 +297,8 @@ cmake --build build-cov -j8
 ctest --test-dir build-cov
 ```
 
+or simply `cmake --workflow --preset coverage`.
+
 `.gcda`/`.gcno` files are left in the build tree for `lcov` or `gcov` to
 collect. There is no packaged `coverage-html` target yet.
 
@@ -260,6 +307,7 @@ collect. There is no packaged `coverage-html` target yet.
 ```console
 cmake --build build --target clean   # like "make clean"; keeps the configuration
 rm -rf build                         # full reset, forgets all cached options
+rm -rf build build-omp build-cov     # remove every preset build directory
 ```
 
 ### The previous Makefile

@@ -141,6 +141,12 @@ submit_relax_area_*.sbatch
 # Recommended out-of-tree build directory
 /build/
 
+# Build directories created by the CMake presets (omp, coverage, ...)
+/build-*/
+
+# Personal, machine-local presets -- not shared
+CMakeUserPresets.json
+
 # Program binaries produced at the top of the build tree
 /continuum_membrane
 /continuum_membrane_multithreading
