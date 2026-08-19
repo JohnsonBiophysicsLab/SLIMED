@@ -64,6 +64,12 @@ sudo apt-get install -y libgsl-dev
 # Compilers
 sudo apt-get install -y build-essential clang
 
+# Build system (only needed when building from a git checkout)
+sudo apt-get install -y autoconf automake
+
+# Unit tests (optional)
+sudo apt-get install -y libgtest-dev
+
 # OpenMP
 # - If you build with GCC: OpenMP is included (use -fopenmp, links against libgomp).
 # - If you build with Clang: install the LLVM OpenMP runtime:
@@ -77,6 +83,12 @@ sudo apt-get install -y libomp-dev
 
 # GSL
 brew install gsl
+
+# Build system (only needed when building from a git checkout)
+brew install autoconf automake
+
+# Unit tests (optional)
+brew install googletest
 
 # Option A (recommended): use Homebrew LLVM (Clang) for OpenMP
 brew install llvm libomp
@@ -93,35 +105,103 @@ brew --prefix libomp
 
 ## Compile and Run
 
-To compile and run continuum membrane lowest energy conformation search with OpenMP parallelization. See section 5 for model details.
-
-OpenMP parallelization:
+SLIMED uses a GNU Autotools (autoconf + automake) build. From a git checkout,
+generate `configure` once, then use the usual three-step incantation:
 
 ```console
-make omp
+./autogen.sh
+mkdir -p build && cd build
+../configure
+make -j
+```
+
+`configure` locates GSL, picks the C++14 flag your compiler wants, and reports
+what it found. Release tarballs from `make dist` already ship `configure`, so
+`./autogen.sh` is only for git checkouts and after editing `configure.ac` or
+`Makefile.am`.
+
+Building in a separate `build/` directory is recommended but optional; running
+`../configure` from the top of the source tree works too.
+
+### Build options
+
+| Option | Effect |
+| --- | --- |
+| `--enable-openmp` | Compile the OpenMP code paths (`-DOMP`). Off by default. |
+| `--enable-coverage` | Instrument for `gcov`/`lcov`. Off by default. |
+| `--with-gsl-prefix=DIR` | Look for GSL under `DIR` instead of asking `gsl-config`. |
+| `--with-gtest[=DIR]` | Force the unit tests on, optionally from a given prefix. Auto-detected by default. |
+| `--prefix=DIR` | Where `make install` puts the programs. Defaults to `/usr/local`. |
+
+Standard variables work as usual: `../configure CXX=g++-15 CXXFLAGS="-O3 -march=native"`.
+When `CXXFLAGS` is not set, SLIMED defaults it to `-O3`.
+
+### The four programs
+
+`make` builds all four; each replaces one goal of the old hand-written Makefile.
+
+| Program | Old target | What it does |
+| --- | --- | --- |
+| `continuum_membrane` | `make serial` / `make omp` | Lowest-energy conformation search |
+| `continuum_membrane_multithreading` | `make multi` | Same, embarrassingly parallel over parameter sets |
+| `membrane_dynamics` | `make dyna` / `make dyna_omp` | Membrane Brownian dynamics |
+| `membrane_dynamics_multithreading` | `make dyna_multi` | Same, embarrassingly parallel |
+
+Serial and OpenMP builds are no longer separate targets: OpenMP is a
+configure-time choice, so `../configure --enable-openmp && make` produces the
+OpenMP `continuum_membrane` and a plain `../configure && make` produces the
+serial one.
+
+```console
+# OpenMP
+../configure --enable-openmp && make -j
+./continuum_membrane
+
+# Serial
+../configure && make -j
+./continuum_membrane
+
+# Brownian dynamics
+./membrane_dynamics
+```
+
+On macOS, Apple Clang has no bundled OpenMP runtime. Either point the build at
+Homebrew GCC or supply the `libomp` paths:
+
+```console
+../configure --enable-openmp CXX=g++-15
+# or
+../configure --enable-openmp \
+    CPPFLAGS="-I$(brew --prefix libomp)/include" \
+    LDFLAGS="-L$(brew --prefix libomp)/lib"
+```
+
+### Tests, install, and packaging
+
+```console
+make check              # build and run the GoogleTest suite
+make install            # install the programs under --prefix
+make dist               # roll a slimed-<version>.tar.gz release tarball
+make distcheck          # prove that tarball configures, builds, and tests clean
+make coverage-html      # after ../configure --enable-coverage; writes coverage/index.html
+```
+
+`make check` is skipped with a warning if GoogleTest is not installed; the
+simulation programs build either way.
+
+### The previous Makefile
+
+The old hand-written Makefile is still in the tree as `Makefile.legacy` (it had
+to move aside, because `configure` generates `Makefile`). It still works:
+
+```console
+make -f Makefile.legacy serial
 ./bin/continuum_membrane
 ```
 
-Embarrasingly parallel for multiple parameter sets:
-
-```console
-make multi
-./bin/continuum_membrane_multithreading
-```
-
-No parallel:
-
-```console
-make serial
-./bin/continuum_membrane
-```
-
-To compile and run membrane Brownian dynamics simulation. See section 6 for model details.
-
-```console
-make dyna
-./bin/membrane_dynamics
-```
+Its `mpi` target was not carried over to the autotools build: it only added
+`-DMPI`, which no source file tests, and its `MPCC` variable was never used by
+any rule.
 
 ## Input Parameters
 
