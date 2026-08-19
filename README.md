@@ -106,9 +106,30 @@ brew --prefix llvm
 brew --prefix libomp
 ```
 
-## Compile and Run
+### Quickly Compile and Run with CMake Presets
 
-SLIMED builds with CMake. 
+SLIMED builds with CMake. Compile without OpenMP and run membrane energy minimization:
+
+```console
+cmake --workflow --preset omp
+./build/bin/continuum_membrane
+```
+
+Compile with OpenMP and run membrane energy minimization:
+
+```console
+cmake --workflow --preset omp
+./build-omp/bin/continuum_membrane
+```
+Other versions of executables are present in the respectively `bin` directory.
+
+| Executable | Purpose | 
+| --- | --- | 
+| `continuum_membrane` | Membrane energy minimization | 
+| `continuum_membrane_multithreading` | Membrane energy minimization with embarassingly parallelization |
+| `membrane_dynamics` | Membrane dynamics simulation |
+| `membrane_dynamics_multithreading` | Membrane dynamics simulation with embarassingly parallelization |
+
 
 ### Presets (quick way to build and switch between serial and OpenMP)
 
