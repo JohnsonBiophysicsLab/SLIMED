@@ -136,13 +136,17 @@ Other versions of executables are present in the respectively `bin` directory.
 Because serial and OpenMP builds are both used routinely, `CMakePresets.json`
 defines them as named presets, each with its own build directory:
 
-| Preset | Build directory | Equivalent to |
-| --- | --- | --- |
-| `serial` | `build/` | `make serial` / `make dyna` |
-| `omp` | `build-omp/` | `make omp` / `make dyna_omp` |
-| `coverage` | `build-cov/` | `make test COVERAGE=1` |
+| Preset | Build directory | Builds | Equivalent to |
+| --- | --- | --- | --- |
+| `serial` | `build/` | simulation programs | `make serial` / `make dyna` |
+| `omp` | `build-omp/` | simulation programs | `make omp` / `make dyna_omp` |
+| `coverage` | `build-cov/` | programs + unit tests | `make test COVERAGE=1` |
 
-Configure, build and test in one command:
+`serial` and `omp` build the four simulation programs only. They set
+`SLIMED_BUILD_TESTS=OFF`, so GoogleTest is never looked for and does not need to
+be installed to use them.
+
+Configure and build in one command:
 
 ```console
 cmake --workflow --preset omp
@@ -154,7 +158,16 @@ Or drive the steps separately:
 ```console
 cmake --preset omp           # configure
 cmake --build --preset omp   # build (all cores)
-ctest --preset omp           # test
+```
+
+To run the unit tests, either use the `coverage` preset or configure a build
+directory by hand -- `SLIMED_BUILD_TESTS` defaults to `ON`, so a plain
+configure includes them:
+
+```console
+cmake -S . -B build-test
+cmake --build build-test -j8
+ctest --test-dir build-test --output-on-failure
 ```
 
 Because each preset owns a separate build directory, switching back and forth
@@ -297,9 +310,18 @@ libstdc++; use the default Apple Clang when you need the tests.
 
 ### Tests
 
+`SLIMED_BUILD_TESTS` defaults to `ON`, so any build directory configured by hand
+includes the unit tests:
+
 ```console
-ctest --test-dir build --output-on-failure
+cmake -S . -B build-test
+cmake --build build-test -j8
+ctest --test-dir build-test --output-on-failure
 ```
+
+Note that the `serial` and `omp` presets deliberately set it to `OFF`, so
+`build/` and `build-omp/` contain no tests; use a separate directory as above,
+or the `coverage` preset.
 
 Each GoogleTest case is registered with CTest individually. Several tests open
 fixture files by paths relative to the working directory, so CTest runs
@@ -307,7 +329,7 @@ fixture files by paths relative to the working directory, so CTest runs
 be run directly, from the source root:
 
 ```console
-./build/bin/test_main
+./build-test/bin/test_main
 ```
 
 If GoogleTest is not installed, CMake prints a warning and skips the test
@@ -332,7 +354,7 @@ collect. There is no packaged `coverage-html` target yet.
 ```console
 cmake --build build --target clean   # like "make clean"; keeps the configuration
 rm -rf build                         # full reset, forgets all cached options
-rm -rf build build-omp build-cov     # remove every preset build directory
+rm -rf build build-omp build-cov build-test   # remove all build directories
 ```
 
 ### The previous Makefile
