@@ -111,7 +111,7 @@ brew --prefix libomp
 SLIMED builds with CMake. Compile without OpenMP and run membrane energy minimization:
 
 ```console
-cmake --workflow --preset omp
+cmake --workflow --preset serial
 ./build/bin/continuum_membrane
 ```
 
