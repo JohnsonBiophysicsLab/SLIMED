@@ -108,28 +108,62 @@ brew --prefix libomp
 
 ### Quickly Compile and Run with CMake Presets
 
-SLIMED builds with CMake. Compile without OpenMP and run membrane energy minimization:
+SLIMED builds with CMake. Executables are present in the respective `bin` directory.
+
+| Program | Old target | What it does |
+| --- | --- | --- |
+| `continuum_membrane` | `make serial` / `make omp` | Lowest-energy conformation search |
+| `continuum_membrane_multithreading` | `make multi` | Same, embarrassingly parallel over parameter sets |
+| `membrane_dynamics` | `make dyna` / `make dyna_omp` | Membrane Brownian dynamics |
+| `membrane_dynamics_multithreading` | `make dyna_multi` | Same, embarrassingly parallel |
+
+
+
+### Configure and build separately
+
+Configure once into a build directory, then build:
 
 ```console
-cmake --workflow --preset serial
-./build/bin/continuum_membrane
+cmake -S . -B build
+cmake --build build -j8
 ```
 
-Compile with OpenMP and run membrane energy minimization:
+`cmake` locates GSL, sets the C++14 standard, resolves OpenMP, and prints a
+summary of what it found. The executables are written to `build/bin/`.
+
+To rebuild after editing code, only the second command is needed:
 
 ```console
-cmake --workflow --preset omp
-./build-omp/bin/continuum_membrane
+cmake --build build -j8
 ```
-Other versions of executables are present in the respectively `bin` directory.
 
-| Executable | Purpose | 
-| --- | --- | 
-| `continuum_membrane` | Membrane energy minimization | 
-| `continuum_membrane_multithreading` | Membrane energy minimization with embarassingly parallelization |
-| `membrane_dynamics` | Membrane dynamics simulation |
-| `membrane_dynamics_multithreading` | Membrane dynamics simulation with embarassingly parallelization |
+The configure step re-runs itself when `CMakeLists.txt` changes, and sources are
+globbed with `CONFIGURE_DEPENDS`, so adding or removing a `.cpp` under `src/` is
+picked up automatically.
 
+### Build options
+
+Options are cached in the build directory, so they are set once rather than on
+every invocation.
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `SLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
+| `SLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
+| `SLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
+
+Standard CMake variables work as usual:
+
+```console
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native"
+```
+
+`CMAKE_BUILD_TYPE` defaults to `Release` (`-O3`), matching the hand-written
+Makefile. To inspect what a build directory is currently set to:
+
+```console
+cmake -LH -N -B build | grep -A1 SLIMED_
+```
 
 ### Presets (quick way to build and switch between serial and OpenMP)
 
@@ -185,52 +219,6 @@ cmake --list-presets
 Presets require CMake 3.25 or newer. With an older CMake, use the `-D` options
 below instead -- they are exactly what the presets set. For personal presets
 that are not shared, create a `CMakeUserPresets.json`; it is gitignored.
-
-### Configure and build separately
-
-Configure once into a build directory, then build:
-
-```console
-cmake -S . -B build
-cmake --build build -j8
-```
-
-`cmake` locates GSL, sets the C++14 standard, resolves OpenMP, and prints a
-summary of what it found. The executables are written to `build/bin/`.
-
-To rebuild after editing code, only the second command is needed:
-
-```console
-cmake --build build -j8
-```
-
-The configure step re-runs itself when `CMakeLists.txt` changes, and sources are
-globbed with `CONFIGURE_DEPENDS`, so adding or removing a `.cpp` under `src/` is
-picked up automatically.
-
-### Build options
-
-Options are cached in the build directory, so they are set once rather than on
-every invocation.
-
-| Option | Default | Effect |
-| --- | --- | --- |
-| `SLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
-| `SLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
-| `SLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
-
-Standard CMake variables work as usual:
-
-```console
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=native"
-```
-
-`CMAKE_BUILD_TYPE` defaults to `Release` (`-O3`), matching the hand-written
-Makefile. To inspect what a build directory is currently set to:
-
-```console
-cmake -LH -N -B build | grep -A1 SLIMED_
-```
 
 ### The four programs
 
