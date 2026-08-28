@@ -1,5 +1,26 @@
 #include "mesh/Mesh.hpp"
 
+namespace
+{
+/**
+ * Quadrature factor for the signed volume enclosed by the limit surface.
+ *
+ * The divergence theorem with F = x gives
+ *
+ *     V = (1/3) * closed_integral( x . n dA )
+ *
+ * and the Gauss rule below sums over the reference triangle with weights that
+ * sum to one, so each sample carries the reference triangle's own area of 1/2.
+ * The product (1/3) * (1/2) = 1/6 is this factor.
+ *
+ * It pairs with the FULL three-component integrand dot(x, a_1 x a_2). A
+ * single-axis integrand is also a valid volume form, but it needs 1/2, not
+ * 1/6 -- combining the two lands a factor of three low. See
+ * docs/volume_functional_split.md.
+ */
+constexpr double kSignedVolumeQuadratureFactor = 1.0 / 6.0;
+} // namespace
+
 Mesh::Mesh(Param &srcParam) : param(srcParam)
 {
     // Calculate element triangle area
@@ -203,7 +224,7 @@ void Mesh::enumerate_gauss_quadrature_point_area_volume(
         // v = 1/3 * s * dot(x, d) <<< tetrahedron volume
         // namely -> double v = dot_row(x, a_3) / 3.0;
         // volume += 0.5 * coeff * v; // Update the accumulated volume
-        volume += 0.16666666666 * coeff * dot_row(x, a_3); // Update the accumulated volume
+        volume += kSignedVolumeQuadratureFactor * coeff * dot_row(x, a_3); // Update the accumulated volume
     }
 }
 
