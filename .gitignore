@@ -160,3 +160,16 @@ CMakeUserPresets.json
 /slimed-*.tar.gz
 /slimed-*.tar.bz2
 /slimed-*.tar.xz
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+tests/CMakeFiles/
+tests/CTestTestfile.cmake
+tests/Makefile
+tests/cmake_install.cmake
+tests/test_main_302383d8_discovery.cmake
+tests/test_main_302383d8_include.cmake
