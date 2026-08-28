@@ -69,6 +69,7 @@ void run_dynamics_flat(std::string param_filename) {
     // Initialize all value before minimum energy search 
     mesh.calculate_element_area_volume(); // Calculate the elemental area and volume per triangles (faces)
     mesh.sum_membrane_area_and_volume(mesh.param.area0, mesh.param.vol0); // Calculate initial area and volume
+    mesh.report_volume_rebaseline(); // TEMPORARY -- see docs/volume_functional_split.md step 4
     mesh.update_previous_coord_for_vertex(); // Update previous coordinate...
     mesh.update_reference_coord_from_previous_coord(); // ...and reference coord
     mesh.Compute_Energy_And_Force();// Calculate energy on faces and force on vertices

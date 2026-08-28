@@ -44,6 +44,7 @@ void run_flat(std::string param_filename)
     }
     
     std::cout << "[Area and Volume]: " << mesh.param.area0 << " ; " << mesh.param.vol0 << std::endl;
+    mesh.report_volume_rebaseline(); // TEMPORARY -- see docs/volume_functional_split.md step 4
 
     // Scaffolding mode
     if (mesh.param.isEnergyHarmonicBondIncluded)

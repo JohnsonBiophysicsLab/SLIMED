@@ -424,6 +424,33 @@ public:
     void sum_membrane_area_and_volume(double &area, double &volume);
 
     /**
+     * @brief TEMPORARY: the volume this mesh would have reported before the
+     * dot_row fix, summed over non-ghost faces.
+     *
+     * Reproduces the x-only integrand paired with the full-divergence 1/6
+     * factor, including the old bare literal, so the number matches what
+     * earlier runs printed to the last digit. Reporting only -- it never
+     * reaches energy, force, or the volume constraint.
+     *
+     * @deprecated Step 4 of docs/volume_functional_split.md. Delete this,
+     * enumerate_legacy_x_only_volume(), report_volume_rebaseline(), and
+     * src/mesh/Mesh_legacy_volume.cpp after one release.
+     */
+    double sum_legacy_x_only_volume();
+
+    /**
+     * @brief TEMPORARY: print `param.vol0` on both the corrected and the
+     * pre-fix scale, with the ratio between them.
+     *
+     * Call once at startup, after vol0 has been computed. On a closed surface
+     * the ratio is exactly 3 and converts any previously recorded volume; on
+     * an open surface it is configuration dependent and converts nothing.
+     *
+     * @deprecated See sum_legacy_x_only_volume().
+     */
+    void report_volume_rebaseline();
+
+    /**
      *
      * @brief Computes the energy and force on each vertex and face of the mesh.
      *
@@ -771,6 +798,13 @@ protected:
      *
      */
     Matrix get_one_ring_vertex_matrix(const Face &face);
+
+    /**
+     * @brief TEMPORARY: per-patch half of sum_legacy_x_only_volume().
+     *
+     * @deprecated See sum_legacy_x_only_volume().
+     */
+    double enumerate_legacy_x_only_volume(const Matrix &matOneRingVertex);
 
     /**
      * @brief

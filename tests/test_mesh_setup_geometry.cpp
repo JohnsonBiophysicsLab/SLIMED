@@ -231,3 +231,82 @@ TEST(VolumeConstraintTopologyTest, RejectionMessageNamesTheConstraintAndTheReaso
         EXPECT_NE(message.find("volume_functional_split"), std::string::npos);
     }
 }
+
+/**
+ * @brief The legacy accumulator picks up only the x-component of the normal.
+ *
+ * setup_flat() lays the sheet in the z = 0 plane, so every patch normal points
+ * along z. Lifting the sheet off the origin gives the corrected functional
+ * something to integrate -- dot(x, a_1 x a_2) = z * n_z -- while the pre-fix
+ * x-only integrand stays at exactly zero, because (a_1 x a_2)_x is zero
+ * everywhere on this surface.
+ *
+ * This is the shape of the bug in one assertion: the old accumulator was
+ * blind to two of the three components.
+ *
+ * @note TEMPORARY, alongside Mesh::sum_legacy_x_only_volume(). Delete with it.
+ */
+TEST(LegacyVolumeReportingTest, LegacyValueIsZeroWhenTheNormalHasNoXComponent)
+{
+    Param param;
+    param.VERBOSE_MODE = false; // mute output
+    Mesh mesh(param);
+    mesh.setup_flat();
+
+    // Lift the sheet away from z = 0 so the corrected functional is non-zero.
+    for (Vertex &vertex : mesh.vertices)
+    {
+        vertex.coord.set(2, 0, 10.0);
+    }
+
+    mesh.calculate_element_area_volume();
+    double area = 0.0;
+    double corrected = 0.0;
+    mesh.sum_membrane_area_and_volume(area, corrected);
+
+    ASSERT_NE(corrected, 0.0);
+    // Zero up to round-off in the cross product: the x-component of the normal
+    // cancels analytically but not bit-exactly.
+    EXPECT_LT(std::abs(mesh.sum_legacy_x_only_volume()), 1e-12 * std::abs(corrected));
+}
+
+/**
+ * @brief Where the normal is purely x, the two functionals coincide.
+ *
+ * Remapping (x, y, 0) -> (10, x, y) stands the same sheet up in the plane
+ * x = 10, so (a_1 x a_2) has only an x-component and dot(x, a_1 x a_2)
+ * reduces to exactly the term the old code kept. The two accumulators must
+ * then agree -- up to the old bare literal, which is low by about 4e-11
+ * relative to 1/6.
+ *
+ * Together with the test above this pins the legacy reproduction from both
+ * sides: it must vanish where the old code vanished, and match where the old
+ * code was accidentally right.
+ *
+ * @note TEMPORARY, alongside Mesh::sum_legacy_x_only_volume(). Delete with it.
+ */
+TEST(LegacyVolumeReportingTest, LegacyValueMatchesCorrectedWhenTheNormalIsAlongX)
+{
+    Param param;
+    param.VERBOSE_MODE = false; // mute output
+    Mesh mesh(param);
+    mesh.setup_flat();
+
+    for (Vertex &vertex : mesh.vertices)
+    {
+        const double x = vertex.coord(0, 0);
+        const double y = vertex.coord(1, 0);
+        vertex.coord.set(0, 0, 10.0);
+        vertex.coord.set(1, 0, x);
+        vertex.coord.set(2, 0, y);
+    }
+
+    mesh.calculate_element_area_volume();
+    double area = 0.0;
+    double corrected = 0.0;
+    mesh.sum_membrane_area_and_volume(area, corrected);
+    const double legacy = mesh.sum_legacy_x_only_volume();
+
+    ASSERT_NE(corrected, 0.0);
+    EXPECT_NEAR(legacy / corrected, 1.0, 1e-9);
+}
