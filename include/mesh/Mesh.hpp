@@ -312,6 +312,33 @@ public:
     void determine_ghost_vertices_faces();
 
     /**
+     * @brief Reject a volume constraint on a surface that does not enclose a volume.
+     *
+     * Signed volume by the divergence theorem is only defined for a closed,
+     * consistently oriented two-manifold. On an open sheet the accumulator in
+     * Mesh::enumerate_gauss_quadrature_point_area_volume() still returns a
+     * number, but that number is not a volume and is not even independent of
+     * where the coordinate origin sits -- so a constraint built on it drives
+     * the trajectory toward a meaningless target.
+     *
+     * Called at the end of setup_flat() and setup_from_vertices_faces(). Does
+     * nothing when `param.uVol == 0.0`: without a constraint the volume is
+     * only ever reported, never fed back into the dynamics, and the flat and
+     * periodic workloads must keep running.
+     *
+     * The surface is rejected when it is periodic or free, carries ghost
+     * faces, has boundary edges (an edge with a single incident face),
+     * has non-manifold edges (more than two), or is inconsistently oriented
+     * (two faces traversing one edge the same way).
+     *
+     * @throw std::runtime_error naming `uVol` and every reason the surface
+     * failed, when `param.uVol != 0.0` and the surface is not closed.
+     *
+     * @note See docs/volume_functional_split.md, step 3.
+     */
+    void validate_volume_constraint_topology() const;
+
+    /**
      * @brief Sort vertices on faces so that the unit normal vector indicates
      * the orientation of the local patch of the membrane.
      * 

@@ -129,6 +129,7 @@ void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& ver
     set_adjacent_vertices_of_vertices_sorted();
     determine_ghost_vertices_faces();
     set_one_ring_vertices_sorted();
+    validate_volume_constraint_topology();
 
     if (param.VERBOSE_MODE)
     {
