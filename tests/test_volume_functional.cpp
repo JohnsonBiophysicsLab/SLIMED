@@ -296,3 +296,137 @@ TEST(VolumeFunctionalTest, VolumeForceIsMinusGradientOfVolumeEnergy)
     }
 }
 
+namespace
+{
+/**
+ * @brief A flat sheet: the shipped default workload, and the one whose limit
+ * surface lies in the z = 0 plane, so its signed volume is exactly zero.
+ */
+Mesh build_flat_sheet(Param &param)
+{
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Free;
+    param.sideX = 25.0;
+    param.sideY = 25.0;
+    param.lFace = 5.0;
+
+    Mesh mesh(param);
+    mesh.setup_flat();
+    mesh.calculate_element_area_volume();
+    mesh.sum_membrane_area_and_volume(mesh.param.area0, mesh.param.vol0);
+    mesh.update_previous_coord_for_vertex();
+    mesh.update_reference_coord_from_previous_coord();
+    return mesh;
+}
+} // namespace
+
+/**
+ * @brief A flat sheet has vol0 == 0, and that must not poison the forces.
+ *
+ * The volume force scales by uVol / vol0. On a flat sheet vol0 is exactly
+ * zero, so with the default uvVolumeConstraint = 0.0 that factor was 0.0/0.0,
+ * and the NaN reached every vertex through forceVolume and forceTotal. The
+ * energy side has guarded this since before the split; the force side did not.
+ *
+ * This is the shipped default configuration, so the whole default workload
+ * halted at step 0 with "could not find an efficient step size".
+ */
+TEST(VolumeFunctionalTest, FlatSheetWithNoVolumeConstraintHasFiniteForces)
+{
+    Param param;
+    param.uVol = 0.0;
+    Mesh mesh = build_flat_sheet(param);
+
+    ASSERT_EQ(mesh.param.vol0, 0.0) << "a flat sheet must enclose nothing";
+    ASSERT_EQ(mesh.param.uVol, 0.0);
+
+    mesh.Compute_Energy_And_Force();
+
+    for (std::size_t i = 0; i < mesh.vertices.size(); i++)
+    {
+        const Force &force = mesh.vertices[i].force;
+        for (int k = 0; k < 3; k++)
+        {
+            EXPECT_EQ(force.forceVolume(k, 0), 0.0)
+                << "vertex " << i << " axis " << k
+                << ": no reference volume means no volume force";
+            EXPECT_TRUE(std::isfinite(force.forceTotal(k, 0)))
+                << "vertex " << i << " axis " << k
+                << ": forceTotal = " << force.forceTotal(k, 0);
+        }
+    }
+
+    EXPECT_TRUE(std::isfinite(mesh.calculate_mean_force()));
+    EXPECT_TRUE(std::isfinite(mesh.get_max_force_magnitude()));
+    EXPECT_DOUBLE_EQ(mesh.param.energy.energyVolume, 0.0);
+}
+
+/**
+ * @brief A non-finite force field must stop the run, not read as converged.
+ *
+ * `max_magnitude` is a max reduction, and every comparison against a NaN is
+ * false, so a poisoned force field used to reduce to 0. Zero is the value that
+ * means "no force left to follow", so the line search reported convergence for
+ * what was actually a broken force field -- which is what hid the vol0 bug
+ * above behind a plausible-looking halt message.
+ */
+TEST(VolumeFunctionalTest, NonFiniteForceIsReportedRatherThanReadAsZero)
+{
+    Param param;
+    param.uVol = 0.0;
+    Mesh mesh = build_flat_sheet(param);
+    mesh.Compute_Energy_And_Force();
+    ASSERT_TRUE(std::isfinite(mesh.get_max_force_magnitude()));
+
+    mesh.vertices[0].force.forceTotal.set(0, 0, std::nan(""));
+    EXPECT_FALSE(std::isfinite(mesh.get_max_force_magnitude()));
+
+    Record record(1);
+    Model model(mesh, record);
+    model.iteration = 0;
+    EXPECT_THROW(model.determine_trial_step_size(), std::runtime_error);
+}
+
+/**
+ * @brief A zero reference area must not poison the forces either.
+ *
+ * The sibling of the vol0 case above, and the same asymmetry: the area energy
+ * skips itself when area0 == 0, while the area force divided by it
+ * unconditionally. area0 comes from `relaxArea` whenever
+ * setRelaxAreaToDefault is false, so this is reachable from a parameter file
+ * rather than only from a degenerate mesh -- and because uSurf is non-zero by
+ * default it produces inf rather than NaN, which spreads just as far.
+ *
+ * Kept next to the volume case so the two guards are read together; fixing one
+ * of a two-instance pattern is what left this one behind in the first place.
+ */
+TEST(VolumeFunctionalTest, ZeroReferenceAreaHasFiniteForces)
+{
+    Param param;
+    param.uVol = 0.0;
+    Mesh mesh = build_flat_sheet(param);
+
+    // build_flat_sheet() sets area0 from the mesh; override it the way a
+    // parameter file with relaxArea = 0.0 would.
+    mesh.param.area0 = 0.0;
+    ASSERT_NE(mesh.param.uSurf, 0.0) << "uSurf must be non-zero for this to bite";
+
+    mesh.Compute_Energy_And_Force();
+
+    for (std::size_t i = 0; i < mesh.vertices.size(); i++)
+    {
+        const Force &force = mesh.vertices[i].force;
+        for (int k = 0; k < 3; k++)
+        {
+            EXPECT_EQ(force.forceArea(k, 0), 0.0)
+                << "vertex " << i << " axis " << k
+                << ": no reference area means no area force";
+            EXPECT_TRUE(std::isfinite(force.forceTotal(k, 0)))
+                << "vertex " << i << " axis " << k
+                << ": forceTotal = " << force.forceTotal(k, 0);
+        }
+    }
+
+    EXPECT_TRUE(std::isfinite(mesh.get_max_force_magnitude()));
+    EXPECT_DOUBLE_EQ(mesh.param.energy.energyArea, 0.0);
+}

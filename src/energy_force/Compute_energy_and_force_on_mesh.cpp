@@ -259,11 +259,22 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
     double halfGaussQuadratureCoeff = 0.0;
     //////////////////////////////////////////////////////////////
     double kCurv = param.kCurv; //test output
-    double uSurfPerArea = param.uSurf / param.area0;
+    // Same hazard as the volume factor below, and the same guard: the area
+    // energy at :200 already skips itself when area0 == 0, so the force must
+    // too. area0 comes from `relaxArea` whenever setRelaxAreaToDefault is
+    // false, so a parameter file setting it to 0 reaches this line and poisons
+    // forceArea for every vertex -- inf rather than NaN, but equally fatal.
+    double uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
     int nFaces = this->faces.size();
     double area0 = param.area0;
     double area = param.area;
-    double uVol = param.uVol / param.vol0;
+    // A surface that encloses nothing -- any flat sheet, whose limit surface
+    // lies in the z = 0 plane -- has vol0 == 0, and with the default
+    // uvVolumeConstraint = 0.0 this scale factor would be 0.0/0.0. The NaN
+    // spreads through tmp_evol into fVolume and then into every vertex force.
+    // Mirror the guard the volume energy already has in
+    // Compute_Energy_And_Force(): no reference volume means no constraint.
+    double uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
     double vol0 = param.vol0;
     double vol = param.vol;
     /////////////////////////////////////////////////////////////
@@ -869,14 +880,27 @@ void Mesh::manage_force_for_boundary_ghost_vertex()
 double Mesh::get_max_force_magnitude()
 {
     double max_magnitude = 0;
-#pragma omp parallel for reduction(max : max_magnitude)
+    // Every comparison against a NaN is false, so a poisoned force field would
+    // otherwise reduce to 0 and be read downstream as "no force left to
+    // follow". Track non-finite magnitudes separately and pass them on.
+    int anyNonFinite = 0;
+#pragma omp parallel for reduction(max : max_magnitude) reduction(|| : anyNonFinite)
     for (int i = 0; i < static_cast<int>(vertices.size()); ++i)
     {
         double magnitude = vertices[i].force.get_total_force_magnitude();
+        if (!std::isfinite(magnitude))
+        {
+            anyNonFinite = 1;
+            continue;
+        }
         if (magnitude > max_magnitude)
         {
             max_magnitude = magnitude;
         }
+    }
+    if (anyNonFinite)
+    {
+        return std::nan("");
     }
     return max_magnitude;
 }
