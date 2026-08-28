@@ -162,6 +162,15 @@ public:
     int ncol() const;
 
     /**
+     * @brief True when this Matrix holds no allocation.
+     *
+     * A default-constructed Matrix is empty. Copying, assigning and asking the
+     * shape of an empty Matrix are all well defined; reading or writing an
+     * element of one is not.
+     */
+    bool empty() const;
+
+    /**
      * @brief Get element value at i,j
      *
      */

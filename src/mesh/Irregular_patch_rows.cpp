@@ -71,9 +71,7 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
     // still holding a default-constructed Matrix is a null dereference waiting
     // in rows() and memory_bytes().
     //
-    // Sized by construction rather than assign(n, Matrix()), because Matrix's
-    // copy constructor dereferences its source unconditionally. operator= does
-    // handle a null destination, so filling the elements below is safe.
+    // Sized by construction; the elements are filled in below.
     std::vector<Matrix> built(static_cast<std::size_t>(kValenceCount) * depth *
                               kRegularChildrenPerStep * nSamples);
 

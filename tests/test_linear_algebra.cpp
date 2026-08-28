@@ -309,3 +309,78 @@ TEST(DotProductTest, DotRowAndDotColAgreeOnTransposedVectors)
     EXPECT_DOUBLE_EQ(dot_row(r1, r2), dot_col(c1, c2));
     EXPECT_DOUBLE_EQ(dot_row(r1, r2), u[0] * v[0] + u[1] * v[1] + u[2] * v[2]);
 }
+
+/**
+ * @brief A default-constructed Matrix must survive being copied.
+ *
+ * The copy constructor used to dereference its source unconditionally, so
+ * copying an empty Matrix was a null dereference -- which made Matrix unusable
+ * in any standard container, since vector::assign(n, Matrix()) and
+ * vector::resize() both copy from a default-constructed prototype. It cost
+ * three separate crashes before it was worth fixing at the source.
+ */
+TEST(MatrixValueSemanticsTest, EmptyMatrixCanBeCopiedAndAssigned)
+{
+    Matrix empty;
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.nrow(), 0);
+    EXPECT_EQ(empty.ncol(), 0);
+
+    // Copy construction from empty.
+    Matrix copied(empty);
+    EXPECT_TRUE(copied.empty());
+
+    // Assignment from empty, onto an allocated matrix.
+    Matrix allocated(3, 2);
+    EXPECT_FALSE(allocated.empty());
+    allocated = empty;
+    EXPECT_TRUE(allocated.empty());
+
+    // Assignment from allocated, onto an empty one.
+    Matrix source(2, 3);
+    source.set(1, 2, 7.5);
+    Matrix target;
+    target = source;
+    ASSERT_FALSE(target.empty());
+    EXPECT_EQ(target.nrow(), 2);
+    EXPECT_EQ(target.ncol(), 3);
+    EXPECT_DOUBLE_EQ(target.get(1, 2), 7.5);
+}
+
+/// The container operations that used to crash.
+TEST(MatrixValueSemanticsTest, MatrixWorksInStandardContainers)
+{
+    std::vector<Matrix> filled;
+    filled.assign(4, Matrix()); // copies from an empty prototype
+    ASSERT_EQ(filled.size(), 4u);
+    for (const Matrix &entry : filled)
+        EXPECT_TRUE(entry.empty());
+
+    std::vector<Matrix> grown;
+    grown.resize(3); // default-constructs
+    grown.resize(6); // may copy or move existing elements
+    ASSERT_EQ(grown.size(), 6u);
+
+    // Growth through push_back reallocates and copies whatever is already held.
+    std::vector<Matrix> pushed;
+    for (int i = 0; i < 8; i++)
+    {
+        Matrix entry(2, 2);
+        entry.set(0, 0, i);
+        pushed.push_back(entry);
+    }
+    ASSERT_EQ(pushed.size(), 8u);
+    for (int i = 0; i < 8; i++)
+        EXPECT_DOUBLE_EQ(pushed[i].get(0, 0), i);
+}
+
+/// free() is idempotent and leaves the Matrix empty rather than dangling.
+TEST(MatrixValueSemanticsTest, FreeIsIdempotent)
+{
+    Matrix matrix(3, 3);
+    matrix.free();
+    EXPECT_TRUE(matrix.empty());
+    matrix.free(); // must not double-free
+    EXPECT_TRUE(matrix.empty());
+    EXPECT_EQ(matrix.nrow(), 0);
+}
