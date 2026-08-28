@@ -72,7 +72,12 @@ __pycache__/
 coverage/
 
 # Generated documentation
-/docs/
+/docs/*.html
+/docs/*.css
+/docs/*.js
+/docs/*.svg
+/docs/.nojekyll
+/docs/search/
 /html/
 /latex/
 
