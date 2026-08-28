@@ -339,7 +339,7 @@ double dot_col(const Matrix &m1, const Matrix &m2)
 double dot_row(const Matrix &m1, const Matrix &m2)
 {
     double result = 0.0;
-    for (int i = 0; i < m1.mat->size1; i++)
+    for (int i = 0; i < m1.mat->size2; i++)
         result += gsl_matrix_get(m1.mat, 0, i) * gsl_matrix_get(m2.mat, 0, i);
     return result;
 }
