@@ -222,3 +222,173 @@ TEST(IrregularPatchRowTableTest, RejectsBadInputAndStaysSmall)
     // across threads, so this only needs to stay in that neighbourhood.
     EXPECT_LT(table.memory_bytes(), 200u * 1024u);
 }
+
+namespace
+{
+/// Area and signed volume accumulated the way the mesh does, from 7 x K rows.
+void accumulate_area_volume(const Matrix &rows, const Matrix &control, double coefficient,
+                            double &area, double &volume)
+{
+    const Matrix x = rows.get_row(0) * control;
+    const Matrix a3 = cross_row(rows.get_row(1) * control, rows.get_row(2) * control);
+    area += 0.5 * coefficient * a3.calculate_norm();
+    volume += (1.0 / 6.0) * coefficient * dot_row(x, a3);
+}
+
+/// A deliberately non-planar control net of K = N+6 points, fixed for stability.
+Matrix irregular_control_net_for(int valence)
+{
+    const int K = valence + 6;
+    Matrix control(K, 3);
+    for (int k = 0; k < K; k++)
+    {
+        const double t = k;
+        control.set(k, 0, std::cos(0.7 * t) * (1.0 + 0.1 * t));
+        control.set(k, 1, std::sin(0.7 * t) * (1.0 + 0.1 * t));
+        control.set(k, 2, 0.3 * std::sin(1.3 * t) + 0.05 * t * t);
+    }
+    return control;
+}
+
+Matrix irregular_control_net() { return irregular_control_net_for(5); }
+} // namespace
+
+/**
+ * @brief The collapsed table must reproduce the recursion it replaces.
+ *
+ * calculate_element_area_volume() already evaluates an 11-control face by
+ * explicit recursion -- subdivide with M, evaluate the three regular children
+ * through M1..M3, descend into M4, repeat. The row table is that same
+ * recursion folded flat, so the two must agree on a real, non-planar control
+ * net.
+ *
+ * The recursion side is driven by get_subdivision_matrices(), the literal
+ * matrices, while the table side is driven by the generated ones. So this
+ * checks the generator and the collapse together, against the production code
+ * path, on geometry rather than on matrix entries -- which the N=5 parity test
+ * cannot do.
+ */
+TEST(IrregularPatchRowTableTest, CollapsedTableReproducesTheExplicitRecursion)
+{
+    const RegularQuadrature quadrature = build_regular_quadrature();
+    const Matrix control = irregular_control_net();
+
+    Matrix oracleM, oracleM1, oracleM2, oracleM3, oracleM4;
+    get_subdivision_matrices(oracleM, oracleM1, oracleM2, oracleM3, oracleM4);
+
+    for (int depth = 1; depth <= 6; depth++)
+    {
+        // The explicit recursion, exactly as calculate_element_area_volume()
+        // performs it for the 11-control case.
+        double recursionArea = 0.0;
+        double recursionVolume = 0.0;
+        Matrix descending = control;
+        for (int d = 0; d < depth; d++)
+        {
+            const Matrix subdivided = oracleM * descending;
+            const Matrix *regularChildren[3] = {&oracleM1, &oracleM2, &oracleM3};
+            for (int c = 0; c < 3; c++)
+            {
+                const Matrix childControl = (*regularChildren[c]) * subdivided;
+                for (int q = 0; q < static_cast<int>(quadrature.shapeFunctions.size()); q++)
+                {
+                    accumulate_area_volume(quadrature.shapeFunctions[q], childControl,
+                                           quadrature.coefficients(q, 0), recursionArea,
+                                           recursionVolume);
+                }
+            }
+            descending = oracleM4 * subdivided;
+        }
+
+        // The same thing, read out of the collapsed table.
+        IrregularPatchRowTable table;
+        table.build(quadrature.shapeFunctions, depth);
+        double tableArea = 0.0;
+        double tableVolume = 0.0;
+        for (int d = 0; d < depth; d++)
+        {
+            for (int c = 0; c < kRegularChildrenPerStep; c++)
+            {
+                for (int q = 0; q < table.nSamples(); q++)
+                {
+                    accumulate_area_volume(table.rows(5, d, c, q), control,
+                                           quadrature.coefficients(q, 0), tableArea, tableVolume);
+                }
+            }
+        }
+
+        ASSERT_GT(recursionArea, 0.0) << "depth " << depth;
+        EXPECT_NEAR(tableArea, recursionArea, 1e-12 * std::abs(recursionArea))
+            << "area disagrees at depth " << depth;
+        EXPECT_NEAR(tableVolume, recursionVolume, 1e-12 * std::abs(recursionVolume))
+            << "volume disagrees at depth " << depth;
+    }
+}
+
+/**
+ * @brief Refining the depth converges, and the rate depends on the valence.
+ *
+ * The dropped sliver is `4^-D` of the *parameter* domain at every valence, but
+ * the surface area inside it is not: near an extraordinary corner the metric
+ * shrinks like the subdivision matrix's subdominant eigenvalue, which is a
+ * function of N. Measured on a fixed non-planar net, successive increments
+ * fall by roughly
+ *
+ *     N=4  7.3x     N=5  5.0x     N=6  4.0x     N=7  3.5x     N=8  3.2x
+ *
+ * per level -- exactly 4 at N=6, where the patch is regular and the metric is
+ * uniform, and progressively slower above it.
+ *
+ * The consequence is that one depth does not serve every valence equally, so
+ * WP6 has to choose D per valence rather than globally. This test pins the
+ * qualitative shape of that -- monotone convergence everywhere, exactly 4x at
+ * N=6, and slower at N=8 than at N=4 -- so a regression in the recursion shows
+ * up as a changed rate rather than only as a changed number.
+ */
+TEST(IrregularPatchRowTableTest, ConvergenceRateDependsOnValence)
+{
+    const RegularQuadrature quadrature = build_regular_quadrature();
+
+    auto area_at_depth = [&](int valence, int depth) {
+        const Matrix control = irregular_control_net_for(valence);
+        IrregularPatchRowTable table;
+        table.build(quadrature.shapeFunctions, depth);
+        double area = 0.0;
+        double volume = 0.0;
+        for (int d = 0; d < depth; d++)
+            for (int c = 0; c < kRegularChildrenPerStep; c++)
+                for (int q = 0; q < table.nSamples(); q++)
+                    accumulate_area_volume(table.rows(valence, d, c, q), control,
+                                           quadrature.coefficients(q, 0), area, volume);
+        return area;
+    };
+
+    std::vector<double> ratio(kMaxIrregularValence + 1, 0.0);
+    for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
+    {
+        double previous = area_at_depth(valence, 5);
+        const double stepA = area_at_depth(valence, 6) - previous;
+        previous += stepA;
+        const double stepB = area_at_depth(valence, 7) - previous;
+        previous += stepB;
+        const double stepC = area_at_depth(valence, 8) - previous;
+
+        // Monotone: each level only adds surface, since the children tile a
+        // strictly larger fraction of the domain.
+        EXPECT_GT(stepA, 0.0) << "valence " << valence;
+        EXPECT_GT(stepB, 0.0) << "valence " << valence;
+        EXPECT_GT(stepC, 0.0) << "valence " << valence;
+        // And shrinking, so the truncation error actually goes away.
+        EXPECT_LT(stepB, stepA) << "valence " << valence;
+        EXPECT_LT(stepC, stepB) << "valence " << valence;
+
+        ratio[valence] = stepB / stepC;
+    }
+
+    // A regular patch has a uniform metric, so the area in the dropped sliver
+    // falls exactly as the parameter fraction does.
+    EXPECT_NEAR(ratio[6], 4.0, 0.1);
+    // Higher valence converges more slowly; lower, faster.
+    EXPECT_LT(ratio[8], ratio[6]);
+    EXPECT_GT(ratio[4], ratio[6]);
+}

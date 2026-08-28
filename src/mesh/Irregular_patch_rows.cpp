@@ -47,6 +47,14 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
     }
     for (const Matrix &shapeFunction : regularShapeFunctions)
     {
+        // Checked before nrow(), which dereferences unconditionally: without
+        // this the validation would crash on exactly the malformed input it
+        // exists to reject.
+        if (shapeFunction.mat == nullptr)
+        {
+            throw std::invalid_argument(
+                "[IrregularPatchRowTable] an unallocated shape function was supplied");
+        }
         if (shapeFunction.nrow() != 7 || shapeFunction.ncol() != 12)
         {
             throw std::invalid_argument(
@@ -56,15 +64,18 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
         }
     }
 
-    depth_ = depth;
-    nSamples_ = static_cast<int>(regularShapeFunctions.size());
-    // Sized by construction rather than assign(n, Matrix()): Matrix's copy
-    // constructor dereferences its source unconditionally, so copying a
-    // default-constructed Matrix is a null dereference. Constructing the
-    // vector default-initializes each element in place, and operator= does
-    // handle a null destination, so filling them below is safe.
-    rows_ = std::vector<Matrix>(static_cast<std::size_t>(kValenceCount) * depth_ *
-                                kRegularChildrenPerStep * nSamples_);
+    const int nSamples = static_cast<int>(regularShapeFunctions.size());
+    // Built into a local and committed at the end. Anything thrown below --
+    // the child-count check inside build_subdivision_matrices(), say -- would
+    // otherwise leave the table sized but partly unfilled, and every element
+    // still holding a default-constructed Matrix is a null dereference waiting
+    // in rows() and memory_bytes().
+    //
+    // Sized by construction rather than assign(n, Matrix()), because Matrix's
+    // copy constructor dereferences its source unconditionally. operator= does
+    // handle a null destination, so filling the elements below is safe.
+    std::vector<Matrix> built(static_cast<std::size_t>(kValenceCount) * depth *
+                              kRegularChildrenPerStep * nSamples);
 
     for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
     {
@@ -77,21 +88,31 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
         // One subdivision step then into the smaller irregular copy.
         const Matrix descend = matrices.p4 * matrices.abar;
 
-        for (int d = 0; d < depth_; d++)
+        for (int d = 0; d < depth; d++)
         {
             for (int c = 0; c < kRegularChildrenPerStep; c++)
             {
                 // P_c * Abar * S_d, shared across samples: the topology does
                 // not depend on the quadrature point.
                 const Matrix childRows = (*children[c]) * matrices.abar * chain;
-                for (int q = 0; q < nSamples_; q++)
+                for (int q = 0; q < nSamples; q++)
                 {
-                    rows_[index(valence, d, c, q)] = regularShapeFunctions[q] * childRows;
+                    const int v = valence - kMinIrregularValence;
+                    const std::size_t slot =
+                        ((static_cast<std::size_t>(v) * depth + d) * kRegularChildrenPerStep + c) *
+                            nSamples +
+                        q;
+                    built[slot] = regularShapeFunctions[q] * childRows;
                 }
             }
             chain = descend * chain;
         }
     }
+
+    // Commit only once everything succeeded.
+    depth_ = depth;
+    nSamples_ = nSamples;
+    rows_ = std::move(built);
 }
 
 const Matrix &IrregularPatchRowTable::rows(int valence, int depth, int child, int sample) const
