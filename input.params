@@ -76,8 +76,8 @@ sigma = 0.0						# 2*sigma is the length scale of decaying spontaneous curvature
 # executable is launched from (the repository root for the shipped defaults).
 # Each file is only opened when its corresponding flag above it is true.
 
-isEnergyHarmonicBondIncluded = false   # true to enable harmonic bond energy for scaffolding
-scaffoldingFileName = data/COM.csv     # scaffolding point cloud, one "x,y,z" per line
+isEnergyHarmonicBondIncluded = true    # true to enable harmonic bond energy for scaffolding
+scaffoldingFileName = data/csv/GagR50_392.csv     # scaffolding point cloud, one "x,y,z" per line
 
 isGagScaffoldingEnergyIncluded = false # true to enable the Gag scaffolding energy term
 gagReferenceStateFileName =            # NERDSS-extracted .dat reference geometry (required if the flag above is true)
