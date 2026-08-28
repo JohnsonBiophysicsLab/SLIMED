@@ -1,5 +1,6 @@
 #include "mesh/Irregular_patch_rows.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <string>
@@ -19,6 +20,34 @@ Matrix identity(int n)
 }
 } // namespace
 
+int recommended_irregular_depth(int valence)
+{
+    switch (valence)
+    {
+    case 4:
+        return 12;
+    case 5:
+        return 8;
+    case 7:
+        return 7;
+    case 8:
+        return 7;
+    default:
+        // Valence 6 is regular and never reads the table; anything else is
+        // rejected long before it reaches here.
+        return kDefaultIrregularDepth;
+    }
+}
+
+int IrregularPatchRowTable::depth_for(int valence) const
+{
+    if (policy_ == DepthPolicy::Uniform)
+    {
+        return depth_;
+    }
+    return std::min(depth_, recommended_irregular_depth(valence));
+}
+
 int IrregularPatchRowTable::child_index(int valence, int depth, int child) const
 {
     if (valence < kMinIrregularValence || valence > kMaxIrregularValence || depth < 0 ||
@@ -32,7 +61,8 @@ int IrregularPatchRowTable::child_index(int valence, int depth, int child) const
     return (v * depth_ + depth) * kRegularChildrenPerStep + child;
 }
 
-void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFunctions, int depth)
+void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFunctions, int depth,
+                                   DepthPolicy policy)
 {
     if (depth <= 0)
     {
@@ -107,6 +137,7 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
     // Commit only once everything succeeded.
     depth_ = depth;
     nSamples_ = nSamples;
+    policy_ = policy;
     rows_ = std::move(built);
 }
 

@@ -274,7 +274,7 @@ void Mesh::calculate_element_area_volume()
         {
             const Matrix matOneRingVertex = get_one_ring_vertex_matrix(face);
             const int valence = nOneRingVertices - 6;
-            for (int d = 0; d < irregularRows.depth(); d++)
+            for (int d = 0; d < irregularRows.depth_for(valence); d++)
             {
                 for (int c = 0; c < kRegularChildrenPerStep; c++)
                 {

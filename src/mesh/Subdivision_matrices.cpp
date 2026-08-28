@@ -106,6 +106,28 @@ CanonicalPatch build_canonical_patch(int valence)
     return patch;
 }
 
+std::vector<int> canonical_control_order(int valence)
+{
+    const CanonicalPatch patch = build_canonical_patch(valence);
+    const int nControl = patch.nVertices;
+
+    std::vector<int> order(nControl);
+    for (int v = 0; v < nControl; v++)
+        order[v] = v;
+    // Row from the top, then left to right -- the same rule that orders the
+    // children, and the order the literal matrices used at N=5 ({d2..d12}).
+    std::sort(order.begin(), order.end(), [&](int lhs, int rhs) {
+        if (patch.layout[lhs][1] != patch.layout[rhs][1])
+            return patch.layout[lhs][1] > patch.layout[rhs][1];
+        return patch.layout[lhs][0] < patch.layout[rhs][0];
+    });
+
+    std::vector<int> columnOf(nControl, -1);
+    for (int column = 0; column < nControl; column++)
+        columnOf[order[column]] = column;
+    return columnOf;
+}
+
 SubdivisionMatrices build_subdivision_matrices(int valence)
 {
     if (valence < kMinIrregularValence || valence > kMaxIrregularValence)
@@ -197,20 +219,9 @@ SubdivisionMatrices build_subdivision_matrices(int valence)
                   return lhs.position[0] < rhs.position[0];
               });
 
-    // Columns must be in the same canonical order the mesh uses for a one-ring
-    // -- {d2..d12} at N=5 -- which is the same "row from the top, then left to
-    // right" rule that orders the children. Sorting the layout gives both.
-    std::vector<int> controlOrder(nControl);
-    for (int v = 0; v < nControl; v++)
-        controlOrder[v] = v;
-    std::sort(controlOrder.begin(), controlOrder.end(), [&](int lhs, int rhs) {
-        if (patch.layout[lhs][1] != patch.layout[rhs][1])
-            return patch.layout[lhs][1] > patch.layout[rhs][1];
-        return patch.layout[lhs][0] < patch.layout[rhs][0];
-    });
-    std::vector<int> columnOf(nControl, -1);
-    for (int column = 0; column < nControl; column++)
-        columnOf[controlOrder[column]] = column;
+    // Columns are in the canonical one-ring order, shared with the mesh so the
+    // two cannot drift apart.
+    const std::vector<int> columnOf = canonical_control_order(N);
 
     // abar: one row per child, one column per control point.
     std::vector<std::vector<double>> abar(N + 12, std::vector<double>(nControl, 0.0));

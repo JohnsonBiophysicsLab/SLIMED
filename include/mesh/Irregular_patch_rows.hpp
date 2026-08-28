@@ -39,8 +39,41 @@
 /// Number of regular children peeled off at each subdivision step.
 constexpr int kRegularChildrenPerStep = 3;
 
-/// Default recursion depth. WP6 replaces this with a per-valence default.
-constexpr int kDefaultIrregularDepth = 6;
+/**
+ * @brief Deepest recursion the table is built to.
+ *
+ * Set by the deepest per-valence recommendation below, so a single build
+ * serves every valence. 12 levels across valences 4..8 is about 363 kB, built
+ * once at startup.
+ */
+constexpr int kDefaultIrregularDepth = 12;
+
+/**
+ * @brief Subdivision depth chosen for a valence by the WP6 convergence study.
+ *
+ * Depth is chosen per valence because the convergence rate is per valence. The
+ * dropped sliver is 4^-D of the parameter domain at every N, but the surface
+ * inside it shrinks like the subdivision matrix's subdominant eigenvalue, and
+ * bending energy -- the slowest-converging quantity, and the one most exposed
+ * to the truncated corner, since Loop surfaces are C1 but not C2 there --
+ * converges at a rate that runs the *opposite* way from area:
+ *
+ *     N        4       5       6       7       8
+ *     area   7.3x    4.9x     --     3.6x    3.4x     per level
+ *     bend   2.1x    3.3x     --     4.6x    4.6x     per level
+ *
+ * So valence 4 is the expensive one, needing roughly four more levels than
+ * valence 8 for the same residual, which a single global depth cannot express.
+ * Chosen for an estimated remaining bending tail below 1e-4 relative:
+ *
+ *     N=4  depth 12  residual 7.2e-5
+ *     N=5  depth  8  residual 8.3e-5
+ *     N=7  depth  7  residual 2.4e-5
+ *     N=8  depth  7  residual 2.0e-5
+ *
+ * Valence 6 is regular and never reads the table, so its depth is irrelevant.
+ */
+int recommended_irregular_depth(int valence);
 
 /**
  * @brief Immutable, thread-shared table of limit-surface rows.
@@ -49,6 +82,20 @@ constexpr int kDefaultIrregularDepth = 6;
  * rule, never on the mesh, so unlike a per-mesh stencil cache it never needs
  * invalidation.
  */
+/**
+ * @brief How much of the built depth a valence should consume.
+ *
+ * PerValence applies recommended_irregular_depth() -- the production policy.
+ * Uniform consumes the full built depth for every valence, which the WP6
+ * convergence study needs: it has to be able to sweep past the caps it exists
+ * to choose, or it would only ever confirm them.
+ */
+enum class DepthPolicy
+{
+    PerValence,
+    Uniform
+};
+
 class IrregularPatchRowTable
 {
 public:
@@ -66,7 +113,8 @@ public:
      *        that is not `7 x 12`.
      */
     void build(const std::vector<Matrix> &regularShapeFunctions,
-               int depth = kDefaultIrregularDepth);
+               int depth = kDefaultIrregularDepth,
+               DepthPolicy policy = DepthPolicy::PerValence);
 
     /**
      * @brief The `7 x (N+6)` rows for one child at one sample.
@@ -88,6 +136,14 @@ public:
 
     bool empty() const { return rows_.empty(); }
     int depth() const { return depth_; }
+
+    /**
+     * @brief Depth to actually consume for this valence.
+     *
+     * The table is built to one depth for every valence, but callers stop at
+     * the depth that valence needs -- see recommended_irregular_depth().
+     */
+    int depth_for(int valence) const;
     int nSamples() const { return nSamples_; }
 
     /// The fraction of the parameter domain the truncated sliver still covers.
@@ -101,6 +157,7 @@ private:
 
     int depth_ = 0;
     int nSamples_ = 0;
+    DepthPolicy policy_ = DepthPolicy::PerValence;
     /// Grouped by (valence, depth, child); each entry holds one Matrix per sample.
     std::vector<std::vector<Matrix>> rows_;
 };

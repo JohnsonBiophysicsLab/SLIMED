@@ -107,7 +107,7 @@ void Mesh::Compute_Energy_And_Force()
             // dimension mismatch inside a gsl_blas_dgemm wrapper that discards
             // its return code.
             const int valence = nOneRingVertices - 6;
-            for (int d = 0; d < irregularRows.depth(); d++)
+            for (int d = 0; d < irregularRows.depth_for(valence); d++)
             {
                 for (int c = 0; c < kRegularChildrenPerStep; c++)
                 {

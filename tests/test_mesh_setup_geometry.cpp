@@ -353,14 +353,15 @@ Mesh setup_solid(Param &param, const ClosedSolid &solid)
 } // namespace
 
 /**
- * @brief An unsupported valence is rejected loudly, not stored as zeros.
+ * @brief Adjacent extraordinary corners are rejected loudly, not zeroed.
  *
- * Every octahedron vertex is at valence 4. The old code matched neither the
- * 6/6/6 nor the all-5 predicate, so oneRingVertices stayed empty; downstream,
- * an empty one-ring matches neither arm of the dispatch in
- * Compute_Energy_And_Force() and the face was recorded with zero bending
- * energy and zero force. Valence 4 is in scope for the plan but not yet
- * implemented, so until WP2-WP5 land it must be an error.
+ * Every octahedron vertex is at valence 4, so every face carries three
+ * extraordinary corners. Valence 4 itself is supported now, but the uniform
+ * patch reduction assumes exactly one extraordinary corner per face -- with
+ * more, the three "regular" children stop being regular and there is no such
+ * decomposition. The old code matched neither the 6/6/6 nor the all-5
+ * predicate, so oneRingVertices stayed empty and the face was recorded with
+ * zero bending energy and zero force.
  */
 TEST(OneRingPatchTest, Valence4MeshIsRejectedRatherThanSilentlyZeroed)
 {
@@ -402,7 +403,7 @@ TEST(OneRingPatchTest, AllValence5MeshIsRejectedBecauseThePatchBuiltIs5And6And6)
     {
         const std::string message = error.what();
         EXPECT_NE(message.find("(5, 5, 5)"), std::string::npos) << message;
-        EXPECT_NE(message.find("one corner at 5 with the other two at 6"), std::string::npos);
+        EXPECT_NE(message.find("exactly one corner in"), std::string::npos);
     }
 }
 

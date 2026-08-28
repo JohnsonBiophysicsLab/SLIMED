@@ -218,9 +218,11 @@ TEST(IrregularPatchRowTableTest, RejectsBadInputAndStaysSmall)
     EXPECT_THROW(table.rows(6, 0, kRegularChildrenPerStep, 0), std::out_of_range);
     EXPECT_THROW(table.rows(6, 0, 0, table.nSamples()), std::out_of_range);
 
-    // The plan budgets under 200 kB; it is a startup-time constant shared
-    // across threads, so this only needs to stay in that neighbourhood.
-    EXPECT_LT(table.memory_bytes(), 200u * 1024u);
+    // A startup-time constant shared across threads: about 30 kB per level of
+    // depth, so 12 levels is ~363 kB. The plan budgeted 200 kB at depth 6;
+    // WP6 raised the default to 12 because valence 4 needs it.
+    EXPECT_LT(table.memory_bytes(), 512u * 1024u);
+    EXPECT_GT(table.memory_bytes(), 256u * 1024u);
 }
 
 namespace
@@ -528,7 +530,7 @@ TEST(IrregularPatchRowTableTest, GeometryAndEnergyReadTheSameRows)
 
     double expectedArea = 0.0;
     double expectedVolume = 0.0;
-    for (int d = 0; d < mesh.irregularRows.depth(); d++)
+    for (int d = 0; d < mesh.irregularRows.depth_for(5); d++)
     {
         for (int c = 0; c < kRegularChildrenPerStep; c++)
         {

@@ -1,4 +1,5 @@
 #include "mesh/Mesh.hpp"
+#include "mesh/Subdivision_matrices.hpp"
 
 
 void Mesh::set_adjacent_faces_of_vertices_sorted()
@@ -341,32 +342,39 @@ void Mesh::set_one_ring_vertices_sorted()
         int d4 = -1;
         int d7 = -1;
         int d8 = -1;
-        bool isRegular = false;
+        int valence = 0;
+
+        auto isSupportedExtraordinary = [](int v) {
+            return v >= kMinIrregularValence && v <= kMaxIrregularValence && v != 6;
+        };
 
         if (valence0 == 6 && valence1 == 6 && valence2 == 6)
         {
             d4 = node0;
             d7 = node1;
             d8 = node2;
-            isRegular = true;
+            valence = 6;
         }
-        else if (valence0 == 5 && valence1 == 6 && valence2 == 6)
+        else if (isSupportedExtraordinary(valence0) && valence1 == 6 && valence2 == 6)
         {
             d4 = node0;
             d7 = node1;
             d8 = node2;
+            valence = valence0;
         }
-        else if (valence1 == 5 && valence2 == 6 && valence0 == 6)
+        else if (isSupportedExtraordinary(valence1) && valence2 == 6 && valence0 == 6)
         {
             d4 = node1;
             d7 = node2;
             d8 = node0;
+            valence = valence1;
         }
-        else if (valence2 == 5 && valence0 == 6 && valence1 == 6)
+        else if (isSupportedExtraordinary(valence2) && valence0 == 6 && valence1 == 6)
         {
             d4 = node2;
             d7 = node0;
             d8 = node1;
+            valence = valence2;
         }
         else
         {
@@ -376,27 +384,60 @@ void Mesh::set_one_ring_vertices_sorted()
             rejection[iFace] = "face " + std::to_string(iFace) + " has valences (" +
                                std::to_string(valence0) + ", " + std::to_string(valence1) +
                                ", " + std::to_string(valence2) +
-                               "); supported patches are 6/6/6, or one corner at 5 with the"
-                               " other two at 6";
+                               "); a patch needs exactly one corner in [" +
+                               std::to_string(kMinIrregularValence) + ", " +
+                               std::to_string(kMaxIrregularValence) +
+                               "] with the other two at 6";
             continue;
         }
 
-        const int d3 = find_opposite_node_index(d4, d7, d8);
+        // Walk d4's fan. fan[0] = d7, fan[1] = d8, and each step takes the
+        // neighbour shared with the previous one that is not the one before
+        // it -- the same opposite-node rule, applied around the corner. This
+        // is what generalises the ring beyond valence 5: the old code
+        // enumerated a fixed d1..d12 and could only ever produce 11 or 12
+        // points.
+        std::vector<int> ringInternal(valence + 6, -1);
+        ringInternal[0] = d4;
+        ringInternal[1] = d7;
+        ringInternal[2] = d8;
+        for (int k = 2; k < valence; k++)
+        {
+            ringInternal[1 + k] = find_opposite_node_index(d4, ringInternal[k], ringInternal[k - 1]);
+        }
+
+        const int d3 = ringInternal[valence];      // the fan closes here
+        const int d5 = (valence >= 3) ? ringInternal[3] : -1;
         const int d11 = find_opposite_node_index(d7, d8, d4);
-        const int d5 = find_opposite_node_index(d4, d8, d7);
-        const int d2 = find_opposite_node_index(d4, d5, d8);
-        const int d6 = find_opposite_node_index(d3, d7, d4);
-        const int d9 = find_opposite_node_index(d8, d5, d4);
-        const int d10 = find_opposite_node_index(d7, d11, d8);
-        const int d12 = find_opposite_node_index(d8, d11, d7);
-        // d1 exists only on a regular patch; a valence-5 ring is one shorter.
-        const int d1 = isRegular ? find_opposite_node_index(d3, d4, d7) : 0;
+        ringInternal[valence + 1] = find_opposite_node_index(d3, d7, d4);   // d6
+        ringInternal[valence + 2] = find_opposite_node_index(d8, d5, d4);   // d9
+        ringInternal[valence + 3] = find_opposite_node_index(d7, d11, d8);  // d10
+        ringInternal[valence + 4] = d11;
+        ringInternal[valence + 5] = find_opposite_node_index(d8, d11, d7);  // d12
 
-        std::vector<int> oneRing =
-            isRegular ? std::vector<int>{d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12}
-                      : std::vector<int>{d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12};
+        // The fan must close back on d7, or the corner is not the simple
+        // isolated fan the reduction assumes.
+        if (d3 < 0 || find_opposite_node_index(d4, d3, ringInternal[valence - 1]) != d7)
+        {
+            rejection[iFace] = "face " + std::to_string(iFace) +
+                               " has a corner whose fan does not close at valence " +
+                               std::to_string(valence);
+            continue;
+        }
 
-        // find_opposite_node_index() returns -1 when the walk fails. That used
+        // Reorder into the canonical one-ring order -- the column order of the
+        // rows in IrregularPatchRowTable, shared from one place so the two
+        // cannot drift apart.
+        const std::vector<int> columnOf = canonical_control_order(valence);
+        std::vector<int> oneRing(valence + 6, -1);
+        for (int internal = 0; internal < valence + 6; internal++)
+        {
+            oneRing[columnOf[internal]] = ringInternal[internal];
+        }
+
+        // At valence 6 the patch is regular and carries the full d1..d12 ring;
+        // the fan walk above produces the same 12 points.
+        // find_opposite_node_index() returns -1 when the walk fails, which used
         // to be printed and then used as a vertex index.
         if (std::find(oneRing.begin(), oneRing.end(), -1) != oneRing.end())
         {
@@ -509,6 +550,20 @@ void Mesh::report_valence_histogram() const
         {
             nMultiExtraordinaryFaces++;
         }
+    }
+
+    // Quiet when there is nothing to report. An all-regular interior -- which
+    // every shipped workload has -- says nothing a reader needs, and printing
+    // it on every mesh setup buries the cases that do matter. Anything
+    // extraordinary, or any face with more than one extraordinary corner, is
+    // always worth surfacing.
+    const bool hasExtraordinary =
+        nMultiExtraordinaryFaces > 0 ||
+        std::any_of(histogram.begin(), histogram.end(),
+                    [](const std::pair<const int, int> &entry) { return entry.first != 6; });
+    if (!hasExtraordinary && !param.VERBOSE_MODE)
+    {
+        return;
     }
 
     std::cout << "[Mesh::valence histogram] faces: " << nNonGhostFaces

@@ -86,6 +86,19 @@ struct CanonicalPatch
 CanonicalPatch build_canonical_patch(int valence);
 
 /**
+ * @brief Canonical column position for each internally-numbered control point.
+ *
+ * `canonical_control_order(N)[i]` is the position control point `i` occupies
+ * in a one-ring, using the internal numbering documented on CanonicalPatch:
+ * 0 is d4, 1..N its fan starting at d7, then d6, d9, d10, d11, d12.
+ *
+ * The mesh has to build one-rings in exactly this order, because it is the
+ * column order of the rows in IrregularPatchRowTable. Both come from the same
+ * layout sort, so exposing it here is what keeps them from drifting apart.
+ */
+std::vector<int> canonical_control_order(int valence);
+
+/**
  * @brief The four matrices describing one subdivision step of an irregular patch.
  *
  * `abar` maps the N+6 control points to the N+12 points of the subdivided
