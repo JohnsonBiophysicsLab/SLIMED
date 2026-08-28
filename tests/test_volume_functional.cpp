@@ -57,43 +57,29 @@ TorusMesh build_torus(int nMajor, int nMinor, double majorRadius, double minorRa
 }
 
 /**
- * @brief Restore the generator's winding and rebuild the one-rings from it.
+ * @brief Assert that setup left the generator's winding alone.
  *
- * set_one_ring_vertices_sorted() picks face winding with
+ * Until WP1, set_one_ring_vertices_sorted() decided face winding with
  * `dot(centre, (c7 - c4) x (c8 - c4)) < 0`, comparing against the coordinate
  * origin. That is only meaningful for a surface star-shaped about the origin,
  * and no torus is: faces on the inner equator have outward normals pointing
- * back toward the axis, so the test flips them. Exactly half of this fixture
- * comes out of setup wound the wrong way.
+ * back toward the axis, so the test flipped them. Exactly half of this fixture
+ * -- 128 of 256 faces -- used to come out of setup wound backwards, and these
+ * tests carried a repair step to undo it.
  *
- * The fix belongs in production -- WP1 of
- * docs/irregular_patch_valence_4_to_8_plan.md replaces that test with an
- * orientation derived from the half-edge structure. Until it lands, the
- * fixture repairs itself. Only the winding decision is overridden: d1..d12 are
- * rebuilt with the same find_opposite_node_index() calls the production path
- * uses, so the ordering logic is not duplicated here.
+ * WP1 removed that test, so the repair is gone and this assertion stands in
+ * its place: it fails if per-face winding decisions ever come back.
  */
-void repair_winding_and_one_rings(Mesh &mesh, const TorusMesh &torus)
+void expect_winding_preserved(const Mesh &mesh, const TorusMesh &torus)
 {
+    int nRewound = 0;
     for (std::size_t i = 0; i < mesh.faces.size(); i++)
     {
-        mesh.faces[i].adjacentVertices = torus.faces[i];
-
-        const int d4 = torus.faces[i][0];
-        const int d7 = torus.faces[i][1];
-        const int d8 = torus.faces[i][2];
-        const int d3 = mesh.find_opposite_node_index(d4, d7, d8);
-        const int d11 = mesh.find_opposite_node_index(d7, d8, d4);
-        const int d5 = mesh.find_opposite_node_index(d4, d8, d7);
-        const int d1 = mesh.find_opposite_node_index(d3, d4, d7);
-        const int d2 = mesh.find_opposite_node_index(d4, d5, d8);
-        const int d6 = mesh.find_opposite_node_index(d3, d7, d4);
-        const int d9 = mesh.find_opposite_node_index(d8, d5, d4);
-        const int d10 = mesh.find_opposite_node_index(d7, d11, d8);
-        const int d12 = mesh.find_opposite_node_index(d8, d11, d7);
-        mesh.faces[i].oneRingVertices =
-            std::vector<int>{d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12};
+        if (mesh.faces[i].adjacentVertices != torus.faces[i])
+            nRewound++;
     }
+    EXPECT_EQ(nRewound, 0) << "setup rewound " << nRewound << " of " << mesh.faces.size()
+                           << " faces; the generator already emits consistent outward winding";
 }
 
 /// Translate every vertex by the same offset.
@@ -135,7 +121,7 @@ TEST(VolumeFunctionalTest, TorusFixtureIsClosedAndConsistentlyOriented)
     const TorusMesh torus = build_torus(16, 8, 10.0, 3.0);
     Mesh mesh(param);
     mesh.setup_from_vertices_faces(torus.vertices, torus.faces);
-    repair_winding_and_one_rings(mesh, torus);
+    expect_winding_preserved(mesh, torus);
 
     for (const Face &face : mesh.faces)
     {
@@ -179,7 +165,7 @@ TEST(VolumeFunctionalTest, VolumeIsOriginIndependentOnAClosedSurface)
     const TorusMesh torus = build_torus(16, 8, 10.0, 3.0);
     Mesh mesh(param);
     mesh.setup_from_vertices_faces(torus.vertices, torus.faces);
-    repair_winding_and_one_rings(mesh, torus);
+    expect_winding_preserved(mesh, torus);
 
     const double before = total_volume(mesh);
     ASSERT_GT(before, 0.0);
@@ -215,7 +201,7 @@ TEST(VolumeFunctionalTest, ASingleBackwardsFaceBreaksOriginIndependence)
 
     Mesh mesh(param);
     mesh.setup_from_vertices_faces(torus.vertices, torus.faces);
-    repair_winding_and_one_rings(mesh, torus);
+    expect_winding_preserved(mesh, torus);
 
     // The closure check from step 3 rejects this outright.
     mesh.param.uVol = 1.0;
@@ -250,7 +236,7 @@ TEST(VolumeFunctionalTest, VolumeForceIsMinusGradientOfVolumeEnergy)
     const TorusMesh torus = build_torus(8, 6, 10.0, 3.0);
     Mesh mesh(param);
     mesh.setup_from_vertices_faces(torus.vertices, torus.faces);
-    repair_winding_and_one_rings(mesh, torus);
+    expect_winding_preserved(mesh, torus);
 
     double area = 0.0;
     double volume = 0.0;
@@ -309,3 +295,4 @@ TEST(VolumeFunctionalTest, VolumeForceIsMinusGradientOfVolumeEnergy)
         }
     }
 }
+
