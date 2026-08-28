@@ -15,3 +15,4 @@
 
 #include "mesh/Subdivision_matrices.hpp"
 #include "mesh/Gauss_quadrature.hpp"
+#include "subdivision_oracle.hpp"

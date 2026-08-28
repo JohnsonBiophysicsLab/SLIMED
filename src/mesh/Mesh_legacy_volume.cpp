@@ -54,42 +54,22 @@ double Mesh::enumerate_legacy_x_only_volume(const Matrix &matOneRingVertex)
 
 double Mesh::sum_legacy_x_only_volume()
 {
-    const auto &subMat = param.subMatrix;
-    const Matrix &M = subMat.irregM;
-    const Matrix &M1 = subMat.irregM1;
-    const Matrix &M2 = subMat.irregM2;
-    const Matrix &M3 = subMat.irregM3;
-    const Matrix &M4 = subMat.irregM4;
-
     double volume = 0.0;
     for (const Face &face : faces)
     {
         if (face.isGhost)
             continue;
 
-        // Mirrors calculate_element_area_volume(): the 12-control regular case
-        // and the 11-control subdivision recursion, with no other valences.
-        switch (static_cast<int>(face.oneRingVertices.size()))
-        {
-        case 12:
-            volume += enumerate_legacy_x_only_volume(get_one_ring_vertex_matrix(face));
-            break;
+        // Regular faces only. The pre-fix tree could not complete an
+        // irregular face at all: calculate_element_area_volume()'s 11-control
+        // arm was bounded by param.subDivideTimes, which was declared without
+        // an initializer and assigned nowhere, so any mesh carrying one hung
+        // there. Every run whose volume this exists to map across was
+        // therefore all-regular.
+        if (face.oneRingVertices.size() != 12)
+            continue;
 
-        case 11:
-        {
-            Matrix matOrigOneRingVertex = get_one_ring_vertex_matrix(face);
-            Matrix matNewNodes17;
-            for (int j = 0; j < param.subDivideTimes; j++)
-            {
-                matNewNodes17 = M * matOrigOneRingVertex;
-                volume += enumerate_legacy_x_only_volume(M1 * matNewNodes17);
-                volume += enumerate_legacy_x_only_volume(M2 * matNewNodes17);
-                volume += enumerate_legacy_x_only_volume(M3 * matNewNodes17);
-                matOrigOneRingVertex = M4 * matNewNodes17;
-            }
-        }
-        break;
-        }
+        volume += enumerate_legacy_x_only_volume(get_one_ring_vertex_matrix(face));
     }
     return volume;
 }

@@ -3,14 +3,14 @@
 /**
  * @brief The generator must reproduce the literal valence-5 matrix exactly.
  *
- * get_subdivision_matrices() is a direct port of the reference POC and is the
+ * get_subdivision_matrices_oracle() is a direct port of the reference POC and is the
  * only independently-derived subdivision data in the tree, so it is the oracle
  * for everything the generator produces.
  */
 TEST(SubdivisionMatrixTest, AbarMatchesTheLiteralOracleAtValence5)
 {
     Matrix oracle, m1, m2, m3, m4;
-    get_subdivision_matrices(oracle, m1, m2, m3, m4);
+    get_subdivision_matrices_oracle(oracle, m1, m2, m3, m4);
 
     const SubdivisionMatrices generated = build_subdivision_matrices(5);
 
@@ -146,7 +146,7 @@ TEST(SubdivisionMatrixTest, ValenceOutsideTheSupportedRangeThrows)
 TEST(SubdivisionMatrixTest, SelectionMatricesMatchTheLiteralOracleAtValence5)
 {
     Matrix oracleM, oracleM1, oracleM2, oracleM3, oracleM4;
-    get_subdivision_matrices(oracleM, oracleM1, oracleM2, oracleM3, oracleM4);
+    get_subdivision_matrices_oracle(oracleM, oracleM1, oracleM2, oracleM3, oracleM4);
 
     const SubdivisionMatrices generated = build_subdivision_matrices(5);
 

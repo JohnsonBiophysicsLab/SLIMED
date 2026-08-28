@@ -24,7 +24,6 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "dFaceY: " << param.dFaceY << std::endl;
     os << "meanL: " << param.meanL << std::endl;
     os << "sigma: " << param.sigma << std::endl;
-    os << "subDivideTimes: " << param.subDivideTimes << std::endl;
     os << "isInsertionAreaConstraint: " << param.isInsertionAreaConstraint << std::endl;
     os << "isAdditiveScheme: " << param.isAdditiveScheme << std::endl;
     os << "isGlobalConstraint: " << param.isGlobalConstraint << std::endl;
@@ -37,11 +36,6 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     {
         os << sf << std::endl;
     }
-    os << "subMatrix.irregM: " << std::endl << param.subMatrix.irregM << std::endl;
-    os << "subMatrix.irregM1: " << std::endl << param.subMatrix.irregM1 << std::endl;
-    os << "subMatrix.irregM2: " << std::endl << param.subMatrix.irregM2 << std::endl;
-    os << "subMatrix.irregM3: " << std::endl << param.subMatrix.irregM3 << std::endl;
-    os << "subMatrix.irregM4: " << std::endl << param.subMatrix.irregM4 << std::endl;
     os << "boundaryCondition: " << (int)(param.boundaryCondition) << std::endl;
     os << "usingNCG: " << param.usingNCG << std::endl;
     os << "isNCGstuck: " << param.isNCGstuck << std::endl;

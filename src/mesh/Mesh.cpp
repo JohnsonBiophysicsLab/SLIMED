@@ -38,13 +38,6 @@ Mesh::Mesh(Param &srcParam) : param(srcParam)
     // and shared, immutable, for the life of the mesh.
     irregularRows.build(param.shapeFunctions);
 
-    // Generate matrices used for subdivision of irregular patches in the mesh
-    get_subdivision_matrices(param.subMatrix.irregM,
-                             param.subMatrix.irregM1,
-                             param.subMatrix.irregM2,
-                             param.subMatrix.irregM3,
-                             param.subMatrix.irregM4);
-
     // initialze scaffolding points matrices
     centerScaffoldingSphere = mat_calloc(3, 1); ///< Center of the scaffolding cap sphere
     forceTotalOnScaffolding = mat_calloc(3, 1); ///< Total force exerted on the scaffolding lattice
@@ -69,13 +62,6 @@ Mesh::Mesh(const std::vector<Vertex> &srcVertices,
     // and shared, immutable, for the life of the mesh.
     irregularRows.build(param.shapeFunctions);
 
-    // Generate matrices used for subdivision of irregular patches in the mesh
-    get_subdivision_matrices(param.subMatrix.irregM,
-                             param.subMatrix.irregM1,
-                             param.subMatrix.irregM2,
-                             param.subMatrix.irregM3,
-                             param.subMatrix.irregM4);
-    
     // initialze scaffolding points matrices
     centerScaffoldingSphere = mat_calloc(3, 1); ///< Center of the scaffolding cap sphere
     forceTotalOnScaffolding = mat_calloc(3, 1); ///< Total force exerted on the scaffolding lattice
@@ -193,13 +179,14 @@ void Mesh::set_spontaneous_curvature_for_face(const double &insertCurv, const do
  * This is referenced constantly so
  */
 void Mesh::enumerate_gauss_quadrature_point_area_volume(
+    const std::vector<Matrix> &sampleRows,
     const Matrix &matOneRingVertex,
     double &area,
     double &volume)
 {
 #pragma omp parallel for reduction(+ \
                                    : area, volume)
-    for (int j = 0; j < param.gaussQuadratureCoeff.nrow(); j++)
+    for (int j = 0; j < static_cast<int>(sampleRows.size()); j++)
     {
         /*
         Backup alternatives:
@@ -221,7 +208,7 @@ void Mesh::enumerate_gauss_quadrature_point_area_volume(
         */
 
         // VERSION 3
-        Matrix &sf = param.shapeFunctions[j];
+        const Matrix &sf = sampleRows[j];
         Matrix x = sf.get_row(0) * matOneRingVertex;
         Matrix a_3 = cross_row(sf.get_row(1) * matOneRingVertex, sf.get_row(2) * matOneRingVertex);
         double sqa = a_3.calculate_norm();
@@ -256,16 +243,6 @@ Matrix Mesh::get_one_ring_vertex_matrix(const Face &face)
 
 void Mesh::calculate_element_area_volume()
 {
-    // five matrix used for subdivision of the irregular patch
-    // M(17,11), M1(12,17), M2(12,17), M3(12,17), M4(11,17);
-    // alias for subMatrix - does not cause
-    // extra deepcopy for the subMatrix - Y Ying
-    const auto &subMat = param.subMatrix; // Get a reference to the subMatrix object
-    const Matrix &M = subMat.irregM;
-    const Matrix &M1 = subMat.irregM1;
-    const Matrix &M2 = subMat.irregM2;
-    const Matrix &M3 = subMat.irregM3;
-    const Matrix &M4 = subMat.irregM4;
 #pragma omp parallel for
     for (Face& face : faces)
     {
@@ -275,59 +252,41 @@ void Mesh::calculate_element_area_volume()
         // calculations - Y Ying
         if (face.isGhost)
             continue;
-        
 
-        // Variables initialization
-        double area = 0.0;                                        ///< The accumulated area for a membrane.s
-        double volume = 0.0;                                      ///< The accumulated volume for a membrane.
-        const int nOneRingVertices = face.oneRingVertices.size(); ///< The number of one-ring vertices for a face in a mesh.
+        double area = 0.0;   ///< The accumulated area for a membrane.
+        double volume = 0.0; ///< The accumulated volume for a membrane.
+        const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
 
-        // Compute area and volume for a regular patch
-        switch (nOneRingVertices)
+        // Geometry reads exactly the rows energy and force read, through the
+        // same dispatch. Before WP5 this arm ran its own explicit subdivision
+        // recursion over param.subMatrix, bounded by an uninitialized
+        // param.subDivideTimes -- so area and volume were integrated by
+        // different code, to a different depth, than the energy they are
+        // constrained against.
+        if (nOneRingVertices == 12)
         {
-        case 12:
+            const Matrix matOneRingVertex = get_one_ring_vertex_matrix(face);
+            enumerate_gauss_quadrature_point_area_volume(param.shapeFunctions, matOneRingVertex,
+                                                        area, volume);
+        }
+        else if (nOneRingVertices >= kMinIrregularValence + 6 &&
+                 nOneRingVertices <= kMaxIrregularValence + 6)
+        {
+            const Matrix matOneRingVertex = get_one_ring_vertex_matrix(face);
+            const int valence = nOneRingVertices - 6;
+            for (int d = 0; d < irregularRows.depth(); d++)
             {
-                // The matrix representing the coordinates of the one ring vertices.
-                Matrix matOneRingVertex = get_one_ring_vertex_matrix(face);
-
-                // Use Gaussian quadrature with 3 points to compute area and volume
-                enumerate_gauss_quadrature_point_area_volume(matOneRingVertex,
-                                                            area, volume);
-            }
-            break;
-
-        case 11:
-            {
-                // irregular patch
-                // The matrix representing the coordinates of the one ring vertices.
-                Matrix matOrigOneRingVertex = get_one_ring_vertex_matrix(face);
-                Matrix matNewOneRingVertex; // store the one ring vertex after subdivision
-                Matrix matNewNodes17;       // store the coordinates of 17 new nodes after subdivision
-
-                // using subdivision to estimate irregular patch
-                for (int j = 0; j < param.subDivideTimes; j++)
+                for (int c = 0; c < kRegularChildrenPerStep; c++)
                 {
-                    //(17 x 3) = (17 x 11) * (11 x 3)
-                    matNewNodes17 = M * matOrigOneRingVertex; // 17 new nodes after subdivision
-
-                    matNewOneRingVertex = M1 * matNewNodes17; // element 1
-                    enumerate_gauss_quadrature_point_area_volume(matNewOneRingVertex,
-                                                                area, volume);
-
-                    matNewOneRingVertex = M2 * matNewNodes17; // element 2
-                    enumerate_gauss_quadrature_point_area_volume(matNewOneRingVertex,
-                                                                area, volume);
-
-                    matNewOneRingVertex = M3 * matNewNodes17; // element 3
-                    enumerate_gauss_quadrature_point_area_volume(matNewOneRingVertex,
-                                                                area, volume);
-
-                    matOrigOneRingVertex = M4 * matNewNodes17; // element 4, still irregular patch
+                    enumerate_gauss_quadrature_point_area_volume(
+                        irregularRows.rows_for_child(valence, d, c), matOneRingVertex, area,
+                        volume);
                 }
             }
-            break;
         }
-        
+        // Any other width means no complete one-ring -- a boundary face, with
+        // no limit surface and so no area or volume of its own.
+
         face.elementArea = area;
         face.elementVolume = volume;
     }

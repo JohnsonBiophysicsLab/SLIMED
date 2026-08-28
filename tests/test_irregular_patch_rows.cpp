@@ -262,7 +262,7 @@ Matrix irregular_control_net() { return irregular_control_net_for(5); }
  * recursion folded flat, so the two must agree on a real, non-planar control
  * net.
  *
- * The recursion side is driven by get_subdivision_matrices(), the literal
+ * The recursion side is driven by get_subdivision_matrices_oracle(), the literal
  * matrices, while the table side is driven by the generated ones. So this
  * checks the generator and the collapse together, against the production code
  * path, on geometry rather than on matrix entries -- which the N=5 parity test
@@ -274,7 +274,7 @@ TEST(IrregularPatchRowTableTest, CollapsedTableReproducesTheExplicitRecursion)
     const Matrix control = irregular_control_net();
 
     Matrix oracleM, oracleM1, oracleM2, oracleM3, oracleM4;
-    get_subdivision_matrices(oracleM, oracleM1, oracleM2, oracleM3, oracleM4);
+    get_subdivision_matrices_oracle(oracleM, oracleM1, oracleM2, oracleM3, oracleM4);
 
     for (int depth = 1; depth <= 6; depth++)
     {
@@ -471,4 +471,88 @@ TEST(IrregularPatchRowTableTest, IrregularFaceIsEvaluatedEndToEnd)
         }
     }
     EXPECT_GT(maxForce, 0.0);
+}
+
+/**
+ * @brief Geometry and energy/force read the same rows for the same face.
+ *
+ * WP5's gate. Before it, calculate_element_area_volume() ran its own explicit
+ * subdivision recursion over param.subMatrix, bounded by an uninitialized
+ * param.subDivideTimes, while energy and force went through the row table. So
+ * the area a face reported and the area its bending energy was computed from
+ * came from different code, integrated to a different depth.
+ *
+ * Now both go through IrregularPatchRowTable, and the face's stored
+ * elementArea must equal the area those same rows give when summed
+ * independently.
+ */
+TEST(IrregularPatchRowTableTest, GeometryAndEnergyReadTheSameRows)
+{
+    const CanonicalPatch patch = build_canonical_patch(5);
+
+    std::vector<std::vector<double>> vertices;
+    for (int v = 0; v < patch.nVertices; v++)
+    {
+        const double x = patch.layout[v][0];
+        const double y = patch.layout[v][1];
+        vertices.push_back({x, y, 0.15 * (x * x + y * y)});
+    }
+    std::vector<std::vector<int>> faces;
+    for (const std::array<int, 3> &face : patch.faces)
+        faces.push_back({face[0], face[1], face[2]});
+
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    param.uVol = 0.0;
+    Mesh mesh(param);
+    mesh.setup_from_vertices_faces(vertices, faces);
+    mesh.calculate_element_area_volume();
+
+    int irregularFace = -1;
+    for (std::size_t i = 0; i < mesh.faces.size(); i++)
+    {
+        if (mesh.faces[i].oneRingVertices.size() == 11u)
+            irregularFace = static_cast<int>(i);
+    }
+    ASSERT_GE(irregularFace, 0);
+
+    // The same rows, summed here rather than inside the mesh.
+    Matrix control(11, 3);
+    for (int k = 0; k < 11; k++)
+    {
+        const int node = mesh.faces[irregularFace].oneRingVertices[k];
+        for (int axis = 0; axis < 3; axis++)
+            control.set(k, axis, mesh.vertices[node].coord(axis, 0));
+    }
+
+    double expectedArea = 0.0;
+    double expectedVolume = 0.0;
+    for (int d = 0; d < mesh.irregularRows.depth(); d++)
+    {
+        for (int c = 0; c < kRegularChildrenPerStep; c++)
+        {
+            for (int q = 0; q < mesh.irregularRows.nSamples(); q++)
+            {
+                accumulate_area_volume(mesh.irregularRows.rows(5, d, c, q), control,
+                                       mesh.param.gaussQuadratureCoeff(q, 0), expectedArea,
+                                       expectedVolume);
+            }
+        }
+    }
+
+    ASSERT_GT(expectedArea, 0.0);
+    EXPECT_NEAR(mesh.faces[irregularFace].elementArea, expectedArea, 1e-12 * expectedArea);
+    EXPECT_NEAR(mesh.faces[irregularFace].elementVolume, expectedVolume,
+                1e-12 * std::abs(expectedVolume) + 1e-15);
+
+    // And a boundary face, having no limit surface, contributes nothing.
+    for (const Face &face : mesh.faces)
+    {
+        if (face.oneRingVertices.empty())
+        {
+            EXPECT_DOUBLE_EQ(face.elementArea, 0.0);
+            EXPECT_DOUBLE_EQ(face.elementVolume, 0.0);
+        }
+    }
 }

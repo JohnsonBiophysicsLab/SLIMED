@@ -819,7 +819,8 @@ protected:
      * @param area A reference to a double variable storing the accumulated area.
      * @param volume A reference to a double variable storing the accumulated volume.
      */
-    void enumerate_gauss_quadrature_point_area_volume(const Matrix &dots,
+    void enumerate_gauss_quadrature_point_area_volume(const std::vector<Matrix> &sampleRows,
+                                                      const Matrix &dots,
                                                       double &area,
                                                       double &volume);
 
