@@ -33,6 +33,11 @@ Mesh::Mesh(Param &srcParam) : param(srcParam)
     //param.shapeFunctions = std::vector<Matrix>(param.VWU.nrow());
     get_shapefunction_vector(param.VWU, param.shapeFunctions);
 
+    // Collapse the irregular-patch recursion into limit-surface rows. Depends
+    // only on the valence and the quadrature rule, so it is built once here
+    // and shared, immutable, for the life of the mesh.
+    irregularRows.build(param.shapeFunctions);
+
     // Generate matrices used for subdivision of irregular patches in the mesh
     get_subdivision_matrices(param.subMatrix.irregM,
                              param.subMatrix.irregM1,
@@ -58,6 +63,11 @@ Mesh::Mesh(const std::vector<Vertex> &srcVertices,
 
     // Compute shape functions for each element and store them in `param`
     get_shapefunction_vector(param.VWU, param.shapeFunctions);
+
+    // Collapse the irregular-patch recursion into limit-surface rows. Depends
+    // only on the valence and the quadrature rule, so it is built once here
+    // and shared, immutable, for the life of the mesh.
+    irregularRows.build(param.shapeFunctions);
 
     // Generate matrices used for subdivision of irregular patches in the mesh
     get_subdivision_matrices(param.subMatrix.irregM,

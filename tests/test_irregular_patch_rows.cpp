@@ -392,3 +392,83 @@ TEST(IrregularPatchRowTableTest, ConvergenceRateDependsOnValence)
     EXPECT_LT(ratio[8], ratio[6]);
     EXPECT_GT(ratio[4], ratio[6]);
 }
+
+/**
+ * @brief An irregular face is now evaluated, not silently zeroed.
+ *
+ * The canonical patch for valence 5 is itself the fixture: its centre triangle
+ * (d4, d7, d8) has one valence-5 corner and two valence-6 corners, so it is
+ * admitted with an 11-point one-ring, while every other face touches the
+ * boundary and is skipped.
+ *
+ * Before WP4 this face reached element_energy_force_regular() with a 7x12
+ * shape function against an 11-wide control net -- a dimension mismatch inside
+ * a gsl_blas_dgemm wrapper that discards its return code. Now it is driven
+ * through the same kernel as a regular face, with rows of its own width.
+ */
+TEST(IrregularPatchRowTableTest, IrregularFaceIsEvaluatedEndToEnd)
+{
+    const CanonicalPatch patch = build_canonical_patch(5);
+
+    std::vector<std::vector<double>> vertices;
+    for (int v = 0; v < patch.nVertices; v++)
+    {
+        const double x = patch.layout[v][0];
+        const double y = patch.layout[v][1];
+        // A bowl, so the bending energy has something to see.
+        vertices.push_back({x, y, 0.15 * (x * x + y * y)});
+    }
+    std::vector<std::vector<int>> faces;
+    for (const std::array<int, 3> &face : patch.faces)
+        faces.push_back({face[0], face[1], face[2]});
+
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    param.uVol = 0.0;
+    Mesh mesh(param);
+    ASSERT_NO_THROW(mesh.setup_from_vertices_faces(vertices, faces));
+
+    // Exactly one face has a complete one-ring, and it is the irregular one.
+    int nIrregular = 0;
+    int irregularFace = -1;
+    for (std::size_t i = 0; i < mesh.faces.size(); i++)
+    {
+        const std::size_t width = mesh.faces[i].oneRingVertices.size();
+        if (width == 0)
+            continue;
+        EXPECT_EQ(width, 11u) << "face " << i;
+        nIrregular++;
+        irregularFace = static_cast<int>(i);
+    }
+    ASSERT_EQ(nIrregular, 1);
+
+    mesh.calculate_element_area_volume();
+    double area = 0.0;
+    double volume = 0.0;
+    mesh.sum_membrane_area_and_volume(area, volume);
+    mesh.param.area0 = area;
+    mesh.param.vol0 = 0.0;
+    mesh.update_previous_coord_for_vertex();
+    mesh.update_reference_coord_from_previous_coord();
+    ASSERT_NO_THROW(mesh.Compute_Energy_And_Force());
+
+    // The irregular face now carries real curvature energy rather than the
+    // zero initializer it used to be stored with.
+    EXPECT_GT(mesh.faces[irregularFace].energy.energyCurvature, 0.0);
+    EXPECT_TRUE(std::isfinite(mesh.faces[irregularFace].energy.energyCurvature));
+    EXPECT_TRUE(std::isfinite(mesh.faces[irregularFace].meanCurvature));
+
+    // And it exerts force on its own control points.
+    double maxForce = 0.0;
+    for (int node : mesh.faces[irregularFace].oneRingVertices)
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            const double component = mesh.vertices[node].force.forceCurvature(k, 0);
+            EXPECT_TRUE(std::isfinite(component)) << "vertex " << node << " axis " << k;
+            maxForce = std::max(maxForce, std::abs(component));
+        }
+    }
+    EXPECT_GT(maxForce, 0.0);
+}

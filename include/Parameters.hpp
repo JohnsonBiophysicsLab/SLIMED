@@ -147,7 +147,20 @@ struct Param
     double dFaceY;                          ///< Initial actual face side length along Y axis for flat membrane
     double meanL;                           ///< Mean length of edges after subdivision
     double sigma = 0.0;                     ///< Noise level for vertex positions
-    int subDivideTimes;                     ///< Number of times to subdivide each edge
+    /**
+     * @brief Number of times to subdivide an irregular patch.
+     *
+     * This was declared without an initializer and is assigned nowhere -- not
+     * from input.params, not in code -- while being read as the loop bound of
+     * the irregular recursion in calculate_element_area_volume(). The branch
+     * is unreachable on any all-regular mesh, which is why an indeterminate
+     * loop count went unnoticed; the first mesh with an irregular face hangs.
+     *
+     * Must match kDefaultIrregularDepth in mesh/Irregular_patch_rows.hpp, so
+     * that area and volume are integrated to the same depth as energy and
+     * force. WP5 retires this by routing both through the row table.
+     */
+    int subDivideTimes = 6;
     bool isInsertionAreaConstraint = false; ///< Whether to apply area constraint to insertions
     bool isAdditiveScheme = false;          ///< Whether to use additive scheme for constraints
     bool isGlobalConstraint = true;                ///< Whether to apply global constraint across entire membrane

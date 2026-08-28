@@ -75,6 +75,17 @@ public:
      */
     const Matrix &rows(int valence, int depth, int child, int sample) const;
 
+    /**
+     * @brief All samples for one child, in quadrature order.
+     *
+     * The energy/force kernel consumes one of these per call, in the same
+     * shape as `param.shapeFunctions`, so an irregular child is evaluated by
+     * the identical code path as a regular face.
+     *
+     * @throw std::out_of_range if any key is outside the built range.
+     */
+    const std::vector<Matrix> &rows_for_child(int valence, int depth, int child) const;
+
     bool empty() const { return rows_.empty(); }
     int depth() const { return depth_; }
     int nSamples() const { return nSamples_; }
@@ -86,9 +97,10 @@ public:
     std::size_t memory_bytes() const;
 
 private:
-    int index(int valence, int depth, int child, int sample) const;
+    int child_index(int valence, int depth, int child) const;
 
     int depth_ = 0;
     int nSamples_ = 0;
-    std::vector<Matrix> rows_;
+    /// Grouped by (valence, depth, child); each entry holds one Matrix per sample.
+    std::vector<std::vector<Matrix>> rows_;
 };

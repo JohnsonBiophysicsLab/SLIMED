@@ -79,37 +79,68 @@ void Mesh::Compute_Energy_And_Force()
         face.normVector.free();                         // reinitialize empty normal vector
         face.normVector = mat_calloc(3, 1);             // normal vector
                                                         // Calculate energy and force on the given triangular patch
-//cout << "CEAF 71" << endl;
-        // regular patch
+        // One kernel for both patch kinds. The width lives in the rows and in
+        // the control-point list, not in a branch: a regular face is 12 wide,
+        // an irregular one N+6, and element_energy_force_patch() reads that off
+        // its arguments.
         if (nOneRingVertices == 12)
         {
-//cout << "CEAF 75" << endl;
-            element_energy_force_regular(coordOneRingVertices,
-                                         face,
-                                         spontCurv,
-                                         meanCurv,
-                                         face.normVector,
-                                         eBend,
-                                         fBend,
-                                         fArea,
-                                         fVol);
-
-            // irregular patch
+            element_energy_force_patch(param.shapeFunctions,
+                                       coordOneRingVertices,
+                                       face,
+                                       spontCurv,
+                                       meanCurv,
+                                       face.normVector,
+                                       eBend,
+                                       fBend,
+                                       fArea,
+                                       fVol);
         }
-        else if (nOneRingVertices == 11)
+        else if (nOneRingVertices >= kMinIrregularValence + 6 &&
+                 nOneRingVertices <= kMaxIrregularValence + 6)
         {
-            //@todo energy force irregular
-            // element_energy_force_irregular(coordOneRingVertices, param, spontCurv, meanCurv, normVector, eBend, fBend, fArea, fVol, GaussQuadratureCoeff, ShapeFunctions, subMatrix);
-            element_energy_force_regular(coordOneRingVertices,
-                                         face,
-                                         spontCurv,
-                                         meanCurv,
-                                         face.normVector,
-                                         eBend,
-                                         fBend,
-                                         fArea,
-                                         fVol);
+            // An irregular patch is tiled by regular children at increasing
+            // depth. Each child is a 12-point patch in the parent's own
+            // control points, so the same kernel evaluates it -- only the rows
+            // differ. Previously this arm called the regular kernel with a
+            // 7x12 shape function against an 11-wide control net, which is a
+            // dimension mismatch inside a gsl_blas_dgemm wrapper that discards
+            // its return code.
+            const int valence = nOneRingVertices - 6;
+            for (int d = 0; d < irregularRows.depth(); d++)
+            {
+                for (int c = 0; c < kRegularChildrenPerStep; c++)
+                {
+                    double childEBend = 0.0;
+                    double childMeanCurv = 0.0;
+                    Matrix childNormVector = mat_calloc(3, 1);
+                    element_energy_force_patch(irregularRows.rows_for_child(valence, d, c),
+                                               coordOneRingVertices,
+                                               face,
+                                               spontCurv,
+                                               childMeanCurv,
+                                               childNormVector,
+                                               childEBend,
+                                               fBend,
+                                               fArea,
+                                               fVol);
+                    eBend += childEBend;
+                    // Mean curvature and the normal are reported per face, so
+                    // take them from the child nearest the patch centre --
+                    // depth 0, the middle child -- rather than summing
+                    // quantities that do not add.
+                    if (d == 0 && c == 1)
+                    {
+                        meanCurv = childMeanCurv;
+                        face.normVector = childNormVector;
+                    }
+                }
+            }
         }
+        // Any other width means no complete one-ring -- a ghost or boundary
+        // face, which has no limit surface. Everything below stays at its zero
+        // initializer, which is exactly what the previous two-armed dispatch
+        // did for these faces.
         face.energy.energyCurvature = eBend; ///< store curvature energy in face object
 
         
@@ -237,8 +268,9 @@ void Mesh::Compute_Energy_And_Force()
     }
 }
 
-void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingVertices,
-                                        Face& face,
+void Mesh::element_energy_force_patch(const std::vector<Matrix> &sampleRows,
+                                      const std::vector<Matrix> &coordOneRingVertices,
+                                      Face& face,
                                         const double spontCurv,
                                         double &meanCurv,
                                         Matrix &normVector,
@@ -322,10 +354,15 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
     Matrix n1_conv(3, 1);
     Matrix n2_conv(3, 1);
 
-    // 2d vectors
-    Matrix f_be(12, 3);
-    Matrix f_cons(12, 3);
-    Matrix f_conv(12, 3);
+    // The patch width. A regular face carries 12 control points; an irregular
+    // one carries N+6. Nothing below branches on which -- the rows say how wide
+    // they are, and that is the only place the difference lives.
+    const int nControlPoints = static_cast<int>(coordOneRingVertices.size());
+
+    // 2d vectors, one row per control point
+    Matrix f_be(nControlPoints, 3);
+    Matrix f_cons(nControlPoints, 3);
+    Matrix f_conv(nControlPoints, 3);
     Matrix da1(3, 3);
     Matrix da2(3, 3);
 
@@ -356,14 +393,12 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
     }
 
     // Gaussian quadrature, second-order or 3 points.
-    //std::cout << param.shapeFunctions.size() << std::endl;
-    for (int i = 0; i < param.shapeFunctions.size(); i++)
+    for (int i = 0; i < static_cast<int>(sampleRows.size()); i++)
     {
         halfGaussQuadratureCoeff = 0.5 * param.gaussQuadratureCoeff(i, 0);
-        //std::cout << halfGaussQuadratureCoeff << std::endl;
-        Matrix &sf = param.shapeFunctions[i];
+        const Matrix &sf = sampleRows[i];
 
-        multiplication(sf, matOneRingVertices, sfDotOneRingV); //< (7, 12) . (12, 3) = (7, 3)
+        multiplication(sf, matOneRingVertices, sfDotOneRingV); //< (7, K) . (K, 3) = (7, 3)
 ////cout << "EEFR 297" << endl;
         /*
          * The (7, 3) matrix represents the coordinate and derivatives of the point
@@ -506,7 +541,7 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
         //std::cout << sqa << std::endl;
         eBend_tmp = 0.5 * kCurv * sqa * pow(2.0 * H_curv - spontCurv, 2); // bending Energy
         // std::cout << "(2H, spontCurv, 2h-spontCurv, ebe)" << 2.0*H_curv << ", " << spontCurv << ", " << (2.0*H_curv-spontCurv) <<", " << ebe << endl;
-        for (int j = 0; j < 12; j++)
+        for (int j = 0; j < nControlPoints; j++)
         {   
             //da1 = -sf(3, j) * kron(a1, a_3)
             //- sf(1, j) * kron(a11, a_3)

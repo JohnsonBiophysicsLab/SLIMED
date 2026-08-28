@@ -34,6 +34,7 @@
 // model setup
 //#include "Edge.hpp"
 #include "mesh/Face.hpp"
+#include "mesh/Irregular_patch_rows.hpp"
 #include "mesh/Vertex.hpp"
 #include "energy_force/Energy.hpp"
 #include "energy_force/Force.hpp"
@@ -119,6 +120,14 @@ public:
     Param& param;                  ///< Object of the Param class containing all necessary parameters for building the Mesh object
     // Scaffolding points, see Scaffolding_points.cpp
     Matrix centerScaffoldingSphere; ///< Center of the scaffolding cap sphere
+    /**
+     * @brief Limit-surface rows for irregular patches, built once at startup.
+     *
+     * Depends only on the valence and the quadrature rule, never on the mesh,
+     * so it is immutable after construction and shared across threads.
+     */
+    IrregularPatchRowTable irregularRows;
+
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
     std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold
@@ -504,7 +513,8 @@ public:
      * @param fArea a non-constant matrix reference representing the area constraint force of the element.
      * @param fVolume a non-constant matrix reference representing the volume constraint force of the element.
      */
-    void element_energy_force_regular(const std::vector<Matrix> &coordOneRingVertices,
+    void element_energy_force_patch(const std::vector<Matrix> &sampleRows,
+                                    const std::vector<Matrix> &coordOneRingVertices,
                                       Face& face,
                                       const double spontCurv,
                                       double &meanCurv,

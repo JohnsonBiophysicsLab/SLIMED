@@ -15,3 +15,6 @@
 #include "mesh/Irregular_patch_rows.hpp"
 #include "mesh/Gauss_quadrature.hpp"
 #include "Parameters.hpp"
+#include "mesh/Mesh.hpp"
+#include "mesh/Subdivision_matrices.hpp"
+#include <algorithm>

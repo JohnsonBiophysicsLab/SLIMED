@@ -19,19 +19,17 @@ Matrix identity(int n)
 }
 } // namespace
 
-int IrregularPatchRowTable::index(int valence, int depth, int child, int sample) const
+int IrregularPatchRowTable::child_index(int valence, int depth, int child) const
 {
     if (valence < kMinIrregularValence || valence > kMaxIrregularValence || depth < 0 ||
-        depth >= depth_ || child < 0 || child >= kRegularChildrenPerStep || sample < 0 ||
-        sample >= nSamples_)
+        depth >= depth_ || child < 0 || child >= kRegularChildrenPerStep)
     {
         throw std::out_of_range("[IrregularPatchRowTable] no rows for valence " +
                                 std::to_string(valence) + ", depth " + std::to_string(depth) +
-                                ", child " + std::to_string(child) + ", sample " +
-                                std::to_string(sample));
+                                ", child " + std::to_string(child));
     }
     const int v = valence - kMinIrregularValence;
-    return ((v * depth_ + depth) * kRegularChildrenPerStep + child) * nSamples_ + sample;
+    return (v * depth_ + depth) * kRegularChildrenPerStep + child;
 }
 
 void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFunctions, int depth)
@@ -72,8 +70,9 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
     // in rows() and memory_bytes().
     //
     // Sized by construction; the elements are filled in below.
-    std::vector<Matrix> built(static_cast<std::size_t>(kValenceCount) * depth *
-                              kRegularChildrenPerStep * nSamples);
+    std::vector<std::vector<Matrix>> built(
+        static_cast<std::size_t>(kValenceCount) * depth * kRegularChildrenPerStep,
+        std::vector<Matrix>(nSamples));
 
     for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
     {
@@ -93,14 +92,12 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
                 // P_c * Abar * S_d, shared across samples: the topology does
                 // not depend on the quadrature point.
                 const Matrix childRows = (*children[c]) * matrices.abar * chain;
+                const int v = valence - kMinIrregularValence;
+                const std::size_t slot =
+                    (static_cast<std::size_t>(v) * depth + d) * kRegularChildrenPerStep + c;
                 for (int q = 0; q < nSamples; q++)
                 {
-                    const int v = valence - kMinIrregularValence;
-                    const std::size_t slot =
-                        ((static_cast<std::size_t>(v) * depth + d) * kRegularChildrenPerStep + c) *
-                            nSamples +
-                        q;
-                    built[slot] = regularShapeFunctions[q] * childRows;
+                    built[slot][q] = regularShapeFunctions[q] * childRows;
                 }
             }
             chain = descend * chain;
@@ -115,7 +112,18 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
 
 const Matrix &IrregularPatchRowTable::rows(int valence, int depth, int child, int sample) const
 {
-    return rows_[index(valence, depth, child, sample)];
+    const std::vector<Matrix> &samples = rows_for_child(valence, depth, child);
+    if (sample < 0 || sample >= nSamples_)
+    {
+        throw std::out_of_range("[IrregularPatchRowTable] no sample " + std::to_string(sample));
+    }
+    return samples[sample];
+}
+
+const std::vector<Matrix> &IrregularPatchRowTable::rows_for_child(int valence, int depth,
+                                                                  int child) const
+{
+    return rows_[child_index(valence, depth, child)];
 }
 
 double IrregularPatchRowTable::truncated_fraction() const
@@ -126,9 +134,12 @@ double IrregularPatchRowTable::truncated_fraction() const
 std::size_t IrregularPatchRowTable::memory_bytes() const
 {
     std::size_t total = 0;
-    for (const Matrix &matrix : rows_)
+    for (const std::vector<Matrix> &samples : rows_)
     {
-        total += static_cast<std::size_t>(matrix.nrow()) * matrix.ncol() * sizeof(double);
+        for (const Matrix &matrix : samples)
+        {
+            total += static_cast<std::size_t>(matrix.nrow()) * matrix.ncol() * sizeof(double);
+        }
     }
     return total;
 }
