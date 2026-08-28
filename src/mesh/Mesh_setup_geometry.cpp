@@ -274,114 +274,253 @@ void Mesh::sort_vertices_on_faces()
     }
 }
 
-// To find out the one-ring vertices aound face_i. It should be 12 for the flat surface because we set it up only with regular patch.
-// The boundary faces do not have complete one-ring, neither it will be called in the code, so no need to store their one-ring-vertex
+// To find out the one-ring vertices around face_i. A regular patch has 12; an
+// irregular patch, with exactly one valence-5 corner, has 11. Anything else is
+// rejected rather than silently left empty -- an empty one-ring matches neither
+// arm of the dispatch in Compute_Energy_And_Force(), which would store the face
+// with zero energy and zero force.
 void Mesh::set_one_ring_vertices_sorted()
 {
-// two types of patch: 1. regular patch with 12 one-ring vertices, each vertex has 6 closest nodes
-//                     2. irregular patch with 11 one-ring vertices, one vertex has 5 closest-nodes
+    const int nFaces = static_cast<int>(faces.size());
+
+    // Per-face rejection reason, filled in the parallel pass and reported
+    // serially afterwards: writing distinct elements is race-free, throwing out
+    // of an OpenMP region is not.
+    std::vector<std::string> rejection(nFaces);
+
 #pragma omp parallel for
-    for (Face& face : faces)
+    for (int iFace = 0; iFace < nFaces; iFace++)
     {
-        // skip for ghost faces -> not enough neighboring mesh triangles!
+        Face &face = faces[iFace];
+
+        // Ghost faces lack the neighbouring triangles for a complete one-ring,
+        // and take no part in any physical calculation.
         if (face.isGhost)
         {
             continue;
         }
 
-        // int d1, d2, d3, d5, d6, d9, d10, d11, d12
-        int node0 = face.adjacentVertices[0];
-        int node1 = face.adjacentVertices[1];
-        int node2 = face.adjacentVertices[2];
-        // regular patch, all three nodes have 6 neighbor faces or vertices.
-        if (vertices[node0].adjacentVertices.size() == 6 &&
-            vertices[node1].adjacentVertices.size() == 6 &&
-            vertices[node2].adjacentVertices.size() == 6)
+        const int node0 = face.adjacentVertices[0];
+        const int node1 = face.adjacentVertices[1];
+        const int node2 = face.adjacentVertices[2];
+
+        // A face touching the mesh boundary has no complete one-ring and so no
+        // limit surface -- that is a property of the mesh, not an error, and it
+        // is what the original comment on this function meant by "the boundary
+        // faces do not have complete one-ring". Leaving oneRingVertices empty
+        // here is deliberate. The defect was that *every* unmatched face took
+        // this path, including genuine extraordinary interior vertices.
+        if (!is_interior_vertex(node0) || !is_interior_vertex(node1) ||
+            !is_interior_vertex(node2))
         {
-            // make sure d4, d7, d8 are in anti-clock-wise order
-            int d4 = node0;
-            int d7 = node1;
-            int d8 = node2;
-            //
-            Matrix coord4 = vertices[node0].coord;
-            Matrix coord7 = vertices[node1].coord;
-            Matrix coord8 = vertices[node2].coord;
-            // calculate CoM of the triangle
-            Matrix center = 1.0 / 3.0 * (coord4 + coord7 + coord8);
-            if (dot_col(center, cross_col(coord7 - coord4, coord8 - coord4)) < 0)
-            { // switch d7 and d8 position
-                d7 = face.adjacentVertices[2];
-                d8 = face.adjacentVertices[1];
-                face.adjacentVertices[1] = d7;
-                face.adjacentVertices[2] = d8;
-            }
-            int d3 = find_opposite_node_index(d4, d7, d8);
-            int d11 = find_opposite_node_index(d7, d8, d4);
-            int d5 = find_opposite_node_index(d4, d8, d7);
-            int d1 = find_opposite_node_index(d3, d4, d7);
-            int d2 = find_opposite_node_index(d4, d5, d8);
-            int d6 = find_opposite_node_index(d3, d7, d4);
-            int d9 = find_opposite_node_index(d8, d5, d4);
-            int d10 = find_opposite_node_index(d7, d11, d8);
-            int d12 = find_opposite_node_index(d8, d11, d7);
-            face.oneRingVertices = vector<int>{d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12};
-            
-            // irregular patch, one node has 5 neighbors and the other two nodes have 6 neighbors.
+            continue;
         }
-        else if (vertices[node0].adjacentVertices.size() == 5 &&
-                 vertices[node1].adjacentVertices.size() == 5 &&
-                 vertices[node2].adjacentVertices.size() == 5)
+
+        // Valence is the size of the one-ring. Selection below tests the same
+        // quantity the classification does; the two used to disagree
+        // (adjacentVertices when classifying, adjacentFaces when selecting), and
+        // on any vertex where they differ d4/d7/d8 were left uninitialized and
+        // read anyway.
+        const int valence0 = static_cast<int>(vertices[node0].adjacentVertices.size());
+        const int valence1 = static_cast<int>(vertices[node1].adjacentVertices.size());
+        const int valence2 = static_cast<int>(vertices[node2].adjacentVertices.size());
+
+        // d4 anchors the patch -- the extraordinary corner when there is one.
+        // Rotating (node0, node1, node2) preserves the face winding, which
+        // sort_vertices_on_faces() has already made consistent across the mesh,
+        // so no per-face winding decision is taken here.
+        //
+        // The previous code decided winding with
+        //     dot(centre, (c7 - c4) x (c8 - c4)) < 0
+        // which asks whether the normal points away from the coordinate ORIGIN.
+        // That is only meaningful for a surface star-shaped about the origin. It
+        // is identically zero on a flat sheet in the z = 0 plane, arbitrary on a
+        // membrane translated off the origin, and actively wrong on a closed
+        // surface not enclosing it -- on a torus it flips exactly the inner half
+        // of the faces.
+        int d4 = -1;
+        int d7 = -1;
+        int d8 = -1;
+        bool isRegular = false;
+
+        if (valence0 == 6 && valence1 == 6 && valence2 == 6)
         {
-            int d4, d7, d8;
-            // make sure d4 is the one has 5 neighbors, and d4-d7-d8 are in anti-clock-wise order
-            if (vertices[node0].adjacentFaces.size() == 5)
-            {
-                d4 = node0;
-                d7 = node1;
-                d8 = node2;
-            }
-            else if (vertices[node1].adjacentFaces.size() == 5)
-            {
-                d4 = node1;
-                d7 = node2;
-                d8 = node0;
-            }
-            else if (vertices[node2].adjacentFaces.size() == 5)
-            {
-                d4 = node2;
-                d7 = node0;
-                d8 = node1;
-            }
-            //
-            Matrix coord4 = vertices[node0].coord;
-            Matrix coord7 = vertices[node1].coord;
-            Matrix coord8 = vertices[node2].coord;
-            // calculate CoM of the triangle
-            Matrix center = 1.0 / 3.0 * (coord4 + coord7 + coord8);
-            if (dot_col(center, cross_col(coord7 - coord4, coord8 - coord4)) < 0)
-            { // switch d7 and d8 position
-                int nodetmp = d7;
-                d7 = d8;
-                d8 = nodetmp;
-                face.adjacentVertices[0] = d4;
-                face.adjacentVertices[1] = d7;
-                face.adjacentVertices[2] = d8;
-            }
-            int d3 = find_opposite_node_index(d4, d7, d8);
-            int d11 = find_opposite_node_index(d7, d8, d4);
-            int d5 = find_opposite_node_index(d4, d8, d7);
-            int d1 = find_opposite_node_index(d3, d4, d7);
-            int d2 = find_opposite_node_index(d4, d5, d8);
-            int d6 = find_opposite_node_index(d3, d7, d4);
-            int d9 = find_opposite_node_index(d8, d5, d4);
-            int d10 = find_opposite_node_index(d7, d11, d8);
-            int d12 = find_opposite_node_index(d8, d11, d7);
-            vector<int> v{d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12};
-            face.oneRingVertices = v;
+            d4 = node0;
+            d7 = node1;
+            d8 = node2;
+            isRegular = true;
+        }
+        else if (valence0 == 5 && valence1 == 6 && valence2 == 6)
+        {
+            d4 = node0;
+            d7 = node1;
+            d8 = node2;
+        }
+        else if (valence1 == 5 && valence2 == 6 && valence0 == 6)
+        {
+            d4 = node1;
+            d7 = node2;
+            d8 = node0;
+        }
+        else if (valence2 == 5 && valence0 == 6 && valence1 == 6)
+        {
+            d4 = node2;
+            d7 = node0;
+            d8 = node1;
+        }
+        else
+        {
+            // The old predicate required all three corners at valence 5 while
+            // the body built a 5/6/6 patch. Those are different topology
+            // classes, and only the second matches the subdivision matrices.
+            rejection[iFace] = "face " + std::to_string(iFace) + " has valences (" +
+                               std::to_string(valence0) + ", " + std::to_string(valence1) +
+                               ", " + std::to_string(valence2) +
+                               "); supported patches are 6/6/6, or one corner at 5 with the"
+                               " other two at 6";
+            continue;
+        }
+
+        const int d3 = find_opposite_node_index(d4, d7, d8);
+        const int d11 = find_opposite_node_index(d7, d8, d4);
+        const int d5 = find_opposite_node_index(d4, d8, d7);
+        const int d2 = find_opposite_node_index(d4, d5, d8);
+        const int d6 = find_opposite_node_index(d3, d7, d4);
+        const int d9 = find_opposite_node_index(d8, d5, d4);
+        const int d10 = find_opposite_node_index(d7, d11, d8);
+        const int d12 = find_opposite_node_index(d8, d11, d7);
+        // d1 exists only on a regular patch; a valence-5 ring is one shorter.
+        const int d1 = isRegular ? find_opposite_node_index(d3, d4, d7) : 0;
+
+        std::vector<int> oneRing =
+            isRegular ? std::vector<int>{d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12}
+                      : std::vector<int>{d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12};
+
+        // find_opposite_node_index() returns -1 when the walk fails. That used
+        // to be printed and then used as a vertex index.
+        if (std::find(oneRing.begin(), oneRing.end(), -1) != oneRing.end())
+        {
+            rejection[iFace] = "face " + std::to_string(iFace) +
+                               " has an incomplete one-ring: the two-ring walk failed at"
+                               " valences (" + std::to_string(valence0) + ", " +
+                               std::to_string(valence1) + ", " + std::to_string(valence2) + ")";
+            continue;
+        }
+
+        face.oneRingVertices = std::move(oneRing);
+    }
+
+    report_valence_histogram();
+
+    std::vector<std::string> rejected;
+    for (int iFace = 0; iFace < nFaces; iFace++)
+    {
+        if (!rejection[iFace].empty())
+        {
+            rejected.push_back(rejection[iFace]);
         }
     }
+
+    if (!rejected.empty())
+    {
+        std::ostringstream message;
+        message << "[Mesh::set_one_ring_vertices_sorted] " << rejected.size()
+                << " non-ghost face(s) have no supported subdivision patch:";
+        const std::size_t nShown = std::min<std::size_t>(rejected.size(), 10);
+        for (std::size_t i = 0; i < nShown; i++)
+        {
+            message << "\n  - " << rejected[i];
+        }
+        if (rejected.size() > nShown)
+        {
+            message << "\n  - ... and " << (rejected.size() - nShown) << " more";
+        }
+        message << "\nThese faces would otherwise carry zero energy and zero force. "
+                   "See docs/irregular_patch_valence_4_to_8_plan.md.";
+        throw std::runtime_error(message.str());
+    }
+
     if (param.VERBOSE_MODE)
     {
         std::cout << "[Mesh::set_one_ring_vertices_sorted] One ring vertices set." << std::endl;
     }
+}
+
+bool Mesh::is_interior_vertex(int iVertex) const
+{
+    const Vertex &vertex = vertices[iVertex];
+    // adjacentVertices is built as the union of the other two corners of every
+    // adjacent face, so a closed fan gives equal counts and an open one -- a
+    // boundary vertex -- gives exactly one more vertex than faces.
+    return !vertex.adjacentFaces.empty() &&
+           vertex.adjacentFaces.size() == vertex.adjacentVertices.size();
+}
+
+void Mesh::report_valence_histogram() const
+{
+    std::map<int, int> histogram;
+    int nGhostVertices = 0;
+    int nBoundaryVertices = 0;
+    for (const Vertex &vertex : vertices)
+    {
+        if (vertex.isGhost)
+        {
+            nGhostVertices++;
+            continue;
+        }
+        if (!is_interior_vertex(vertex.index))
+        {
+            nBoundaryVertices++;
+            continue;
+        }
+        histogram[static_cast<int>(vertex.adjacentVertices.size())]++;
+    }
+
+    int nNonGhostFaces = 0;
+    int nBoundaryFaces = 0;
+    int nMultiExtraordinaryFaces = 0;
+    for (const Face &face : faces)
+    {
+        if (face.isGhost)
+            continue;
+        nNonGhostFaces++;
+
+        int nExtraordinary = 0;
+        bool touchesBoundary = false;
+        for (int node : face.adjacentVertices)
+        {
+            if (!is_interior_vertex(node))
+            {
+                touchesBoundary = true;
+            }
+            else if (vertices[node].adjacentVertices.size() != 6)
+            {
+                nExtraordinary++;
+            }
+        }
+        if (touchesBoundary)
+        {
+            nBoundaryFaces++;
+        }
+        // The uniform-patch reduction assumes exactly one extraordinary corner,
+        // so this count is what decides whether pre-refinement (WP7) is needed
+        // on real inputs at all.
+        else if (nExtraordinary > 1)
+        {
+            nMultiExtraordinaryFaces++;
+        }
+    }
+
+    std::cout << "[Mesh::valence histogram] faces: " << nNonGhostFaces
+              << " non-ghost, of which " << nBoundaryFaces
+              << " touch the mesh boundary (no limit surface, skipped)" << std::endl;
+    std::cout << "[Mesh::valence histogram] vertices: " << nGhostVertices << " ghost, "
+              << nBoundaryVertices << " boundary; interior valences:";
+    for (const auto &entry : histogram)
+    {
+        std::cout << " N=" << entry.first << ":" << entry.second;
+    }
+    std::cout << std::endl;
+    std::cout << "[Mesh::valence histogram] interior faces with more than one extraordinary"
+                 " corner: " << nMultiExtraordinaryFaces << std::endl;
 }

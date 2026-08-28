@@ -27,6 +27,7 @@
 #include <string>
 #include <stdexcept>
 #include <array>
+#include <map>
 #include <unordered_map>
 #include <omp.h>
 #include <algorithm>
@@ -290,6 +291,27 @@ public:
      *
      */
     void set_one_ring_vertices_sorted();
+
+    /**
+     * @brief Print the mesh's vertex-valence histogram and the number of faces
+     * carrying more than one extraordinary corner.
+     *
+     * The uniform-patch reduction in
+     * docs/irregular_patch_valence_4_to_8_plan.md assumes each irregular face
+     * has exactly one extraordinary corner, so the second number is the one
+     * that decides whether pre-refinement (WP7) is needed on real inputs.
+     */
+    void report_valence_histogram() const;
+
+    /**
+     * @brief True when the vertex has a closed one-ring fan.
+     *
+     * adjacentVertices is built as the union of the other two corners of every
+     * adjacent face, so a closed fan gives `adjacentFaces.size() ==
+     * adjacentVertices.size()` while an open one -- a boundary vertex -- gives
+     * exactly one more vertex than faces.
+     */
+    bool is_interior_vertex(int iVertex) const;
 
     /**
      * @deprecated Currently the isBoundary property is not used

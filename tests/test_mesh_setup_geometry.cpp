@@ -310,3 +310,173 @@ TEST(LegacyVolumeReportingTest, LegacyValueMatchesCorrectedWhenTheNormalIsAlongX
     ASSERT_NE(corrected, 0.0);
     EXPECT_NEAR(legacy / corrected, 1.0, 1e-9);
 }
+
+namespace
+{
+/// Vertex/face arrays for a closed Platonic solid, ready for setup_from_vertices_faces().
+struct ClosedSolid
+{
+    std::vector<std::vector<double>> vertices;
+    std::vector<std::vector<int>> faces;
+};
+
+/// Octahedron: 6 vertices, every one at valence 4.
+ClosedSolid make_octahedron()
+{
+    return {{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}},
+            {{0, 2, 4}, {2, 1, 4}, {1, 3, 4}, {3, 0, 4},
+             {2, 0, 5}, {1, 2, 5}, {3, 1, 5}, {0, 3, 5}}};
+}
+
+/// Icosahedron: 12 vertices, every one at valence 5.
+ClosedSolid make_icosahedron()
+{
+    const double t = (1.0 + std::sqrt(5.0)) / 2.0;
+    return {{{-1, t, 0}, {1, t, 0}, {-1, -t, 0}, {1, -t, 0},
+             {0, -1, t}, {0, 1, t}, {0, -1, -t}, {0, 1, -t},
+             {t, 0, -1}, {t, 0, 1}, {-t, 0, -1}, {-t, 0, 1}},
+            {{0, 11, 5}, {0, 5, 1}, {0, 1, 7}, {0, 7, 10}, {0, 10, 11},
+             {1, 5, 9}, {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
+             {3, 9, 4}, {3, 4, 2}, {3, 2, 6}, {3, 6, 8}, {3, 8, 9},
+             {4, 9, 5}, {2, 4, 11}, {6, 2, 10}, {8, 6, 7}, {9, 8, 1}}};
+}
+
+Mesh setup_solid(Param &param, const ClosedSolid &solid)
+{
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    param.uVol = 0.0;
+    Mesh mesh(param);
+    mesh.setup_from_vertices_faces(solid.vertices, solid.faces);
+    return mesh;
+}
+} // namespace
+
+/**
+ * @brief An unsupported valence is rejected loudly, not stored as zeros.
+ *
+ * Every octahedron vertex is at valence 4. The old code matched neither the
+ * 6/6/6 nor the all-5 predicate, so oneRingVertices stayed empty; downstream,
+ * an empty one-ring matches neither arm of the dispatch in
+ * Compute_Energy_And_Force() and the face was recorded with zero bending
+ * energy and zero force. Valence 4 is in scope for the plan but not yet
+ * implemented, so until WP2-WP5 land it must be an error.
+ */
+TEST(OneRingPatchTest, Valence4MeshIsRejectedRatherThanSilentlyZeroed)
+{
+    Param param;
+    try
+    {
+        Mesh mesh = setup_solid(param, make_octahedron());
+        FAIL() << "expected an octahedron (all valence 4) to be rejected";
+    }
+    catch (const std::runtime_error &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("no supported subdivision patch"), std::string::npos);
+        EXPECT_NE(message.find("(4, 4, 4)"), std::string::npos) << message;
+    }
+}
+
+/**
+ * @brief An all-valence-5 mesh is rejected, because that is not what the
+ * irregular branch actually builds.
+ *
+ * This is the predicate contradiction from section 1.3 of the plan, made
+ * concrete. The old branch was entered when *all three* corners were at
+ * valence 5, but its body then picked one corner as d4 and walked the other
+ * two with the valence-6 opposite-node pattern -- i.e. it constructed a 5/6/6
+ * patch. An icosahedron is the mesh that predicate was describing, and it is
+ * exactly the mesh the construction cannot handle: the old code would have
+ * accepted it and built a one-ring that does not match its topology.
+ */
+TEST(OneRingPatchTest, AllValence5MeshIsRejectedBecauseThePatchBuiltIs5And6And6)
+{
+    Param param;
+    try
+    {
+        Mesh mesh = setup_solid(param, make_icosahedron());
+        FAIL() << "expected an icosahedron (all valence 5) to be rejected";
+    }
+    catch (const std::runtime_error &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("(5, 5, 5)"), std::string::npos) << message;
+        EXPECT_NE(message.find("one corner at 5 with the other two at 6"), std::string::npos);
+    }
+}
+
+/**
+ * @brief Boundary faces are skipped without error; that is not the same thing.
+ *
+ * A face touching the mesh boundary has no complete one-ring and therefore no
+ * limit surface, which is a property of the mesh rather than a fault. The
+ * defect was that every unmatched face took the same silent path, so genuine
+ * unsupported interior valences were indistinguishable from ordinary boundary
+ * faces -- and only the latter are benign.
+ *
+ * The imported example mesh is the case that matters: unlike the generated
+ * flat sheet, whose ghost band absorbs its entire edge, this one has a real
+ * open boundary and no ghost marking at all. Its 336 boundary faces must be
+ * skipped quietly while the mesh as a whole still sets up.
+ */
+TEST(OneRingPatchTest, BoundaryFacesAreSkippedWithoutRejectingTheMesh)
+{
+    Param param;
+    param.VERBOSE_MODE = false;
+    Mesh mesh(param);
+    ASSERT_TRUE(import_mesh_from_vertices_faces(mesh,
+                                                "./data/example/vertices_flat.csv",
+                                                "./data/example/faces_flat.csv"));
+
+    int nInteriorWithRing = 0;
+    int nBoundaryWithoutRing = 0;
+    for (const Face &face : mesh.faces)
+    {
+        if (face.isGhost)
+            continue;
+        const bool touchesBoundary = !mesh.is_interior_vertex(face.adjacentVertices[0]) ||
+                                     !mesh.is_interior_vertex(face.adjacentVertices[1]) ||
+                                     !mesh.is_interior_vertex(face.adjacentVertices[2]);
+        if (touchesBoundary)
+        {
+            EXPECT_TRUE(face.oneRingVertices.empty());
+            nBoundaryWithoutRing++;
+        }
+        else
+        {
+            EXPECT_EQ(face.oneRingVertices.size(), 12u);
+            nInteriorWithRing++;
+        }
+    }
+    EXPECT_EQ(nBoundaryWithoutRing, 336);
+    EXPECT_EQ(nInteriorWithRing, 3344);
+}
+
+/**
+ * @brief The generated flat sheet has no boundary faces at all.
+ *
+ * Its ghost band covers the entire edge, so every non-ghost face is fully
+ * interior and carries a complete 12-vertex one-ring. Recorded because it is
+ * the opposite case to the imported mesh above, and because it is what makes
+ * the shipped workload safe from the silent-fallthrough defect in the first
+ * place.
+ */
+TEST(OneRingPatchTest, GeneratedFlatSheetIsEntirelyInteriorOrGhost)
+{
+    Param param;
+    param.VERBOSE_MODE = false;
+    Mesh mesh(param);
+    ASSERT_NO_THROW(mesh.setup_flat());
+
+    int nNonGhost = 0;
+    for (const Face &face : mesh.faces)
+    {
+        if (face.isGhost)
+            continue;
+        nNonGhost++;
+        EXPECT_TRUE(mesh.is_interior_vertex(face.adjacentVertices[0]));
+        EXPECT_EQ(face.oneRingVertices.size(), 12u);
+    }
+    EXPECT_GT(nNonGhost, 0);
+}
