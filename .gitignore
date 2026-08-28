@@ -165,3 +165,15 @@ CMakeUserPresets.json
 /slimed-*.tar.gz
 /slimed-*.tar.bz2
 /slimed-*.tar.xz
+
+# In-source CMake output. Configuring in the source tree (rather than in
+# /build) drops these next to the sources, where an over-broad `git add`
+# picks them up.
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+/tests/Makefile
+/tests/test_main_*_discovery.cmake
+/tests/test_main_*_include.cmake

@@ -1,5 +1,0 @@
-if(EXISTS "/Users/yue/Workspace/SLIMED/tests/test_main_302383d8_tests.cmake")
-  include("/Users/yue/Workspace/SLIMED/tests/test_main_302383d8_tests.cmake")
-else()
-  add_test(test_main_NOT_BUILT test_main_NOT_BUILT)
-endif()
