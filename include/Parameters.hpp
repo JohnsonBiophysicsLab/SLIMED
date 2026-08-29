@@ -155,6 +155,16 @@ struct Param
     // regularization
     double gamaShape = 0.2;                       ///< Shape deformation coefficient
     double gamaArea = 0.2;                        ///< Area deformation coefficient
+    /**
+     * @brief Apply one global Loop refinement to the control mesh at setup.
+     *
+     * Off by default. Only needed for meshes whose extraordinary vertices are
+     * adjacent, which the valence histogram reports at setup. It roughly
+     * quadruples the vertex count and changes the dynamical degrees of
+     * freedom, so enabling it rebaselines the run.
+     */
+    bool isPreRefinementEnabled = false;
+
     bool usingRpi = true;             ///< Whether to use R-pi adaptive method for regularization energy;
 
     // spline points

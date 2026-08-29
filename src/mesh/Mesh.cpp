@@ -120,6 +120,14 @@ void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& ver
         std::cout << "[Mesh::setup_from_vertices_faces] Assigned vertices and faces in the member of current mesh object." << std::endl;
     }
 
+    // Optional global refinement, before anything derives from the topology.
+    // It replaces both vertices and faces, so every adjacency below is built
+    // from the refined mesh.
+    if (param.isPreRefinementEnabled)
+    {
+        refine_loop_once();
+    }
+
     // step 3. Link neighboring geometric components
     set_adjacent_faces_of_vertices_sorted();
     set_adjacent_vertices_of_vertices_sorted();

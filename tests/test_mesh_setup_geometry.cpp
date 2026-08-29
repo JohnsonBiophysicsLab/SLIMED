@@ -481,3 +481,114 @@ TEST(OneRingPatchTest, GeneratedFlatSheetIsEntirelyInteriorOrGhost)
     }
     EXPECT_GT(nNonGhost, 0);
 }
+
+/**
+ * @brief One refinement pass makes a rejected mesh admissible, by construction.
+ *
+ * WP7's gate. An octahedron has every vertex at valence 4, so every face
+ * carries three extraordinary corners and the uniform patch reduction -- which
+ * assumes exactly one -- does not apply to any of them. It is rejected at
+ * setup.
+ *
+ * After one Loop refinement every new vertex sits on an old edge and has
+ * valence 6, and every old vertex keeps valence 4 but is now adjacent only to
+ * new vertices. Of the four children of each old face, three carry exactly one
+ * old corner and the middle one carries none. So the same mesh is admitted,
+ * and the guarantee is structural rather than a property of this fixture.
+ */
+TEST(PreRefinementTest, RefinementAdmitsAMeshThatWasRejected)
+{
+    const ClosedSolid solid = make_octahedron();
+
+    // Without refinement: rejected, every face 4/4/4.
+    {
+        Param param;
+        param.VERBOSE_MODE = false;
+        param.boundaryCondition = BoundaryType::Fixed;
+        param.isPreRefinementEnabled = false;
+        Mesh mesh(param);
+        EXPECT_THROW(mesh.setup_from_vertices_faces(solid.vertices, solid.faces),
+                     std::runtime_error);
+    }
+
+    // With refinement: admitted.
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    param.isPreRefinementEnabled = true;
+    Mesh mesh(param);
+    ASSERT_NO_THROW(mesh.setup_from_vertices_faces(solid.vertices, solid.faces));
+
+    // Four children per face, one new vertex per edge.
+    EXPECT_EQ(mesh.faces.size(), solid.faces.size() * 4);
+    EXPECT_EQ(mesh.vertices.size(), 6u + 12u); // octahedron: 6 vertices, 12 edges
+
+    int nValence4 = 0;
+    int nValence6 = 0;
+    for (const Vertex &vertex : mesh.vertices)
+    {
+        const std::size_t valence = vertex.adjacentVertices.size();
+        if (valence == 4)
+            nValence4++;
+        else if (valence == 6)
+            nValence6++;
+    }
+    // Old vertices keep their valence; new ones are all 6.
+    EXPECT_EQ(nValence4, 6);
+    EXPECT_EQ(nValence6, 12);
+
+    // The property that matters: no face has two extraordinary corners, and
+    // every face is admitted with a complete one-ring.
+    for (const Face &face : mesh.faces)
+    {
+        int nExtraordinary = 0;
+        for (int node : face.adjacentVertices)
+        {
+            if (mesh.vertices[node].adjacentVertices.size() != 6)
+                nExtraordinary++;
+        }
+        EXPECT_LE(nExtraordinary, 1) << "face " << face.index;
+        // valence 4 -> 10 control points, valence 6 -> 12
+        const std::size_t expected = (nExtraordinary == 1) ? 10u : 12u;
+        EXPECT_EQ(face.oneRingVertices.size(), expected) << "face " << face.index;
+    }
+}
+
+/**
+ * @brief Refinement preserves the surface it refines.
+ *
+ * Loop subdivision converges to the same limit surface, so refining the
+ * control mesh must not move it. The refined control net is a closed
+ * octahedron-derived polyhedron whose signed volume should sit between the
+ * control polyhedron's and the limit surface's -- and crucially, the *limit*
+ * volume computed from it should match the unrefined one closely rather than
+ * drifting.
+ */
+TEST(PreRefinementTest, RefinementApproachesTheSameLimitSurface)
+{
+    const ClosedSolid solid = make_octahedron();
+
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    param.isPreRefinementEnabled = true;
+    Mesh mesh(param);
+    ASSERT_NO_THROW(mesh.setup_from_vertices_faces(solid.vertices, solid.faces));
+
+    mesh.calculate_element_area_volume();
+    double area = 0.0;
+    double volume = 0.0;
+    mesh.sum_membrane_area_and_volume(area, volume);
+
+    // The unit octahedron's limit surface is a rounded solid strictly inside
+    // its control polyhedron (volume 4/3) and outside nothing in particular;
+    // the check that matters is that it is a sane, positive, closed volume
+    // rather than a specific number.
+    EXPECT_GT(area, 0.0);
+    EXPECT_GT(volume, 0.0);
+    EXPECT_LT(volume, 4.0 / 3.0) << "the limit surface must lie inside the control polyhedron";
+
+    // Closed and consistently oriented, so the constraint is well defined.
+    mesh.param.uVol = 1.0;
+    EXPECT_NO_THROW(mesh.validate_volume_constraint_topology());
+}

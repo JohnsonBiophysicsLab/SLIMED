@@ -406,6 +406,12 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("preRefineMesh") == 0)
+	{
+		param.isPreRefinementEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "preRefineMesh set to : " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("VERBOSE_MODE") == 0)
 	{
 		if (variableValueStr.compare("true") == 0)

@@ -313,6 +313,31 @@ public:
     void report_valence_histogram() const;
 
     /**
+     * @brief Apply one global Loop refinement pass to the control mesh.
+     *
+     * For meshes that cannot be generated with isolated extraordinary
+     * vertices. One pass splits every triangle into four; every new vertex
+     * sits on an old edge and has valence 6, and every old vertex keeps its
+     * valence but becomes adjacent only to new vertices. So no face can carry
+     * two extraordinary corners afterwards, whatever the input was -- the
+     * guarantee is structural, not statistical.
+     *
+     * Deliberately global. Loop's rules are uniform, so refining part of a
+     * control mesh changes the limit surface elsewhere; local refinement
+     * around adjacent extraordinary vertices is a different and wrong thing.
+     *
+     * Must run before the adjacency members are populated -- it reads topology
+     * from the face list, and it invalidates everything derived from the old
+     * one.
+     *
+     * @note Off by default. It roughly quadruples the vertices, and the
+     * control mesh is the dynamical degrees of freedom, so refining
+     * rebaselines the run. WP7 of
+     * docs/irregular_patch_valence_4_to_8_plan.md.
+     */
+    void refine_loop_once();
+
+    /**
      * @brief True when the vertex has a closed one-ring fan.
      *
      * adjacentVertices is built as the union of the other two corners of every
