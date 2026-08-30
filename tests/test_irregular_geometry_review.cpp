@@ -276,3 +276,66 @@ TEST(IrregularGeometryReviewTest, InternalForcesOnAnIrregularPatchSumToZero)
         }
     }
 }
+
+/**
+ * @brief The generated matrices carry Loop's analytic eigenvalues.
+ *
+ * The strongest check available on the generator, and independent of the N=5
+ * literal oracle: subdivision theory says what the spectrum of the per-step
+ * matrix `P4 * Abar` must be, for every valence.
+ *
+ *   - the leading eigenvalue is exactly 1, the affine mode. Anything else and
+ *     repeated subdivision would translate or shrink the surface.
+ *   - the subdominant eigenvalue is the double root
+ *
+ *         lambda(N) = 3/8 + cos(2*pi/N)/4
+ *
+ *     which governs the tangent plane at the extraordinary vertex and, through
+ *     it, every convergence rate in this document. At N=6 it is exactly 1/2.
+ *
+ * If the generator had the masks subtly wrong, row sums would still be 1 and
+ * the patch would still be local and planar-precise -- but the spectrum would
+ * not land on these values for five different valences at once.
+ */
+TEST(IrregularGeometryReviewTest, SubdivisionSpectrumMatchesLoopTheory)
+{
+    std::printf("\n  N   leading    subdominant   analytic 3/8+cos(2pi/N)/4   1/lambda^2\n");
+    for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
+    {
+        const SubdivisionMatrices matrices = build_subdivision_matrices(valence);
+        const Matrix step = matrices.p4 * matrices.abar;
+        const int n = step.nrow();
+        ASSERT_EQ(step.ncol(), n);
+
+        // gsl_eigen_nonsymm destroys its input, so work on a copy.
+        gsl_matrix *a = gsl_matrix_alloc(n, n);
+        gsl_matrix_memcpy(a, step.mat);
+        gsl_vector_complex *eval = gsl_vector_complex_alloc(n);
+        gsl_eigen_nonsymm_workspace *work = gsl_eigen_nonsymm_alloc(n);
+        ASSERT_EQ(gsl_eigen_nonsymm(a, eval, work), 0) << "valence " << valence;
+
+        std::vector<double> magnitudes;
+        for (int i = 0; i < n; i++)
+            magnitudes.push_back(gsl_complex_abs(gsl_vector_complex_get(eval, i)));
+        std::sort(magnitudes.begin(), magnitudes.end(), std::greater<double>());
+
+        gsl_eigen_nonsymm_free(work);
+        gsl_vector_complex_free(eval);
+        gsl_matrix_free(a);
+
+        const double analytic = 3.0 / 8.0 + std::cos(2.0 * M_PI / valence) / 4.0;
+        std::printf("  %d   %.7f  %.7f     %.7f              %7.4f\n", valence, magnitudes[0],
+                    magnitudes[1], analytic, 1.0 / (analytic * analytic));
+
+        // The affine mode: exactly 1, or subdivision would not preserve the
+        // surface it is refining.
+        EXPECT_NEAR(magnitudes[0], 1.0, 1e-12) << "valence " << valence;
+        // The tangent-plane mode, and a double root.
+        EXPECT_NEAR(magnitudes[1], analytic, 1e-10) << "valence " << valence;
+        EXPECT_NEAR(magnitudes[2], analytic, 1e-10)
+            << "valence " << valence << ": subdominant eigenvalue should be a double root";
+        // Everything else is strictly smaller, so the tangent plane is the
+        // slowest-decaying mode and the surface has a well-defined normal.
+        EXPECT_LT(magnitudes[3], analytic - 1e-9) << "valence " << valence;
+    }
+}

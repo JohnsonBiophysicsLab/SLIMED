@@ -18,3 +18,7 @@
 #include "mesh/Subdivision_matrices.hpp"
 #include "mesh/Gauss_quadrature.hpp"
 #include "Parameters.hpp"
+
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_complex_math.h>
+#include <functional>

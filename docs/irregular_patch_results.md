@@ -44,9 +44,129 @@ regenerated from the generator they check.
 
 ---
 
-## 2. Benchmark results
+## 2. What "convergence" means here
 
-### 2.1 Convergence is per valence, and the two quantities disagree
+The word is used throughout this document and in the plans, and it does not
+mean what it usually means in a finite-element context. Three different things
+could be called convergence; only one of them is being measured.
+
+### 2.1 The infinite ring decomposition
+
+A regular Loop patch has a closed-form basis — the quartic box spline — so it
+can be evaluated at any parameter point directly. That is what
+`get_shapefunction()` returns.
+
+An irregular patch has no such basis over the whole domain. Stam's reduction
+instead decomposes it. One subdivision splits the parameter triangle into four
+children; three are regular and evaluable in closed form, and the fourth still
+contains the extraordinary corner. Recursing gives
+
+```text
+level 0:   3 regular children covering  3/4      of the domain
+level 1:   3 more covering               3/16
+level d:   3 more covering               (3/4)·4^-d
+after D:   1 - 4^-D covered, 4^-D left
+```
+
+The residual is an ever-shrinking triangle at the extraordinary corner, never
+covered by any finite number of levels. So an integral over an irregular patch —
+area, volume, bending energy — is an **infinite sum over rings**, and evaluating
+it at depth `D` truncates that sum.
+
+**"Converging" therefore means: the truncated sum approaching the exact integral
+over the limit surface as `D → ∞`.** The limit surface itself never moves. The
+control mesh never changes. Depth is a property of how the integral is
+evaluated, not of the geometry being integrated.
+
+Two things that are *not* what is converging here:
+
+- **Mesh refinement.** Adding control vertices changes the limit surface, and
+  whether that surface approaches a physical membrane shape is a separate
+  question this document does not address. WP7's pre-refinement does change the
+  surface, which is exactly why it rebaselines a run.
+- **Quadrature order.** Each regular child is integrated with a 3-point Gauss
+  rule. §3.3 shows that error is negligible against truncation at these depths,
+  so the two are cleanly separable.
+
+### 2.2 Why the rate depends on the valence
+
+The per-step map on an irregular patch's control points is `S = P4 · Ā`. Its
+spectrum is what sets every rate in this document:
+
+```text
+  eigenvalue    1          the affine mode: subdivision preserves the surface
+  eigenvalue    λ (×2)     the tangent-plane mode
+  the rest      < λ
+```
+
+For Loop subdivision with Warren's weights, the subdominant eigenvalue is known
+analytically:
+
+```text
+  λ(N) = 3/8 + cos(2π/N)/4          λ(6) = 1/2 exactly
+```
+
+Under one subdivision the residual patch shrinks by `λ` in linear extent, so its
+**area** shrinks by `λ²`, while its **parameter** domain shrinks by `1/4`. The
+area still missing after depth `D` therefore falls like `λ^(2D)`, and the error
+should shrink by `1/λ²` per level.
+
+Measured against that prediction:
+
+| N | λ analytic | `1/λ²` predicted | area ratio measured |
+| - | ---------- | ---------------- | ------------------- |
+| 4 | 0.3750000 | 7.111 | 7.3 |
+| 5 | 0.4522542 | 4.889 | 4.9 |
+| 6 | 0.5000000 | 4.000 | 4.0 |
+| 7 | 0.5308725 | 3.548 | 3.58 |
+| 8 | 0.5517767 | 3.284 | 3.37 |
+
+The measured ratios drift toward the predicted values with depth, approaching
+from above. And the generated matrices carry the spectrum exactly: the leading
+eigenvalue of `P4 · Ā` is 1 and the subdominant is a double root equal to
+`λ(N)`, to 1e-10, at every valence 4–8.
+
+This closes a loop with §3.3, where the area error at valence 6 was measured to
+equal the truncated *parameter* fraction `4^-D`. That equality is specific to
+valence 6, and holds precisely because `λ(6) = 1/2`, so `λ^(2D) = 4^-D` there.
+At other valences the area error is `λ^(2D)` and departs from `4^-D` in both
+directions.
+
+### 2.3 Why bending converges differently, and worse
+
+Area convergence is governed by how fast the residual patch shrinks. Bending
+energy also depends on how the **curvature** behaves as the extraordinary point
+is approached, and Loop surfaces are C¹ but not C² there — curvature has no
+single limiting value at an extraordinary vertex. The result is a rate set by
+the ratio of the subdominant eigenvalue to the next one, rather than by `λ`
+alone.
+
+Measured, per level:
+
+| | N=4 | N=5 | N=6 | N=7 | N=8 |
+| --- | --- | --- | --- | --- | --- |
+| area | 7.3× | 4.9× | 4.0× | 3.6× | 3.4× |
+| bending | 2.1× | 3.3× | 4.0× | 4.6× | 4.6× |
+
+The valence-6 column comes from §3.3, which drives the table at N=6 deliberately
+to have something with a known answer to compare against. Production never does
+this: a valence-6 face is regular and takes the direct kernel, which is why
+§3.1's sweep shows no depth dependence there at all.
+
+At valence 6 the two rates agree exactly, which is the consistency check: a
+regular vertex *is* C², curvature is bounded and continuous, and bending
+inherits area's rate. Away from 6 they separate, and in opposite directions — bending is worst
+where area is best.
+
+This document does not derive the bending exponent. The depths in §3.2 were
+chosen from the measured rates, not from theory, and that is the honest status:
+the area law is predicted and confirmed, the bending law is measured only.
+
+---
+
+## 3. Benchmark results
+
+### 3.1 Convergence is per valence, and the two quantities disagree
 
 Measured on a fixed non-planar disk with one extraordinary corner. Factor by
 which the increment shrinks per additional level:
@@ -65,7 +185,7 @@ The plan anticipated slow bending convergence (§8) but expected it to depend on
 *distance* from valence 6. It depends on *direction*: valence 4 is the expensive
 case and valence 8 is cheap.
 
-### 2.2 Chosen depths
+### 3.2 Chosen depths
 
 For an estimated remaining bending tail below 1e-4 relative, measured out to
 depth 14 and carried by `recommended_irregular_depth()`:
@@ -80,7 +200,7 @@ depth 14 and carried by `recommended_irregular_depth()`:
 A uniform depth 6 — the previous default — would have left valence 4 at 8e-3
 relative, nearly one percent.
 
-### 2.3 The error budget is truncation alone
+### 3.3 The error budget is truncation alone
 
 At valence 6 the patch is regular, so its area can be integrated directly from
 the shape functions at many parameter points with no subdivision involved.
@@ -101,7 +221,7 @@ measurable, so choosing a depth is choosing an error.
 No depth can do better than its own truncated fraction. An absolute accuracy
 target below it is unsatisfiable.
 
-### 2.4 Force–energy conjugacy
+### 3.4 Force–energy conjugacy
 
 Central finite difference of energy against reported force, per control point
 per axis, at every valence 4–8 and every depth 3–8:
@@ -120,7 +240,7 @@ which no central difference can be. The cause was the measurement: reading the
 analytic force inside the perturbation loop leaves it stale by one step once the
 first component has moved.
 
-### 2.5 Cost and size
+### 3.5 Cost and size
 
 | | |
 | --- | --- |
@@ -138,7 +258,7 @@ per-face cost is not, because an irregular face needs `9D` samples against 3 —
 vesicle has ~12 irregular faces, so under a millisecond per energy evaluation),
 but the wording sets up a surprise.
 
-### 2.6 Independent structural checks
+### 3.6 Independent structural checks
 
 Not derived from the subdivision machinery, so a shared error would not hide:
 
@@ -146,6 +266,10 @@ Not derived from the subdivision machinery, so a shared error would not hide:
   and bending energy unchanged at every valence 4–8.
 - **Net internal force zero** — bending and area forces on a face's own control
   points sum to zero at every valence.
+- **Subdivision spectrum** — the leading eigenvalue of `P4 · Ā` is exactly 1 and
+  the subdominant is a double root equal to Loop's analytic `3/8 + cos(2π/N)/4`,
+  to 1e-10, at every valence. Wrong masks would still give row sums of 1 and
+  planar precision, but would not land on this spectrum five times over.
 - **N=5 matrix parity** — all four generated matrices bit-exact against the
   literal oracle, entry by entry.
 - **Affine and planar precision** — row sums 1.0 to 1e-14 for `Ā` and every
@@ -153,7 +277,7 @@ Not derived from the subdivision machinery, so a shared error would not hide:
 
 ---
 
-## 3. Backward compatibility on regular meshes
+## 4. Backward compatibility on regular meshes
 
 Serial build (the OpenMP build is not run-to-run deterministic — see §5). Seven
 output files per run, two workloads: the flat/periodic `input.params`, and the
@@ -186,7 +310,7 @@ why the table shows no difference. The claim is "trajectory unchanged", not
 
 ---
 
-## 4. Defects found that neither plan predicted
+## 5. Defects found that neither plan predicted
 
 | Defect | Consequence |
 | ------ | ----------- |
@@ -199,7 +323,7 @@ why the table shows no difference. The claim is "trajectory unchanged", not
 
 ---
 
-## 5. Environment notes
+## 6. Environment notes
 
 - **`Makefile.legacy` has no header dependency tracking.** Editing a header
   rebuilds only the `.cpp` files you also touched; the rest keep the old class
@@ -213,7 +337,7 @@ why the table shows no difference. The claim is "trajectory unchanged", not
 
 ---
 
-## 6. What is not established
+## 7. What is not established
 
 Stated plainly, because the test count makes it easy to over-read.
 
@@ -239,7 +363,7 @@ topologies, not a fix to current runs.
 
 ---
 
-## 7. Suggested next steps
+## 8. Suggested next steps
 
 1. **Land a closed vesicle workload.** An icosphere has 12 isolated valence-5
    vertices and would exercise the whole path under dynamics. It is the missing
