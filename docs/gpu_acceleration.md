@@ -1,7 +1,14 @@
 # GPU acceleration
 
-This document records what was measured, what was changed, and — importantly —
-what has and has not been run on real hardware.
+This document records the profiling that motivated the GPU work, what was
+changed, and the history of the rewrite.
+
+> **Looking for how the CUDA backend actually works, or what it measures?** See
+> [`cuda_implementation.md`](cuda_implementation.md) — the implementation
+> reference: file map, the three-layer design, the kernel sequence, benchmark
+> results on real hardware, and the numerical and operational consequences.
+> Where the two documents disagree, that one is newer and measured; the
+> corrections are marked inline below.
 
 ## Where the time was going
 
@@ -77,7 +84,11 @@ on thread scheduling. Instead each face writes only its own slots, into a
 buffer laid out exactly like the one-ring lists, so no two faces ever touch the
 same slot and no synchronisation is needed. A second pass has each vertex
 gather the slots that belong to it, in a fixed order. **The result is
-deterministic run to run, which the OpenMP path is not.**
+deterministic run to run** — since confirmed on hardware, at 100% bit-identity
+over 119,174 values. (The OpenMP path also proved reproducible in every
+configuration tested, so this is an architectural guarantee rather than a
+difference from the CPU. See [`cuda_implementation.md`](cuda_implementation.md),
+section 8.1.)
 
 ### Step 3 — one set of kernel bodies, two drivers
 
@@ -98,9 +109,12 @@ cmake --build build -j
 ```
 
 Set `SLIMED_CUDA_ARCHITECTURES` to your device's compute capability without the
-dot — `70` for V100, `80` for A100, `90` for H100. The default builds all
-three, which is slower to compile. On a cluster you will usually need
-`module load cuda` first.
+dot — `80` for A100, `89` for Ada, `90` for H100. On a cluster you will usually
+need `module load cuda` first.
+
+> **The default `70;80;90` no longer builds on a current toolkit.** CUDA 13.x
+> dropped Volta, so `compute_70` is not a valid target and the configure step
+> fails. Always pass your own compute capability.
 
 Then select it in `input.params`:
 
@@ -131,8 +145,8 @@ the skip message.
 
 ## What has and has not been run
 
-Written and validated on an Apple M5, which has no NVIDIA GPU and no CUDA
-toolkit. So, honestly:
+Originally written and validated on an Apple M5, which has no NVIDIA GPU and no
+CUDA toolkit. At that time:
 
 **Verified here:**
 
@@ -149,14 +163,26 @@ toolkit. So, honestly:
   production force evaluation to 1.1e-15 on every fixture. That exercises the
   buffer sizing, the transfers, the argument wiring and the launch bounds.
 
-**Not verified here, because it cannot be:** nvcc actually compiling the file,
-real kernel execution, occupancy, and anything about performance on a device.
-No GPU speedup is claimed below, because none has been measured.
+**Since verified on real hardware** (NVIDIA RTX 4050 Laptop, compute 8.9, nvcc
+13.3.73): nvcc compiles `Cuda_force_backend.cu` with no errors and no warnings,
+and no source changes were needed; the kernels execute; the equivalence test
+passes with the device actually engaged; and both backends have been
+benchmarked at two mesh sizes. See
+[`cuda_implementation.md`](cuda_implementation.md) for the measurements — and
+note that it corrects two claims made below.
 
 ## What to expect, and the next step
 
-The expectation is not "the GPU is faster". At the default 8400 faces this
-backend will most likely **lose** to the 10-thread CPU path, for a structural
+> **Superseded by measurement.** The prediction below — that the GPU would lose
+> at the default mesh — did not hold. On an RTX 4050 against an 8-core i5 the
+> GPU wins at both sizes: 1.21x at 8,399 faces and 1.55x at 99,359 faces. The
+> structural reasoning that follows is still correct, and still explains why the
+> margin is modest and why it widens with mesh size; only the crossover point
+> was wrong, and it is hardware-dependent. Numbers in
+> [`cuda_implementation.md`](cuda_implementation.md).
+
+The expectation was not "the GPU is faster". At the default 8400 faces this
+backend was expected to **lose** to the 10-thread CPU path, for a structural
 reason worth understanding before benchmarking.
 
 The line search in `Model::linear_search_for_stepsize_to_minimize_energy()`
@@ -178,10 +204,15 @@ volume totals on the device. Then a line-search trial costs one kernel sequence
 and no transfer at all. Two things stand in the way, both deliberate rather
 than overlooked:
 
-1. The host-side reduction is what makes the GPU and CPU agree bit for bit. A
-   device reduction's summation order depends on the block count, so neither
-   path would reproduce the other. That is a real cost to accept knowingly, not
-   by accident.
+1. The host-side reduction keeps the area and volume totals summed identically
+   on both paths. **It does not, as this document originally claimed, make the
+   GPU and CPU agree bit for bit** — measurement showed they never did. FMA
+   contraction in device code and OpenMP reduction order each break exactness
+   independently, leaving ~1e-12 agreement on a production mesh
+   ([`cuda_implementation.md`](cuda_implementation.md), section 8.1). A device
+   reduction would still change the totals with block count, so the tradeoff is
+   real — but it is a loosening of an already-approximate agreement, not the
+   loss of an exact one.
 2. It reaches up into the optimiser, not just the force evaluation, so it wants
    the equivalence tests above to be passing on real hardware first.
 
