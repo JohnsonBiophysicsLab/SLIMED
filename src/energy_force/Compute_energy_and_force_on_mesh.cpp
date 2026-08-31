@@ -1,4 +1,6 @@
 #include "mesh/Mesh.hpp"
+
+#include "energy_force/Patch_kernel.hpp"
 #pragma omp declare reduction(vector_plus                                                                                             \
                               : std::vector <Force>                                                                                   \
                               : std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus <Force>())) \
@@ -45,6 +47,38 @@ void Mesh::Compute_Energy_And_Force()
     std::vector<std::vector<double>> faceForceComponents(
         nThreads, std::vector<double>(nVertices * 9, 0.0));
 
+    // The shape functions and irregular-child rows never change after mesh
+    // setup, so repack them once. Lazily rather than in the constructors:
+    // there are several ways to build a Mesh -- Run_flat, the dynamics driver,
+    // and each test fixture -- and a build step that any of them can forget is
+    // a null-pointer bug waiting for whichever one gets added next.
+    if (patchRowsFlat.empty())
+    {
+        patchRowsFlat.build(param.shapeFunctions, irregularRows, param.gaussQuadratureCoeff);
+    }
+
+    // Loop-invariant physical constants, hoisted out of the per-patch kernel.
+    //
+    // The two guards were inside it. A surface that encloses nothing -- any
+    // flat sheet, whose limit surface lies in the z = 0 plane -- has vol0 == 0,
+    // and with the default uvVolumeConstraint = 0.0 the scale factor would be
+    // 0.0/0.0; the NaN would spread into every vertex force. area0 comes from
+    // `relaxArea` whenever setRelaxAreaToDefault is false, so a parameter file
+    // setting it to 0 reaches here too and would poison the area force with
+    // inf. No reference quantity means no constraint.
+    slimed::PatchParams patchParams;
+    patchParams.kCurv = param.kCurv;
+    patchParams.uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
+    patchParams.area = param.area;
+    patchParams.area0 = param.area0;
+    patchParams.uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
+    patchParams.vol = param.vol;
+    patchParams.vol0 = param.vol0;
+
+    const double *const regularRows = patchRowsFlat.regular();
+    const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
+    const int nSamples = patchRowsFlat.nSamples();
+
     // Step 2.
     // Iterate through faces and calculate forces
 #pragma omp parallel for
@@ -61,86 +95,95 @@ void Mesh::Compute_Energy_And_Force()
             continue;
 
         // Get number of one ring vertices
-        int nOneRingVertices = face.oneRingVertices.size();
-//cout << "CEAF 54" << endl;
-        // Get coord of one ring vertices
-        std::vector<Matrix> coordOneRingVertices(nOneRingVertices);
-        std::transform(face.oneRingVertices.begin(), face.oneRingVertices.end(),
-                       coordOneRingVertices.begin(),
-                       [this](int iVertex)
-                       { return vertices[iVertex].coord; });
+        const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
 
-        double spontCurv = face.spontCurvature;         // spontaneous curvature of each patch,
-        double eBend = 0.0;                             // curvature Energy of this element;
-        double meanCurv = 0.0;                          // mean curvature of this element;
-        Matrix fBend = mat_calloc(nOneRingVertices, 3); // bending or curvature term
-        Matrix fArea = mat_calloc(nOneRingVertices, 3); // area term
-        Matrix fVol = mat_calloc(nOneRingVertices, 3);  // volume term
-        face.normVector.free();                         // reinitialize empty normal vector
-        face.normVector = mat_calloc(3, 1);             // normal vector
-                                                        // Calculate energy and force on the given triangular patch
-        // One kernel for both patch kinds. The width lives in the rows and in
-        // the control-point list, not in a branch: a regular face is 12 wide,
-        // an irregular one N+6, and element_energy_force_patch() reads that off
-        // its arguments.
-        if (nOneRingVertices == 12)
+        // Everything the kernel touches lives on the stack, sized by the
+        // widest patch the mesh can produce. No allocation happens anywhere
+        // inside this loop body, which is the whole point of the rewrite --
+        // malloc and free were about a third of the program's runtime.
+        double coordOneRingVertices[slimed::kMaxControlPoints * 3];
+        double fBend[slimed::kMaxControlPoints * 3] = {0.0}; // bending or curvature term
+        double fArea[slimed::kMaxControlPoints * 3] = {0.0}; // area term
+        double fVol[slimed::kMaxControlPoints * 3] = {0.0};  // volume term
+        double normVector[3] = {0.0, 0.0, 0.0};
+
+        double eBend = 0.0;    // curvature Energy of this element
+        double meanCurv = 0.0; // mean curvature of this element
+
+        face.normVector.free();             // reinitialize empty normal vector
+        face.normVector = mat_calloc(3, 1); // normal vector
+
+        // A width outside the patch table means no complete one-ring -- a
+        // ghost or boundary face, which has no limit surface. Leaving
+        // everything at its zero initializer is exactly what the previous
+        // two-armed dispatch did for these faces, and bailing here also keeps
+        // the copy below inside the stack buffers.
+        const bool isRegular = (nOneRingVertices == 12);
+        const bool isIrregular = (nOneRingVertices >= kMinIrregularValence + 6 &&
+                                  nOneRingVertices <= kMaxIrregularValence + 6);
+        if (isRegular || isIrregular)
         {
-            element_energy_force_patch(param.shapeFunctions,
-                                       coordOneRingVertices,
-                                       face,
-                                       spontCurv,
-                                       meanCurv,
-                                       face.normVector,
-                                       eBend,
-                                       fBend,
-                                       fArea,
-                                       fVol);
-        }
-        else if (nOneRingVertices >= kMinIrregularValence + 6 &&
-                 nOneRingVertices <= kMaxIrregularValence + 6)
-        {
-            // An irregular patch is tiled by regular children at increasing
-            // depth. Each child is a 12-point patch in the parent's own
-            // control points, so the same kernel evaluates it -- only the rows
-            // differ. Previously this arm called the regular kernel with a
-            // 7x12 shape function against an 11-wide control net, which is a
-            // dimension mismatch inside a gsl_blas_dgemm wrapper that discards
-            // its return code.
-            const int valence = nOneRingVertices - 6;
-            for (int d = 0; d < irregularRows.depth_for(valence); d++)
+            for (int j = 0; j < nOneRingVertices; j++)
             {
-                for (int c = 0; c < kRegularChildrenPerStep; c++)
+                const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
+                coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
+                coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
+                coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
+            }
+
+            slimed::PatchParams facePatchParams = patchParams;
+            facePatchParams.spontCurv = face.spontCurvature;
+
+            // One kernel for both patch kinds. The width lives in the rows and
+            // in the control-point list, not in a branch: a regular face is 12
+            // wide, an irregular one N+6, and the kernel reads that off its
+            // arguments.
+            if (isRegular)
+            {
+                slimed::element_energy_force_patch_pod(regularRows, gaussCoeff, nSamples,
+                                                       coordOneRingVertices, nOneRingVertices,
+                                                       facePatchParams, eBend, meanCurv,
+                                                       normVector, fBend, fArea, fVol);
+            }
+            else
+            {
+                // An irregular patch is tiled by regular children at
+                // increasing depth. Each child is a 12-point patch in the
+                // parent's own control points, so the same kernel evaluates it
+                // -- only the rows differ.
+                const int valence = nOneRingVertices - 6;
+                for (int d = 0; d < irregularRows.depth_for(valence); d++)
                 {
-                    double childEBend = 0.0;
-                    double childMeanCurv = 0.0;
-                    Matrix childNormVector = mat_calloc(3, 1);
-                    element_energy_force_patch(irregularRows.rows_for_child(valence, d, c),
-                                               coordOneRingVertices,
-                                               face,
-                                               spontCurv,
-                                               childMeanCurv,
-                                               childNormVector,
-                                               childEBend,
-                                               fBend,
-                                               fArea,
-                                               fVol);
-                    eBend += childEBend;
-                    // Mean curvature and the normal are reported per face, so
-                    // take them from the child nearest the patch centre --
-                    // depth 0, the middle child -- rather than summing
-                    // quantities that do not add.
-                    if (d == 0 && c == 1)
+                    for (int c = 0; c < kRegularChildrenPerStep; c++)
                     {
-                        meanCurv = childMeanCurv;
-                        face.normVector = childNormVector;
+                        double childEBend = 0.0;
+                        double childMeanCurv = 0.0;
+                        double childNormVector[3] = {0.0, 0.0, 0.0};
+                        slimed::element_energy_force_patch_pod(
+                            patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples,
+                            coordOneRingVertices, nOneRingVertices, facePatchParams, childEBend,
+                            childMeanCurv, childNormVector, fBend, fArea, fVol);
+                        eBend += childEBend;
+                        // Mean curvature and the normal are reported per face,
+                        // so take them from the child nearest the patch centre
+                        // -- depth 0, the middle child -- rather than summing
+                        // quantities that do not add.
+                        if (d == 0 && c == 1)
+                        {
+                            meanCurv = childMeanCurv;
+                            normVector[0] = childNormVector[0];
+                            normVector[1] = childNormVector[1];
+                            normVector[2] = childNormVector[2];
+                        }
                     }
                 }
             }
+
+            for (int axis = 0; axis < 3; ++axis)
+            {
+                face.normVector.set(axis, 0, normVector[axis]);
+            }
         }
-        // Any other width means no complete one-ring -- a ghost or boundary
-        // face, which has no limit surface. Everything below stays at its zero
-        // initializer, which is exactly what the previous two-armed dispatch
-        // did for these faces.
         face.energy.energyCurvature = eBend; ///< store curvature energy in face object
 
         
@@ -156,23 +199,23 @@ void Mesh::Compute_Energy_And_Force()
             std::cout << "estimateEbend = " << estimate_ebend << std::endl;
         }*/
 
-        for (int j = 0; j < nOneRingVertices; j++)
+        // Bounded by the same width test as the kernel call. A face wider than
+        // kMaxControlPoints contributed nothing before and contributes nothing
+        // now, but reading past the stack buffers to discover that would be a
+        // buffer overrun rather than a no-op.
+        const int nScatteredVertices = (isRegular || isIrregular) ? nOneRingVertices : 0;
+        for (int j = 0; j < nScatteredVertices; j++)
         {
             int iVertex = face.oneRingVertices[j];
             const int baseIndex = iVertex * 9;
             for (int axis = 0; axis < 3; ++axis)
             {
-                localForceComponents[baseIndex + axis] += fBend(j, axis);
-                localForceComponents[baseIndex + 3 + axis] += fArea(j, axis);
-                localForceComponents[baseIndex + 6 + axis] += fVol(j, axis);
+                localForceComponents[baseIndex + axis] += fBend[j * 3 + axis];
+                localForceComponents[baseIndex + 3 + axis] += fArea[j * 3 + axis];
+                localForceComponents[baseIndex + 6 + axis] += fVol[j * 3 + axis];
             }
             // std::cout << "Force at node: " << fBend[j][0] << fBend[j][1]<< fBend[j][2] << F_consA[j][0] << F_consV[j][0] << endl;
         }
-
-        // Free allocation
-        fBend.free();
-        fArea.free();
-        fVol.free();
 
     }
 
@@ -268,16 +311,16 @@ void Mesh::Compute_Energy_And_Force()
     }
 }
 
-void Mesh::element_energy_force_patch(const std::vector<Matrix> &sampleRows,
-                                      const std::vector<Matrix> &coordOneRingVertices,
-                                      Face& face,
-                                        const double spontCurv,
-                                        double &meanCurv,
-                                        Matrix &normVector,
-                                        double &eBend,
-                                        Matrix &fBend,
-                                        Matrix &fArea,
-                                        Matrix &fVolume)
+void Mesh::element_energy_force_patch_reference(const std::vector<Matrix> &sampleRows,
+                                                const std::vector<Matrix> &coordOneRingVertices,
+                                                Face &face,
+                                                const double spontCurv,
+                                                double &meanCurv,
+                                                Matrix &normVector,
+                                                double &eBend,
+                                                Matrix &fBend,
+                                                Matrix &fArea,
+                                                Matrix &fVolume)
 {
     // fBend is the Force related to the curvature
     // fArea is the Force related to the area-constraint

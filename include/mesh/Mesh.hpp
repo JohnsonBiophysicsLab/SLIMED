@@ -34,6 +34,7 @@
 // model setup
 //#include "Edge.hpp"
 #include "mesh/Face.hpp"
+#include "energy_force/Patch_rows_flat.hpp"
 #include "mesh/Irregular_patch_rows.hpp"
 #include "mesh/Vertex.hpp"
 #include "energy_force/Energy.hpp"
@@ -127,6 +128,17 @@ public:
      * so it is immutable after construction and shared across threads.
      */
     IrregularPatchRowTable irregularRows;
+
+    /**
+     * @brief The same rows as irregularRows and param.shapeFunctions, repacked
+     * flat for the force kernel.
+     *
+     * Built lazily on the first Compute_Energy_And_Force() so that every way
+     * of constructing a Mesh -- including the ones the tests use -- picks it
+     * up without each having to remember to build it. Immutable afterwards,
+     * for the same reason irregularRows is.
+     */
+    PatchRowsFlat patchRowsFlat;
 
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
@@ -538,16 +550,27 @@ public:
      * @param fArea a non-constant matrix reference representing the area constraint force of the element.
      * @param fVolume a non-constant matrix reference representing the volume constraint force of the element.
      */
-    void element_energy_force_patch(const std::vector<Matrix> &sampleRows,
-                                    const std::vector<Matrix> &coordOneRingVertices,
-                                      Face& face,
-                                      const double spontCurv,
-                                      double &meanCurv,
-                                      Matrix &normVector,
-                                      double &eBend,
-                                      Matrix &fBend,
-                                      Matrix &fArea,
-                                      Matrix &fVolume);
+    /**
+     * @brief The patch kernel as it was before the flat-array rewrite, kept as
+     * the numerical oracle for it.
+     *
+     * Identical in meaning to slimed::element_energy_force_patch_pod() but
+     * expressed over heap-allocated Matrix objects and GSL calls. Nothing in the simulation
+     * path calls this -- it exists so tests/test_patch_kernel.cpp can assert
+     * that the fast kernel still produces the old numbers, which is the only
+     * thing standing between a performance rewrite and a silent physics
+     * change. Delete it only together with that test.
+     */
+    void element_energy_force_patch_reference(const std::vector<Matrix> &sampleRows,
+                                              const std::vector<Matrix> &coordOneRingVertices,
+                                              Face &face,
+                                              const double spontCurv,
+                                              double &meanCurv,
+                                              Matrix &normVector,
+                                              double &eBend,
+                                              Matrix &fBend,
+                                              Matrix &fArea,
+                                              Matrix &fVolume);
 
     /**
      * @brief Calculates the regularization energy and force for each face
