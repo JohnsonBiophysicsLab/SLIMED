@@ -31,6 +31,26 @@ std::string trim_trailing_semicolon(std::string rawString)
 }
 
 /*
+ * pop trailing carriage returns from the given string
+ * return popped string
+ * the input string is unchanged
+ *
+ * getline() splits on '\n', so a CRLF-terminated line keeps a trailing
+ * '\r'. Strip it before parsing so an invisible character cannot defeat the
+ * exact value comparisons below (e.g. "cpu", "true", "Periodic").
+ * .gitattributes keeps checkouts LF; this is the backstop for files that were
+ * hand-edited on Windows.
+ */
+std::string trim_trailing_cr(std::string rawString)
+{
+	while (!rawString.empty() && rawString.back() == '\r')
+	{
+		rawString.pop_back();
+	}
+	return rawString;
+}
+
+/*
  * import parameters from key-value strings
  * store value in given Param object
  * pop space before match
@@ -468,6 +488,7 @@ bool import_param_file(Param &param, std::string filepath)
 	//(delete rows starting with # )
 	while (getline(ifile, str))
 	{
+		str = trim_trailing_cr(str);
 		if (str[0] != '#')
 		{
 			parameters.push_back(str);
@@ -566,6 +587,7 @@ vector<Matrix> import_scaffolding_mesh(std::string filepath)
 	//(delete rows starting with # )
 	while (getline(ifile, str))
 	{
+		str = trim_trailing_cr(str);
 		if (str[0] != '#' && str[0] != 'x')
 		{
 			str = pop_space(str);

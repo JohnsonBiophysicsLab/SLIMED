@@ -42,6 +42,20 @@ std::string pop_space(std::string rawString);
 std::string trim_trailing_semicolon(std::string rawString);
 
 /**
+ * @brief Remove trailing carriage returns from a string
+ *
+ * getline() splits on '\n', so a CRLF-terminated line keeps a trailing '\r'.
+ * Strip it before parsing so an invisible character cannot defeat the exact value
+ * comparisons in import_kv_string(). .gitattributes keeps checkouts LF; this
+ * covers files that were hand-edited on Windows.
+ *
+ * @param rawString the original string to be processed
+ *
+ * @return The string with trailing carriage returns removed.
+ */
+std::string trim_trailing_cr(std::string rawString);
+
+/**
  * @brief Import key-value pairs from a string
  *
  * This function takes two strings, `variableNameStr` and `variableValueStr`, which are expected to contain name-value pairs separated by 
