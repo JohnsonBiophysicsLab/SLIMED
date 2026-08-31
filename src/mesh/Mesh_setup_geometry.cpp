@@ -1,6 +1,8 @@
 #include "mesh/Mesh.hpp"
 #include "mesh/Subdivision_matrices.hpp"
 
+#include <cstdint>
+
 
 void Mesh::set_adjacent_faces_of_vertices_sorted()
 {
@@ -90,46 +92,121 @@ void Mesh::set_adjacent_faces_of_vertices_sorted()
 bool Mesh::faces_share_edge(const Face& face1, const Face& face2){
     // If face1 and face2 have two identical vertices then they 
     // share edge
-    // Use std::set_intersection to find common elements
     std::vector<int> commonElements;
     return faces_share_edge(face1, face2, commonElements);
 }
 
 bool Mesh::faces_share_edge(const Face& face1, const Face& face2, std::vector<int>& commonElements){
-    // If face1 and face2 have two identical vertices then they 
-    // share edge
-    // Use std::set_intersection to find common elements
-    std::set_intersection(face1.adjacentVertices.begin(), face1.adjacentVertices.end(),
-                          face2.adjacentVertices.begin(), face2.adjacentVertices.end(),
-                          std::back_inserter(commonElements));
+    // If face1 and face2 have two identical vertices then they share an edge.
+    //
+    // This was a std::set_intersection over the two adjacentVertices ranges,
+    // which that algorithm requires to be sorted -- and they never are.
+    // set_vertices_faces_flat() stores each triangle's corners in winding
+    // order, e.g. (a, a + nFaceX + 1, a + 1) for a row-odd face, so the merge
+    // walk stops at the first descent and under-reports. On the generated flat
+    // sheet it missed every genuine neighbour: the only pair it accepted was a
+    // face with itself, and set_adjacent_faces_of_faces() gave every face the
+    // list {itself, 0, 0}.
+    //
+    // Three corners against three is small enough to compare directly, which
+    // is exact whatever order they are stored in, and keeps face1's ordering
+    // in commonElements.
+    for (int vertex : face1.adjacentVertices)
+    {
+        if (std::find(face2.adjacentVertices.begin(), face2.adjacentVertices.end(), vertex) !=
+            face2.adjacentVertices.end())
+        {
+            commonElements.push_back(vertex);
+        }
+    }
 
     // Check if there are at least two common vertices
     return commonElements.size() >= 2;
 }
 
+namespace
+{
+/// Pack an edge into one key with its endpoints in ascending order, so the two
+/// faces meeting on an edge land in the same bucket however each of them winds
+/// it. Mirrors directed_edge_key() in Mesh_setup_boundary_condition.cpp, which
+/// deliberately does not sort because it is counting orientations.
+inline std::uint64_t undirected_edge_key(int nodeA, int nodeB)
+{
+    const std::uint32_t low = static_cast<std::uint32_t>(nodeA < nodeB ? nodeA : nodeB);
+    const std::uint32_t high = static_cast<std::uint32_t>(nodeA < nodeB ? nodeB : nodeA);
+    return (static_cast<std::uint64_t>(low) << 32) | high;
+}
+} // namespace
+
 /**
  * @brief Set adjacentFaces properties of faces based on the current
  * geometry of mesh.
- * 
- * This function iterates over the faces of the mesh and populates the
- * adjacentFaces property of each face by finding neighboring faces that
- * share an edge.
+ *
+ * Two faces are adjacent when they meet on an edge, so one pass files each
+ * face's three edges into a hash map keyed by that edge, and a second pass
+ * reads each face's three edges back out and keeps whichever other face shares
+ * the bucket. That is O(F).
+ *
+ * It replaces a pass that tested every ordered pair of faces with
+ * faces_share_edge(). On the 99,360-face sheet (lFace = 5,
+ * sideX = sideY = 1035) that was 9.9e9 predicate calls and 61.3 s of a 61.4 s
+ * mesh setup -- more than the whole force evaluation the mesh was built for.
+ *
+ * The pairwise pass also never worked: faces_share_edge() intersected two
+ * ranges that are not sorted, and on this mesh accepted only a face with
+ * itself, so every face came out holding {itself, 0, 0}. See the comment
+ * there. Nothing outside this file reads Face::adjacentFaces, which is why
+ * that went unnoticed; its one consumer is sort_vertices_on_faces().
  */
 void Mesh::set_adjacent_faces_of_faces(){
-    // iterate over faces and add adjacent faces
-    for (int i = 0; i < faces.size(); ++i){
-        // Initialize the adjacentFaces vector for the current face
-        faces[i].adjacentFaces = std::vector<int>(3);
-        int adjacentFaceIndex = 0;
+    const int nFaces = static_cast<int>(faces.size());
 
-        // Iterate over all faces to find adjacent faces
-        for (int j = 0; j < faces.size(); ++j){
-            // Check if faces i and j share an edge
-            if (faces_share_edge(faces[i], faces[j])){
-                // Add the index of the adjacent face to the current face's adjacentFaces vector
-                faces[i].adjacentFaces[adjacentFaceIndex] = j;
-                // Move to the next slot in the adjacentFaces vector
-                ++adjacentFaceIndex;
+    // A triangle mesh has close to 3F/2 edges, so reserving for that keeps the
+    // rehashing out of the pass.
+    std::unordered_map<std::uint64_t, std::vector<int>> facesOnEdge;
+    facesOnEdge.reserve(static_cast<std::size_t>(nFaces) * 2);
+
+    for (int iFace = 0; iFace < nFaces; ++iFace){
+        const std::vector<int>& corners = faces[iFace].adjacentVertices;
+        if (corners.size() != 3){
+            continue;
+        }
+        for (int k = 0; k < 3; ++k){
+            facesOnEdge[undirected_edge_key(corners[k], corners[(k + 1) % 3])].push_back(iFace);
+        }
+    }
+
+    for (int iFace = 0; iFace < nFaces; ++iFace){
+        // Three slots, value-initialised, exactly as before: a face on the
+        // mesh boundary has fewer than three neighbours, and
+        // sort_vertices_on_faces() indexes [0], [1] and [2] unconditionally.
+        faces[iFace].adjacentFaces = std::vector<int>(3);
+        const std::vector<int>& corners = faces[iFace].adjacentVertices;
+        if (corners.size() != 3){
+            continue;
+        }
+
+        // Walk the face's own edges in winding order and pack the neighbours
+        // found down from slot 0, skipping any edge on the mesh boundary. The
+        // neighbours therefore stay contiguous and in winding order, which is
+        // the cyclic ordering sort_vertices_on_faces() assumes when it
+        // concatenates the list with itself to look for wrapped-around
+        // sequences; leaving a gap mid-cycle for a missing edge would break
+        // that, and a gap is indistinguishable from face 0 anyway.
+        int nFound = 0;
+        for (int k = 0; k < 3 && nFound < 3; ++k){
+            // at(): pass one filed every edge of every three-cornered face,
+            // so the key is always present.
+            const std::vector<int>& onEdge =
+                facesOnEdge.at(undirected_edge_key(corners[k], corners[(k + 1) % 3]));
+            for (int jFace : onEdge){
+                // An edge of a manifold triangle mesh carries at most one other
+                // face, so this keeps everything there is to keep. Three slots
+                // cannot describe a non-manifold edge in any case;
+                // validate_volume_constraint_topology() is what reports those.
+                if (jFace != iFace && nFound < 3){
+                    faces[iFace].adjacentFaces[nFound++] = jFace;
+                }
             }
         }
     }
