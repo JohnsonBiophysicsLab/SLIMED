@@ -46,6 +46,10 @@ constexpr int kMaxControlPoints = 14;
 /// (du, dv, duu, dvv, duv, dvu), in that order.
 constexpr int kShapeRows = 7;
 
+/// (1/3) from the divergence theorem times (1/2) for the reference triangle's
+/// own area. See element_area_volume_pod().
+constexpr double kSignedVolumeQuadratureFactor = 1.0 / 6.0;
+
 // --------------------------------------------------------------------------
 // 3-vector primitives. Each mirrors one free function from Linear_algebra.cpp.
 // --------------------------------------------------------------------------
@@ -60,6 +64,11 @@ SLIMED_HD inline void v3_zero(double a[3])
 SLIMED_HD inline double v3_dot(const double a[3], const double b[3])
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+SLIMED_HD inline double v3_norm(const double a[3])
+{
+    return std::sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 }
 
 SLIMED_HD inline void v3_cross(const double a[3], const double b[3], double out[3])
@@ -131,7 +140,7 @@ SLIMED_HD inline void v3_quotient_rule(const double a[3], const double b[3],
 /// becoming NaN, matching get_unit_vector().
 SLIMED_HD inline void v3_normalize(double m[3])
 {
-    const double magnitude = std::sqrt(m[0] * m[0] + m[1] * m[1] + m[2] * m[2]);
+    const double magnitude = v3_norm(m);
     if (magnitude == 0.0)
     {
         v3_zero(m);
@@ -237,5 +246,38 @@ SLIMED_HD void element_energy_force_patch_pod(const double *sampleRows,
                                               double *fBend,
                                               double *fArea,
                                               double *fVolume);
+
+/**
+ * @brief Surface area and enclosed signed volume of one patch, by the same
+ * quadrature the energy uses.
+ *
+ * The divergence theorem with F = x gives V = (1/3) * closed_integral(x . n dA),
+ * and the Gauss rule sums over the reference triangle with weights summing to
+ * one, so each sample carries the reference triangle's own area of 1/2. The
+ * product (1/3) * (1/2) = 1/6 is kSignedVolumeQuadratureFactor. It pairs with
+ * the full three-component integrand dot(x, a_1 x a_2); see
+ * docs/volume_functional_split.md.
+ *
+ * Only the first three shape-function rows are read -- the value and the two
+ * first derivatives -- so this does under half the contraction work
+ * element_energy_force_patch_pod() does.
+ *
+ * @param[in]     sampleRows  As for element_energy_force_patch_pod().
+ * @param[in]     gaussCoeff  nSamples quadrature weights.
+ * @param[in]     nSamples    Number of quadrature points.
+ * @param[in]     ctrlPts     nCtrl x 3 control-point coordinates, row-major.
+ * @param[in]     nCtrl       Patch width.
+ * @param[in,out] area        Accumulated, one quadrature sample at a time.
+ *                            Irregular patches call this once per regular
+ *                            child, accumulating across children too.
+ * @param[in,out] volume      Accumulated the same way, and signed.
+ */
+SLIMED_HD void element_area_volume_pod(const double *sampleRows,
+                                       const double *gaussCoeff,
+                                       int nSamples,
+                                       const double *ctrlPts,
+                                       int nCtrl,
+                                       double &area,
+                                       double &volume);
 
 } // namespace slimed

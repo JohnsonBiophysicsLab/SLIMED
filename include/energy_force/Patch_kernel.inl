@@ -217,4 +217,51 @@ SLIMED_HD void element_energy_force_patch_pod(const double *sampleRows,
     v3_normalize(normVector);
 }
 
+SLIMED_HD void element_area_volume_pod(const double *sampleRows,
+                                       const double *gaussCoeff,
+                                       int nSamples,
+                                       const double *ctrlPts,
+                                       int nCtrl,
+                                       double &area,
+                                       double &volume)
+{
+    // Folded straight into the caller's accumulators, one sample at a time.
+    // The code this replaces carried an OpenMP reduction over the samples, but
+    // that pragma is compiled out of the serial build and runs single-threaded
+    // in the parallel one, so a per-call partial sum is not what either build
+    // actually computed. Summing locally first would associate the additions
+    // differently and drift from the energy the area is constrained against.
+    const int rowStride = kShapeRows * nCtrl;
+    for (int s = 0; s < nSamples; s++)
+    {
+        const double *rows = sampleRows + s * rowStride;
+
+        // Only x, a_1 and a_2 -- rows 0, 1 and 2.
+        double x[3] = {0.0, 0.0, 0.0};
+        double a_1[3] = {0.0, 0.0, 0.0};
+        double a_2[3] = {0.0, 0.0, 0.0};
+        for (int k = 0; k < nCtrl; k++)
+        {
+            const double wx = rows[0 * nCtrl + k];
+            const double w1 = rows[1 * nCtrl + k];
+            const double w2 = rows[2 * nCtrl + k];
+            const double *point = ctrlPts + k * 3;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                x[axis] += wx * point[axis];
+                a_1[axis] += w1 * point[axis];
+                a_2[axis] += w2 * point[axis];
+            }
+        }
+
+        double a_3[3];
+        v3_cross(a_1, a_2, a_3);
+        const double sqa = std::sqrt(v3_dot(a_3, a_3));
+
+        const double coeff = gaussCoeff[s];
+        area += 0.5 * coeff * sqa;
+        volume += kSignedVolumeQuadratureFactor * coeff * v3_dot(x, a_3);
+    }
+}
+
 } // namespace slimed

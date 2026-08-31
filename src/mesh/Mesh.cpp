@@ -1,5 +1,7 @@
 #include "mesh/Mesh.hpp"
 
+#include "energy_force/Patch_kernel.hpp"
+
 namespace
 {
 /**
@@ -186,7 +188,7 @@ void Mesh::set_spontaneous_curvature_for_face(const double &insertCurv, const do
  *
  * This is referenced constantly so
  */
-void Mesh::enumerate_gauss_quadrature_point_area_volume(
+void Mesh::enumerate_gauss_quadrature_point_area_volume_reference(
     const std::vector<Matrix> &sampleRows,
     const Matrix &matOneRingVertex,
     double &area,
@@ -251,6 +253,12 @@ Matrix Mesh::get_one_ring_vertex_matrix(const Face &face)
 
 void Mesh::calculate_element_area_volume()
 {
+    // Must happen before the parallel region; the build is not thread safe.
+    ensure_patch_rows_flat();
+    const double *const regularRows = patchRowsFlat.regular();
+    const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
+    const int nSamples = patchRowsFlat.nSamples();
+
 #pragma omp parallel for
     for (Face& face : faces)
     {
@@ -271,32 +279,49 @@ void Mesh::calculate_element_area_volume()
         // param.subDivideTimes -- so area and volume were integrated by
         // different code, to a different depth, than the energy they are
         // constrained against.
-        if (nOneRingVertices == 12)
+        //
+        // Any other width means no complete one-ring -- a boundary face, with
+        // no limit surface and so no area or volume of its own. Bailing before
+        // the copy also keeps it inside the stack buffer.
+        const bool isRegular = (nOneRingVertices == 12);
+        const bool isIrregular = (nOneRingVertices >= kMinIrregularValence + 6 &&
+                                  nOneRingVertices <= kMaxIrregularValence + 6);
+        if (isRegular || isIrregular)
         {
-            const Matrix matOneRingVertex = get_one_ring_vertex_matrix(face);
-            enumerate_gauss_quadrature_point_area_volume(param.shapeFunctions, matOneRingVertex,
-                                                        area, volume);
-        }
-        else if (nOneRingVertices >= kMinIrregularValence + 6 &&
-                 nOneRingVertices <= kMaxIrregularValence + 6)
-        {
-            const Matrix matOneRingVertex = get_one_ring_vertex_matrix(face);
-            const int valence = nOneRingVertices - 6;
-            for (int d = 0; d < irregularRows.depth_for(valence); d++)
+            double coordOneRingVertices[slimed::kMaxControlPoints * 3];
+            for (int j = 0; j < nOneRingVertices; j++)
             {
-                for (int c = 0; c < kRegularChildrenPerStep; c++)
+                const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
+                coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
+                coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
+                coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
+            }
+
+            if (isRegular)
+            {
+                slimed::element_area_volume_pod(regularRows, gaussCoeff, nSamples,
+                                                coordOneRingVertices, nOneRingVertices, area,
+                                                volume);
+            }
+            else
+            {
+                const int valence = nOneRingVertices - 6;
+                for (int d = 0; d < irregularRows.depth_for(valence); d++)
                 {
-                    enumerate_gauss_quadrature_point_area_volume(
-                        irregularRows.rows_for_child(valence, d, c), matOneRingVertex, area,
-                        volume);
+                    for (int c = 0; c < kRegularChildrenPerStep; c++)
+                    {
+                        slimed::element_area_volume_pod(patchRowsFlat.child(valence, d, c),
+                                                        gaussCoeff, nSamples,
+                                                        coordOneRingVertices, nOneRingVertices,
+                                                        area, volume);
+                    }
                 }
             }
         }
-        // Any other width means no complete one-ring -- a boundary face, with
-        // no limit surface and so no area or volume of its own.
 
         face.elementArea = area;
         face.elementVolume = volume;
+
     }
 }
 

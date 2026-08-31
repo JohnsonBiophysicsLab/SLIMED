@@ -23,6 +23,26 @@ using namespace std;
  *
  * @return void
  */
+namespace
+{
+/// out = a - b, for the (3, 1) coordinate column vectors a Vertex holds.
+void difference_of_coords(const Matrix &a, const Matrix &b, double out[3])
+{
+    for (int axis = 0; axis < 3; axis++)
+    {
+        out[axis] = a.get(axis, 0) - b.get(axis, 0);
+    }
+}
+} // namespace
+
+void Mesh::ensure_patch_rows_flat()
+{
+    if (patchRowsFlat.empty())
+    {
+        patchRowsFlat.build(param.shapeFunctions, irregularRows, param.gaussQuadratureCoeff);
+    }
+}
+
 void Mesh::Compute_Energy_And_Force()
 {
 
@@ -47,15 +67,9 @@ void Mesh::Compute_Energy_And_Force()
     std::vector<std::vector<double>> faceForceComponents(
         nThreads, std::vector<double>(nVertices * 9, 0.0));
 
-    // The shape functions and irregular-child rows never change after mesh
-    // setup, so repack them once. Lazily rather than in the constructors:
-    // there are several ways to build a Mesh -- Run_flat, the dynamics driver,
-    // and each test fixture -- and a build step that any of them can forget is
-    // a null-pointer bug waiting for whichever one gets added next.
-    if (patchRowsFlat.empty())
-    {
-        patchRowsFlat.build(param.shapeFunctions, irregularRows, param.gaussQuadratureCoeff);
-    }
+    // calculate_element_area_volume() above has already built these, but this
+    // is also reachable on its own.
+    ensure_patch_rows_flat();
 
     // Loop-invariant physical constants, hoisted out of the per-patch kernel.
     //
@@ -737,13 +751,18 @@ void Mesh::energy_force_regularization()
         int iVertex1 = face.adjacentVertices[1];
         int iVertex2 = face.adjacentVertices[2];
 
-        // Vectors representing three sides of this face and magnitude
-        Matrix vector10 = vertices[iVertex0].coord - vertices[iVertex1].coord;
-        double length10 = vector10.calculate_norm();
-        Matrix vector21 = vertices[iVertex1].coord - vertices[iVertex2].coord;
-        double length21 = vector21.calculate_norm();
-        Matrix vector02 = vertices[iVertex2].coord - vertices[iVertex0].coord;
-        double length02 = vector02.calculate_norm();
+        // Vectors representing three sides of this face and magnitude.
+        // Plain arrays: each of these was a heap-allocated gsl_matrix, six per
+        // face per force evaluation, for three subtractions and a norm.
+        double vector10[3];
+        double vector21[3];
+        double vector02[3];
+        difference_of_coords(vertices[iVertex0].coord, vertices[iVertex1].coord, vector10);
+        double length10 = slimed::v3_norm(vector10);
+        difference_of_coords(vertices[iVertex1].coord, vertices[iVertex2].coord, vector21);
+        double length21 = slimed::v3_norm(vector21);
+        difference_of_coords(vertices[iVertex2].coord, vertices[iVertex0].coord, vector02);
+        double length02 = slimed::v3_norm(vector02);
 
         // semi-perimeter of the triangle
         double semiperi = (length10 + length21 + length02) / 2.0;
@@ -764,13 +783,15 @@ void Mesh::energy_force_regularization()
                        pow(length02 - meanSideLength, 2.0)) /
                       pow(meanSideLength, 2.0);
 
-        Matrix refVector10 = vertices[iVertex0].coordRef - vertices[iVertex1].coordRef;
-        double refLength10 = refVector10.calculate_norm();
-        Matrix refVector21 = vertices[iVertex1].coordRef - vertices[iVertex2].coordRef;
-        double refLength21 = refVector21.calculate_norm();
-        Matrix refVector02 = vertices[iVertex2].coordRef - vertices[iVertex0].coordRef;
-        double refLength02 = refVector02.calculate_norm();
-        // std::cout<<"v0"<<vector10.size()<<"::"<<refVector10.size()<<endl;
+        double refVector10[3];
+        double refVector21[3];
+        double refVector02[3];
+        difference_of_coords(vertices[iVertex0].coordRef, vertices[iVertex1].coordRef, refVector10);
+        double refLength10 = slimed::v3_norm(refVector10);
+        difference_of_coords(vertices[iVertex1].coordRef, vertices[iVertex2].coordRef, refVector21);
+        double refLength21 = slimed::v3_norm(refVector21);
+        difference_of_coords(vertices[iVertex2].coordRef, vertices[iVertex0].coordRef, refVector02);
+        double refLength02 = slimed::v3_norm(refVector02);
 
         // Here semipri = semi-perimeter of the reference triangle
         semiperi = (refLength10 + refLength21 + refLength02) / 2.0;
@@ -781,10 +802,12 @@ void Mesh::energy_force_regularization()
         bool isDeformShape = (gama > param.gamaShape && param.usingRpi);
         bool isDeformArea = (abs(area - refArea) / refArea >= param.gamaArea && param.usingRpi);
 
-        // convert vector10, vector21, vector02 unit vector
-        vector10 /= length10;
-        vector21 /= length21;
-        vector02 /= length02;
+        // convert vector10, vector21, vector02 unit vector.
+        // Reciprocal-then-multiply, as Matrix::operator/= did, rather than a
+        // true division: the two round differently.
+        slimed::v3_scale(vector10, 1.0 / length10, vector10);
+        slimed::v3_scale(vector21, 1.0 / length21, vector21);
+        slimed::v3_scale(vector02, 1.0 / length02, vector02);
 
         /*
          * Use a switch statement to check the values of
@@ -805,9 +828,9 @@ void Mesh::energy_force_regularization()
             eReg = kCurv / 2.0 * (pow(length10 - refLength10, 2.0) + pow(length21 - refLength21, 2.0) + pow(length02 - refLength02, 2.0));
             for (int axis = 0; axis < 3; ++axis)
             {
-                localRegComponents[iVertex0 * 3 + axis] += kCurv * ((refLength10 - length10) * vector10(axis, 0) + (length02 - refLength02) * vector02(axis, 0));
-                localRegComponents[iVertex1 * 3 + axis] += kCurv * ((refLength21 - length21) * vector21(axis, 0) + (length10 - refLength10) * vector10(axis, 0));
-                localRegComponents[iVertex2 * 3 + axis] += kCurv * ((refLength02 - length02) * vector02(axis, 0) + (length21 - refLength21) * vector21(axis, 0));
+                localRegComponents[iVertex0 * 3 + axis] += kCurv * ((refLength10 - length10) * vector10[axis] + (length02 - refLength02) * vector02[axis]);
+                localRegComponents[iVertex1 * 3 + axis] += kCurv * ((refLength21 - length21) * vector21[axis] + (length10 - refLength10) * vector10[axis]);
+                localRegComponents[iVertex2 * 3 + axis] += kCurv * ((refLength02 - length02) * vector02[axis] + (length21 - refLength21) * vector21[axis]);
             }
             break;
         case 1:
@@ -817,9 +840,9 @@ void Mesh::energy_force_regularization()
                 eReg = kCurv / 2.0 * (pow(length10 - meanSideLengthRef, 2.0) + pow(length21 - meanSideLengthRef, 2.0) + pow(length02 - meanSideLengthRef, 2.0));
                 for (int axis = 0; axis < 3; ++axis)
                 {
-                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthRef - length10) * vector10(axis, 0) + (length02 - meanSideLengthRef) * vector02(axis, 0));
-                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthRef - length21) * vector21(axis, 0) + (length10 - meanSideLengthRef) * vector10(axis, 0));
-                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthRef - length02) * vector02(axis, 0) + (length21 - meanSideLengthRef) * vector21(axis, 0));
+                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthRef - length10) * vector10[axis] + (length02 - meanSideLengthRef) * vector02[axis]);
+                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthRef - length21) * vector21[axis] + (length10 - meanSideLengthRef) * vector10[axis]);
+                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthRef - length02) * vector02[axis] + (length21 - meanSideLengthRef) * vector21[axis]);
                 }
             }
             break;
@@ -830,9 +853,9 @@ void Mesh::energy_force_regularization()
                 eReg = kCurv / 2.0 * (pow(length10 - meanSideLengthOld, 2.0) + pow(length21 - meanSideLengthOld, 2.0) + pow(length02 - meanSideLengthOld, 2.0));
                 for (int axis = 0; axis < 3; ++axis)
                 {
-                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthOld - length10) * vector10(axis, 0) + (length02 - meanSideLengthOld) * vector02(axis, 0));
-                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthOld - length21) * vector21(axis, 0) + (length10 - meanSideLengthOld) * vector10(axis, 0));
-                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthOld - length02) * vector02(axis, 0) + (length21 - meanSideLengthOld) * vector21(axis, 0));
+                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthOld - length10) * vector10[axis] + (length02 - meanSideLengthOld) * vector02[axis]);
+                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthOld - length21) * vector21[axis] + (length10 - meanSideLengthOld) * vector10[axis]);
+                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthOld - length02) * vector02[axis] + (length21 - meanSideLengthOld) * vector21[axis]);
                 }
             }
             break;
@@ -841,12 +864,6 @@ void Mesh::energy_force_regularization()
         // Store energy on faces
         face.energy.energyRegularization = eReg;
 
-        vector10.free();
-        vector21.free();
-        vector02.free();
-        refVector10.free();
-        refVector21.free();
-        refVector02.free();
     }
 
     // Store Force on vertices

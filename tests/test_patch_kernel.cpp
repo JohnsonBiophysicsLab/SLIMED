@@ -72,6 +72,24 @@ std::vector<double> flat_control_points(const Mesh &mesh, const Face &face)
     return flat;
 }
 
+/// The control points as one (nCtrl, 3) matrix, the shape the area and volume
+/// reference wants. Mesh::get_one_ring_vertex_matrix() builds exactly this,
+/// but it is protected.
+Matrix control_point_matrix(const Mesh &mesh, const Face &face)
+{
+    const int nCtrl = static_cast<int>(face.oneRingVertices.size());
+    Matrix control(nCtrl, 3);
+    for (int j = 0; j < nCtrl; j++)
+    {
+        const Matrix &coord = mesh.vertices[face.oneRingVertices[j]].coord;
+        for (int axis = 0; axis < 3; axis++)
+        {
+            control.set(j, axis, coord.get(axis, 0));
+        }
+    }
+    return control;
+}
+
 /// The same control points as the Matrix column vectors the reference wants.
 std::vector<Matrix> matrix_control_points(const Mesh &mesh, const Face &face)
 {
@@ -88,8 +106,12 @@ std::vector<Matrix> matrix_control_points(const Mesh &mesh, const Face &face)
  * @brief Assert that two values agree to rounding.
  *
  * The rewrite preserved the original's operation order, so the two kernels
- * should agree far more tightly than this; the tolerance is a floor for
- * whatever the compiler does with contraction, not a licence to drift.
+ * agree far more tightly than this. The tolerance exists because the original
+ * contracted its shape functions through gsl_blas_dgemm, and Homebrew's
+ * libgslcblas is compiled with fused multiply-add: its rounding cannot be
+ * reproduced by an unfused loop, and chasing it would mean forcing std::fma,
+ * which is a libm call rather than an instruction on any target without
+ * hardware FMA. It is a floor for that, not a licence to drift.
  */
 void expect_close(double reference, double actual, const char *what, int face, int index)
 {
@@ -404,4 +426,92 @@ TEST(PatchKernelTest, FlatRowsRejectSlotsItDidNotBuild)
     // stack buffers; if kMaxIrregularValence ever grows, this is the line that
     // says kMaxControlPoints has to grow with it.
     EXPECT_LE(kMaxIrregularValence + 6, slimed::kMaxControlPoints);
+}
+
+/**
+ * Area and volume are integrated by a second, cheaper kernel that reads only
+ * the first three shape-function rows. They feed the area and volume
+ * constraint energies, so a drift here is a drift in the force the patch
+ * kernel is checked against above -- worth its own oracle rather than being
+ * inferred from the energy.
+ *
+ * Not exact equality. The code this replaced contracted the shape functions
+ * with a gsl_blas_dgemm call, and Homebrew's libgslcblas is compiled with
+ * fused multiply-add, so its dgemm rounds each multiply-add differently from
+ * any unfused loop -- a property of how the library was built, not of the
+ * mathematics. Measured on the 8400-face default mesh the two differ by at
+ * most 6.6e-14 on element areas of about 10.8, or 6e-15 relative. The bar
+ * below is a hundred times tighter than anything physical and still well
+ * clear of that.
+ */
+TEST(PatchKernelTest, FlatAreaVolumeMatchesReference)
+{
+    for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
+    {
+        SCOPED_TRACE("valence " + std::to_string(valence));
+
+        PatchFixture fixture = build_fixture(valence);
+        Mesh mesh(fixture.param);
+        ASSERT_NO_THROW(mesh.setup_from_vertices_faces(fixture.vertices, fixture.faces));
+
+        PatchRowsFlat flat;
+        ASSERT_NO_THROW(flat.build(mesh.param.shapeFunctions, mesh.irregularRows,
+                                   mesh.param.gaussQuadratureCoeff));
+
+        int nCompared = 0;
+        for (std::size_t i = 0; i < mesh.faces.size(); i++)
+        {
+            Face &face = mesh.faces[i];
+            const int nCtrl = static_cast<int>(face.oneRingVertices.size());
+            const bool isRegular = (nCtrl == 12);
+            const bool isIrregular = (nCtrl >= kMinIrregularValence + 6 &&
+                                      nCtrl <= kMaxIrregularValence + 6);
+            if (!isRegular && !isIrregular)
+            {
+                continue;
+            }
+            nCompared++;
+
+            const Matrix matrixCoords = control_point_matrix(mesh, face);
+            const std::vector<double> ctrlPts = flat_control_points(mesh, face);
+
+            double refArea = 0.0;
+            double refVolume = 0.0;
+            double area = 0.0;
+            double volume = 0.0;
+
+            if (isRegular)
+            {
+                mesh.enumerate_gauss_quadrature_point_area_volume_reference(
+                    mesh.param.shapeFunctions, matrixCoords, refArea, refVolume);
+                slimed::element_area_volume_pod(flat.regular(), flat.gaussCoeff(), flat.nSamples(),
+                                                ctrlPts.data(), nCtrl, area, volume);
+            }
+            else
+            {
+                const int faceValence = nCtrl - 6;
+                for (int d = 0; d < mesh.irregularRows.depth_for(faceValence); d++)
+                {
+                    for (int c = 0; c < kRegularChildrenPerStep; c++)
+                    {
+                        mesh.enumerate_gauss_quadrature_point_area_volume_reference(
+                            mesh.irregularRows.rows_for_child(faceValence, d, c), matrixCoords,
+                            refArea, refVolume);
+                        slimed::element_area_volume_pod(flat.child(faceValence, d, c),
+                                                        flat.gaussCoeff(), flat.nSamples(),
+                                                        ctrlPts.data(), nCtrl, area, volume);
+                    }
+                }
+            }
+
+            EXPECT_NEAR(refArea, area, 1e-13 * std::max(std::abs(refArea), 1.0))
+                << "area on face " << i;
+            EXPECT_NEAR(refVolume, volume, 1e-13 * std::max(std::abs(refVolume), 1.0))
+                << "volume on face " << i;
+            // A degenerate patch would match at zero without testing anything.
+            EXPECT_GT(refArea, 0.0) << "face " << i;
+        }
+
+        EXPECT_GT(nCompared, 0) << "no face with a complete one-ring in the fixture";
+    }
 }

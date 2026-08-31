@@ -140,6 +140,20 @@ public:
      */
     PatchRowsFlat patchRowsFlat;
 
+    /**
+     * @brief Build patchRowsFlat if it has not been built yet.
+     *
+     * Every entry point that reads the flat rows calls this first. Doing it
+     * lazily rather than in the constructors is deliberate: there are several
+     * ways to build a Mesh -- Run_flat, the dynamics driver, and each test
+     * fixture -- and a setup step any of them can forget is a null-pointer bug
+     * waiting for whichever one gets added next.
+     *
+     * Not thread safe, so call it before entering a parallel region, never
+     * from inside one.
+     */
+    void ensure_patch_rows_flat();
+
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
     std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold
@@ -551,6 +565,21 @@ public:
      * @param fVolume a non-constant matrix reference representing the volume constraint force of the element.
      */
     /**
+     * @brief The area and volume quadrature as it was before the flat-array
+     * rewrite, kept as the numerical oracle for it.
+     *
+     * Nothing in the simulation path calls this; slimed::element_area_volume_pod()
+     * replaced it. It exists so tests/test_patch_kernel.cpp can assert the
+     * fast version still integrates to the same area and volume, which is what
+     * the area and volume constraint energies are measured against. Delete it
+     * only together with that test.
+     */
+    void enumerate_gauss_quadrature_point_area_volume_reference(const std::vector<Matrix> &sampleRows,
+                                                      const Matrix &dots,
+                                                      double &area,
+                                                      double &volume);
+
+    /**
      * @brief The patch kernel as it was before the flat-array rewrite, kept as
      * the numerical oracle for it.
      *
@@ -867,10 +896,6 @@ protected:
      * @param area A reference to a double variable storing the accumulated area.
      * @param volume A reference to a double variable storing the accumulated volume.
      */
-    void enumerate_gauss_quadrature_point_area_volume(const std::vector<Matrix> &sampleRows,
-                                                      const Matrix &dots,
-                                                      double &area,
-                                                      double &volume);
 
     /**
      * @brief
