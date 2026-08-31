@@ -64,6 +64,28 @@ public:
      */
     const double *child(int valence, int depth, int childIndex) const;
 
+    /**
+     * @brief The whole irregular buffer and its slot offsets.
+     *
+     * child() is the right accessor for host code. These exist so the buffer
+     * can be uploaded to a device in one copy and indexed there by the same
+     * slot arithmetic, which needs the base pointer and the offset table
+     * rather than a resolved pointer per call. Both are null when the table
+     * holds no irregular rows.
+     */
+    const double *irregular() const { return irregular_.empty() ? nullptr : irregular_.data(); }
+    const std::size_t *irregularOffsets() const
+    {
+        return offsets_.empty() ? nullptr : offsets_.data();
+    }
+    /// Depth the slot arithmetic is indexed by; 0 when there are no rows.
+    int depth() const { return depth_; }
+
+    /// Doubles in the irregular buffer, for sizing a device allocation.
+    std::size_t irregular_count() const { return irregular_.size(); }
+    /// Entries in the offset table, likewise.
+    std::size_t irregular_slot_count() const { return offsets_.size(); }
+
     /// Total bytes held, for the startup diagnostic.
     std::size_t memory_bytes() const;
 

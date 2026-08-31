@@ -46,6 +46,15 @@ kcMembraneBending = 83.4		# membrane bending constant (pN.nm)
 usMembraneStretching = 250.0	# membrane streching modulus (pN/nm)
 uvVolumeConstraint = 0.0		# volume constraint coefficient (pN/nm^2)
 isGlobalConstraint = true      # true to enable global mode for area and volume
+
+# Which implementation evaluates the per-face energies and forces.
+#   cpu  - the default; the CPU loops
+#   gpu  - the CUDA backend; fails the run if no device is usable, so that a
+#          job submitted as a GPU run cannot silently report CPU timings
+#   auto - the GPU when one is usable, the CPU otherwise, saying which
+# All three compute the same thing. Requires -DSLIMED_ENABLE_CUDA=ON to build.
+# See docs/gpu_acceleration.md, including where the GPU actually wins.
+forceBackend = cpu
 KBT = 4.17                      # 1KbT = 4.17 pN.nm
 thermalFluctuationEnabled = false         # true to enable Metropolis thermal trial moves
 thermalFluctuationInterval = 50           # iteration interval between thermal trial moves

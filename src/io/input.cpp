@@ -168,6 +168,21 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("forceBackend") == 0)
+	{
+		// Validated here rather than at first use: a typo should stop the run
+		// before it spends an hour on the wrong backend.
+		if (variableValueStr.compare("cpu") == 0 || variableValueStr.compare("gpu") == 0 ||
+			variableValueStr.compare("auto") == 0)
+		{
+			param.forceBackend = variableValueStr;
+		}
+		else
+		{
+			throw std::runtime_error("[read_param_file] forceBackend must be cpu, gpu or auto; got '" +
+									 variableValueStr + "'");
+		}
+	}
 	else if (variableNameStr.compare("isGlobalConstraint") == 0)
 	{
 		if (variableValueStr.compare("true") == 0)

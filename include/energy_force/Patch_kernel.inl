@@ -2,10 +2,12 @@
  * @file Patch_kernel.inl
  * @brief Definition of element_energy_force_patch_pod().
  *
- * Kept out of the header and out of any single .cpp so that exactly one host
- * translation unit and, later, one CUDA translation unit can each include it
- * and get their own copy with the right SLIMED_HD expansion. There is no
- * device-side variant of this code to keep in sync -- there is one body.
+ * Kept out of the header's own text, but included from its foot, so that a
+ * CUDA translation unit can compile this same source for the device with
+ * SLIMED_HD expanded to __host__ __device__. The functions are inline, so
+ * every caller carries a definition and the device needs no relocatable device
+ * code. There is no device-side variant of this code to keep in sync -- there
+ * is one body.
  */
 #pragma once
 
@@ -14,7 +16,7 @@
 namespace slimed
 {
 
-SLIMED_HD void element_energy_force_patch_pod(const double *sampleRows,
+SLIMED_HD inline void element_energy_force_patch_pod(const double *sampleRows,
                                               const double *gaussCoeff,
                                               int nSamples,
                                               const double *ctrlPts,
@@ -217,7 +219,7 @@ SLIMED_HD void element_energy_force_patch_pod(const double *sampleRows,
     v3_normalize(normVector);
 }
 
-SLIMED_HD void element_area_volume_pod(const double *sampleRows,
+SLIMED_HD inline void element_area_volume_pod(const double *sampleRows,
                                        const double *gaussCoeff,
                                        int nSamples,
                                        const double *ctrlPts,

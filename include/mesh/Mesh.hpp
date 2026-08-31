@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <cmath>
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -34,6 +35,8 @@
 // model setup
 //#include "Edge.hpp"
 #include "mesh/Face.hpp"
+#include "cuda/Cuda_force_backend.hpp"
+#include "cuda/Device_mesh_layout.hpp"
 #include "energy_force/Patch_rows_flat.hpp"
 #include "mesh/Irregular_patch_rows.hpp"
 #include "mesh/Vertex.hpp"
@@ -153,6 +156,49 @@ public:
      * from inside one.
      */
     void ensure_patch_rows_flat();
+
+    /**
+     * @brief The mesh flattened for the GPU-shaped force backends.
+     *
+     * Built alongside patchRowsFlat and, like it, only when something asks for
+     * it -- a CPU run never pays for it.
+     */
+    slimed::DeviceMeshLayout deviceLayout;
+
+    /**
+     * @brief Build deviceLayout if it is missing or stale.
+     *
+     * Staleness is checked by face and vertex count rather than assumed away.
+     * A global Loop pre-refinement (see Mesh_refine.cpp) replaces both, and a
+     * layout built before it would index vertices that no longer exist.
+     */
+    void ensure_device_layout();
+
+    /**
+     * @brief Which backend Compute_Energy_And_Force() delegates its per-face
+     * work to, chosen once from param.forceBackend.
+     *
+     * Held by value rather than resolved per call: constructing
+     * CudaForceBackend queries the driver and uploads the topology, neither of
+     * which belongs in a line search that runs this a couple of hundred times
+     * per iteration.
+     */
+    enum class ForceBackendChoice
+    {
+        Unresolved,
+        Cpu,
+        Cuda,
+    };
+    ForceBackendChoice forceBackendChoice = ForceBackendChoice::Unresolved;
+    std::unique_ptr<slimed::CudaForceBackend> cudaBackend;
+
+    /// Read param.forceBackend and set up whichever backend it names. Throws
+    /// if it names "gpu" and no device can be used.
+    void resolve_force_backend();
+
+    /// The per-face and per-vertex half of the force evaluation, on the CPU.
+    /// The device backend stands in for exactly this much.
+    void compute_face_energies_and_forces();
 
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation

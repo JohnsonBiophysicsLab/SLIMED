@@ -131,6 +131,23 @@ struct Param
     bool isInsertionAreaConstraint = false; ///< Whether to apply area constraint to insertions
     bool isAdditiveScheme = false;          ///< Whether to use additive scheme for constraints
     bool isGlobalConstraint = true;                ///< Whether to apply global constraint across entire membrane
+
+    /**
+     * @brief Which implementation evaluates the per-face energies and forces.
+     *
+     * "cpu"  -- the loops in Compute_Energy_And_Force(), the default.
+     * "gpu"  -- slimed::CudaForceBackend. Fails loudly if the binary was built
+     *           without CUDA or no device is visible, because a run that
+     *           silently fell back would be reported as a GPU timing.
+     * "auto" -- the GPU when one is usable, the CPU otherwise, saying which it
+     *           chose.
+     *
+     * All three compute the same thing: the device path runs the same kernel
+     * bodies over the same flattened mesh, and the tests pin it against the
+     * CPU. See docs/gpu_acceleration.md for where the GPU actually wins --
+     * below roughly 10^5 faces it does not.
+     */
+    std::string forceBackend = "cpu";
     double elementTriangleArea0;            ///< Target area for individual triangles
 
     // gauss quadrature

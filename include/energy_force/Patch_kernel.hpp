@@ -50,6 +50,24 @@ constexpr int kShapeRows = 7;
 /// own area. See element_area_volume_pod().
 constexpr double kSignedVolumeQuadratureFactor = 1.0 / 6.0;
 
+/**
+ * @name Patch-table bounds, device-side copies
+ *
+ * The originals are ::kMinIrregularValence and ::kMaxIrregularValence in
+ * mesh/Subdivision_matrices.hpp and ::kRegularChildrenPerStep in
+ * mesh/Irregular_patch_rows.hpp. Those headers pull in Linear_algebra.hpp and
+ * so GSL, which this header must stay clear of: everything here has to compile
+ * under nvcc for the device, where there is no GSL and no STL.
+ *
+ * src/energy_force/Patch_kernel.cpp static_asserts that these agree with the
+ * originals, so the two cannot drift apart without the build failing.
+ * @{
+ */
+constexpr int kMinPatchValence = 4;
+constexpr int kMaxPatchValence = 8;
+constexpr int kChildrenPerSubdivisionStep = 3;
+/** @} */
+
 // --------------------------------------------------------------------------
 // 3-vector primitives. Each mirrors one free function from Linear_algebra.cpp.
 // --------------------------------------------------------------------------
@@ -234,7 +252,7 @@ SLIMED_HD inline void shape_times_control_points(const double *rows,
  * @param[in,out] fArea       nCtrl x 3 area-constraint force. Accumulated.
  * @param[in,out] fVolume     nCtrl x 3 volume-constraint force. Accumulated.
  */
-SLIMED_HD void element_energy_force_patch_pod(const double *sampleRows,
+SLIMED_HD inline void element_energy_force_patch_pod(const double *sampleRows,
                                               const double *gaussCoeff,
                                               int nSamples,
                                               const double *ctrlPts,
@@ -272,7 +290,7 @@ SLIMED_HD void element_energy_force_patch_pod(const double *sampleRows,
  *                            child, accumulating across children too.
  * @param[in,out] volume      Accumulated the same way, and signed.
  */
-SLIMED_HD void element_area_volume_pod(const double *sampleRows,
+SLIMED_HD inline void element_area_volume_pod(const double *sampleRows,
                                        const double *gaussCoeff,
                                        int nSamples,
                                        const double *ctrlPts,
@@ -281,3 +299,9 @@ SLIMED_HD void element_area_volume_pod(const double *sampleRows,
                                        double &volume);
 
 } // namespace slimed
+
+// The definitions. Kept in a separate file so a CUDA translation unit can
+// include the same source and compile it for the device, but included here so
+// that every caller has them: they are inline, and an inline function has to be
+// defined wherever it is used.
+#include "energy_force/Patch_kernel.inl"

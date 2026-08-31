@@ -43,18 +43,25 @@ void Mesh::ensure_patch_rows_flat()
     }
 }
 
-void Mesh::Compute_Energy_And_Force()
+/**
+ * @brief The per-face and per-vertex half of the force evaluation, on the CPU.
+ *
+ * Split out of Compute_Energy_And_Force() so the device backend can stand in
+ * for exactly this much: element area and volume and their totals, the patch
+ * energies and forces, and the regularization term. Everything after it --
+ * the constraint energies, the scaffolding term, the boundary handling -- is
+ * scalar bookkeeping that stays on the host either way.
+ *
+ * Assumes clear_force_on_vertices_and_energy_on_faces() has already run.
+ */
+void Mesh::compute_face_energies_and_forces()
 {
-
     // Step 1.
     // Calculate the area and volume of each element triangle
     calculate_element_area_volume();
 
     // Sum up the total area and volume of the membrane and sync with parameter
     sum_membrane_area_and_volume(param.area, param.vol);
-
-    // Reset the force on vertices and energy on faces
-    clear_force_on_vertices_and_energy_on_faces();
 
     const int nVertices = static_cast<int>(vertices.size());
 #ifdef OMP
@@ -256,6 +263,84 @@ void Mesh::Compute_Energy_And_Force()
 
     // Step 3.
     energy_force_regularization(); // regularization Force and Energy
+
+}
+
+void Mesh::ensure_device_layout()
+{
+    // Rebuilt when the counts move rather than only when empty. A global Loop
+    // pre-refinement replaces the whole face and vertex list, and a layout
+    // built before it would index vertices that no longer exist -- a silent
+    // out-of-bounds read rather than a failure.
+    if (deviceLayout.empty() || deviceLayout.nFaces() != static_cast<int>(faces.size()) ||
+        deviceLayout.nVertices() != static_cast<int>(vertices.size()))
+    {
+        deviceLayout.build(*this);
+    }
+}
+
+void Mesh::resolve_force_backend()
+{
+    if (forceBackendChoice != ForceBackendChoice::Unresolved)
+    {
+        return;
+    }
+
+    const bool wantsCuda = (param.forceBackend == "gpu" || param.forceBackend == "auto");
+    if (!wantsCuda)
+    {
+        forceBackendChoice = ForceBackendChoice::Cpu;
+        return;
+    }
+
+    try
+    {
+        cudaBackend.reset(new slimed::CudaForceBackend());
+        forceBackendChoice = ForceBackendChoice::Cuda;
+        std::cout << "[Mesh::resolve_force_backend] evaluating forces on "
+                  << cudaBackend->device_description() << std::endl;
+    }
+    catch (const std::exception &error)
+    {
+        cudaBackend.reset();
+        // "gpu" is a claim about how the run was performed, so a silent
+        // fallback would turn a misconfigured job into a CPU timing reported
+        // as a GPU one. "auto" is a preference, and says what it settled on.
+        if (param.forceBackend == "gpu")
+        {
+            throw std::runtime_error(
+                std::string("[Mesh::resolve_force_backend] forceBackend = gpu, but the GPU "
+                            "backend is unavailable: ") +
+                error.what());
+        }
+        forceBackendChoice = ForceBackendChoice::Cpu;
+        std::cout << "[Mesh::resolve_force_backend] forceBackend = auto, falling back to the "
+                     "CPU: "
+                  << error.what() << std::endl;
+    }
+}
+
+void Mesh::Compute_Energy_And_Force()
+{
+    resolve_force_backend();
+
+    // Reset the force on vertices and energy on faces
+    clear_force_on_vertices_and_energy_on_faces();
+
+    if (forceBackendChoice == ForceBackendChoice::Cuda)
+    {
+        ensure_patch_rows_flat();
+        ensure_device_layout();
+        // Steps 1 to 3 below, on the device: element area and volume and the
+        // totals they sum to, the patch energies and forces, and the
+        // regularization term. Same kernel bodies, same results -- see
+        // CudaForceBackendTest.
+        cudaBackend->evaluate(*this, deviceLayout, patchRowsFlat);
+    }
+    else
+    {
+        compute_face_energies_and_forces();
+    }
 
     // Step 4.
     // Summing up energy and force
