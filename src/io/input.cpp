@@ -3,9 +3,16 @@
 using namespace std;
 
 /*
- * pop all spaces & tabs from the given string (\s and \t)
+ * pop all spaces, tabs & carriage returns from the given string
+ * (\s, \t and \r)
  * return popped string
  * the input string is unchanged
+ *
+ * getline() splits on '\n', so a CRLF-terminated line keeps a trailing
+ * '\r'. Treating it as whitespace means no exact comparison downstream can be
+ * defeated by an invisible character -- notably boundaryType, where 'Periodic\r'
+ * matched neither "Periodic" nor "periodic" and fell through to
+ * BoundaryType::Fixed: wrong physics, and no error to show for it.
  */
 std::string pop_space(std::string rawString)
 {
@@ -17,6 +24,10 @@ std::string pop_space(std::string rawString)
 	while (poppedString.find("\t") != std::string::npos)
 	{
 		poppedString.erase(poppedString.find("\t"), 1);
+	}
+	while (poppedString.find("\r") != std::string::npos)
+	{
+		poppedString.erase(poppedString.find("\r"), 1);
 	}
 	return poppedString;
 }
@@ -202,6 +213,9 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 			throw std::runtime_error("[read_param_file] forceBackend must be cpu, gpu or auto; got '" +
 									 variableValueStr + "'");
 		}
+		std::cout << "FORCE_BACKEND set to : " << variableValueStr
+				  << std::endl;
+		return true;
 	}
 	else if (variableNameStr.compare("isGlobalConstraint") == 0)
 	{
