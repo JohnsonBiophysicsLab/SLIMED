@@ -29,17 +29,35 @@
 #include "Dynamics.hpp"
 
 /**
- * @brief Remove spaces from a string
+ * @brief Remove spaces, tabs and carriage returns from a string
  *
- * This function takes a raw string and removes any whitespace characters present in it. The modified string with no spaces is returned.
+ * This function takes a raw string and removes every whitespace character present
+ * in it (\s, \t and \r). The carriage return matters: getline() splits on
+ * '\n', so a CRLF-terminated line keeps a trailing '\r', and leaving it in place
+ * silently defeats the exact value comparisons in import_kv_string() -- notably
+ * boundaryType, where 'Periodic\r' fell through to BoundaryType::Fixed.
  *
  * @param rawString the original string to be processed
  *
- * @return The string with spaces removed.
+ * @return The string with spaces, tabs and carriage returns removed.
  */
 std::string pop_space(std::string rawString);
 
 std::string trim_trailing_semicolon(std::string rawString);
+
+/**
+ * @brief Remove trailing carriage returns from a string
+ *
+ * getline() splits on '\n', so a CRLF-terminated line keeps a trailing '\r'.
+ * Strip it before parsing so an invisible character cannot defeat the exact value
+ * comparisons in import_kv_string(). .gitattributes keeps checkouts LF; this
+ * covers files that were hand-edited on Windows.
+ *
+ * @param rawString the original string to be processed
+ *
+ * @return The string with trailing carriage returns removed.
+ */
+std::string trim_trailing_cr(std::string rawString);
 
 /**
  * @brief Import key-value pairs from a string

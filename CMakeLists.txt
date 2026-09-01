@@ -28,6 +28,9 @@ project(SLIMED
 option(SLIMED_ENABLE_OPENMP   "Build with OpenMP parallelisation (make omp)" OFF)
 option(SLIMED_ENABLE_COVERAGE "Instrument the build for gcov/lcov coverage"  OFF)
 option(SLIMED_BUILD_TESTS     "Build the GoogleTest unit tests"              ON)
+option(SLIMED_ENABLE_CUDA     "Build the CUDA force backend (needs nvcc)"    OFF)
+set(SLIMED_CUDA_ARCHITECTURES "70;80;90" CACHE STRING
+    "GPU architectures to generate code for when SLIMED_ENABLE_CUDA is ON")
 
 #---------------------------------------------------------------------------
 # Global settings
@@ -111,6 +114,16 @@ if(NOT SLIMED_SOURCES)
     message(FATAL_ERROR "No sources found under ${PROJECT_SOURCE_DIR}/src.")
 endif()
 
+# The CUDA backend and its stub define the same symbols; exactly one of them is
+# compiled.  The stub is what a build without a GPU toolchain links, so that
+# callers can be written as "try the device, fall back to the host" with no
+# #ifdef at the call site.
+if(SLIMED_ENABLE_CUDA)
+    list(REMOVE_ITEM SLIMED_SOURCES
+        "${PROJECT_SOURCE_DIR}/src/cuda/Cuda_force_backend_stub.cpp")
+    list(APPEND SLIMED_SOURCES "${PROJECT_SOURCE_DIR}/src/cuda/Cuda_force_backend.cu")
+endif()
+
 add_library(slimed_core STATIC ${SLIMED_SOURCES})
 add_library(SLIMED::core ALIAS slimed_core)
 
@@ -150,6 +163,54 @@ else()
         "OpenMP was not found.  Several headers include <omp.h> unconditionally, "
         "so the build will fail unless omp.h is already on the compiler's "
         "include path (it is with GCC; it is not with Apple Clang).")
+endif()
+
+#---------------------------------------------------------------------------
+# CUDA
+#---------------------------------------------------------------------------
+#
+# Off by default: the CPU path is complete on its own, and most machines that
+# build this have no NVIDIA GPU.  When it is on, the only extra source is
+# src/cuda/Cuda_force_backend.cu -- the kernel bodies are the header-only,
+# __host__ __device__ functions in include/energy_force/Patch_kernel.inl and
+# include/cuda/Force_kernels.inl that the CPU path already runs and the tests
+# already pin against the production force evaluation.
+#
+# Verify a new GPU build before trusting it:
+#
+#     ctest --test-dir build -R CudaForceBackend
+#
+# CudaForceBackendTest.MatchesTheProductionForceEvaluation runs both paths over
+# the same meshes and compares every energy and force.  It skips, rather than
+# passes, when no device is visible.
+
+if(SLIMED_ENABLE_CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+    if(NOT CMAKE_CUDA_COMPILER)
+        message(FATAL_ERROR
+            "SLIMED_ENABLE_CUDA=ON but no CUDA compiler was found.  Put nvcc on PATH "
+            "(module load cuda, on most clusters), point CMAKE_CUDA_COMPILER at it, "
+            "or configure with -DSLIMED_ENABLE_CUDA=OFF.")
+    endif()
+    enable_language(CUDA)
+
+    set_target_properties(slimed_core PROPERTIES
+        CUDA_ARCHITECTURES "${SLIMED_CUDA_ARCHITECTURES}"
+        # The kernel bodies are inline and defined in headers, so each
+        # translation unit carries its own device code and no cross-TU device
+        # linking is needed.
+        CUDA_SEPARABLE_COMPILATION OFF)
+
+    # Mesh.hpp and the headers it pulls in are ordinary host C++; nvcc passes
+    # them to the host compiler, which needs the same OpenMP include path the
+    # C++ sources get.
+    if(OpenMP_CXX_FOUND)
+        target_include_directories(slimed_core SYSTEM PUBLIC ${OpenMP_CXX_INCLUDE_DIRS})
+    endif()
+
+    target_compile_definitions(slimed_core PUBLIC SLIMED_WITH_CUDA)
+    message(STATUS "CUDA force backend enabled for architectures: ${SLIMED_CUDA_ARCHITECTURES}")
 endif()
 
 #---------------------------------------------------------------------------

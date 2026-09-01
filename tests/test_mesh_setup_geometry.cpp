@@ -88,6 +88,119 @@ TEST(MeshFunctionTest, FacesShareEdgeTest){
     shareEdge = mesh.faces_share_edge(face1, face4);
     EXPECT_FALSE(shareEdge);
 }
+
+/**
+ * @brief The corners of a face are stored in winding order, not sorted order.
+ *
+ * This is the case the predicate used to get wrong. faces_share_edge() ran
+ * std::set_intersection over the two adjacentVertices ranges, which that
+ * algorithm requires to be sorted; set_vertices_faces_flat() stores each
+ * triangle as (a, a + nFaceX + 1, a + 1), so the merge walk stopped at the
+ * descent from a + nFaceX + 1 to a + 1 and reported one common vertex where
+ * there are two.
+ *
+ * The two triples below are the literal corner lists of faces 0 and 1 of the
+ * default sheet (nFaceX = 20), which meet along the edge 21-1.
+ */
+TEST(MeshFunctionTest, FacesShareEdgeIsIndependentOfCornerOrder)
+{
+    Param param;
+    param.VERBOSE_MODE = false; // mute output
+    Mesh mesh(param);
+
+    Face face1;
+    Face face2;
+    face1.adjacentVertices = std::vector<int>{0, 21, 1};
+    face2.adjacentVertices = std::vector<int>{21, 22, 1};
+
+    std::vector<int> commonElements;
+    EXPECT_TRUE(mesh.faces_share_edge(face1, face2, commonElements));
+    EXPECT_EQ(commonElements, (std::vector<int>{21, 1}));
+
+    // Symmetric, whichever way round the arguments go.
+    EXPECT_TRUE(mesh.faces_share_edge(face2, face1));
+
+    // A single shared corner is still not an edge, in any order.
+    Face face3;
+    face3.adjacentVertices = std::vector<int>{22, 43, 23};
+    EXPECT_FALSE(mesh.faces_share_edge(face1, face3));
+}
+
+/**
+ * @brief Every face must list the faces it actually meets along an edge.
+ *
+ * There was no test on this output, and it was wrong: because
+ * faces_share_edge() under-reported (see the test above), the only pair
+ * set_adjacent_faces_of_faces() ever accepted on this mesh was a face with
+ * itself, so every face came out holding {itself, 0, 0}. It cost O(F^2) to
+ * produce -- 61 s of a 61.4 s mesh setup at 99,360 faces -- and no consumer
+ * noticed, because the one reader of Face::adjacentFaces is
+ * sort_vertices_on_faces(), whose own output nothing reads.
+ *
+ * The invariants below are the ones an edge-neighbour list has to satisfy on
+ * any triangle mesh, checked here against a mesh whose answer is known
+ * independently: an interior face of the flat sheet has exactly three.
+ */
+TEST(MeshFunctionTest, AdjacentFacesOfFacesAreTheEdgeNeighbours)
+{
+    Param param;
+    param.VERBOSE_MODE = false; // mute output
+    Mesh mesh(param);
+    mesh.setup_flat();
+
+    const int nFaces = static_cast<int>(mesh.faces.size());
+    ASSERT_GT(nFaces, 0);
+
+    int nWithThreeNeighbours = 0;
+    for (int iFace = 0; iFace < nFaces; iFace++)
+    {
+        const std::vector<int> &adjacent = mesh.faces[iFace].adjacentFaces;
+        ASSERT_EQ(adjacent.size(), 3u) << "face " << iFace;
+
+        // Count the entries that name a real neighbour. Unused slots are left
+        // at 0, so a 0 is only face 0 when face 0 is genuinely a neighbour --
+        // and never on face 0's own list, since a face is not its own
+        // neighbour.
+        const bool touchesFaceZero =
+            iFace != 0 && mesh.faces_share_edge(mesh.faces[iFace], mesh.faces[0]);
+        std::vector<int> neighbours;
+        for (int jFace : adjacent)
+        {
+            if (jFace == 0 && !touchesFaceZero)
+                continue; // padding, not face 0
+            neighbours.push_back(jFace);
+        }
+        // A rim face adjacent to face 0 has both a real 0 and a padding 0, and
+        // the two are indistinguishable; count the distinct entries.
+        std::sort(neighbours.begin(), neighbours.end());
+        neighbours.erase(std::unique(neighbours.begin(), neighbours.end()), neighbours.end());
+
+        for (int jFace : neighbours)
+        {
+            EXPECT_NE(jFace, iFace) << "face " << iFace << " lists itself";
+
+            // Adjacent means two shared corners...
+            std::vector<int> shared;
+            EXPECT_TRUE(mesh.faces_share_edge(mesh.faces[iFace], mesh.faces[jFace], shared))
+                << "face " << iFace << " lists " << jFace << ", which it does not touch";
+            EXPECT_EQ(shared.size(), 2u) << "faces " << iFace << " and " << jFace;
+
+            // ...and the relation is symmetric.
+            const std::vector<int> &back = mesh.faces[jFace].adjacentFaces;
+            EXPECT_NE(std::find(back.begin(), back.end(), iFace), back.end())
+                << "face " << jFace << " does not list " << iFace << " back";
+        }
+
+        if (neighbours.size() == 3)
+        {
+            nWithThreeNeighbours++;
+        }
+    }
+
+    // The sheet is open, so its rim has fewer; the bulk must be complete.
+    EXPECT_GT(nWithThreeNeighbours, nFaces * 8 / 10);
+}
+
 /**
  * @brief Helper: give a mesh the eight faces of a closed octahedron.
  *

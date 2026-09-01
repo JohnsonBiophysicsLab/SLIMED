@@ -492,20 +492,40 @@ void write_final_vertex_data_to_csv(const Mesh &mesh)
     outfile_final.close();
 }
 
+namespace
+{
+/// The two trajectory files stay open for the whole run.
+///
+/// They used to be opened in append mode, written to, and closed again on
+/// every single iteration.  At the million-iteration counts a fluctuation
+/// spectrum needs, those four filesystem calls per step cost more than the
+/// force evaluation they were recording.
+std::ofstream trajectorySurfacePointCsv;
+std::ofstream trajectoryMeshPointCsv;
+
+/// Append one frame: every vertex as "x,y,z," on a single line.
+void write_trajectory_frame(std::ostream &out, const Matrix &coords, int nVertices)
+{
+    for (int i = 0; i < nVertices; i++)
+    {
+        out << setprecision(8) << coords(i, 0) << ',' << coords(i, 1) << ',' << coords(i, 2) << ',';
+    }
+    out << '\n';
+}
+} // namespace
+
 void dynamics_create_trajectory_files(DynamicMesh &mesh, const std::string &filename)
 {
-        ofstream surfacepoint_csv("surfacepoint" + filename + ".csv");
-        ofstream meshpoint_csv("meshpoint" + filename + ".csv");
+    trajectorySurfacePointCsv.close();
+    trajectoryMeshPointCsv.close();
+    trajectorySurfacePointCsv.clear();
+    trajectoryMeshPointCsv.clear();
+    trajectorySurfacePointCsv.open("surfacepoint" + filename + ".csv");
+    trajectoryMeshPointCsv.open("meshpoint" + filename + ".csv");
 
-        for (int i = 0; i < mesh.vertices.size(); i++)
-        {
-            meshpoint_csv << setprecision(8) << mesh.matMesh(i, 0) << ',' << mesh.matMesh(i, 1) << ',' << mesh.matMesh(i, 2) << ',';
-            surfacepoint_csv << setprecision(8) << mesh.matSurface(i, 0) << ',' << mesh.matSurface(i, 1) << ',' << mesh.matSurface(i, 2) << ',';
-        }
-        surfacepoint_csv << '\n';
-        meshpoint_csv << '\n';
-        surfacepoint_csv.close();
-        meshpoint_csv.close();
+    const int nVertices = static_cast<int>(mesh.vertices.size());
+    write_trajectory_frame(trajectoryMeshPointCsv, mesh.matMesh, nVertices);
+    write_trajectory_frame(trajectorySurfacePointCsv, mesh.matSurface, nVertices);
 }
 
 void output_trajectory_files(Mesh &mesh, const std::string &input_filename)
@@ -524,20 +544,17 @@ void output_trajectory_files(Mesh &mesh, const std::string &input_filename)
 
 void dynamics_output_trajectory_files(DynamicMesh &mesh, const std::string &filename)
 {
-    if (mesh.param.meshpointOutput) {
-        ofstream surfacepoint_csv_temp;
-        ofstream meshpoint_csv_temp;
-        surfacepoint_csv_temp.open("surfacepoint" + filename + ".csv", std::ios::app);
-        meshpoint_csv_temp.open("meshpoint" + filename + ".csv", std::ios::app);
-        
-        for (int i = 0; i < mesh.vertices.size(); i++) {
-            meshpoint_csv_temp << setprecision(8) << mesh.matMesh(i, 0) << ',' << mesh.matMesh(i, 1) << ',' << mesh.matMesh(i, 2) << ',';
-            surfacepoint_csv_temp << setprecision(8) << mesh.matSurface(i, 0) << ',' << mesh.matSurface(i, 1) << ',' << mesh.matSurface(i, 2) << ',';
+    if (mesh.param.meshpointOutput)
+    {
+        if (!trajectoryMeshPointCsv.is_open())
+        {
+            // Reached without dynamics_create_trajectory_files() having run.
+            dynamics_create_trajectory_files(mesh, filename);
+            return;
         }
-        meshpoint_csv_temp << '\n';
-        surfacepoint_csv_temp << '\n';
-        meshpoint_csv_temp.close();
-        surfacepoint_csv_temp.close();
+        const int nVertices = static_cast<int>(mesh.vertices.size());
+        write_trajectory_frame(trajectoryMeshPointCsv, mesh.matMesh, nVertices);
+        write_trajectory_frame(trajectorySurfacePointCsv, mesh.matSurface, nVertices);
     }
 }
 

@@ -31,6 +31,7 @@ VPATH = \
 	src/io \
 	src/math \
 	src/parser \
+	src/cuda \
 	src/energy_force \
 	src/mesh \
 	src/parameters \

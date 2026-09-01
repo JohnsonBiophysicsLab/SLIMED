@@ -48,6 +48,15 @@ public:
     Matrix matMesh;
     Matrix matSurface;
 
+    /// True where a vertex is a periodic duplicate of another vertex.
+    ///
+    /// Under BoundaryType::Periodic the fourth ring in from each edge repeats
+    /// the ring on the far side, so its coordinates are not independent
+    /// degrees of freedom -- postprocess_ghost_periodic() overwrites them from
+    /// their partner at the end of every step.  Empty unless the boundary
+    /// condition is periodic.
+    std::vector<char> isSlavedPeriodic;
+
     /**
      * @brief Construct a new Dynamic Mesh object. Calls the parent
      * constructor Mesh::Mesh(srcParam).
@@ -93,6 +102,11 @@ public:
      */
     void postprocess_ghost_periodic();
 
+    /**
+     * @brief Fill isSlavedPeriodic from the periodic partner map.
+     */
+    void mark_slaved_periodic_vertices();
+
 protected:
     /**
      * @brief calculate real point relative to the given ghost point (index(real) - index(given)) in periodic boundary condition
@@ -115,6 +129,9 @@ public:
     double randScaleConst;
     double forceScaleConst;
     unsigned int randomSeed;
+
+    Matrix nodalForce;  /**< -dE/dc_i, assembled per control point, one row per vertex. */
+    Matrix driveForce;  /**< The same force expressed in whatever coordinates next_step() advances. */
     std::mt19937 gen;
     std::normal_distribution<> normal_dist;
 

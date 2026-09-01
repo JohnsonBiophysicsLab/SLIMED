@@ -46,6 +46,15 @@ kcMembraneBending = 83.4		# membrane bending constant (pN.nm)
 usMembraneStretching = 250.0	# membrane streching modulus (pN/nm)
 uvVolumeConstraint = 0.0		# volume constraint coefficient (pN/nm^2)
 isGlobalConstraint = true      # true to enable global mode for area and volume
+
+# Which implementation evaluates the per-face energies and forces.
+#   cpu  - the default; the CPU loops
+#   gpu  - the CUDA backend; fails the run if no device is usable, so that a
+#          job submitted as a GPU run cannot silently report CPU timings
+#   auto - the GPU when one is usable, the CPU otherwise, saying which
+# All three compute the same thing. Requires -DSLIMED_ENABLE_CUDA=ON to build.
+# See docs/gpu_acceleration.md, including where the GPU actually wins.
+forceBackend = cpu
 KBT = 4.17                      # 1KbT = 4.17 pN.nm
 thermalFluctuationEnabled = false         # true to enable Metropolis thermal trial moves
 thermalFluctuationInterval = 50           # iteration interval between thermal trial moves
@@ -59,6 +68,30 @@ relaxArea = 76500.0             # use this value as relax area if the option abo
 # dynamics model parameters
 timeStep = 0.001                  # in us
 diffConst = 1.0                # diffusion constant, nm^2/us
+
+# How often the dynamics writes a trajectory frame to meshpoint*.csv and
+# surfacepoint*.csv.  1 = every iteration, which is the old behaviour and is
+# only affordable for short runs: one line per step per vertex reaches tens of
+# gigabytes at the iteration counts an equilibrium measurement needs.
+meshpointOutputInterval = 1
+
+# The Brownian step displaces the Loop limit surface S = M C and then maps back
+# to the control net with C = M^-1 S.  The force the mesh reports is -dE/dC, so
+# driving S with it directly makes the mobility and the noise inconsistent and
+# the sampled distribution is not exp(-E/kT): every mode comes out too warm by
+# 1/m(q), the reciprocal of the limit mask's Fourier symbol (1 at long
+# wavelength, ~4 at the zone corner).  true maps the force onto the
+# limit-surface coordinates first, which restores fluctuation-dissipation.
+# Set false only to reproduce results from before this was fixed.
+fdtConsistentSurfaceUpdate = true
+
+# Under a periodic boundary the fourth ring in from each edge duplicates the
+# ring on the far side; postprocess_ghost_periodic() overwrites it from its
+# partner every step, so it is not an independent coordinate.  It used to be
+# given its own random kick first, and surface2mesh spread that kick over the
+# whole mesh before it was overwritten -- extra heat with no extra friction.
+# Set true only to reproduce results from before this was fixed.
+integratePeriodicDuplicates = false
 
 ############################################
 ## Insertion Mode
