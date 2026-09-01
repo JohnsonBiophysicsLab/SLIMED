@@ -11,7 +11,7 @@ Three things get checked, in increasing order of how much they assume.
 
 1.  The static spectrum against  <|h_q|^2> = kT / (A (kc q^4 + sigma q^2)).
     This is the q^-4 law.  It only holds in the continuum limit, so the fit is
-    restricted to q * dFaceX below --qdx-max (1.5 by default); beyond that the
+    restricted to q * dFaceX below --qdx-max (pi/2 by default); beyond that the
     quartic box spline that Loop subdivision converges to is no longer a
     faithful stand-in for a smooth surface, and the deviation is a property of
     the discretisation, not an error.  That window is measured rather than
@@ -106,15 +106,17 @@ def main(argv=None):
     ap.add_argument("--stride", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=None)
     ap.add_argument("--bins", type=int, default=20)
-    ap.add_argument("--qdx-max", type=float, default=1.5,
-                    help="fit the continuum law only where q*dFaceX is below this. "
-                         "The default is not a rule of thumb: tests/"
-                         "test_continuum_limit.cpp puts a plane wave of known "
-                         "amplitude on the control net and reads the bending "
-                         "energy the production code returns, and the discrete "
-                         "stiffness referred to the limit surface is within 0.5%% "
-                         "of A kc q^4 at q*dFaceX = 1.5, 3%% at 2.0 and 7%% at "
-                         "2.5. Widen it if the extra reach in q is worth that.")
+    ap.add_argument("--qdx-max", type=float, default=math.pi / 2,
+                    help="fit the continuum law only where q*dFaceX is below "
+                         "this. The default is pi/2, which is half the Nyquist "
+                         "wavevector of the mesh spacing -- four cells per "
+                         "wavelength -- and it is not a rule of thumb either: "
+                         "tests/test_continuum_limit.cpp puts a plane wave of "
+                         "known amplitude on the control net, reads the bending "
+                         "energy the production code returns, and finds the "
+                         "stiffness referred to the limit surface within 0.5%% "
+                         "of A kc q^4 there, 3%% at 2.0 and 7%% at 2.5. Widen "
+                         "it if the extra reach in q is worth that.")
     ap.add_argument("--source", choices=("control", "surface"), default="control",
                     help="control: meshpoint.csv put through the limit mask with "
                          "periodic wrap (exactly periodic).  surface: the "
@@ -230,7 +232,7 @@ def main(argv=None):
               f"{b/c:>7.3f} {d:>6d} {e/b if b else 0:>8.3f} {t_run/t:>8.1f} "
               f"{g:>6.3f}{flag}")
 
-    print(f"\nlog-log slope over q*dx <= {args.qdx_max}: {slope:.3f}   (want -4)")
+    print(f"\nlog-log slope over q*dx <= {args.qdx_max:.4g}: {slope:.3f}   (want -4)")
     print(f"fitted kc    = {kc_fit:8.2f} pN.nm   "
           f"({kc_fit/par['kbt']:.1f} kT; input {par['kc']:.2f} pN.nm, "
           f"{par['kc']/par['kbt']:.1f} kT)")
@@ -286,7 +288,7 @@ def main(argv=None):
     for a, b, c, d, e in zip(qg, gg, gl, go, gcnt):
         print(f"{a:>9.4f} {b:>13.4e} {c:>12.4e} {b/c:>7.3f} {d:>12.4e} "
               f"{b/d:>9.2e} {e:>6d}")
-    print(f"\nlog-log slope of Gamma(q) over q*dx <= {args.qdx_max}: {dyn_slope:.3f}")
+    print(f"\nlog-log slope of Gamma(q) over q*dx <= {args.qdx_max:.4g}: {dyn_slope:.3f}")
     print("   free draining predicts 4, Oseen hydrodynamics predicts 3")
     ok = dyn_mask & np.isfinite(gg)
     if ok.any():

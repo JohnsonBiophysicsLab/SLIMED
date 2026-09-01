@@ -219,20 +219,22 @@ TEST(ContinuumLimitTest, DiscreteBendingStiffnessMatchesTheContinuumAtSmallQdx)
                                    "converge to (A/4) kc q^4 eps^2 at long "
                                    "wavelength";
 
-    // 2. Out to q*dFaceX = 1.5 -- about four mesh cells per wavelength -- it
-    //    is still within 1%. This is where the default fitting window in
-    //    analysis/fluctuation_report.py comes from, and the margin says the
-    //    window is conservative rather than marginal.
+    // 2. Out to q*dFaceX = pi/2 it is still within 1%. That is the default
+    //    fitting window in analysis/fluctuation_report.py, and pi/2 is not an
+    //    arbitrary round number: q*dFaceX = pi is the Nyquist wavevector of
+    //    the mesh spacing, so pi/2 is exactly half of it -- four mesh cells
+    //    per wavelength. The margin says the window is conservative rather
+    //    than marginal.
     double worstWindow = 0.0;
     for (const Wave &w : waves)
     {
-        if (w.qdx <= 1.5)
+        if (w.qdx <= M_PI / 2.0)
         {
             worstWindow = std::max(worstWindow, std::fabs(w.surface - 1.0));
         }
     }
     EXPECT_LT(worstWindow, 0.01)
-        << "the q*dFaceX <= 1.5 fitting window is no longer justified on this "
+        << "the q*dFaceX <= pi/2 fitting window is no longer justified on this "
            "mesh; re-derive it from the table above";
 
     // 3. Still within 3% at q*dFaceX = 2.0, and within 7% at 2.5, so a wider

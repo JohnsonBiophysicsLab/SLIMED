@@ -308,7 +308,7 @@ same thing statically, and much more precisely.
 
 ## 4b. How far up in q the continuum law holds — measured, not assumed
 
-`--qdx-max 1.5` needs a justification better than a round number, and the
+`--qdx-max` needs a justification better than a round number, and the
 published cutoffs do not supply one. Brandt, Braun, Sachs, Nagle and Edholm
 (*Biophys J* **100**, 2104, 2011) put the limit near `q = 0.7 nm⁻¹` for DMPC,
 but their limit is molecular: the density structure factor, thickness
@@ -344,7 +344,7 @@ two differ by the limit-mask symbol, so the quantity to compare is
 | 3.23 | 2.0 | 0.7002 |
 
 So the Loop limit surface reproduces the continuum bending stiffness to **0.5%
-at `q·dFaceX = 1.5`**, 3% at 2.0 and 7% at 2.5. The default window is
+at `q·dFaceX = π/2`**, 3% at 2.0 and 7% at 2.5. The default window is
 conservative, not marginal, and a wider one is defensible if the extra reach in
 q is worth a few per cent. (An earlier estimate of "within 10% out to 2" came
 from the dynamic reconstruction above; the static probe is twenty times more
@@ -362,9 +362,12 @@ Two things fall out that are worth keeping:
   `0.9953`. The window therefore has to be re-derived per mesh resolution, not
   per box size.
 
-`q·dFaceX ≤ 1.5` is `λ ≥ 4.2` mesh cells, which is also roughly where the usual
-finite-element points-per-wavelength rule would land for a C²-continuous
-quartic element — but that coincidence is not the argument. The table is.
+The window is set at `q·dFaceX ≤ π/2` rather than at some decimal near it
+because `q·dFaceX = π` is the Nyquist wavevector of the mesh spacing: `π/2` is
+exactly half of it, `λ = 4·dFaceX`, four cells per wavelength. That is also
+roughly where the usual finite-element points-per-wavelength rule would land
+for a C²-continuous quartic element — but neither of those is the argument.
+The table is; the round number just happens to sit in a sensible place.
 
 Finally, this closes the loop on the measured spectrum. At `q·dFaceX = 2.5` the
 static form factor predicts `⟨|h_q|²⟩` should sit `1/0.93 = 1.07` above the
@@ -392,7 +395,7 @@ pN.nm = 20 kT, `usMembraneStretching = 0`, dt = 0.002 us, D = 1 nm^2/us,
    0.6049   3.02   9.1370e-05     6.8429e-05   1.335     62  1.9%   75967.8  (beyond fit)
    0.7197   3.60   6.6525e-05     3.4166e-05   1.947     61  0.9%  152152.3  (beyond fit)
 
-log-log slope over q*dx <= 1.5:  -4.022        (want -4)
+log-log slope over q*dx <= pi/2: -4.022        (want -4)
 fitted kc                     :  89.03 pN.nm   (21.3 kT; input 83.40, 20.0 kT)
 fitted sigma                  :   0.027 pN/nm  (the run has no area elasticity)
 legacy reduction, same frames :  -1.402
@@ -459,7 +462,7 @@ What the corrected SLIMED runs actually measure, with no fitted prefactor:
 ```
 median Gamma / (D a / kT) kc q^4   =  1.00     (frame every step, q = 0.17 .. 0.75)
 median Gamma / (kc q^3 / 4 eta)    =  0.006    (i.e. 170x too slow for water)
-log-log slope of Gamma(q)          =  +3.6     over q*dFaceX <= 1.5
+log-log slope of Gamma(q)          =  +3.6     over q*dFaceX <= pi/2
 ```
 
 The prefactor lands on 1 because the free-draining rate is not a free parameter
