@@ -14,7 +14,9 @@ Three things get checked, in increasing order of how much they assume.
     restricted to q * dFaceX below --qdx-max (1.5 by default); beyond that the
     quartic box spline that Loop subdivision converges to is no longer a
     faithful stand-in for a smooth surface, and the deviation is a property of
-    the discretisation, not an error.
+    the discretisation, not an error.  That window is measured rather than
+    guessed -- see tests/test_continuum_limit.cpp, which reads the bending
+    energy of an exact plane wave straight out of the production code.
 
     Two columns qualify each bin.  "T/tau_q" is the run length in units of that
     bin's expected relaxation time; below ~10 the bin is flagged UNDER-SAMPLED,
@@ -106,10 +108,13 @@ def main(argv=None):
     ap.add_argument("--bins", type=int, default=20)
     ap.add_argument("--qdx-max", type=float, default=1.5,
                     help="fit the continuum law only where q*dFaceX is below this. "
-                         "1.5 is where the measured discrete stiffness K_S(q) is "
-                         "still within ~10%% of A kc q^4 on the default lattice; "
-                         "the K_S column in the output is what to check if the "
-                         "lattice changes.")
+                         "The default is not a rule of thumb: tests/"
+                         "test_continuum_limit.cpp puts a plane wave of known "
+                         "amplitude on the control net and reads the bending "
+                         "energy the production code returns, and the discrete "
+                         "stiffness referred to the limit surface is within 0.5%% "
+                         "of A kc q^4 at q*dFaceX = 1.5, 3%% at 2.0 and 7%% at "
+                         "2.5. Widen it if the extra reach in q is worth that.")
     ap.add_argument("--source", choices=("control", "surface"), default="control",
                     help="control: meshpoint.csv put through the limit mask with "
                          "periodic wrap (exactly periodic).  surface: the "

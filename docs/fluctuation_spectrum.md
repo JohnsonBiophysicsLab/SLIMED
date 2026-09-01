@@ -300,11 +300,76 @@ to within a constant; multiplying it by `m(q)` flattens it to 1.16 … 0.94, whi
 is the middle column. That is the signature predicted above, measured rather
 than argued. The third column is flat at ≈1 — the update samples `exp(-E/kT)`.
 
-The same reconstruction gives the **discrete stiffness** `K_S(q)`, which is what
-says how far the continuum law should be trusted. `K_S/(A kc q⁴)` stays within
-about 10% of 1 out to `q·dFaceX ≈ 2`, so `--qdx-max 1.5` is a conservative fit
-window, and the fall-off beyond it is a property of the quartic box spline, not
-an error.
+The same reconstruction also gives the **discrete stiffness** `K_S(q)`, which is
+what says how far up in q the continuum law should be trusted. It is too noisy
+to settle that on its own, though — at small q it inherits the same
+finite-record bias as the rates it comes from. The next section measures the
+same thing statically, and much more precisely.
+
+## 4b. How far up in q the continuum law holds — measured, not assumed
+
+`--qdx-max 1.5` needs a justification better than a round number, and the
+published cutoffs do not supply one. Brandt, Braun, Sachs, Nagle and Edholm
+(*Biophys J* **100**, 2104, 2011) put the limit near `q = 0.7 nm⁻¹` for DMPC,
+but their limit is molecular: the density structure factor, thickness
+fluctuations, protrusion modes, with an explicit criterion
+`q₀ = (K_A k_c ⟨h²⟩)^¼` that has a thickness in it. SLIMED has no thickness, no
+tilt and no protrusions — it *is* a Helfrich surface by construction — so
+nothing physical limits it and that number does not transfer. Shiba and Noguchi
+(*Phys Rev E* **84**, 031926, 2011) make the complementary point: a fitted
+bending rigidity depends strongly on where the cutoff is put, and they
+recommend fitting as a function of `q_cut` and extrapolating to `q_cut → 0`.
+
+What limits SLIMED is the mesh, and the mesh can be asked directly.
+`tests/test_continuum_limit.cpp` puts an exact plane wave `h = ε cos(q·r)` on
+the control net, one allowed wavevector at a time, reads the bending energy the
+production code returns, and forms `K = 4E/ε²`. The energy is quadratic in the
+*control* amplitude while the continuum law is written for the surface, and the
+two differ by the limit-mask symbol, so the quantity to compare is
+`K_S/(A kc q⁴)` with `K_S = K/m(q)²`. No sampling, no dynamics, no fitting.
+
+| `q·dFaceX` | λ / dFaceX | `K_S/(A kc q⁴)` |
+| ---: | ---: | ---: |
+| 0.40 | 15.6 | 1.0000 |
+| 0.60 | 10.4 | 0.9999 |
+| 0.90 | 7.0 | 0.9992 |
+| 1.21 | 5.2 | 0.9979 |
+| 1.35 | 4.7 | 0.9953 |
+| 1.61 | 3.9 | 0.9919 |
+| 1.81 | 3.5 | 0.9845 |
+| 2.01 | 3.1 | 0.9754 |
+| 2.24 | 2.8 | 0.9497 |
+| 2.42 | 2.6 | 0.9355 |
+| 2.82 | 2.2 | 0.8509 |
+| 3.23 | 2.0 | 0.7002 |
+
+So the Loop limit surface reproduces the continuum bending stiffness to **0.5%
+at `q·dFaceX = 1.5`**, 3% at 2.0 and 7% at 2.5. The default window is
+conservative, not marginal, and a wider one is defensible if the extra reach in
+q is worth a few per cent. (An earlier estimate of "within 10% out to 2" came
+from the dynamic reconstruction above; the static probe is twenty times more
+precise and supersedes it.)
+
+Two things fall out that are worth keeping:
+
+* **That the ratio comes out at 1.000 rather than some other constant is a
+  check on `m(q)` itself.** Nothing was fitted; the mask symbol was derived
+  from the valence-6 limit weights and simply divides the measurement to 1.
+* **The softening is a function of `q·dFaceX`, not of `q`.** A 100 nm box at
+  `lFace = 5` and an 85 nm box at `lFace = 2.5` both tile to `Lx = 70 nm`, so
+  mode 3 of the first and mode 6 of the second sit at exactly the same
+  `q·dFaceX` at twice the physical q on half the mesh. They give `0.9953` and
+  `0.9953`. The window therefore has to be re-derived per mesh resolution, not
+  per box size.
+
+`q·dFaceX ≤ 1.5` is `λ ≥ 4.2` mesh cells, which is also roughly where the usual
+finite-element points-per-wavelength rule would land for a C²-continuous
+quartic element — but that coincidence is not the argument. The table is.
+
+Finally, this closes the loop on the measured spectrum. At `q·dFaceX = 2.5` the
+static form factor predicts `⟨|h_q|²⟩` should sit `1/0.93 = 1.07` above the
+continuum line; measured, 1.11. At 3.0 it predicts 1.30; measured, 1.34. The
+high-q lift in the spectrum is the discretisation, quantitatively.
 
 ## 5. Results
 
