@@ -126,6 +126,17 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("meshpointOutputInterval") == 0)
+	{
+		param.meshpointOutputInterval = std::stoi(variableValueStr);
+		if (param.meshpointOutputInterval < 1)
+		{
+			param.meshpointOutputInterval = 1;
+		}
+		std::cout << "meshpointOutputInterval set to: " << param.meshpointOutputInterval
+				  << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("xyzOutput") == 0)
 	{
 		param.xyzOutput = (variableValueStr.compare("true") == 0);
@@ -249,6 +260,20 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 	{
 		param.KBT = std::stod(variableValueStr);
 		std::cout << "KBT set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("integratePeriodicDuplicates") == 0)
+	{
+		param.integratePeriodicDuplicates = (variableValueStr.compare("true") == 0);
+		std::cout << "integratePeriodicDuplicates set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("fdtConsistentSurfaceUpdate") == 0)
+	{
+		param.fdtConsistentSurfaceUpdate = (variableValueStr.compare("true") == 0);
+		std::cout << "fdtConsistentSurfaceUpdate set to: " << variableValueStr
 				  << std::endl;
 		return true;
 	}

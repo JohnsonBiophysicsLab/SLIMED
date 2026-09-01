@@ -187,6 +187,7 @@ struct Param
     // spline points
     bool xyzOutput = true;                                       ///< Whether to output XYZ coordinates of vertices
     bool meshpointOutput = true;                                 ///< Whether to output meshpoints
+    int meshpointOutputInterval = 1;                             ///< Write a trajectory frame every N dynamics iterations
     bool isEnergyHarmonicBondIncluded = false;                    ///< Whether to include energy of spline points
     std::vector<Matrix> scaffoldingPoints;                       ///< List of spline points
     std::vector<int> scaffoldingPoints_correspondingVertexIndex; ///< Corresponding vertex indices for spline points
@@ -221,6 +222,8 @@ struct Param
     double diffConst = 0.01; // um^2/us
     double KBT = 4.17;       // 1KbT = 4.17 pN.nm
     unsigned int randomSeed = 42; ///< random seed used in normal distribution
+    bool fdtConsistentSurfaceUpdate = true; ///< Map the nodal force onto the limit-surface DOFs before the Brownian step
+    bool integratePeriodicDuplicates = false; ///< Legacy: give the fourth-ring periodic duplicates their own Brownian kick before overwriting them
     bool surfacepointOutput = true; ///< whether to output surface point file
 
     // thermal fluctuation / annealing for equilibrium searches

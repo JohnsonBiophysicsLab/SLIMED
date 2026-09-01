@@ -116,7 +116,11 @@ void run_dynamics_flat(std::string param_filename) {
         mesh.update_vertices_vector_with_mat();
         //@todo move this to io.hpp
         //4.update values of vertex (vector of double) with verticesOnMesh (gsl matrix)
-        if (mesh.param.meshpointOutput) {
+        if (mesh.param.meshpointOutput &&
+            (model.iteration + 1) % mesh.param.meshpointOutputInterval == 0) {
+            // A frame every step is only affordable for short runs: at the
+            // 10^6-10^7 iterations an equilibrium spectrum needs, one line per
+            // step per vertex runs to tens of gigabytes.
             dynamics_output_trajectory_files(mesh, param_filename);
         }
 
