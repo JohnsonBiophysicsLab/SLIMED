@@ -186,3 +186,5 @@ tests/cmake_install.cmake
 /tests/test_main_*_discovery.cmake
 /tests/test_main_*_include.cmake
 
+data/example/input.params
+data/example/vertex_initial_step_0.csv
