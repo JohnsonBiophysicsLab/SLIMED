@@ -162,6 +162,15 @@ public:
     int ncol() const;
 
     /**
+     * @brief True when this Matrix holds no allocation.
+     *
+     * A default-constructed Matrix is empty. Copying, assigning and asking the
+     * shape of an empty Matrix are all well defined; reading or writing an
+     * element of one is not.
+     */
+    bool empty() const;
+
+    /**
      * @brief Get element value at i,j
      *
      */
@@ -415,8 +424,10 @@ double dot_col(const Matrix &m1, const Matrix &m2);
  * @brief This implementation takes two row vectors as
  * arguments and returns their dot product as double.
  *
- * @note Note that this implementation converts the row vectors into column
- * vectors before computing the dot product.
+ * @note Note that this implementation assumes that the input matrices are
+ * already row vectors, so no additional transposition is necessary. The sum
+ * runs over the columns of @p m1, so a 1 x N row vector contributes all N of
+ * its components.
  */
 double dot_row(const Matrix &m1, const Matrix &m2);
 

@@ -186,3 +186,201 @@ TEST(LinearAlgebraTest, MatrixInverse){
         }
     }
 }
+/**
+ * @brief dot_row must sum over every column of a row vector.
+ *
+ * The loop bound used to be m1.size1 -- the row count -- while the indices
+ * walked the columns, so a 1 x 3 row vector returned m1(0,0)*m2(0,0) alone.
+ * That is the volume-functional bug: Mesh::enumerate_gauss_quadrature_point_area_volume()
+ * is the sole caller and it passes 1 x 3 vectors, which made param.vol come
+ * out as V/3 on a closed surface.
+ */
+TEST(DotProductTest, DotRowSumsAllColumnsOfRowVector)
+{
+    Matrix m1(1, 3);
+    m1.set(0, 0, 1.0);
+    m1.set(0, 1, 2.0);
+    m1.set(0, 2, 3.0);
+
+    Matrix m2(1, 3);
+    m2.set(0, 0, 4.0);
+    m2.set(0, 1, -5.0);
+    m2.set(0, 2, 6.0);
+
+    // 1*4 + 2*(-5) + 3*6 == 12, not the x-only product 1*4 == 4.
+    EXPECT_DOUBLE_EQ(dot_row(m1, m2), 12.0);
+}
+
+/// dot_row must not be limited to three columns either.
+TEST(DotProductTest, DotRowHandlesWiderRowVectors)
+{
+    Matrix m1(1, 5);
+    Matrix m2(1, 5);
+    for (int j = 0; j < 5; j++)
+    {
+        m1.set(0, j, static_cast<double>(j + 1)); // 1 2 3 4 5
+        m2.set(0, j, 2.0);
+    }
+
+    // 2 * (1 + 2 + 3 + 4 + 5) == 30
+    EXPECT_DOUBLE_EQ(dot_row(m1, m2), 30.0);
+}
+
+/**
+ * @brief Orthogonal vectors give zero, and the cancellation needs every term.
+ *
+ * The x-components alone multiply to +1 here, so this only reaches zero if the
+ * y-components are summed in as well.
+ */
+TEST(DotProductTest, DotProductOfOrthogonalVectorsIsZero)
+{
+    const double u[3] = {1.0, 1.0, 0.0};
+    const double v[3] = {1.0, -1.0, 0.0};
+
+    Matrix r1(1, 3);
+    Matrix r2(1, 3);
+    Matrix c1(3, 1);
+    Matrix c2(3, 1);
+    for (int k = 0; k < 3; k++)
+    {
+        r1.set(0, k, u[k]);
+        r2.set(0, k, v[k]);
+        c1.set(k, 0, u[k]);
+        c2.set(k, 0, v[k]);
+    }
+
+    EXPECT_DOUBLE_EQ(dot_row(r1, r2), 0.0);
+    EXPECT_DOUBLE_EQ(dot_col(c1, c2), 0.0);
+}
+
+/// dot_col sums over every row of a column vector -- the mirror of the above.
+TEST(DotProductTest, DotColSumsAllRowsOfColumnVector)
+{
+    Matrix m1(3, 1);
+    m1.set(0, 0, 1.0);
+    m1.set(1, 0, 2.0);
+    m1.set(2, 0, 3.0);
+
+    Matrix m2(3, 1);
+    m2.set(0, 0, 4.0);
+    m2.set(1, 0, -5.0);
+    m2.set(2, 0, 6.0);
+
+    EXPECT_DOUBLE_EQ(dot_col(m1, m2), 12.0);
+}
+
+/// dot_col must not be limited to three rows either.
+TEST(DotProductTest, DotColHandlesTallerColumnVectors)
+{
+    Matrix m1(5, 1);
+    Matrix m2(5, 1);
+    for (int i = 0; i < 5; i++)
+    {
+        m1.set(i, 0, static_cast<double>(i + 1)); // 1 2 3 4 5
+        m2.set(i, 0, 2.0);
+    }
+
+    EXPECT_DOUBLE_EQ(dot_col(m1, m2), 30.0);
+}
+
+/**
+ * @brief dot_row and dot_col agree on the same vector, transposed.
+ *
+ * Both helpers are non-square by construction at their call sites, so this
+ * pins the two bounds against each other rather than against a literal.
+ */
+TEST(DotProductTest, DotRowAndDotColAgreeOnTransposedVectors)
+{
+    const double u[3] = {0.5, -1.25, 3.75};
+    const double v[3] = {-2.0, 0.25, 1.5};
+
+    Matrix r1(1, 3);
+    Matrix r2(1, 3);
+    Matrix c1(3, 1);
+    Matrix c2(3, 1);
+    for (int k = 0; k < 3; k++)
+    {
+        r1.set(0, k, u[k]);
+        r2.set(0, k, v[k]);
+        c1.set(k, 0, u[k]);
+        c2.set(k, 0, v[k]);
+    }
+
+    EXPECT_DOUBLE_EQ(dot_row(r1, r2), dot_col(c1, c2));
+    EXPECT_DOUBLE_EQ(dot_row(r1, r2), u[0] * v[0] + u[1] * v[1] + u[2] * v[2]);
+}
+
+/**
+ * @brief A default-constructed Matrix must survive being copied.
+ *
+ * The copy constructor used to dereference its source unconditionally, so
+ * copying an empty Matrix was a null dereference -- which made Matrix unusable
+ * in any standard container, since vector::assign(n, Matrix()) and
+ * vector::resize() both copy from a default-constructed prototype. It cost
+ * three separate crashes before it was worth fixing at the source.
+ */
+TEST(MatrixValueSemanticsTest, EmptyMatrixCanBeCopiedAndAssigned)
+{
+    Matrix empty;
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.nrow(), 0);
+    EXPECT_EQ(empty.ncol(), 0);
+
+    // Copy construction from empty.
+    Matrix copied(empty);
+    EXPECT_TRUE(copied.empty());
+
+    // Assignment from empty, onto an allocated matrix.
+    Matrix allocated(3, 2);
+    EXPECT_FALSE(allocated.empty());
+    allocated = empty;
+    EXPECT_TRUE(allocated.empty());
+
+    // Assignment from allocated, onto an empty one.
+    Matrix source(2, 3);
+    source.set(1, 2, 7.5);
+    Matrix target;
+    target = source;
+    ASSERT_FALSE(target.empty());
+    EXPECT_EQ(target.nrow(), 2);
+    EXPECT_EQ(target.ncol(), 3);
+    EXPECT_DOUBLE_EQ(target.get(1, 2), 7.5);
+}
+
+/// The container operations that used to crash.
+TEST(MatrixValueSemanticsTest, MatrixWorksInStandardContainers)
+{
+    std::vector<Matrix> filled;
+    filled.assign(4, Matrix()); // copies from an empty prototype
+    ASSERT_EQ(filled.size(), 4u);
+    for (const Matrix &entry : filled)
+        EXPECT_TRUE(entry.empty());
+
+    std::vector<Matrix> grown;
+    grown.resize(3); // default-constructs
+    grown.resize(6); // may copy or move existing elements
+    ASSERT_EQ(grown.size(), 6u);
+
+    // Growth through push_back reallocates and copies whatever is already held.
+    std::vector<Matrix> pushed;
+    for (int i = 0; i < 8; i++)
+    {
+        Matrix entry(2, 2);
+        entry.set(0, 0, i);
+        pushed.push_back(entry);
+    }
+    ASSERT_EQ(pushed.size(), 8u);
+    for (int i = 0; i < 8; i++)
+        EXPECT_DOUBLE_EQ(pushed[i].get(0, 0), i);
+}
+
+/// free() is idempotent and leaves the Matrix empty rather than dangling.
+TEST(MatrixValueSemanticsTest, FreeIsIdempotent)
+{
+    Matrix matrix(3, 3);
+    matrix.free();
+    EXPECT_TRUE(matrix.empty());
+    matrix.free(); // must not double-free
+    EXPECT_TRUE(matrix.empty());
+    EXPECT_EQ(matrix.nrow(), 0);
+}

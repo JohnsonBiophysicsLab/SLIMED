@@ -72,7 +72,12 @@ __pycache__/
 coverage/
 
 # Generated documentation
-/docs/
+/docs/*.html
+/docs/*.css
+/docs/*.js
+/docs/*.svg
+/docs/.nojekyll
+/docs/search/
 /html/
 /latex/
 
@@ -161,15 +166,23 @@ CMakeUserPresets.json
 /slimed-*.tar.bz2
 /slimed-*.tar.xz
 
+<<<<<<< HEAD
 # CMake
+=======
+# In-source CMake output. Configuring in the source tree (rather than in
+# /build) drops these next to the sources, where an over-broad `git add`
+# picks them up.
+>>>>>>> refs/remotes/origin/main
 CMakeCache.txt
 CMakeFiles/
 CTestTestfile.cmake
 cmake_install.cmake
 compile_commands.json
+
 tests/CMakeFiles/
 tests/CTestTestfile.cmake
 tests/Makefile
 tests/cmake_install.cmake
-tests/test_main_302383d8_discovery.cmake
-tests/test_main_302383d8_include.cmake
+/tests/test_main_*_discovery.cmake
+/tests/test_main_*_include.cmake
+

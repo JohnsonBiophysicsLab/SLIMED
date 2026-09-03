@@ -1,4 +1,6 @@
 #include "mesh/Mesh.hpp"
+
+#include "energy_force/Patch_kernel.hpp"
 #pragma omp declare reduction(vector_plus                                                                                             \
                               : std::vector <Force>                                                                                   \
                               : std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus <Force>())) \
@@ -21,18 +23,45 @@ using namespace std;
  *
  * @return void
  */
-void Mesh::Compute_Energy_And_Force()
+namespace
 {
+/// out = a - b, for the (3, 1) coordinate column vectors a Vertex holds.
+void difference_of_coords(const Matrix &a, const Matrix &b, double out[3])
+{
+    for (int axis = 0; axis < 3; axis++)
+    {
+        out[axis] = a.get(axis, 0) - b.get(axis, 0);
+    }
+}
+} // namespace
 
+void Mesh::ensure_patch_rows_flat()
+{
+    if (patchRowsFlat.empty())
+    {
+        patchRowsFlat.build(param.shapeFunctions, irregularRows, param.gaussQuadratureCoeff);
+    }
+}
+
+/**
+ * @brief The per-face and per-vertex half of the force evaluation, on the CPU.
+ *
+ * Split out of Compute_Energy_And_Force() so the device backend can stand in
+ * for exactly this much: element area and volume and their totals, the patch
+ * energies and forces, and the regularization term. Everything after it --
+ * the constraint energies, the scaffolding term, the boundary handling -- is
+ * scalar bookkeeping that stays on the host either way.
+ *
+ * Assumes clear_force_on_vertices_and_energy_on_faces() has already run.
+ */
+void Mesh::compute_face_energies_and_forces()
+{
     // Step 1.
     // Calculate the area and volume of each element triangle
     calculate_element_area_volume();
 
     // Sum up the total area and volume of the membrane and sync with parameter
     sum_membrane_area_and_volume(param.area, param.vol);
-
-    // Reset the force on vertices and energy on faces
-    clear_force_on_vertices_and_energy_on_faces();
 
     const int nVertices = static_cast<int>(vertices.size());
 #ifdef OMP
@@ -44,6 +73,32 @@ void Mesh::Compute_Energy_And_Force()
     // to the same vertex force.
     std::vector<std::vector<double>> faceForceComponents(
         nThreads, std::vector<double>(nVertices * 9, 0.0));
+
+    // calculate_element_area_volume() above has already built these, but this
+    // is also reachable on its own.
+    ensure_patch_rows_flat();
+
+    // Loop-invariant physical constants, hoisted out of the per-patch kernel.
+    //
+    // The two guards were inside it. A surface that encloses nothing -- any
+    // flat sheet, whose limit surface lies in the z = 0 plane -- has vol0 == 0,
+    // and with the default uvVolumeConstraint = 0.0 the scale factor would be
+    // 0.0/0.0; the NaN would spread into every vertex force. area0 comes from
+    // `relaxArea` whenever setRelaxAreaToDefault is false, so a parameter file
+    // setting it to 0 reaches here too and would poison the area force with
+    // inf. No reference quantity means no constraint.
+    slimed::PatchParams patchParams;
+    patchParams.kCurv = param.kCurv;
+    patchParams.uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
+    patchParams.area = param.area;
+    patchParams.area0 = param.area0;
+    patchParams.uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
+    patchParams.vol = param.vol;
+    patchParams.vol0 = param.vol0;
+
+    const double *const regularRows = patchRowsFlat.regular();
+    const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
+    const int nSamples = patchRowsFlat.nSamples();
 
     // Step 2.
     // Iterate through faces and calculate forces
@@ -61,54 +116,94 @@ void Mesh::Compute_Energy_And_Force()
             continue;
 
         // Get number of one ring vertices
-        int nOneRingVertices = face.oneRingVertices.size();
-//cout << "CEAF 54" << endl;
-        // Get coord of one ring vertices
-        std::vector<Matrix> coordOneRingVertices(nOneRingVertices);
-        std::transform(face.oneRingVertices.begin(), face.oneRingVertices.end(),
-                       coordOneRingVertices.begin(),
-                       [this](int iVertex)
-                       { return vertices[iVertex].coord; });
+        const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
 
-        double spontCurv = face.spontCurvature;         // spontaneous curvature of each patch,
-        double eBend = 0.0;                             // curvature Energy of this element;
-        double meanCurv = 0.0;                          // mean curvature of this element;
-        Matrix fBend = mat_calloc(nOneRingVertices, 3); // bending or curvature term
-        Matrix fArea = mat_calloc(nOneRingVertices, 3); // area term
-        Matrix fVol = mat_calloc(nOneRingVertices, 3);  // volume term
-        face.normVector.free();                         // reinitialize empty normal vector
-        face.normVector = mat_calloc(3, 1);             // normal vector
-                                                        // Calculate energy and force on the given triangular patch
-//cout << "CEAF 71" << endl;
-        // regular patch
-        if (nOneRingVertices == 12)
-        {
-//cout << "CEAF 75" << endl;
-            element_energy_force_regular(coordOneRingVertices,
-                                         face,
-                                         spontCurv,
-                                         meanCurv,
-                                         face.normVector,
-                                         eBend,
-                                         fBend,
-                                         fArea,
-                                         fVol);
+        // Everything the kernel touches lives on the stack, sized by the
+        // widest patch the mesh can produce. No allocation happens anywhere
+        // inside this loop body, which is the whole point of the rewrite --
+        // malloc and free were about a third of the program's runtime.
+        double coordOneRingVertices[slimed::kMaxControlPoints * 3];
+        double fBend[slimed::kMaxControlPoints * 3] = {0.0}; // bending or curvature term
+        double fArea[slimed::kMaxControlPoints * 3] = {0.0}; // area term
+        double fVol[slimed::kMaxControlPoints * 3] = {0.0};  // volume term
+        double normVector[3] = {0.0, 0.0, 0.0};
 
-            // irregular patch
-        }
-        else if (nOneRingVertices == 11)
+        double eBend = 0.0;    // curvature Energy of this element
+        double meanCurv = 0.0; // mean curvature of this element
+
+        face.normVector.free();             // reinitialize empty normal vector
+        face.normVector = mat_calloc(3, 1); // normal vector
+
+        // A width outside the patch table means no complete one-ring -- a
+        // ghost or boundary face, which has no limit surface. Leaving
+        // everything at its zero initializer is exactly what the previous
+        // two-armed dispatch did for these faces, and bailing here also keeps
+        // the copy below inside the stack buffers.
+        const bool isRegular = (nOneRingVertices == 12);
+        const bool isIrregular = (nOneRingVertices >= kMinIrregularValence + 6 &&
+                                  nOneRingVertices <= kMaxIrregularValence + 6);
+        if (isRegular || isIrregular)
         {
-            //@todo energy force irregular
-            // element_energy_force_irregular(coordOneRingVertices, param, spontCurv, meanCurv, normVector, eBend, fBend, fArea, fVol, GaussQuadratureCoeff, ShapeFunctions, subMatrix);
-            element_energy_force_regular(coordOneRingVertices,
-                                         face,
-                                         spontCurv,
-                                         meanCurv,
-                                         face.normVector,
-                                         eBend,
-                                         fBend,
-                                         fArea,
-                                         fVol);
+            for (int j = 0; j < nOneRingVertices; j++)
+            {
+                const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
+                coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
+                coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
+                coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
+            }
+
+            slimed::PatchParams facePatchParams = patchParams;
+            facePatchParams.spontCurv = face.spontCurvature;
+
+            // One kernel for both patch kinds. The width lives in the rows and
+            // in the control-point list, not in a branch: a regular face is 12
+            // wide, an irregular one N+6, and the kernel reads that off its
+            // arguments.
+            if (isRegular)
+            {
+                slimed::element_energy_force_patch_pod(regularRows, gaussCoeff, nSamples,
+                                                       coordOneRingVertices, nOneRingVertices,
+                                                       facePatchParams, eBend, meanCurv,
+                                                       normVector, fBend, fArea, fVol);
+            }
+            else
+            {
+                // An irregular patch is tiled by regular children at
+                // increasing depth. Each child is a 12-point patch in the
+                // parent's own control points, so the same kernel evaluates it
+                // -- only the rows differ.
+                const int valence = nOneRingVertices - 6;
+                for (int d = 0; d < irregularRows.depth_for(valence); d++)
+                {
+                    for (int c = 0; c < kRegularChildrenPerStep; c++)
+                    {
+                        double childEBend = 0.0;
+                        double childMeanCurv = 0.0;
+                        double childNormVector[3] = {0.0, 0.0, 0.0};
+                        slimed::element_energy_force_patch_pod(
+                            patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples,
+                            coordOneRingVertices, nOneRingVertices, facePatchParams, childEBend,
+                            childMeanCurv, childNormVector, fBend, fArea, fVol);
+                        eBend += childEBend;
+                        // Mean curvature and the normal are reported per face,
+                        // so take them from the child nearest the patch centre
+                        // -- depth 0, the middle child -- rather than summing
+                        // quantities that do not add.
+                        if (d == 0 && c == 1)
+                        {
+                            meanCurv = childMeanCurv;
+                            normVector[0] = childNormVector[0];
+                            normVector[1] = childNormVector[1];
+                            normVector[2] = childNormVector[2];
+                        }
+                    }
+                }
+            }
+
+            for (int axis = 0; axis < 3; ++axis)
+            {
+                face.normVector.set(axis, 0, normVector[axis]);
+            }
         }
         face.energy.energyCurvature = eBend; ///< store curvature energy in face object
 
@@ -125,23 +220,23 @@ void Mesh::Compute_Energy_And_Force()
             std::cout << "estimateEbend = " << estimate_ebend << std::endl;
         }*/
 
-        for (int j = 0; j < nOneRingVertices; j++)
+        // Bounded by the same width test as the kernel call. A face wider than
+        // kMaxControlPoints contributed nothing before and contributes nothing
+        // now, but reading past the stack buffers to discover that would be a
+        // buffer overrun rather than a no-op.
+        const int nScatteredVertices = (isRegular || isIrregular) ? nOneRingVertices : 0;
+        for (int j = 0; j < nScatteredVertices; j++)
         {
             int iVertex = face.oneRingVertices[j];
             const int baseIndex = iVertex * 9;
             for (int axis = 0; axis < 3; ++axis)
             {
-                localForceComponents[baseIndex + axis] += fBend(j, axis);
-                localForceComponents[baseIndex + 3 + axis] += fArea(j, axis);
-                localForceComponents[baseIndex + 6 + axis] += fVol(j, axis);
+                localForceComponents[baseIndex + axis] += fBend[j * 3 + axis];
+                localForceComponents[baseIndex + 3 + axis] += fArea[j * 3 + axis];
+                localForceComponents[baseIndex + 6 + axis] += fVol[j * 3 + axis];
             }
             // std::cout << "Force at node: " << fBend[j][0] << fBend[j][1]<< fBend[j][2] << F_consA[j][0] << F_consV[j][0] << endl;
         }
-
-        // Free allocation
-        fBend.free();
-        fArea.free();
-        fVol.free();
 
     }
 
@@ -168,6 +263,84 @@ void Mesh::Compute_Energy_And_Force()
 
     // Step 3.
     energy_force_regularization(); // regularization Force and Energy
+
+}
+
+void Mesh::ensure_device_layout()
+{
+    // Rebuilt when the counts move rather than only when empty. A global Loop
+    // pre-refinement replaces the whole face and vertex list, and a layout
+    // built before it would index vertices that no longer exist -- a silent
+    // out-of-bounds read rather than a failure.
+    if (deviceLayout.empty() || deviceLayout.nFaces() != static_cast<int>(faces.size()) ||
+        deviceLayout.nVertices() != static_cast<int>(vertices.size()))
+    {
+        deviceLayout.build(*this);
+    }
+}
+
+void Mesh::resolve_force_backend()
+{
+    if (forceBackendChoice != ForceBackendChoice::Unresolved)
+    {
+        return;
+    }
+
+    const bool wantsCuda = (param.forceBackend == "gpu" || param.forceBackend == "auto");
+    if (!wantsCuda)
+    {
+        forceBackendChoice = ForceBackendChoice::Cpu;
+        return;
+    }
+
+    try
+    {
+        cudaBackend.reset(new slimed::CudaForceBackend());
+        forceBackendChoice = ForceBackendChoice::Cuda;
+        std::cout << "[Mesh::resolve_force_backend] evaluating forces on "
+                  << cudaBackend->device_description() << std::endl;
+    }
+    catch (const std::exception &error)
+    {
+        cudaBackend.reset();
+        // "gpu" is a claim about how the run was performed, so a silent
+        // fallback would turn a misconfigured job into a CPU timing reported
+        // as a GPU one. "auto" is a preference, and says what it settled on.
+        if (param.forceBackend == "gpu")
+        {
+            throw std::runtime_error(
+                std::string("[Mesh::resolve_force_backend] forceBackend = gpu, but the GPU "
+                            "backend is unavailable: ") +
+                error.what());
+        }
+        forceBackendChoice = ForceBackendChoice::Cpu;
+        std::cout << "[Mesh::resolve_force_backend] forceBackend = auto, falling back to the "
+                     "CPU: "
+                  << error.what() << std::endl;
+    }
+}
+
+void Mesh::Compute_Energy_And_Force()
+{
+    resolve_force_backend();
+
+    // Reset the force on vertices and energy on faces
+    clear_force_on_vertices_and_energy_on_faces();
+
+    if (forceBackendChoice == ForceBackendChoice::Cuda)
+    {
+        ensure_patch_rows_flat();
+        ensure_device_layout();
+        // Steps 1 to 3 below, on the device: element area and volume and the
+        // totals they sum to, the patch energies and forces, and the
+        // regularization term. Same kernel bodies, same results -- see
+        // CudaForceBackendTest.
+        cudaBackend->evaluate(*this, deviceLayout, patchRowsFlat);
+    }
+    else
+    {
+        compute_face_energies_and_forces();
+    }
 
     // Step 4.
     // Summing up energy and force
@@ -237,15 +410,16 @@ void Mesh::Compute_Energy_And_Force()
     }
 }
 
-void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingVertices,
-                                        Face& face,
-                                        const double spontCurv,
-                                        double &meanCurv,
-                                        Matrix &normVector,
-                                        double &eBend,
-                                        Matrix &fBend,
-                                        Matrix &fArea,
-                                        Matrix &fVolume)
+void Mesh::element_energy_force_patch_reference(const std::vector<Matrix> &sampleRows,
+                                                const std::vector<Matrix> &coordOneRingVertices,
+                                                Face &face,
+                                                const double spontCurv,
+                                                double &meanCurv,
+                                                Matrix &normVector,
+                                                double &eBend,
+                                                Matrix &fBend,
+                                                Matrix &fArea,
+                                                Matrix &fVolume)
 {
     // fBend is the Force related to the curvature
     // fArea is the Force related to the area-constraint
@@ -259,11 +433,22 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
     double halfGaussQuadratureCoeff = 0.0;
     //////////////////////////////////////////////////////////////
     double kCurv = param.kCurv; //test output
-    double uSurfPerArea = param.uSurf / param.area0;
+    // Same hazard as the volume factor below, and the same guard: the area
+    // energy at :200 already skips itself when area0 == 0, so the force must
+    // too. area0 comes from `relaxArea` whenever setRelaxAreaToDefault is
+    // false, so a parameter file setting it to 0 reaches this line and poisons
+    // forceArea for every vertex -- inf rather than NaN, but equally fatal.
+    double uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
     int nFaces = this->faces.size();
     double area0 = param.area0;
     double area = param.area;
-    double uVol = param.uVol / param.vol0;
+    // A surface that encloses nothing -- any flat sheet, whose limit surface
+    // lies in the z = 0 plane -- has vol0 == 0, and with the default
+    // uvVolumeConstraint = 0.0 this scale factor would be 0.0/0.0. The NaN
+    // spreads through tmp_evol into fVolume and then into every vertex force.
+    // Mirror the guard the volume energy already has in
+    // Compute_Energy_And_Force(): no reference volume means no constraint.
+    double uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
     double vol0 = param.vol0;
     double vol = param.vol;
     /////////////////////////////////////////////////////////////
@@ -311,10 +496,15 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
     Matrix n1_conv(3, 1);
     Matrix n2_conv(3, 1);
 
-    // 2d vectors
-    Matrix f_be(12, 3);
-    Matrix f_cons(12, 3);
-    Matrix f_conv(12, 3);
+    // The patch width. A regular face carries 12 control points; an irregular
+    // one carries N+6. Nothing below branches on which -- the rows say how wide
+    // they are, and that is the only place the difference lives.
+    const int nControlPoints = static_cast<int>(coordOneRingVertices.size());
+
+    // 2d vectors, one row per control point
+    Matrix f_be(nControlPoints, 3);
+    Matrix f_cons(nControlPoints, 3);
+    Matrix f_conv(nControlPoints, 3);
     Matrix da1(3, 3);
     Matrix da2(3, 3);
 
@@ -345,14 +535,12 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
     }
 
     // Gaussian quadrature, second-order or 3 points.
-    //std::cout << param.shapeFunctions.size() << std::endl;
-    for (int i = 0; i < param.shapeFunctions.size(); i++)
+    for (int i = 0; i < static_cast<int>(sampleRows.size()); i++)
     {
         halfGaussQuadratureCoeff = 0.5 * param.gaussQuadratureCoeff(i, 0);
-        //std::cout << halfGaussQuadratureCoeff << std::endl;
-        Matrix &sf = param.shapeFunctions[i];
+        const Matrix &sf = sampleRows[i];
 
-        multiplication(sf, matOneRingVertices, sfDotOneRingV); //< (7, 12) . (12, 3) = (7, 3)
+        multiplication(sf, matOneRingVertices, sfDotOneRingV); //< (7, K) . (K, 3) = (7, 3)
 ////cout << "EEFR 297" << endl;
         /*
          * The (7, 3) matrix represents the coordinate and derivatives of the point
@@ -495,7 +683,7 @@ void Mesh::element_energy_force_regular(const std::vector<Matrix> &coordOneRingV
         //std::cout << sqa << std::endl;
         eBend_tmp = 0.5 * kCurv * sqa * pow(2.0 * H_curv - spontCurv, 2); // bending Energy
         // std::cout << "(2H, spontCurv, 2h-spontCurv, ebe)" << 2.0*H_curv << ", " << spontCurv << ", " << (2.0*H_curv-spontCurv) <<", " << ebe << endl;
-        for (int j = 0; j < 12; j++)
+        for (int j = 0; j < nControlPoints; j++)
         {   
             //da1 = -sf(3, j) * kron(a1, a_3)
             //- sf(1, j) * kron(a11, a_3)
@@ -648,13 +836,18 @@ void Mesh::energy_force_regularization()
         int iVertex1 = face.adjacentVertices[1];
         int iVertex2 = face.adjacentVertices[2];
 
-        // Vectors representing three sides of this face and magnitude
-        Matrix vector10 = vertices[iVertex0].coord - vertices[iVertex1].coord;
-        double length10 = vector10.calculate_norm();
-        Matrix vector21 = vertices[iVertex1].coord - vertices[iVertex2].coord;
-        double length21 = vector21.calculate_norm();
-        Matrix vector02 = vertices[iVertex2].coord - vertices[iVertex0].coord;
-        double length02 = vector02.calculate_norm();
+        // Vectors representing three sides of this face and magnitude.
+        // Plain arrays: each of these was a heap-allocated gsl_matrix, six per
+        // face per force evaluation, for three subtractions and a norm.
+        double vector10[3];
+        double vector21[3];
+        double vector02[3];
+        difference_of_coords(vertices[iVertex0].coord, vertices[iVertex1].coord, vector10);
+        double length10 = slimed::v3_norm(vector10);
+        difference_of_coords(vertices[iVertex1].coord, vertices[iVertex2].coord, vector21);
+        double length21 = slimed::v3_norm(vector21);
+        difference_of_coords(vertices[iVertex2].coord, vertices[iVertex0].coord, vector02);
+        double length02 = slimed::v3_norm(vector02);
 
         // semi-perimeter of the triangle
         double semiperi = (length10 + length21 + length02) / 2.0;
@@ -675,13 +868,15 @@ void Mesh::energy_force_regularization()
                        pow(length02 - meanSideLength, 2.0)) /
                       pow(meanSideLength, 2.0);
 
-        Matrix refVector10 = vertices[iVertex0].coordRef - vertices[iVertex1].coordRef;
-        double refLength10 = refVector10.calculate_norm();
-        Matrix refVector21 = vertices[iVertex1].coordRef - vertices[iVertex2].coordRef;
-        double refLength21 = refVector21.calculate_norm();
-        Matrix refVector02 = vertices[iVertex2].coordRef - vertices[iVertex0].coordRef;
-        double refLength02 = refVector02.calculate_norm();
-        // std::cout<<"v0"<<vector10.size()<<"::"<<refVector10.size()<<endl;
+        double refVector10[3];
+        double refVector21[3];
+        double refVector02[3];
+        difference_of_coords(vertices[iVertex0].coordRef, vertices[iVertex1].coordRef, refVector10);
+        double refLength10 = slimed::v3_norm(refVector10);
+        difference_of_coords(vertices[iVertex1].coordRef, vertices[iVertex2].coordRef, refVector21);
+        double refLength21 = slimed::v3_norm(refVector21);
+        difference_of_coords(vertices[iVertex2].coordRef, vertices[iVertex0].coordRef, refVector02);
+        double refLength02 = slimed::v3_norm(refVector02);
 
         // Here semipri = semi-perimeter of the reference triangle
         semiperi = (refLength10 + refLength21 + refLength02) / 2.0;
@@ -692,10 +887,12 @@ void Mesh::energy_force_regularization()
         bool isDeformShape = (gama > param.gamaShape && param.usingRpi);
         bool isDeformArea = (abs(area - refArea) / refArea >= param.gamaArea && param.usingRpi);
 
-        // convert vector10, vector21, vector02 unit vector
-        vector10 /= length10;
-        vector21 /= length21;
-        vector02 /= length02;
+        // convert vector10, vector21, vector02 unit vector.
+        // Reciprocal-then-multiply, as Matrix::operator/= did, rather than a
+        // true division: the two round differently.
+        slimed::v3_scale(vector10, 1.0 / length10, vector10);
+        slimed::v3_scale(vector21, 1.0 / length21, vector21);
+        slimed::v3_scale(vector02, 1.0 / length02, vector02);
 
         /*
          * Use a switch statement to check the values of
@@ -716,9 +913,9 @@ void Mesh::energy_force_regularization()
             eReg = kCurv / 2.0 * (pow(length10 - refLength10, 2.0) + pow(length21 - refLength21, 2.0) + pow(length02 - refLength02, 2.0));
             for (int axis = 0; axis < 3; ++axis)
             {
-                localRegComponents[iVertex0 * 3 + axis] += kCurv * ((refLength10 - length10) * vector10(axis, 0) + (length02 - refLength02) * vector02(axis, 0));
-                localRegComponents[iVertex1 * 3 + axis] += kCurv * ((refLength21 - length21) * vector21(axis, 0) + (length10 - refLength10) * vector10(axis, 0));
-                localRegComponents[iVertex2 * 3 + axis] += kCurv * ((refLength02 - length02) * vector02(axis, 0) + (length21 - refLength21) * vector21(axis, 0));
+                localRegComponents[iVertex0 * 3 + axis] += kCurv * ((refLength10 - length10) * vector10[axis] + (length02 - refLength02) * vector02[axis]);
+                localRegComponents[iVertex1 * 3 + axis] += kCurv * ((refLength21 - length21) * vector21[axis] + (length10 - refLength10) * vector10[axis]);
+                localRegComponents[iVertex2 * 3 + axis] += kCurv * ((refLength02 - length02) * vector02[axis] + (length21 - refLength21) * vector21[axis]);
             }
             break;
         case 1:
@@ -728,9 +925,9 @@ void Mesh::energy_force_regularization()
                 eReg = kCurv / 2.0 * (pow(length10 - meanSideLengthRef, 2.0) + pow(length21 - meanSideLengthRef, 2.0) + pow(length02 - meanSideLengthRef, 2.0));
                 for (int axis = 0; axis < 3; ++axis)
                 {
-                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthRef - length10) * vector10(axis, 0) + (length02 - meanSideLengthRef) * vector02(axis, 0));
-                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthRef - length21) * vector21(axis, 0) + (length10 - meanSideLengthRef) * vector10(axis, 0));
-                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthRef - length02) * vector02(axis, 0) + (length21 - meanSideLengthRef) * vector21(axis, 0));
+                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthRef - length10) * vector10[axis] + (length02 - meanSideLengthRef) * vector02[axis]);
+                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthRef - length21) * vector21[axis] + (length10 - meanSideLengthRef) * vector10[axis]);
+                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthRef - length02) * vector02[axis] + (length21 - meanSideLengthRef) * vector21[axis]);
                 }
             }
             break;
@@ -741,9 +938,9 @@ void Mesh::energy_force_regularization()
                 eReg = kCurv / 2.0 * (pow(length10 - meanSideLengthOld, 2.0) + pow(length21 - meanSideLengthOld, 2.0) + pow(length02 - meanSideLengthOld, 2.0));
                 for (int axis = 0; axis < 3; ++axis)
                 {
-                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthOld - length10) * vector10(axis, 0) + (length02 - meanSideLengthOld) * vector02(axis, 0));
-                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthOld - length21) * vector21(axis, 0) + (length10 - meanSideLengthOld) * vector10(axis, 0));
-                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthOld - length02) * vector02(axis, 0) + (length21 - meanSideLengthOld) * vector21(axis, 0));
+                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthOld - length10) * vector10[axis] + (length02 - meanSideLengthOld) * vector02[axis]);
+                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthOld - length21) * vector21[axis] + (length10 - meanSideLengthOld) * vector10[axis]);
+                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthOld - length02) * vector02[axis] + (length21 - meanSideLengthOld) * vector21[axis]);
                 }
             }
             break;
@@ -752,12 +949,6 @@ void Mesh::energy_force_regularization()
         // Store energy on faces
         face.energy.energyRegularization = eReg;
 
-        vector10.free();
-        vector21.free();
-        vector02.free();
-        refVector10.free();
-        refVector21.free();
-        refVector02.free();
     }
 
     // Store Force on vertices
@@ -869,14 +1060,27 @@ void Mesh::manage_force_for_boundary_ghost_vertex()
 double Mesh::get_max_force_magnitude()
 {
     double max_magnitude = 0;
-#pragma omp parallel for reduction(max : max_magnitude)
+    // Every comparison against a NaN is false, so a poisoned force field would
+    // otherwise reduce to 0 and be read downstream as "no force left to
+    // follow". Track non-finite magnitudes separately and pass them on.
+    int anyNonFinite = 0;
+#pragma omp parallel for reduction(max : max_magnitude) reduction(|| : anyNonFinite)
     for (int i = 0; i < static_cast<int>(vertices.size()); ++i)
     {
         double magnitude = vertices[i].force.get_total_force_magnitude();
+        if (!std::isfinite(magnitude))
+        {
+            anyNonFinite = 1;
+            continue;
+        }
         if (magnitude > max_magnitude)
         {
             max_magnitude = magnitude;
         }
+    }
+    if (anyNonFinite)
+    {
+        return std::nan("");
     }
     return max_magnitude;
 }

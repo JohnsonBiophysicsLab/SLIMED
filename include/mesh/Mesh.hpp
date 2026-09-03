@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <cmath>
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -27,12 +28,17 @@
 #include <string>
 #include <stdexcept>
 #include <array>
+#include <map>
 #include <unordered_map>
 #include <omp.h>
 #include <algorithm>
 // model setup
 //#include "Edge.hpp"
 #include "mesh/Face.hpp"
+#include "cuda/Cuda_force_backend.hpp"
+#include "cuda/Device_mesh_layout.hpp"
+#include "energy_force/Patch_rows_flat.hpp"
+#include "mesh/Irregular_patch_rows.hpp"
 #include "mesh/Vertex.hpp"
 #include "energy_force/Energy.hpp"
 #include "energy_force/Force.hpp"
@@ -118,6 +124,82 @@ public:
     Param& param;                  ///< Object of the Param class containing all necessary parameters for building the Mesh object
     // Scaffolding points, see Scaffolding_points.cpp
     Matrix centerScaffoldingSphere; ///< Center of the scaffolding cap sphere
+    /**
+     * @brief Limit-surface rows for irregular patches, built once at startup.
+     *
+     * Depends only on the valence and the quadrature rule, never on the mesh,
+     * so it is immutable after construction and shared across threads.
+     */
+    IrregularPatchRowTable irregularRows;
+
+    /**
+     * @brief The same rows as irregularRows and param.shapeFunctions, repacked
+     * flat for the force kernel.
+     *
+     * Built lazily on the first Compute_Energy_And_Force() so that every way
+     * of constructing a Mesh -- including the ones the tests use -- picks it
+     * up without each having to remember to build it. Immutable afterwards,
+     * for the same reason irregularRows is.
+     */
+    PatchRowsFlat patchRowsFlat;
+
+    /**
+     * @brief Build patchRowsFlat if it has not been built yet.
+     *
+     * Every entry point that reads the flat rows calls this first. Doing it
+     * lazily rather than in the constructors is deliberate: there are several
+     * ways to build a Mesh -- Run_flat, the dynamics driver, and each test
+     * fixture -- and a setup step any of them can forget is a null-pointer bug
+     * waiting for whichever one gets added next.
+     *
+     * Not thread safe, so call it before entering a parallel region, never
+     * from inside one.
+     */
+    void ensure_patch_rows_flat();
+
+    /**
+     * @brief The mesh flattened for the GPU-shaped force backends.
+     *
+     * Built alongside patchRowsFlat and, like it, only when something asks for
+     * it -- a CPU run never pays for it.
+     */
+    slimed::DeviceMeshLayout deviceLayout;
+
+    /**
+     * @brief Build deviceLayout if it is missing or stale.
+     *
+     * Staleness is checked by face and vertex count rather than assumed away.
+     * A global Loop pre-refinement (see Mesh_refine.cpp) replaces both, and a
+     * layout built before it would index vertices that no longer exist.
+     */
+    void ensure_device_layout();
+
+    /**
+     * @brief Which backend Compute_Energy_And_Force() delegates its per-face
+     * work to, chosen once from param.forceBackend.
+     *
+     * Held by value rather than resolved per call: constructing
+     * CudaForceBackend queries the driver and uploads the topology, neither of
+     * which belongs in a line search that runs this a couple of hundred times
+     * per iteration.
+     */
+    enum class ForceBackendChoice
+    {
+        Unresolved,
+        Cpu,
+        Cuda,
+    };
+    ForceBackendChoice forceBackendChoice = ForceBackendChoice::Unresolved;
+    std::unique_ptr<slimed::CudaForceBackend> cudaBackend;
+
+    /// Read param.forceBackend and set up whichever backend it names. Throws
+    /// if it names "gpu" and no device can be used.
+    void resolve_force_backend();
+
+    /// The per-face and per-vertex half of the force evaluation, on the CPU.
+    /// The device backend stands in for exactly this much.
+    void compute_face_energies_and_forces();
+
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
     std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold
@@ -292,6 +374,52 @@ public:
     void set_one_ring_vertices_sorted();
 
     /**
+     * @brief Print the mesh's vertex-valence histogram and the number of faces
+     * carrying more than one extraordinary corner.
+     *
+     * The uniform-patch reduction in
+     * docs/irregular_patch_valence_4_to_8_plan.md assumes each irregular face
+     * has exactly one extraordinary corner, so the second number is the one
+     * that decides whether pre-refinement (WP7) is needed on real inputs.
+     */
+    void report_valence_histogram() const;
+
+    /**
+     * @brief Apply one global Loop refinement pass to the control mesh.
+     *
+     * For meshes that cannot be generated with isolated extraordinary
+     * vertices. One pass splits every triangle into four; every new vertex
+     * sits on an old edge and has valence 6, and every old vertex keeps its
+     * valence but becomes adjacent only to new vertices. So no face can carry
+     * two extraordinary corners afterwards, whatever the input was -- the
+     * guarantee is structural, not statistical.
+     *
+     * Deliberately global. Loop's rules are uniform, so refining part of a
+     * control mesh changes the limit surface elsewhere; local refinement
+     * around adjacent extraordinary vertices is a different and wrong thing.
+     *
+     * Must run before the adjacency members are populated -- it reads topology
+     * from the face list, and it invalidates everything derived from the old
+     * one.
+     *
+     * @note Off by default. It roughly quadruples the vertices, and the
+     * control mesh is the dynamical degrees of freedom, so refining
+     * rebaselines the run. WP7 of
+     * docs/irregular_patch_valence_4_to_8_plan.md.
+     */
+    void refine_loop_once();
+
+    /**
+     * @brief True when the vertex has a closed one-ring fan.
+     *
+     * adjacentVertices is built as the union of the other two corners of every
+     * adjacent face, so a closed fan gives `adjacentFaces.size() ==
+     * adjacentVertices.size()` while an open one -- a boundary vertex -- gives
+     * exactly one more vertex than faces.
+     */
+    bool is_interior_vertex(int iVertex) const;
+
+    /**
      * @deprecated Currently the isBoundary property is not used
      * in any part of the model. This is a placeholder in case any future
      * functions need the property.
@@ -310,6 +438,33 @@ public:
      *
      */
     void determine_ghost_vertices_faces();
+
+    /**
+     * @brief Reject a volume constraint on a surface that does not enclose a volume.
+     *
+     * Signed volume by the divergence theorem is only defined for a closed,
+     * consistently oriented two-manifold. On an open sheet the accumulator in
+     * Mesh::enumerate_gauss_quadrature_point_area_volume() still returns a
+     * number, but that number is not a volume and is not even independent of
+     * where the coordinate origin sits -- so a constraint built on it drives
+     * the trajectory toward a meaningless target.
+     *
+     * Called at the end of setup_flat() and setup_from_vertices_faces(). Does
+     * nothing when `param.uVol == 0.0`: without a constraint the volume is
+     * only ever reported, never fed back into the dynamics, and the flat and
+     * periodic workloads must keep running.
+     *
+     * The surface is rejected when it is periodic or free, carries ghost
+     * faces, has boundary edges (an edge with a single incident face),
+     * has non-manifold edges (more than two), or is inconsistently oriented
+     * (two faces traversing one edge the same way).
+     *
+     * @throw std::runtime_error naming `uVol` and every reason the surface
+     * failed, when `param.uVol != 0.0` and the surface is not closed.
+     *
+     * @note See docs/volume_functional_split.md, step 3.
+     */
+    void validate_volume_constraint_topology() const;
 
     /**
      * @brief Sort vertices on faces so that the unit normal vector indicates
@@ -397,6 +552,33 @@ public:
     void sum_membrane_area_and_volume(double &area, double &volume);
 
     /**
+     * @brief TEMPORARY: the volume this mesh would have reported before the
+     * dot_row fix, summed over non-ghost faces.
+     *
+     * Reproduces the x-only integrand paired with the full-divergence 1/6
+     * factor, including the old bare literal, so the number matches what
+     * earlier runs printed to the last digit. Reporting only -- it never
+     * reaches energy, force, or the volume constraint.
+     *
+     * @deprecated Step 4 of docs/volume_functional_split.md. Delete this,
+     * enumerate_legacy_x_only_volume(), report_volume_rebaseline(), and
+     * src/mesh/Mesh_legacy_volume.cpp after one release.
+     */
+    double sum_legacy_x_only_volume();
+
+    /**
+     * @brief TEMPORARY: print `param.vol0` on both the corrected and the
+     * pre-fix scale, with the ratio between them.
+     *
+     * Call once at startup, after vol0 has been computed. On a closed surface
+     * the ratio is exactly 3 and converts any previously recorded volume; on
+     * an open surface it is configuration dependent and converts nothing.
+     *
+     * @deprecated See sum_legacy_x_only_volume().
+     */
+    void report_volume_rebaseline();
+
+    /**
      *
      * @brief Computes the energy and force on each vertex and face of the mesh.
      *
@@ -428,15 +610,42 @@ public:
      * @param fArea a non-constant matrix reference representing the area constraint force of the element.
      * @param fVolume a non-constant matrix reference representing the volume constraint force of the element.
      */
-    void element_energy_force_regular(const std::vector<Matrix> &coordOneRingVertices,
-                                      Face& face,
-                                      const double spontCurv,
-                                      double &meanCurv,
-                                      Matrix &normVector,
-                                      double &eBend,
-                                      Matrix &fBend,
-                                      Matrix &fArea,
-                                      Matrix &fVolume);
+    /**
+     * @brief The area and volume quadrature as it was before the flat-array
+     * rewrite, kept as the numerical oracle for it.
+     *
+     * Nothing in the simulation path calls this; slimed::element_area_volume_pod()
+     * replaced it. It exists so tests/test_patch_kernel.cpp can assert the
+     * fast version still integrates to the same area and volume, which is what
+     * the area and volume constraint energies are measured against. Delete it
+     * only together with that test.
+     */
+    void enumerate_gauss_quadrature_point_area_volume_reference(const std::vector<Matrix> &sampleRows,
+                                                      const Matrix &dots,
+                                                      double &area,
+                                                      double &volume);
+
+    /**
+     * @brief The patch kernel as it was before the flat-array rewrite, kept as
+     * the numerical oracle for it.
+     *
+     * Identical in meaning to slimed::element_energy_force_patch_pod() but
+     * expressed over heap-allocated Matrix objects and GSL calls. Nothing in the simulation
+     * path calls this -- it exists so tests/test_patch_kernel.cpp can assert
+     * that the fast kernel still produces the old numbers, which is the only
+     * thing standing between a performance rewrite and a silent physics
+     * change. Delete it only together with that test.
+     */
+    void element_energy_force_patch_reference(const std::vector<Matrix> &sampleRows,
+                                              const std::vector<Matrix> &coordOneRingVertices,
+                                              Face &face,
+                                              const double spontCurv,
+                                              double &meanCurv,
+                                              Matrix &normVector,
+                                              double &eBend,
+                                              Matrix &fBend,
+                                              Matrix &fArea,
+                                              Matrix &fVolume);
 
     /**
      * @brief Calculates the regularization energy and force for each face
@@ -733,9 +942,6 @@ protected:
      * @param area A reference to a double variable storing the accumulated area.
      * @param volume A reference to a double variable storing the accumulated volume.
      */
-    void enumerate_gauss_quadrature_point_area_volume(const Matrix &dots,
-                                                      double &area,
-                                                      double &volume);
 
     /**
      * @brief
@@ -744,6 +950,13 @@ protected:
      *
      */
     Matrix get_one_ring_vertex_matrix(const Face &face);
+
+    /**
+     * @brief TEMPORARY: per-patch half of sum_legacy_x_only_volume().
+     *
+     * @deprecated See sum_legacy_x_only_volume().
+     */
+    double enumerate_legacy_x_only_volume(const Matrix &matOneRingVertex);
 
     /**
      * @brief

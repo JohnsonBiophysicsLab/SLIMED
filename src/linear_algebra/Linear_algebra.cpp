@@ -12,8 +12,18 @@ Matrix::Matrix(const int &nrow, const int &ncol) : mat(gsl_matrix_alloc(nrow, nc
 {
 }
 
-Matrix::Matrix(const Matrix &mat_src) : mat(gsl_matrix_alloc(mat_src.mat->size1, mat_src.mat->size2))
+Matrix::Matrix(const Matrix &mat_src) : mat(NULL)
 {
+    // Copying an unallocated Matrix yields an unallocated Matrix. Without this
+    // the copy constructor dereferences its source unconditionally, so putting
+    // Matrix in any standard container is a null dereference waiting to happen
+    // -- vector::assign(n, Matrix()) and vector::resize() both copy from a
+    // default-constructed prototype.
+    if (mat_src.mat == NULL)
+    {
+        return;
+    }
+    mat = gsl_matrix_alloc(mat_src.mat->size1, mat_src.mat->size2);
     gsl_matrix_memcpy(mat, mat_src.mat);
 }
 
@@ -25,6 +35,12 @@ Matrix& Matrix::operator=(const Matrix &mat_src)
     if (mat != NULL) {
         gsl_matrix_free(mat);  // Deallocate existing memory
         mat = NULL;
+    }
+    // Assigning an unallocated Matrix leaves this one unallocated, matching the
+    // copy constructor. This side already tolerated a null destination; it did
+    // not tolerate a null source.
+    if (mat_src.mat == NULL) {
+        return *this;
     }
     mat = gsl_matrix_alloc(mat_src.mat->size1, mat_src.mat->size2);  // Allocate new memory
     gsl_matrix_memcpy(mat, mat_src.mat);  // Copy data
@@ -65,12 +81,20 @@ Matrix::~Matrix(){
 
 int Matrix::nrow() const
 {
-    return static_cast<int>(mat->size1);
+    // An unallocated Matrix has no rows rather than an undefined number of
+    // them. Asking a matrix its shape is how callers validate input, so it
+    // must not be the thing that crashes on invalid input.
+    return (mat == NULL) ? 0 : static_cast<int>(mat->size1);
 }
 
 int Matrix::ncol() const
 {
-    return static_cast<int>(mat->size2);
+    return (mat == NULL) ? 0 : static_cast<int>(mat->size2);
+}
+
+bool Matrix::empty() const
+{
+    return mat == NULL;
 }
 
 double Matrix::get(const int &i, const int &j) const
@@ -204,9 +228,14 @@ void Matrix::get_inverted(Matrix& matInverted)
 
 void Matrix::free()
 {
+    // Braces added: the assignment was never inside the conditional, which is
+    // harmless as written -- clearing an already-null pointer -- but the
+    // indentation says otherwise, and the next edit here would inherit the bug.
     if (mat != NULL)
+    {
         gsl_matrix_free(mat);
-        mat = NULL;
+    }
+    mat = NULL;
 }
 
 Matrix mat_calloc(const int &nrow, const int &ncol)
@@ -339,7 +368,7 @@ double dot_col(const Matrix &m1, const Matrix &m2)
 double dot_row(const Matrix &m1, const Matrix &m2)
 {
     double result = 0.0;
-    for (int i = 0; i < m1.mat->size1; i++)
+    for (int i = 0; i < m1.mat->size2; i++)
         result += gsl_matrix_get(m1.mat, 0, i) * gsl_matrix_get(m2.mat, 0, i);
     return result;
 }

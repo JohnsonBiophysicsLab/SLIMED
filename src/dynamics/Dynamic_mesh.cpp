@@ -31,6 +31,35 @@ void DynamicMesh::setup_flat() {
     }
     matMesh = mat_calloc(vertices.size(), 3);
     matSurface = mat_calloc(vertices.size(), 3);
+    mark_slaved_periodic_vertices();
+}
+
+void DynamicMesh::mark_slaved_periodic_vertices()
+{
+    isSlavedPeriodic.assign(vertices.size(), 0);
+    if (param.boundaryCondition != BoundaryType::Periodic)
+    {
+        return;
+    }
+    int nSlaved = 0;
+    for (int i = 0; i < static_cast<int>(vertices.size()); i++)
+    {
+        if (vertices[i].isGhost)
+        {
+            continue;
+        }
+        if (get_relative_pt_periodic(i, param.nFaceX, param.nFaceY) != 0)
+        {
+            isSlavedPeriodic[i] = 1;
+            nSlaved++;
+        }
+    }
+    std::cout << "[DynamicMesh::mark_slaved_periodic_vertices] "
+              << nSlaved << " of " << vertices.size()
+              << " vertices are periodic duplicates; they are "
+              << (param.integratePeriodicDuplicates ? "integrated anyway (legacy)"
+                                                    : "left to their partners")
+              << "." << std::endl;
 }
 
 void DynamicMesh::assign_mesh2surface()
@@ -96,8 +125,31 @@ void DynamicMesh::assign_mesh2surface()
         // check if ghost / boundary faces are correctly recongnized
         // std::cout << "vertex: " << i << ", indexAdjFace: " << indexAdjFace << endl;
     }
-    std::cout << "[DynamicsMesh::asign_mesh2surface] Generate mesh2surface conversion matrix: " << std::endl;
-    std::cout << mesh2surface << std::endl;
+    // The Brownian update maps the nodal force onto the limit-surface
+    // coordinates with M^-1 in place of M^-T, which is only the same thing
+    // when M is symmetric.  It very nearly is: the interior rows are the
+    // valence-6 limit mask, which is symmetric.  It is not exactly, because a
+    // vertex whose adjacent faces are all ghost or boundary gets the identity
+    // row above while its neighbours' rows still reference it.  Report the
+    // asymmetry rather than assume it away -- a non-reciprocal mobility does
+    // not just bias the sampled distribution, it can do net work on the
+    // membrane, and that shows up as an amplitude that never settles.
+    double maxAsymmetry = 0.0;
+    for (int i = 0; i < static_cast<int>(vertices.size()); i++)
+    {
+        for (int j = i + 1; j < static_cast<int>(vertices.size()); j++)
+        {
+            maxAsymmetry = std::max(maxAsymmetry,
+                                    std::abs(mesh2surface(i, j) - mesh2surface(j, i)));
+        }
+    }
+    std::cout << "[DynamicMesh::assign_mesh2surface] mesh2surface built; "
+              << "max |M - M^T| = " << maxAsymmetry << std::endl;
+
+    if (param.VERBOSE_MODE)
+    {
+        std::cout << mesh2surface << std::endl;
+    }
 }
 
 void DynamicMesh::update_vertices_mat_with_vector()

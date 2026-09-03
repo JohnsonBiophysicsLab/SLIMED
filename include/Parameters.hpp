@@ -64,25 +64,6 @@ struct DeformationCount
 };
 
 /**
- * @brief 5 Subdivison matrices for irregular mesh.
- * 
- * See http://www.cs.cmu.edu/afs/cs/academic/class/15456-f15/RelatedWork/Loop-by-Stam.pdf
- * 
- * Subdivide irregular mesh triangle into 3 regular mesh triangle and 1 irregular mesh
- * triangle and repeat this step to get an approximation of the irregular patch. Note,
- * curvature is not guaranteed to be continuous on irregular patch.
- * 
- */
-struct SubdivisionMatrix
-{
-    Matrix irregM;
-    Matrix irregM1;
-    Matrix irregM2;
-    Matrix irregM3;
-    Matrix irregM4;
-};
-
-/**
  * @brief Represents a single diffusing particle in a simulation.
  *
  * A Particle object contains information about the particle's position, velocity,
@@ -147,10 +128,26 @@ struct Param
     double dFaceY;                          ///< Initial actual face side length along Y axis for flat membrane
     double meanL;                           ///< Mean length of edges after subdivision
     double sigma = 0.0;                     ///< Noise level for vertex positions
-    int subDivideTimes;                     ///< Number of times to subdivide each edge
     bool isInsertionAreaConstraint = false; ///< Whether to apply area constraint to insertions
     bool isAdditiveScheme = false;          ///< Whether to use additive scheme for constraints
     bool isGlobalConstraint = true;                ///< Whether to apply global constraint across entire membrane
+
+    /**
+     * @brief Which implementation evaluates the per-face energies and forces.
+     *
+     * "cpu"  -- the loops in Compute_Energy_And_Force(), the default.
+     * "gpu"  -- slimed::CudaForceBackend. Fails loudly if the binary was built
+     *           without CUDA or no device is visible, because a run that
+     *           silently fell back would be reported as a GPU timing.
+     * "auto" -- the GPU when one is usable, the CPU otherwise, saying which it
+     *           chose.
+     *
+     * All three compute the same thing: the device path runs the same kernel
+     * bodies over the same flattened mesh, and the tests pin it against the
+     * CPU. See docs/gpu_acceleration.md for where the GPU actually wins --
+     * below roughly 10^5 faces it does not.
+     */
+    std::string forceBackend = "cpu";
     double elementTriangleArea0;            ///< Target area for individual triangles
 
     // gauss quadrature
@@ -160,9 +157,6 @@ struct Param
 
     // shape function
     std::vector<Matrix> shapeFunctions; ///< List of shape functions for each triangle
-
-    // irregular patch
-    SubdivisionMatrix subMatrix; ///< Subdivision matrix for irregular patches
 
     // boundary conditions
     BoundaryType boundaryCondition = BoundaryType::Periodic; ///< Type of boundary condition ("Fixed", "Periodic", "Free")
@@ -178,11 +172,22 @@ struct Param
     // regularization
     double gamaShape = 0.2;                       ///< Shape deformation coefficient
     double gamaArea = 0.2;                        ///< Area deformation coefficient
+    /**
+     * @brief Apply one global Loop refinement to the control mesh at setup.
+     *
+     * Off by default. Only needed for meshes whose extraordinary vertices are
+     * adjacent, which the valence histogram reports at setup. It roughly
+     * quadruples the vertex count and changes the dynamical degrees of
+     * freedom, so enabling it rebaselines the run.
+     */
+    bool isPreRefinementEnabled = false;
+
     bool usingRpi = true;             ///< Whether to use R-pi adaptive method for regularization energy;
 
     // spline points
     bool xyzOutput = true;                                       ///< Whether to output XYZ coordinates of vertices
     bool meshpointOutput = true;                                 ///< Whether to output meshpoints
+    int meshpointOutputInterval = 1;                             ///< Write a trajectory frame every N dynamics iterations
     bool isEnergyHarmonicBondIncluded = false;                    ///< Whether to include energy of spline points
     std::vector<Matrix> scaffoldingPoints;                       ///< List of spline points
     std::vector<int> scaffoldingPoints_correspondingVertexIndex; ///< Corresponding vertex indices for spline points
@@ -217,6 +222,8 @@ struct Param
     double diffConst = 0.01; // um^2/us
     double KBT = 4.17;       // 1KbT = 4.17 pN.nm
     unsigned int randomSeed = 42; ///< random seed used in normal distribution
+    bool fdtConsistentSurfaceUpdate = true; ///< Map the nodal force onto the limit-surface DOFs before the Brownian step
+    bool integratePeriodicDuplicates = false; ///< Legacy: give the fourth-ring periodic duplicates their own Brownian kick before overwriting them
     bool surfacepointOutput = true; ///< whether to output surface point file
 
     // thermal fluctuation / annealing for equilibrium searches

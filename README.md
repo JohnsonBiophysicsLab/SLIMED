@@ -106,51 +106,18 @@ brew --prefix llvm
 brew --prefix libomp
 ```
 
-## Compile and Run
+## Compile with CMake
 
-SLIMED builds with CMake. 
+SLIMED builds with CMake. Executables are present in the respective `bin` directory.
 
-### Presets (quick way to build and switch between serial and OpenMP)
-
-Because serial and OpenMP builds are both used routinely, `CMakePresets.json`
-defines them as named presets, each with its own build directory:
-
-| Preset | Build directory | Equivalent to |
+| Program | Old target | What it does |
 | --- | --- | --- |
-| `serial` | `build/` | `make serial` / `make dyna` |
-| `omp` | `build-omp/` | `make omp` / `make dyna_omp` |
-| `coverage` | `build-cov/` | `make test COVERAGE=1` |
+| `continuum_membrane` | `make serial` / `make omp` | Lowest-energy conformation search |
+| `continuum_membrane_multithreading` | `make multi` | Same, embarrassingly parallel over parameter sets |
+| `membrane_dynamics` | `make dyna` / `make dyna_omp` | Membrane Brownian dynamics |
+| `membrane_dynamics_multithreading` | `make dyna_multi` | Same, embarrassingly parallel |
 
-Configure, build and test in one command:
 
-```console
-cmake --workflow --preset omp
-cmake --workflow --preset serial
-```
-
-Or drive the steps separately:
-
-```console
-cmake --preset omp           # configure
-cmake --build --preset omp   # build (all cores)
-ctest --preset omp           # test
-```
-
-Because each preset owns a separate build directory, switching back and forth
-recompiles nothing -- both trees persist side by side. Setting
-`-DSLIMED_ENABLE_OPENMP` on a single build directory works too, but changes the
-`-DOMP` define for every target and so triggers a full rebuild each time you
-flip it.
-
-To list what is available:
-
-```console
-cmake --list-presets
-```
-
-Presets require CMake 3.25 or newer. With an older CMake, use the `-D` options
-below instead -- they are exactly what the presets set. For personal presets
-that are not shared, create a `CMakeUserPresets.json`; it is gitignored.
 
 ### Configure and build separately
 
@@ -181,9 +148,9 @@ every invocation.
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `SLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
-| `SLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
-| `SLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
+| `-DSLIMED_ENABLE_OPENMP` | `OFF` | Compile the OpenMP code paths (`-fopenmp` and `-DOMP` together). |
+| `-DSLIMED_ENABLE_COVERAGE` | `OFF` | Instrument for `gcov`/`lcov`. |
+| `-DSLIMED_BUILD_TESTS` | `ON` | Build the GoogleTest suite. |
 
 Standard CMake variables work as usual:
 
@@ -197,6 +164,61 @@ Makefile. To inspect what a build directory is currently set to:
 ```console
 cmake -LH -N -B build | grep -A1 SLIMED_
 ```
+
+### Presets (quick way to build and switch between serial and OpenMP)
+
+Because serial and OpenMP builds are both used routinely, `CMakePresets.json`
+defines them as named presets, each with its own build directory:
+
+| Preset | Build directory | Builds | Equivalent to |
+| --- | --- | --- | --- |
+| `serial` | `build/` | simulation programs | `make serial` / `make dyna` |
+| `omp` | `build-omp/` | simulation programs | `make omp` / `make dyna_omp` |
+| `coverage` | `build-cov/` | programs + unit tests | `make test COVERAGE=1` |
+
+`serial` and `omp` build the four simulation programs only. They set
+`SLIMED_BUILD_TESTS=OFF`, so GoogleTest is never looked for and does not need to
+be installed to use them.
+
+Configure and build in one command:
+
+```console
+cmake --workflow --preset omp
+cmake --workflow --preset serial
+```
+
+Or drive the steps separately:
+
+```console
+cmake --preset omp           # configure
+cmake --build --preset omp   # build (all cores)
+```
+
+To run the unit tests, either use the `coverage` preset or configure a build
+directory by hand -- `SLIMED_BUILD_TESTS` defaults to `ON`, so a plain
+configure includes them:
+
+```console
+cmake -S . -B build-test
+cmake --build build-test -j8
+ctest --test-dir build-test --output-on-failure
+```
+
+Because each preset owns a separate build directory, switching back and forth
+recompiles nothing -- both trees persist side by side. Setting
+`-DSLIMED_ENABLE_OPENMP` on a single build directory works too, but changes the
+`-DOMP` define for every target and so triggers a full rebuild each time you
+flip it.
+
+To list what is available:
+
+```console
+cmake --list-presets
+```
+
+Presets require CMake 3.25 or newer. With an older CMake, use the `-D` options
+below instead -- they are exactly what the presets set. For personal presets
+that are not shared, create a `CMakeUserPresets.json`; it is gitignored.
 
 ### The four programs
 
@@ -276,9 +298,18 @@ libstdc++; use the default Apple Clang when you need the tests.
 
 ### Tests
 
+`SLIMED_BUILD_TESTS` defaults to `ON`, so any build directory configured by hand
+includes the unit tests:
+
 ```console
-ctest --test-dir build --output-on-failure
+cmake -S . -B build-test
+cmake --build build-test -j8
+ctest --test-dir build-test --output-on-failure
 ```
+
+Note that the `serial` and `omp` presets deliberately set it to `OFF`, so
+`build/` and `build-omp/` contain no tests; use a separate directory as above,
+or the `coverage` preset.
 
 Each GoogleTest case is registered with CTest individually. Several tests open
 fixture files by paths relative to the working directory, so CTest runs
@@ -286,7 +317,7 @@ fixture files by paths relative to the working directory, so CTest runs
 be run directly, from the source root:
 
 ```console
-./build/bin/test_main
+./build-test/bin/test_main
 ```
 
 If GoogleTest is not installed, CMake prints a warning and skips the test
@@ -311,7 +342,7 @@ collect. There is no packaged `coverage-html` target yet.
 ```console
 cmake --build build --target clean   # like "make clean"; keeps the configuration
 rm -rf build                         # full reset, forgets all cached options
-rm -rf build build-omp build-cov     # remove every preset build directory
+rm -rf build build-omp build-cov build-test   # remove all build directories
 ```
 
 ### The previous Makefile

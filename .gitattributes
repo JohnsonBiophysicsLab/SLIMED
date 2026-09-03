@@ -1,3 +1,15 @@
-*.cpp text eol=lf
-*.hpp text eol=lf
-*.h   text eol=lf
+# Keep every text file LF in the repository *and* in the working tree, on all
+# platforms. Without the catch-all below, a Windows clone using the Git for
+# Windows default (core.autocrlf=true) checks out uncovered text files with
+# CRLF. Parsers that compare values exactly then see a trailing '\r' and reject
+# valid input -- e.g. import_kv_string() in src/io/input.cpp rejecting
+# "forceBackend = cpu" with a message that looks self-contradictory because
+# the stray carriage return is invisible.
+* text=auto eol=lf
+
+# Types that must stay LF even if content detection ever guesses "binary".
+*.cpp    text eol=lf
+*.hpp    text eol=lf
+*.h      text eol=lf
+*.params text eol=lf
+*.csv    text eol=lf

@@ -35,7 +35,10 @@ public:
     bool isInsertionPatch = false;              ///< True if there is an insertion on this face
     std::vector<int> adjacentVertices{0, 0, 0}; ///< The indices of 3 vertices of the triangle
     std::vector<int> oneRingVertices;           ///< AdjacentVertices + the vertices that are 1 edge away from the face
-    std::vector<int> adjacentFaces;             ///< Faces that are adjacent to this face. There should be 12 or 11 faces.
+    /// The faces this one meets along an edge, in the winding order of the
+    /// edges they are met on. Three slots; a face on the mesh boundary fills
+    /// fewer and the rest stay 0. Set by Mesh::set_adjacent_faces_of_faces().
+    std::vector<int> adjacentFaces;
     double spontCurvature = 0.0;                ///< Spontaneous curvature of this face
     double meanCurvature = 0.0;                 ///< Mean curvature of this face
     Matrix normVector;                          ///< Outward pointing normal vector of this face element

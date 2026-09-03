@@ -43,6 +43,15 @@ void Model::determine_trial_step_size()
         // test
         std::cout << "max_force_scale=" << maxForceMag << ", energy=" << mesh.param.energy.energyTotal << std::endl;
         // exit(0);
+        if (!std::isfinite(maxForceMag))
+        {
+            // Without this the run reports max_force_scale = 0, fails the line
+            // search, and halts with "could not find an efficient step size" --
+            // a convergence message for what is actually a broken force field.
+            throw std::runtime_error("[Model::determine_trial_step_size] the force field contains "
+                                     "non-finite values, so no trial step size is meaningful. "
+                                     "The run cannot continue.");
+        }
         if (maxForceMag == 0)
         {
             oa.trialStepSize = -1;

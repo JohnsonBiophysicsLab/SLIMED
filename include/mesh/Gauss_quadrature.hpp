@@ -71,20 +71,4 @@ void get_shapefunction(const Matrix &vwu, Matrix &shapefunction);
  */
 void get_shapefunction_vector(const Matrix &vwuMat, std::vector<Matrix> &sfVec);
 
-/**
- * @brief Calculate the four subdivision matrices for an irregular patch.
- *
- * This function calculates the four subdivision matrices for an irregular patch using the provided matrix `mat`,
- * storing the result in the provided matrices `subMat1`, `subMat2`, `subMat3`, and `subMat4`.
- *
- * @param mat The input matrix from which to compute the subdivision matrices.
- * @param subMat1 A matrix for storing the first subdivision matrix.
- * @param subMat2 A matrix for storing the second subdivision matrix.
- * @param subMat3 A matrix for storing the third subdivision matrix.
- * @param subMat4 A matrix for storing the fourth subdivision matrix.
- */
-void get_subdivision_matrices(Matrix &mat,
-                                     Matrix &subMat1,
-                                     Matrix &subMat2,
-                                     Matrix &subMat3,
-                                     Matrix &subMat4);
+// get_subdivision_matrices() retired by WP5; see tests/subdivision_oracle.hpp.

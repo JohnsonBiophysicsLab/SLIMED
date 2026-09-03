@@ -3,9 +3,16 @@
 using namespace std;
 
 /*
- * pop all spaces & tabs from the given string (\s and \t)
+ * pop all spaces, tabs & carriage returns from the given string
+ * (\s, \t and \r)
  * return popped string
  * the input string is unchanged
+ *
+ * getline() splits on '\n', so a CRLF-terminated line keeps a trailing
+ * '\r'. Treating it as whitespace means no exact comparison downstream can be
+ * defeated by an invisible character -- notably boundaryType, where 'Periodic\r'
+ * matched neither "Periodic" nor "periodic" and fell through to
+ * BoundaryType::Fixed: wrong physics, and no error to show for it.
  */
 std::string pop_space(std::string rawString)
 {
@@ -18,12 +25,36 @@ std::string pop_space(std::string rawString)
 	{
 		poppedString.erase(poppedString.find("\t"), 1);
 	}
+	while (poppedString.find("\r") != std::string::npos)
+	{
+		poppedString.erase(poppedString.find("\r"), 1);
+	}
 	return poppedString;
 }
 
 std::string trim_trailing_semicolon(std::string rawString)
 {
 	if (!rawString.empty() && rawString.back() == ';')
+	{
+		rawString.pop_back();
+	}
+	return rawString;
+}
+
+/*
+ * pop trailing carriage returns from the given string
+ * return popped string
+ * the input string is unchanged
+ *
+ * getline() splits on '\n', so a CRLF-terminated line keeps a trailing
+ * '\r'. Strip it before parsing so an invisible character cannot defeat the
+ * exact value comparisons below (e.g. "cpu", "true", "Periodic").
+ * .gitattributes keeps checkouts LF; this is the backstop for files that were
+ * hand-edited on Windows.
+ */
+std::string trim_trailing_cr(std::string rawString)
+{
+	while (!rawString.empty() && rawString.back() == '\r')
 	{
 		rawString.pop_back();
 	}
@@ -92,6 +123,17 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 	{
 		param.meshpointOutput = (variableValueStr.compare("true") == 0);
 		std::cout << "MESHPOINTOUTPUT set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("meshpointOutputInterval") == 0)
+	{
+		param.meshpointOutputInterval = std::stoi(variableValueStr);
+		if (param.meshpointOutputInterval < 1)
+		{
+			param.meshpointOutputInterval = 1;
+		}
+		std::cout << "meshpointOutputInterval set to: " << param.meshpointOutputInterval
 				  << std::endl;
 		return true;
 	}
@@ -168,6 +210,24 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("forceBackend") == 0)
+	{
+		// Validated here rather than at first use: a typo should stop the run
+		// before it spends an hour on the wrong backend.
+		if (variableValueStr.compare("cpu") == 0 || variableValueStr.compare("gpu") == 0 ||
+			variableValueStr.compare("auto") == 0)
+		{
+			param.forceBackend = variableValueStr;
+		}
+		else
+		{
+			throw std::runtime_error("[read_param_file] forceBackend must be cpu, gpu or auto; got '" +
+									 variableValueStr + "'");
+		}
+		std::cout << "FORCE_BACKEND set to : " << variableValueStr
+				  << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("isGlobalConstraint") == 0)
 	{
 		if (variableValueStr.compare("true") == 0)
@@ -200,6 +260,20 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 	{
 		param.KBT = std::stod(variableValueStr);
 		std::cout << "KBT set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("integratePeriodicDuplicates") == 0)
+	{
+		param.integratePeriodicDuplicates = (variableValueStr.compare("true") == 0);
+		std::cout << "integratePeriodicDuplicates set to: " << variableValueStr
+				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("fdtConsistentSurfaceUpdate") == 0)
+	{
+		param.fdtConsistentSurfaceUpdate = (variableValueStr.compare("true") == 0);
+		std::cout << "fdtConsistentSurfaceUpdate set to: " << variableValueStr
 				  << std::endl;
 		return true;
 	}
@@ -406,6 +480,12 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("preRefineMesh") == 0)
+	{
+		param.isPreRefinementEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "preRefineMesh set to : " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("VERBOSE_MODE") == 0)
 	{
 		if (variableValueStr.compare("true") == 0)
@@ -447,6 +527,7 @@ bool import_param_file(Param &param, std::string filepath)
 	//(delete rows starting with # )
 	while (getline(ifile, str))
 	{
+		str = trim_trailing_cr(str);
 		if (str[0] != '#')
 		{
 			parameters.push_back(str);
@@ -545,6 +626,7 @@ vector<Matrix> import_scaffolding_mesh(std::string filepath)
 	//(delete rows starting with # )
 	while (getline(ifile, str))
 	{
+		str = trim_trailing_cr(str);
 		if (str[0] != '#' && str[0] != 'x')
 		{
 			str = pop_space(str);

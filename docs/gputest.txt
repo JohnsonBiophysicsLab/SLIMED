@@ -1,0 +1,53 @@
+You are working in the SLIMED repository on branch `feat/cuda-gpu-acceleration`
+(remote: JohnsonBiophysicsLab/SLIMED). This machine has an NVIDIA GPU and a CUDA
+toolkit; the machine the branch was written on had neither.
+
+That is the whole point of your task. `src/cuda/Cuda_force_backend.cu` has never
+been seen by nvcc. Everything else on the branch is tested and passing.
+
+Read `docs/gpu_acceleration.md` first — it has the profiling that motivated the
+work, the design, and an explicit list of what was and was not verified.
+
+Your job, in order:
+
+1. Build:
+       module load cuda            # or however CUDA is provided here
+       cmake -B build -DSLIMED_ENABLE_CUDA=ON -DSLIMED_CUDA_ARCHITECTURES=<XX>
+       cmake --build build -j
+   Set <XX> from the actual device (`nvidia-smi`): 70 V100, 80 A100, 90 H100.
+
+2. Fix whatever nvcc rejects. Compile errors in the .cu are the expected first
+   failure.
+
+3. Verify:
+       ctest --test-dir build -R CudaForceBackend --output-on-failure
+   This compares the GPU against the CPU force evaluation on a grid and on every
+   valence 4-8. It SKIPS rather than passes when no device is usable, so read the
+   output; a green SKIPPED means nothing was checked.
+
+4. Then run the whole suite: `ctest --test-dir build`.
+   `ThermalFluctuationTest.EnabledSwitchAttemptsMetropolisTrial` fails at the
+   branch point too — pre-existing, not yours.
+
+5. Only once step 3 passes, benchmark `forceBackend = gpu` against `cpu` in
+   input.params, on a LARGE mesh (~10^5 faces, i.e. small `lFace` or large
+   `sideX`/`sideY`). The default 8400-face input is expected to lose to the
+   multi-threaded CPU; docs/gpu_acceleration.md explains why and what would fix
+   it. Report both timings.
+
+Constraints — these are deliberate design decisions, not oversights:
+
+- Do NOT rewrite the physics. The kernel bodies in
+  `include/energy_force/Patch_kernel.inl` and `include/cuda/Force_kernels.inl`
+  are shared verbatim by the CPU and GPU and are pinned against the original
+  GSL implementation by `tests/test_patch_kernel.cpp`. If a result disagrees,
+  the bug is in the plumbing, not the maths.
+- Do NOT replace the scatter/gather force accumulation with atomicAdd. It exists
+  so results are deterministic run to run.
+- Do NOT make `forceBackend = gpu` fall back to the CPU on error. It must fail
+  loudly, so a GPU job cannot report CPU timings.
+- Do NOT add a device-side reduction for the area/volume totals yet; the
+  host-side sum is what makes CPU and GPU agree bit for bit.
+
+Report back: the nvcc version and GPU model, any changes you had to make, the
+test results, and the two timings.
