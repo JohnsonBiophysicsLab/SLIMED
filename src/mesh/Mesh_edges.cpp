@@ -521,6 +521,8 @@ void Mesh::flip_edge(int iEdge)
     {
         build_one_ring_for_face(iFace, nullptr);
     }
+    // Only the faces just rebuilt can have acquired a new valence triple.
+    ensure_multi_patch_entries(&patch);
 
     std::vector<int> touchedEdges;
     touchedEdges.reserve(patch.size() * 3);

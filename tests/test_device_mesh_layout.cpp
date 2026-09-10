@@ -313,7 +313,7 @@ TEST(DeviceMeshLayoutTest, GatherMapIsTheTransposeOfTheOneRings)
     {
         const slimed::FacePatchDescriptor &descriptor = layout.descriptors()[face];
         const int width = static_cast<int>(mesh.faces[face].oneRingVertices.size());
-        if (descriptor.kind == slimed::PatchKind::None)
+        if (descriptor.kind == slimed::DevicePatchKind::None)
         {
             EXPECT_EQ(descriptor.nChildren, 0) << "face " << face;
             continue;

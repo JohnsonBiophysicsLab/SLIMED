@@ -35,6 +35,8 @@
 // model setup
 #include "mesh/Edge.hpp"
 #include "mesh/Face.hpp"
+#include "mesh/Multi_extraordinary_patch.hpp"
+#include "mesh/Patch_kind.hpp"
 #include "cuda/Cuda_force_backend.hpp"
 #include "cuda/Device_mesh_layout.hpp"
 #include "energy_force/Patch_rows_flat.hpp"
@@ -50,71 +52,6 @@
 
 
 using namespace std;
-
-/**
- * @brief Which subdivision patch, if any, a face carries.
- *
- * The classification used to be inlined in set_one_ring_vertices_sorted() and
- * its only outputs were "build a one-ring" or "throw". A Monte Carlo flip has
- * to ask the same question speculatively -- would the mesh still be evaluable
- * if this edge were flipped? -- so the question and the answer are named here
- * and the throw is left to the caller that wants one.
- *
- * @see docs/edge_flip_plan.md section 3.3
- */
-enum class PatchKind
-{
-    /// Ghost face outside the boundary; takes no part in any calculation.
-    Ghost,
-    /// A corner is not interior, so there is no complete one-ring and no limit
-    /// surface. A property of the mesh, not an error: oneRingVertices stays
-    /// empty on purpose.
-    Boundary,
-    /// All three corners at valence 6; the closed-form quartic box spline.
-    Regular,
-    /// Exactly one corner in [kMinIrregularValence, kMaxIrregularValence]
-    /// other than 6, with the other two at exactly 6. Stam's reduction, which
-    /// is what IrregularPatchRowTable tabulates.
-    SingleExtraordinary,
-    /// More than one extraordinary corner, every valence still in range. Not
-    /// evaluable by the row tables as they stand, and unavoidable the moment
-    /// edges flip: flipping an edge of a hexagonal lattice turns four
-    /// valence-6 corners into 5, 5, 7, 7. WP1 of docs/edge_flip_plan.md.
-    MultiExtraordinary,
-    /// A valence outside the supported range, or a fan that does not close.
-    Inadmissible,
-};
-
-/**
- * @brief The classification of one face, and the rotation that anchors it.
- */
-struct PatchClass
-{
-    PatchKind kind = PatchKind::Inadmissible;
-
-    /**
-     * @brief Which corner (0, 1 or 2 of Face::adjacentVertices) anchors the
-     * patch: the extraordinary one when there is exactly one, corner 0 when
-     * the face is regular, and -1 when the face carries no patch.
-     *
-     * Reading the corners as a rotation starting here preserves the face
-     * winding, which sort_vertices_on_faces() has already made consistent, so
-     * no per-face winding decision is ever taken.
-     */
-    int anchor = -1;
-
-    /// Valences of the three corners, in the face's own order (not rotated).
-    int valence[3] = {0, 0, 0};
-
-    /// Why the face was rejected; empty unless kind is Inadmissible.
-    std::string why;
-
-    /// Whether this face carries a patch the energy kernel can evaluate today.
-    bool has_evaluable_patch() const
-    {
-        return kind == PatchKind::Regular || kind == PatchKind::SingleExtraordinary;
-    }
-};
 
 /**
  * @brief A class representing a triangular mesh that defines a
@@ -196,6 +133,31 @@ public:
      * so it is immutable after construction and shared across threads.
      */
     IrregularPatchRowTable irregularRows;
+
+    /**
+     * @brief Prolongation matrices for faces with several extraordinary corners.
+     *
+     * Keyed on the valence triple alone, so a fluid membrane with thousands of
+     * such faces holds a few dozen entries. Built lazily -- a mesh whose
+     * extraordinary vertices are isolated never touches it -- and, like
+     * irregularRows, depends only on topology, never on coordinates.
+     *
+     * @see include/mesh/Multi_extraordinary_patch.hpp
+     */
+    MultiPatchTable multiPatchTable;
+
+    /**
+     * @brief Resolve Face::patchEntry for every multi-extraordinary face.
+     *
+     * Separate from build_one_ring_for_face() because that one runs inside an
+     * OpenMP loop and this one mutates a shared table. Cheap and idempotent:
+     * it only looks at faces whose entry is still unresolved.
+     *
+     * @param onlyFaces When given, restrict the pass to these faces -- what a
+     *                  flip needs, since it disturbs about eighteen of them
+     *                  rather than all of them.
+     */
+    void ensure_multi_patch_entries(const std::vector<int> *onlyFaces = nullptr);
 
     /**
      * @brief The same rows as irregularRows and param.shapeFunctions, repacked
@@ -433,6 +395,20 @@ public:
      * @return Whether the face now carries an evaluable patch.
      */
     bool build_one_ring_for_face(int iFace, std::string *why = nullptr);
+
+    /**
+     * @brief Build the control net of a face with several extraordinary corners.
+     *
+     * Lists the face's one-ring in the internal numbering
+     * GenericFacePatch documents -- three corners, three edge-opposite
+     * vertices, then each corner's private fan -- which is the column order
+     * the prolongation matrices are written in.
+     *
+     * Rejects rather than throws when the real mesh identifies two control
+     * points the generic patch keeps apart, which happens on a closed surface
+     * too small for the face's own one-ring to be embedded.
+     */
+    bool build_multi_extraordinary_one_ring(int iFace, std::string *why = nullptr);
 
     // New members... for halfedge mesh
     //std::vector<Halfedge> halfedges; ///< Vector to store all halfedges in the mesh

@@ -35,7 +35,7 @@ namespace slimed
 {
 
 /// What kind of patch a face carries, and so which rows evaluate it.
-enum class PatchKind : int
+enum class DevicePatchKind : int
 {
     /// No complete one-ring: the width matches no patch table, so there is no
     /// limit surface to integrate. Says nothing about whether the face is a
@@ -57,7 +57,7 @@ enum class PatchKind : int
  */
 struct FacePatchDescriptor
 {
-    PatchKind kind = PatchKind::None;
+    DevicePatchKind kind = DevicePatchKind::None;
     /// Control points in this face's one-ring: 12, or valence + 6.
     int nControlPoints = 0;
     /// Where this face's one-ring indices start in oneRingIndices(), and
@@ -120,7 +120,7 @@ public:
      * skips ghost faces; Compute_Energy_And_Force() skips boundary faces. They
      * are not the same set, and a boundary face with a complete one-ring does
      * contribute area while contributing no energy -- so folding both into
-     * PatchKind would silently drop that area.
+     * DevicePatchKind would silently drop that area.
      */
     const unsigned char *faceIsGhost() const { return faceIsGhost_.data(); }
 

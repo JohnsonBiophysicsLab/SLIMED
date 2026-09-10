@@ -36,11 +36,13 @@
 namespace slimed
 {
 
-/// Widest control-point net one patch can carry. A regular patch has 12; an
-/// irregular one has valence + 6, and valence is capped at
-/// kMaxIrregularValence = 8. Sizing the stack buffers by the maximum keeps the
-/// kernel allocation-free for both patch kinds.
-constexpr int kMaxControlPoints = 14;
+/// Widest control-point net one patch can carry. A regular patch has 12; a
+/// single-extraordinary one has valence + 6, and valence is capped at
+/// kMaxIrregularValence = 8, giving 14. A face with several extraordinary
+/// corners is wider still: its control net is N0 + N1 + N2 - 6, which reaches
+/// 18 at (8, 8, 8). Sizing the stack buffers by the maximum keeps the kernel
+/// allocation-free for every patch kind.
+constexpr int kMaxControlPoints = 18;
 
 /// Rows in a shape-function block: the value and its six derivatives
 /// (du, dv, duu, dvv, duv, dvu), in that order.

@@ -45,9 +45,31 @@ void DeviceMeshLayout::build(const Mesh &mesh)
         // contributes area but no energy, so folding the flags in here would
         // quietly drop that area from the constraint the energy is measured
         // against.
-        const bool hasRegularRing = (width == 12);
-        const bool hasIrregularRing = (width >= kMinIrregularValence + 6 &&
-                                       width <= kMaxIrregularValence + 6);
+        //
+        // A face with several extraordinary corners is evaluated by
+        // subdividing its own control net once, which the device path does not
+        // implement yet. Its width cannot be told apart from a
+        // single-extraordinary face's either -- a 6/5/7 face and a regular one
+        // are both 12 wide -- so inferring the kind from the width would give
+        // a confidently wrong answer rather than a missing one. Refuse.
+        //
+        // Reachable only through an edge flip or a mesh whose extraordinary
+        // vertices are not isolated, and only with forceBackend = gpu or auto.
+        // WP5 of docs/edge_flip_plan.md is where the device side gets it.
+        if (face.patchKind == ::PatchKind::MultiExtraordinary)
+        {
+            throw std::invalid_argument(
+                "[DeviceMeshLayout] face " + std::to_string(f) +
+                " has more than one extraordinary corner (valences " +
+                std::to_string(face.patchValence[0]) + ", " +
+                std::to_string(face.patchValence[1]) + ", " +
+                std::to_string(face.patchValence[2]) +
+                "). The device backend cannot evaluate it yet; run this mesh with "
+                "forceBackend = cpu. See docs/edge_flip_plan.md.");
+        }
+
+        const bool hasRegularRing = (face.patchKind == ::PatchKind::Regular);
+        const bool hasIrregularRing = (face.patchKind == ::PatchKind::SingleExtraordinary);
         if (width > slimed::kMaxControlPoints)
         {
             throw std::invalid_argument(
@@ -57,7 +79,7 @@ void DeviceMeshLayout::build(const Mesh &mesh)
         }
         if (!(hasRegularRing || hasIrregularRing))
         {
-            descriptor.kind = PatchKind::None;
+            descriptor.kind = DevicePatchKind::None;
             descriptor.nControlPoints = 0;
             descriptor.nChildren = 0;
             continue;
@@ -66,13 +88,13 @@ void DeviceMeshLayout::build(const Mesh &mesh)
         descriptor.nControlPoints = width;
         if (hasRegularRing)
         {
-            descriptor.kind = PatchKind::Regular;
+            descriptor.kind = DevicePatchKind::Regular;
             descriptor.nChildren = 1;
         }
         else
         {
             const int valence = width - 6;
-            descriptor.kind = PatchKind::Irregular;
+            descriptor.kind = DevicePatchKind::Irregular;
             faceValence_[f] = valence;
             descriptor.nChildren = mesh.irregularRows.depth_for(valence) * kRegularChildrenPerStep;
         }

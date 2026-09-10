@@ -65,10 +65,9 @@ MeshFixture build_grid(int nx, int ny)
 /**
  * @brief Build a mesh without going through set_one_ring_vertices_sorted().
  *
- * setup_from_vertices_faces() throws on any face with more than one
- * extraordinary corner, and a flipped grid is full of them -- that is exactly
- * what WP1 exists to fix. These tests are about topology, so they assemble the
- * adjacency directly and stop short of the patch classification.
+ * These tests are about topology alone -- no coordinates, no energy -- so they
+ * assemble the adjacency directly and stop short of the patch classification
+ * and the prolongation tables that a full setup would also build.
  */
 void setup_topology_only(Mesh &mesh, const MeshFixture &fixture)
 {
@@ -828,9 +827,10 @@ TEST(PatchClassificationTest, AFlipProducesFacesWithSeveralExtraordinaryCorners)
         {
             EXPECT_NE(patch.valence[k], 6);
         }
-        EXPECT_FALSE(patch.has_evaluable_patch());
-        // And the one-ring was cleared rather than left describing the old face.
-        EXPECT_TRUE(mesh.faces[iFace].oneRingVertices.empty());
+        // Evaluable, through the local-subdivision path. Note that this
+        // fixture does not go through set_one_ring_vertices_sorted(), so the
+        // one-ring is only built for the faces the flip itself rebuilt.
+        EXPECT_TRUE(patch.has_evaluable_patch());
     }
 }
 
@@ -842,7 +842,7 @@ TEST(PatchClassificationTest, AFlipProducesFacesWithSeveralExtraordinaryCorners)
  * without the throw, or the flip sweep would admit moves the evaluator cannot
  * describe.
  */
-TEST(PatchClassificationTest, MatchesTheThrowOnAnAllValence4Solid)
+TEST(PatchClassificationTest, AgreesWithTheSetupPathOnSolidsItAcceptsAndRejects)
 {
     Param param;
     param.VERBOSE_MODE = false;
@@ -858,14 +858,30 @@ TEST(PatchClassificationTest, MatchesTheThrowOnAnAllValence4Solid)
     {
         const PatchClass patch = mesh.classify_face(iFace);
         EXPECT_EQ(patch.kind, PatchKind::MultiExtraordinary);
-        EXPECT_FALSE(patch.has_evaluable_patch());
-        EXPECT_NE(patch.why.find("(4, 4, 4)"), std::string::npos) << patch.why;
+        EXPECT_TRUE(patch.has_evaluable_patch());
+        EXPECT_TRUE(patch.why.empty()) << patch.why;
     }
 
-    // And the whole-mesh path still throws, exactly as it did before the split.
+    // A valence outside the supported range is a different matter: there is no
+    // patch of any kind, and the classifier says so rather than guessing. A
+    // tetrahedron is all valence 3.
+    MeshFixture tetrahedron = build_tetrahedron();
+    Param tetraParam;
+    tetraParam.VERBOSE_MODE = false;
+    Mesh tetraMesh(tetraParam);
+    setup_topology_only(tetraMesh, tetrahedron);
+    for (int iFace = 0; iFace < static_cast<int>(tetraMesh.faces.size()); iFace++)
+    {
+        const PatchClass patch = tetraMesh.classify_face(iFace);
+        EXPECT_EQ(patch.kind, PatchKind::Inadmissible);
+        EXPECT_FALSE(patch.has_evaluable_patch());
+        EXPECT_NE(patch.why.find("(3, 3, 3)"), std::string::npos) << patch.why;
+    }
+
+    // And the whole-mesh path throws on it, exactly as it did before the split.
     Param throwParam;
     throwParam.VERBOSE_MODE = false;
     Mesh throwMesh(throwParam);
-    EXPECT_THROW(throwMesh.setup_from_vertices_faces(octahedron.vertices, octahedron.faces),
+    EXPECT_THROW(throwMesh.setup_from_vertices_faces(tetrahedron.vertices, tetrahedron.faces),
                  std::runtime_error);
 }

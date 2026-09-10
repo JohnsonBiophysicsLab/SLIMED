@@ -17,11 +17,11 @@ namespace slimed
 SLIMED_HD inline const double *rows_for_face(const ForceKernelArgs &args, int face, int child)
 {
     const FacePatchDescriptor &descriptor = args.descriptors[face];
-    if (descriptor.kind == PatchKind::Regular)
+    if (descriptor.kind == DevicePatchKind::Regular)
     {
         return args.regularRows;
     }
-    if (descriptor.kind != PatchKind::Irregular || args.irregularOffsets == nullptr)
+    if (descriptor.kind != DevicePatchKind::Irregular || args.irregularOffsets == nullptr)
     {
         return nullptr;
     }
@@ -59,7 +59,7 @@ SLIMED_HD inline void area_volume_for_face(const ForceKernelArgs &args, int face
     // face with no complete one-ring has no limit surface to integrate. The
     // energy pass below skips a different set -- boundary rather than ghost --
     // which is why the two flags are carried separately.
-    if (!args.faceIsGhost[face] && descriptor.kind != PatchKind::None)
+    if (!args.faceIsGhost[face] && descriptor.kind != DevicePatchKind::None)
     {
         double ctrlPts[kMaxControlPoints * 3];
         load_control_points(args, face, descriptor.nControlPoints, ctrlPts);
@@ -85,7 +85,7 @@ SLIMED_HD inline void patch_force_for_face(const ForceKernelArgs &args, int face
     double meanCurv = 0.0;
     double normVector[3] = {0.0, 0.0, 0.0};
 
-    if (descriptor.kind != PatchKind::None && !args.faceIsBoundary[face])
+    if (descriptor.kind != DevicePatchKind::None && !args.faceIsBoundary[face])
     {
         double ctrlPts[kMaxControlPoints * 3];
         double fBend[kMaxControlPoints * 3] = {0.0};
@@ -111,7 +111,7 @@ SLIMED_HD inline void patch_force_for_face(const ForceKernelArgs &args, int face
             // depth 0, the middle child -- rather than summing a curvature and
             // a normal, which do not add.
             const bool isReportingChild =
-                (descriptor.kind == PatchKind::Regular) || (child == 1);
+                (descriptor.kind == DevicePatchKind::Regular) || (child == 1);
             if (isReportingChild)
             {
                 meanCurv = childMeanCurv;

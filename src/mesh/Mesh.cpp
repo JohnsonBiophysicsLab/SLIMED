@@ -298,10 +298,16 @@ void Mesh::calculate_element_area_volume()
         // Any other width means no complete one-ring -- a boundary face, with
         // no limit surface and so no area or volume of its own. Bailing before
         // the copy also keeps it inside the stack buffer.
-        const bool isRegular = (nOneRingVertices == 12);
-        const bool isIrregular = (nOneRingVertices >= kMinIrregularValence + 6 &&
-                                  nOneRingVertices <= kMaxIrregularValence + 6);
-        if (isRegular || isIrregular)
+        // Which patch a face carries is read off the face, for the same reason
+        // the force loop reads it there: the width of the one-ring stopped
+        // being enough to tell once a face could have several extraordinary
+        // corners.
+        const bool isRegular = (face.patchKind == PatchKind::Regular);
+        const bool isIrregular = (face.patchKind == PatchKind::SingleExtraordinary);
+        const bool isMulti =
+            (face.patchKind == PatchKind::MultiExtraordinary && face.patchEntry >= 0);
+        if ((isRegular || isIrregular || isMulti) && nOneRingVertices > 0 &&
+            nOneRingVertices <= slimed::kMaxControlPoints)
         {
             double coordOneRingVertices[slimed::kMaxControlPoints * 3];
             for (int j = 0; j < nOneRingVertices; j++)
@@ -312,24 +318,43 @@ void Mesh::calculate_element_area_volume()
                 coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
             }
 
-            if (isRegular)
-            {
-                slimed::element_area_volume_pod(regularRows, gaussCoeff, nSamples,
-                                                coordOneRingVertices, nOneRingVertices, area,
-                                                volume);
-            }
-            else
-            {
-                const int valence = nOneRingVertices - 6;
+            auto integrateOnePatch = [&](int valence, const double *coords, int nCtrl) {
+                if (valence == 6)
+                {
+                    slimed::element_area_volume_pod(regularRows, gaussCoeff, nSamples, coords,
+                                                    nCtrl, area, volume);
+                    return;
+                }
                 for (int d = 0; d < irregularRows.depth_for(valence); d++)
                 {
                     for (int c = 0; c < kRegularChildrenPerStep; c++)
                     {
                         slimed::element_area_volume_pod(patchRowsFlat.child(valence, d, c),
-                                                        gaussCoeff, nSamples,
-                                                        coordOneRingVertices, nOneRingVertices,
-                                                        area, volume);
+                                                        gaussCoeff, nSamples, coords, nCtrl, area,
+                                                        volume);
                     }
+                }
+            };
+
+            if (isRegular || isIrregular)
+            {
+                integrateOnePatch(isRegular ? 6 : nOneRingVertices - 6, coordOneRingVertices,
+                                  nOneRingVertices);
+            }
+            else
+            {
+                // The same four children the energy uses, over the same
+                // prolongations, so geometry and energy still read the same
+                // rows for the same face.
+                const MultiPatchTable::Entry &entry = multiPatchTable.entry(face.patchEntry);
+                const double *const prolongations = multiPatchTable.data();
+                for (int c = 0; c < 4; c++)
+                {
+                    const MultiPatchTable::Child &child = entry.children[c];
+                    double childCoords[slimed::kMaxControlPoints * 3];
+                    multi_patch_prolong(prolongations + child.offset, coordOneRingVertices,
+                                        entry.nControl, child.nControl, childCoords);
+                    integrateOnePatch(child.valence, childCoords, child.nControl);
                 }
             }
         }

@@ -466,29 +466,64 @@ Mesh setup_solid(Param &param, const ClosedSolid &solid)
 } // namespace
 
 /**
- * @brief Adjacent extraordinary corners are rejected loudly, not zeroed.
+ * @brief A mesh whose every face has three extraordinary corners is evaluated.
  *
- * Every octahedron vertex is at valence 4, so every face carries three
- * extraordinary corners. Valence 4 itself is supported now, but the uniform
- * patch reduction assumes exactly one extraordinary corner per face -- with
- * more, the three "regular" children stop being regular and there is no such
- * decomposition. The old code matched neither the 6/6/6 nor the all-5
- * predicate, so oneRingVertices stayed empty and the face was recorded with
- * zero bending energy and zero force.
+ * Every octahedron vertex is at valence 4, so every face is 4/4/4. This used
+ * to be rejected, and the rejection was right at the time: the uniform patch
+ * reduction assumes exactly one extraordinary corner per face, and with more
+ * the three "regular" children stop being regular.
+ *
+ * Such faces are evaluated now, by subdividing each one's own control net once
+ * so that it splits into four children that each do have a reduction. The
+ * change is not a relaxation of the admission test -- it is a new evaluation
+ * path, gated by MultiExtraordinaryPatchTest. It had to be built, because
+ * every edge flip produces two such faces.
+ *
+ * What this test still protects is the part that has not changed: a face is
+ * either evaluated or rejected loudly, never left with an empty one-ring to be
+ * silently recorded with zero energy and zero force.
  */
-TEST(OneRingPatchTest, Valence4MeshIsRejectedRatherThanSilentlyZeroed)
+TEST(OneRingPatchTest, Valence4MeshIsEvaluatedThroughTheMultiExtraordinaryPath)
 {
+    Param param;
+    Mesh mesh = setup_solid(param, make_octahedron());
+
+    for (const Face &face : mesh.faces)
+    {
+        EXPECT_EQ(face.patchKind, PatchKind::MultiExtraordinary) << "face " << face.index;
+        EXPECT_GE(face.patchEntry, 0) << "face " << face.index;
+        // 4 + 4 + 4 - 6 control points.
+        EXPECT_EQ(face.oneRingVertices.size(), 6u) << "face " << face.index;
+        EXPECT_FALSE(face.oneRingVertices.empty()) << "face " << face.index;
+    }
+}
+
+/**
+ * @brief A valence outside the supported range is still rejected loudly.
+ *
+ * The failure mode the admission test exists to prevent -- a face with no
+ * usable patch quietly carrying zero energy and zero force -- is unchanged.
+ * A tetrahedron puts every vertex at valence 3, below the range the
+ * subdivision generator supports, and Loop's vertex rule is a different
+ * special case there.
+ */
+TEST(OneRingPatchTest, AValenceBelowTheSupportedRangeIsRejectedRatherThanSilentlyZeroed)
+{
+    ClosedSolid tetrahedron;
+    tetrahedron.vertices = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    tetrahedron.faces = {{0, 2, 1}, {0, 3, 2}, {0, 1, 3}, {1, 2, 3}};
+
     Param param;
     try
     {
-        Mesh mesh = setup_solid(param, make_octahedron());
-        FAIL() << "expected an octahedron (all valence 4) to be rejected";
+        Mesh mesh = setup_solid(param, tetrahedron);
+        FAIL() << "expected a tetrahedron (all valence 3) to be rejected";
     }
     catch (const std::runtime_error &error)
     {
         const std::string message = error.what();
         EXPECT_NE(message.find("no supported subdivision patch"), std::string::npos);
-        EXPECT_NE(message.find("(4, 4, 4)"), std::string::npos) << message;
+        EXPECT_NE(message.find("(3, 3, 3)"), std::string::npos) << message;
     }
 }
 
@@ -504,20 +539,28 @@ TEST(OneRingPatchTest, Valence4MeshIsRejectedRatherThanSilentlyZeroed)
  * exactly the mesh the construction cannot handle: the old code would have
  * accepted it and built a one-ring that does not match its topology.
  */
-TEST(OneRingPatchTest, AllValence5MeshIsRejectedBecauseThePatchBuiltIs5And6And6)
+TEST(OneRingPatchTest, AllValence5MeshIsEvaluatedThroughTheMultiExtraordinaryPath)
 {
     Param param;
-    try
+    Mesh mesh = setup_solid(param, make_icosahedron());
+
+    for (const Face &face : mesh.faces)
     {
-        Mesh mesh = setup_solid(param, make_icosahedron());
-        FAIL() << "expected an icosahedron (all valence 5) to be rejected";
+        EXPECT_EQ(face.patchKind, PatchKind::MultiExtraordinary) << "face " << face.index;
+        EXPECT_GE(face.patchEntry, 0) << "face " << face.index;
+        // 5 + 5 + 5 - 6 control points.
+        EXPECT_EQ(face.oneRingVertices.size(), 9u) << "face " << face.index;
     }
-    catch (const std::runtime_error &error)
-    {
-        const std::string message = error.what();
-        EXPECT_NE(message.find("(5, 5, 5)"), std::string::npos) << message;
-        EXPECT_NE(message.find("exactly one corner in"), std::string::npos);
-    }
+
+    // The closed vesicle fixture docs/irregular_patch_results.md section 8
+    // asked for and could not run. Every face carries a patch now, so the mesh
+    // has a limit surface with a positive area and an enclosed volume.
+    mesh.calculate_element_area_volume();
+    double area = 0.0;
+    double volume = 0.0;
+    mesh.sum_membrane_area_and_volume(area, volume);
+    EXPECT_GT(area, 0.0);
+    EXPECT_GT(std::abs(volume), 0.0);
 }
 
 /**
@@ -609,22 +652,28 @@ TEST(OneRingPatchTest, GeneratedFlatSheetIsEntirelyInteriorOrGhost)
  * old corner and the middle one carries none. So the same mesh is admitted,
  * and the guarantee is structural rather than a property of this fixture.
  */
-TEST(PreRefinementTest, RefinementAdmitsAMeshThatWasRejected)
+TEST(PreRefinementTest, RefinementIsolatesEveryExtraordinaryCorner)
 {
     const ClosedSolid solid = make_octahedron();
 
-    // Without refinement: rejected, every face 4/4/4.
+    // Without refinement the mesh is admitted too now -- every 4/4/4 face goes
+    // through the multi-extraordinary path. What refinement still buys is
+    // cost, not admissibility: a face with one extraordinary corner is a
+    // single Stam reduction, where one with three is four of them.
     {
         Param param;
         param.VERBOSE_MODE = false;
         param.boundaryCondition = BoundaryType::Fixed;
         param.isPreRefinementEnabled = false;
         Mesh mesh(param);
-        EXPECT_THROW(mesh.setup_from_vertices_faces(solid.vertices, solid.faces),
-                     std::runtime_error);
+        ASSERT_NO_THROW(mesh.setup_from_vertices_faces(solid.vertices, solid.faces));
+        for (const Face &face : mesh.faces)
+        {
+            EXPECT_EQ(face.patchKind, PatchKind::MultiExtraordinary);
+        }
     }
 
-    // With refinement: admitted.
+    // With refinement: every face carries at most one extraordinary corner.
     Param param;
     param.VERBOSE_MODE = false;
     param.boundaryCondition = BoundaryType::Fixed;
@@ -704,4 +753,32 @@ TEST(PreRefinementTest, RefinementApproachesTheSameLimitSurface)
     // Closed and consistently oriented, so the constraint is well defined.
     mesh.param.uVol = 1.0;
     EXPECT_NO_THROW(mesh.validate_volume_constraint_topology());
+
+    // The claim in this test's name, actually measured. Refinement changes the
+    // control mesh but must not move the limit surface, so the same integral
+    // taken on the unrefined mesh has to agree -- to quadrature error, since
+    // the two tile the surface differently, not to round-off.
+    //
+    // Nothing checked this before, and it was false: refine_loop_once()
+    // computed its interior test from a face count it had already halved, so
+    // is_interior() was false for every interior vertex, every old vertex fell
+    // through to the "pin it" branch, and Loop's even-point rule never ran.
+    // A refinement that moves the new edge points but leaves the old vertices
+    // alone describes a different surface. The positivity checks above all
+    // passed throughout.
+    Param coarseParam;
+    coarseParam.VERBOSE_MODE = false;
+    coarseParam.boundaryCondition = BoundaryType::Fixed;
+    coarseParam.isPreRefinementEnabled = false;
+    Mesh coarse(coarseParam);
+    ASSERT_NO_THROW(coarse.setup_from_vertices_faces(solid.vertices, solid.faces));
+    coarse.calculate_element_area_volume();
+    double coarseArea = 0.0;
+    double coarseVolume = 0.0;
+    coarse.sum_membrane_area_and_volume(coarseArea, coarseVolume);
+
+    EXPECT_NEAR(area, coarseArea, 5e-3 * coarseArea)
+        << "refined " << area << " vs unrefined " << coarseArea;
+    EXPECT_NEAR(volume, coarseVolume, 5e-3 * std::abs(coarseVolume))
+        << "refined " << volume << " vs unrefined " << coarseVolume;
 }

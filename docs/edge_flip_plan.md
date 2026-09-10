@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work package 0 landed; 1-6 planned
+**Status:** work packages 0 and 1 landed; 2-6 planned
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -724,20 +724,99 @@ Four things the plan did not anticipate, all now pinned by tests:
   `topologyVersion` and a new `CudaForceBackend::invalidate_topology()` close
   it.
 
-### WP1 — Multi-extraordinary patches by one local subdivision
+### WP1 — Multi-extraordinary patches by one local subdivision — **landed**
 
-`A_loc` generator, child selections, per-face composed rows with signature
-cache, `PatchKind::MultiExtraordinary` in the CPU kernel loop and in
-`DeviceMeshLayout::FacePatchDescriptor` (kind + width + row offset replace the
-"valence from width" inference); `kMaxControlPoints` raised to 18 with the
-regular path's buffers untouched.
+> Gate: the refinement identity of §3.3 on faces with two and three
+> extraordinary corners; a 6/6/6 face pushed through the local-subdivision path
+> agrees with the direct kernel to quadrature accuracy; force–energy
+> conjugacy; rigid-motion invariance; regular workload bit-identical.
 
-> Gate: the refinement identity of §3.3 to `1e-12` relative on faces with two
-> and three extraordinary corners at every valence combination in `[4, 8]`; a
-> 6/6/6 face pushed through the local-subdivision path agrees with the direct
-> kernel to quadrature accuracy; force–energy conjugacy (the existing test
-> pattern) on a 5/5/7 and a 4/8/8 face; rigid-motion invariance; regular
-> workload bit-identical.
+**Result: met.** 10 tests in `tests/test_multi_extraordinary.cpp`; the suite is
+118 passing with the same one pre-existing failure. The shipped periodic
+workload is byte-identical against the `1fdffbd` baseline across all eight
+output files and stdout.
+
+**The design changed, and for the better.** The plan proposed *composing the
+rows*: `R[Na,d,c,q] · P_c · A_loc`, cached per valence triple. That works but
+stores thousands of `7 × K` blocks per triple. The equivalent formulation is to
+stop one step earlier and keep only the **prolongation matrix** of each child,
+`M` of shape (child width) × K, then
+
+```text
+Xc = M · X                      the child's control net
+Ec, fc = existing_kernel(Xc)    regular, or Stam at the child's own valence
+E = Σ Ec,   f = Σ Mᵀ fc         the chain rule, nothing more
+```
+
+Nothing about the kernels changes — a corner child is exactly the kind of patch
+the tree already evaluates, just handed a linear image of the parent's control
+net. The table holds four matrices of at most 14 × 18 per triple: all 125
+triples in `[4,8]³` together are well under 100 kB, against tens of megabytes
+for composed rows. It is also easier to check, because `M` is a Loop mask and
+can be compared against one written out by hand.
+
+**What the identity test found.** `refine_loop_once()` — WP7 of the previous
+work package, the optional `isPreRefinementEnabled` pass — never moved a single
+old vertex. It counted incident faces correctly and then halved the count, so
+`is_interior()` read `nFaces / 2 == valence`, false for every interior vertex.
+Every vertex took the boundary branch, found no boundary neighbours, fell
+through to "pin it", and kept its original position. Loop's even-point rule
+never ran.
+
+That is not cosmetic. A refinement that moves the new edge points but leaves
+the old vertices alone **describes a different limit surface** — it changes the
+geometry rather than only the discretization, which is the one thing
+refinement must not do. Every existing pre-refinement test passed throughout,
+because they checked face and vertex counts, extraordinary-vertex isolation and
+the positivity of the refined volume. None compared the refined surface to the
+one it refines. `PreRefinementTest.RefinementApproachesTheSameLimitSurface` now
+does, and that is the test whose name always claimed it did.
+
+**Three tests changed meaning**, and they are the ones that recorded the
+limitation being removed: an octahedron (all 4/4/4) and an icosahedron (all
+5/5/5) were rejected at setup and are evaluated now. Each was rewritten to
+assert the new behaviour, and a new test keeps what they were really
+protecting — that a face with no usable patch is rejected loudly rather than
+silently carrying zero energy — using a tetrahedron, whose valence-3 corners
+are genuinely outside the supported range.
+
+The icosahedron is the closed-vesicle fixture `irregular_patch_results.md` §8
+asked for and could not run.
+
+**Admission gained one condition.** The construction assumes the face's
+one-ring is embedded — that its `K = N0 + N1 + N2 - 6` control points are
+distinct. On a closed surface too small to hold it they are not, and such a
+face is rejected with that reason rather than mis-evaluated. An octahedron
+turns out to sit exactly on the boundary of this: `K = 6` and it has six
+vertices, so its one-ring *is* embedded and it evaluates.
+
+**The GPU path refuses rather than guesses.** `DeviceMeshLayout` inferred a
+face's patch from the width of its one-ring, which is now ambiguous — a 6/5/7
+face and a regular one are both 12 wide. It reads `Face::patchKind` instead and
+throws on a multi-extraordinary face, naming the valences and saying to use
+`forceBackend = cpu`. A silently wrong force field is the one outcome worth
+ruling out, and the device side belongs in WP5. The device's own three-value
+`slimed::PatchKind` was renamed `DevicePatchKind` in the same pass, because two
+enums of that name in scope together is a trap.
+
+**Cost, measured.** A 30×30 bowl grid, 1800 faces, serial, one force
+evaluation:
+
+| edges flipped | regular | single | multi | ms/eval |
+| --- | --- | --- | --- | --- |
+| 0% | 1568 | 0 | 0 | 2.6 |
+| 5% | 430 | 457 | 681 | 50.8 |
+| 15% | 49 | 253 | 1266 | 86.5 |
+| 30% | 22 | 217 | 1329 | 89.7 |
+| 50% | 21 | 192 | 1355 | 93.0 |
+
+**A fluid mesh costs about 36× an all-regular one**, and it reaches that
+plateau by 15% of edges flipped — the valence distribution equilibrates fast,
+so there is no gentle regime to sit in. This confirms §6 risk 1 with a number
+rather than an estimate, and it makes `irregularPatchDepthScale` (WP5) and the
+GPU backend load-bearing rather than optional. The depths were chosen for a
+1e-4 relative bending tail, which is far below the thermal noise a Brownian run
+lives in; WP6 item 5 is now the measurement that matters most.
 
 ### WP2 — Local patch evaluation
 
@@ -828,7 +907,7 @@ can go wrong quietly, which is why its gate is an exact identity.
 
 | Risk | Handling |
 | ---- | -------- |
-| **A fluid mesh is mostly irregular, and irregular faces are expensive.** Today the row tables are exercised by a dozen faces on an icosphere. In a fluid steady state roughly half the vertices are not valence 6, so most faces have at least one extraordinary corner, each costing `3·D` samples per corner instead of 3 — at the current depths, `10–40×` the regular cost per face, so a global force evaluation on `data/example` goes from ~11 ms to of order 100 ms. | This is the real cost of fluidity and it is not specific to this design — any subdivision membrane that flips pays it. Levers, in order: `irregularPatchDepthScale` (the `1e-4` bending tail the depths were chosen for is far below the thermal noise a Brownian run lives in; WP6 measures what depth the spectrum actually needs); the GPU backend, which was built for exactly this kind of face-parallel load; a higher-order rule on the children so that a given accuracy needs fewer levels. WP6 item 5 gives the number before anyone commits to a workload. |
+| **A fluid mesh is mostly irregular, and irregular faces are expensive.** **Measured at WP1: 36× an all-regular mesh**, reached by the time 15% of edges have flipped. In a fluid steady state almost every face has at least one extraordinary corner and most have several, each costing `3·D` samples per corner instead of 3. | This is the real cost of fluidity and it is not specific to this design — any subdivision membrane that flips pays it. Levers, in order: `irregularPatchDepthScale` (the `1e-4` bending tail the depths were chosen for is far below the thermal noise a Brownian run lives in; WP6 measures what depth the spectrum actually needs); the GPU backend, which was built for exactly this kind of face-parallel load; a higher-order rule on the children so that a given accuracy needs fewer levels. Now a known quantity rather than a risk, but it moves `irregularPatchDepthScale` from a convenience to a requirement. |
 | **The measure question** (§1.4c). | Plain Metropolis at fixed `C` is the literature standard; the log-det diagnostic quantifies the discrepancy; the corrected acceptance is a documented option. Geometry sampled at fixed `T` is unaffected either way. |
 | **Periodic band stays solid** (§3.8). | Accepted for phase 1; the interior tile is what the analysis measures. Torus-periodic connectivity is a separate plan. |
 | **Valence range `[4, 8]`** rejects flips that DTS models would allow. | Measure the histogram; extend the generator to `3` and `9–10` if the rejection rate at the bounds is material. `N = 3` needs Loop's `β = 3/16`. |
