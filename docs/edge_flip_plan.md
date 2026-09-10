@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0 and 1 landed; 2-6 planned
+**Status:** work packages 0, 1 and 2 landed; 3-6 planned
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -818,14 +818,53 @@ GPU backend load-bearing rather than optional. The depths were chosen for a
 1e-4 relative bending tail, which is far below the thermal noise a Brownian run
 lives in; WP6 item 5 is now the measurement that matters most.
 
-### WP2 — Local patch evaluation
+### WP2 — Local patch evaluation — **landed**
 
-`FlipPatch`, `evaluate_patch()`, `ΔE` by equation (4).
+`FaceSubsetEnergy`, `evaluate_face_subset()`, `EdgeFlipDelta` and
+`evaluate_edge_flip()` by equation (4), in
+`src/energy_force/Local_patch_energy.cpp`.
 
-> Gate: for random interior flips on the bowl grid and on the flat periodic
-> fixture, `ΔE` from `evaluate_patch` equals `E_total(after) - E_total(before)`
-> from two full `Compute_Energy_And_Force()` calls to `1e-9` relative, with
-> `uSurf` and `uVol` nonzero so the global terms are exercised.
+> Gate: for random interior flips, `ΔE` from the local evaluation equals
+> `E_total(after) - E_total(before)` from two full `Compute_Energy_And_Force()`
+> calls to `1e-9` relative, with `uSurf` and `uVol` nonzero so the global terms
+> are exercised.
+
+**Result: met**, at `1e-8` relative over 25 flips. 6 tests in
+`tests/test_local_patch_energy.cpp`; the suite is 124 passing with the same one
+pre-existing failure, and the shipped workload stays byte-identical.
+
+**Cost, measured.** A bowl grid with 20% of its edges flipped, serial:
+
+| faces | full evaluation | local trial | speedup |
+| --- | --- | --- | --- |
+| 800 | 41.8 ms | 1.77 ms | 24× |
+| 1800 | 96.0 ms | 1.72 ms | 56× |
+| 3872 | 208.5 ms | 1.69 ms | 123× |
+
+The trial cost is **flat in mesh size** — about 1.7 ms, set by the eighteen
+faces in the flip patch and nothing else — while a full evaluation is linear.
+That is the property the sweep needs: a bigger membrane offers more edges to
+flip, not more work per flip. The existing single-vertex Metropolis move in
+`Energy_minimization.cpp` takes the other route, a full evaluation per trial,
+and this is the measurement of what that costs.
+
+Three notes on what the implementation settled:
+
+- **The fixture is a closed icosphere, not a sheet.** A volume constraint on an
+  open surface is refused at setup, and rightly: the signed volume of an open
+  sheet is not even independent of where the origin sits. The volume term is
+  one of the two that cannot be differenced face by face, so it has to be in
+  the fixture, and `area0` and `vol0` are set well away from the mesh's own
+  values so the cross term `2 (X − X0) ΔX` carries real weight. A version that
+  dropped it would fail this gate and nothing else.
+- **The regularization energy is now written twice**, once with its force in
+  `energy_force_regularization()` and once alone. A test pins them against each
+  other face by face, which is what keeps a change to one from silently missing
+  the other.
+- **The subset evaluator calls the full kernel and discards the forces.** An
+  energy-only kernel would be a second implementation of the integrand, and the
+  entire value of this routine is that it agrees with the whole-mesh pass
+  exactly.
 
 ### WP3 — Metropolis sweep and Poisson schedule
 

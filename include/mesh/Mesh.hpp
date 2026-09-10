@@ -54,6 +54,46 @@
 using namespace std;
 
 /**
+ * @brief The energy and geometry carried by a set of faces.
+ *
+ * The pieces of the Hamiltonian that live on faces, summed over a subset of
+ * them. Area and volume are geometry rather than energy: the constraints they
+ * feed are quadratic in the mesh-wide totals, so a local move contributes
+ * through its change in the total, not through a per-face term.
+ *
+ * @see docs/edge_flip_plan.md section 3.4
+ */
+struct FaceSubsetEnergy
+{
+    double bending = 0.0;        ///< Sum of Face::energy.energyCurvature.
+    double regularization = 0.0; ///< Sum of Face::energy.energyRegularization.
+    double area = 0.0;           ///< Sum of Face::elementArea, ghosts excluded.
+    double volume = 0.0;         ///< Sum of Face::elementVolume, ghosts excluded.
+
+    /// The part of the total energy that is a sum over these faces.
+    double local_energy() const { return bending + regularization; }
+};
+
+/**
+ * @brief What flipping one edge would do to the total energy.
+ *
+ * Broken out by term because the two global constraints do not behave like the
+ * local ones: they are quadratic in the mesh-wide area and volume, so their
+ * contribution depends on how far the membrane already sits from its reference
+ * as well as on how much this flip moves it.
+ */
+struct EdgeFlipDelta
+{
+    double energy = 0.0;           ///< The total, and the only number Metropolis needs.
+    double bending = 0.0;          ///< Change in summed bending energy.
+    double regularization = 0.0;   ///< Change in summed regularization energy.
+    double areaConstraint = 0.0;   ///< Change in the global area-constraint energy.
+    double volumeConstraint = 0.0; ///< Change in the global volume-constraint energy.
+    double area = 0.0;             ///< Change in total membrane area.
+    double volume = 0.0;           ///< Change in total enclosed volume.
+};
+
+/**
  * @brief A class representing a triangular mesh that defines a
  * limit surface.
  *
@@ -361,6 +401,56 @@ public:
      * @throw std::invalid_argument if the edge is out of range or on a boundary.
      */
     void flip_edge(int iEdge);
+
+    /**
+     * @brief The regularization energy of one face, without its force.
+     *
+     * energy_force_regularization() computes this for every face while
+     * assembling the force. A Metropolis trial needs the energy of eighteen
+     * faces and none of the force, twice per attempt, so it needs the term on
+     * its own. LocalPatchEnergyTest pins the two against each other face by
+     * face, which is what keeps the duplication honest.
+     */
+    double face_regularization_energy(int iFace) const;
+
+    /**
+     * @brief Energy and geometry of a set of faces, with no side effects.
+     *
+     * Evaluates exactly what the whole-mesh passes evaluate, over a subset:
+     * the same rows, the same quadrature, the same ghost-face rule. Nothing on
+     * the mesh is written, so it can be called on a speculative configuration
+     * and again on the real one.
+     *
+     * Not const only because the flat row tables are built lazily; it writes
+     * nothing else.
+     */
+    FaceSubsetEnergy evaluate_face_subset(const std::vector<int> &faceList);
+
+    /**
+     * @brief What flipping @p iEdge would do to the total energy.
+     *
+     * Flips the edge, measures the neighbourhood again, and flips back, so the
+     * mesh is left as it was found -- up to the exchange of the two incident
+     * face labels that flip_edge() documents, which nothing observable depends
+     * on.
+     *
+     * The energy of a face is a functional of its control net, so only the
+     * faces incident to the four vertices the flip touches can change: about
+     * eighteen of them, and the rest cancel exactly. The two global
+     * constraints are quadratic in the mesh-wide totals and so cannot be
+     * summed per face, but their change is still exact from the local change
+     * in area and volume:
+     *
+     *     dE_A = (uSurf / 2 area0) * dA * (dA + 2 (A - area0))
+     *
+     * and likewise for the volume. The scaffolding term is untouched because a
+     * flip moves no vertex.
+     *
+     * @param delta Filled with the change, broken out by term.
+     * @param why   Optional; filled when the flip is inadmissible.
+     * @return Whether the flip is admissible. The mesh is untouched if not.
+     */
+    bool evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why = nullptr);
 
     /**
      * @brief Check that the mesh is still a consistently wound two-manifold.
