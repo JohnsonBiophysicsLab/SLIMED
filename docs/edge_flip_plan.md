@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0-3 landed; 4-6 planned
+**Status:** work packages 0-4 landed; 5-6 planned
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -951,16 +951,93 @@ costs 0.28 ms against tens of milliseconds for the force evaluation it sits
 beside, so fluidity is not what makes a fluid run expensive — the irregular
 faces it creates are (WP1).
 
-### WP4 — Fluid-mode dynamics
+### WP4 — Fluid-mode dynamics — **landed**
 
-The three items of §3.7.
+The three items of §3.7: in-plane motion behind `inPlaneDynamicsEnabled`, the
+edge spring in `src/energy_force/Edge_spring.cpp`, and the sparse valence-aware
+conversion in `src/dynamics/Surface_solver.cpp` behind `surfaceSolver`.
 
-> Gate: with all flags off, `Run_dynamics_flat` on the spectrum workload is
-> bit-identical (serial build) through the sparse-solver change; with
+> Gate: with all flags off, bit-identical (serial); with
 > `surfaceSolver = iterative` the trajectory agrees with dense to the solver
 > tolerance; `M⁻ᵀ` versus `M⁻¹` on a mesh with mixed valences differs and the
-> transposed one is the one the FDT test in `fluctuation_spectrum.md` accepts;
-> the edge-spring force passes finite-difference conjugacy.
+> transposed one is right; the edge-spring force passes finite-difference
+> conjugacy.
+
+**Result: met.** 8 tests in `tests/test_fluid_dynamics.cpp`; the suite is 142
+passing with the same one pre-existing failure. The shipped workload is
+byte-identical with the flags off, and a 40-step run with
+`surfaceSolver = iterative` agrees with the dense path to `1.7e-13` on
+coordinates of order 50.
+
+**The solver is conjugate gradients, not the damped Richardson iteration §3.7
+proposed.** Richardson needs a spectral bound assumed in advance, and the one
+the plan quoted (`μ ≥ -1/2`) is a property of the hexagonal lattice, not of a
+fluid membrane. There is a better observation available. Over the free
+vertices the mask factors as
+
+```text
+    M = D⁻¹ K,        K = ½ (D + A)
+```
+
+with `D` the valences and `A` the adjacency, so `K` is symmetric by
+construction. It is also positive definite: `D + A` is the signless Laplacian,
+positive semidefinite for any graph and singular only on a bipartite one, and a
+triangulation has triangles. Both directions then reduce to the same system:
+
+```text
+    M C = S      ⟺   K C = D S
+    Mᵀ F_S = F_C  ⟺   K y = F_C,  F_S = D y
+```
+
+Conjugate gradients on an SPD matrix, with no parameter to tune, no spectral
+bound to assume, and a residual that says whether it worked. Warm-starting from
+the previous step's control net is what makes it cheap.
+
+**Pinned vertices are eliminated rather than solved for.** A vertex whose faces
+are all ghost has no limit surface of its own and carries the identity row.
+Those rows are what made `M` asymmetric, which is why the tree used `M⁻¹` in
+place of `M⁻ᵀ` and reported the discrepancy at startup rather than fixing it.
+They are not degrees of freedom — the Brownian step skips them — so their known
+values move to the right-hand side and what remains is a principal submatrix of
+`K`, still symmetric and still positive definite. There is no asymmetry left to
+approximate around.
+
+**The dense path was worse than anyone had measured.** Its setup inverts an
+N × N matrix and its step multiplies by one, serial in both cases:
+
+| sheet | vertices | dense setup | sparse setup | dense step | sparse step | step speedup |
+| --- | --- | --- | --- | --- | --- | --- |
+| 60 nm | 195 | 5.9 ms | 0.02 ms | 0.09 ms | 0.016 ms | 5× |
+| 120 nm | 725 | 199 ms | 0.06 ms | 1.23 ms | 0.076 ms | 16× |
+| 200 nm | 1,927 | 4.3 s | 0.12 ms | 10.5 ms | 0.248 ms | 42× |
+| 300 nm | 4,331 | **54.7 s** | 0.24 ms | **139 ms** | 0.590 ms | **236×** |
+
+Fifty-five seconds of setup and 139 ms per step on a 300 nm sheet, against a
+quarter of a millisecond and half a millisecond. This is the bottleneck the
+build notes recorded as "the dense surface2mesh multiply dominates and does not
+thread"; it is `O(N³)` at setup and `O(N²)` per step, and it is gone.
+
+`dense` stays the default so that existing runs reproduce, including its
+standing `M⁻¹`-for-`M⁻ᵀ` approximation. It is refused outright when
+`edgeFlipEnabled` is set: a stored inverse cannot survive a flip, and a run
+configured that way would either be unusably slow or quietly keep using an
+inverse that no longer describes its mesh.
+
+**The valence-6 mask is corrected on both paths.** `assign_mesh2surface()` wrote
+`1/12` on every neighbour whatever the valence was. Right on a regular mesh,
+wrong everywhere else, and a fluid membrane is mostly not valence 6. Every
+vertex on the workloads this tree has run is at valence 6 where it matters, so
+the correction changes nothing there — which the bit-identity gate confirms.
+
+**The edge spring replaces the reference-length regularization rather than
+adding to it.** The old term measures a face's edges against the same face's
+edges in `coordRef`, which is a solid's memory of where it started; a flipped
+edge has no reference length, and `coordRef` would hand it the distance between
+two vertices that were not joined. A test makes the distinction concrete: with
+`coordRef` equal to the current coordinates the old term is exactly zero, and
+the spring is not, because its rest length is a parameter rather than a memory.
+The spring's force joins the Brownian drive, which the old term's never did —
+with the in-plane displacement zeroed it had nothing to act on.
 
 ### WP5 — Wiring, output, GPU
 

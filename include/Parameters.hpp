@@ -256,6 +256,50 @@ struct Param
     int edgeFlipMinValence = 4;
     int edgeFlipMaxValence = 8;
 
+    // Fluid-mode dynamics. See docs/edge_flip_plan.md section 3.7.
+    /**
+     * @brief Let vertices move in the membrane plane, not only along z.
+     *
+     * The Brownian step multiplies the x and y displacement by zero. That is
+     * defensible for a solid sheet whose triangulation cannot rearrange -- the
+     * in-plane degrees of freedom have nowhere useful to go -- and indefensible
+     * for a fluid one, where in-plane motion is half of what fluidity means.
+     */
+    bool inPlaneDynamicsEnabled = false;
+
+    /**
+     * @brief Replace the reference-length regularization with an edge spring.
+     *
+     * The regularization term measures each face's edges against the same
+     * face's edges in coordRef. That is a solid's memory of its reference
+     * configuration: meaningless for a fluid, and undefined for an edge a flip
+     * has just created, which never had a reference length. The spring
+     *
+     *     E = (k / 2) * sum over edges of (l - l0)^2
+     *
+     * depends only on the edges that exist now, so it survives a flip. The two
+     * are alternatives, not additions: enabling this disables the other.
+     */
+    bool edgeSpringEnabled = false;
+    double edgeSpringConstant = 83.4;   ///< k, in pN/nm.
+    /// l0. Negative means "use lFace", the target edge length of the mesh.
+    double edgeSpringRestLength = -1.0;
+
+    /**
+     * @brief How the limit surface and the control net are converted.
+     *
+     * "dense" builds the whole mask as an N x N matrix and inverts it once,
+     * which is what this tree has always done. It costs O(N^2) memory, does
+     * not thread, and cannot survive a connectivity change -- an edge flip
+     * changes four of its rows and would need the inverse rebuilt from
+     * scratch.
+     *
+     * "iterative" holds the mask sparsely and solves instead. See
+     * include/dynamics/Surface_solver.hpp for why both directions reduce to
+     * one symmetric positive definite system.
+     */
+    std::string surfaceSolver = "dense";
+
     // thermal fluctuation / annealing for equilibrium searches
     bool thermalFluctuationEnabled = false;           ///< Enable Metropolis thermal trial moves during minimization
     bool thermalFluctuationPureMMC = false;           ///< Run pure Metropolis Monte Carlo trial moves without NCG

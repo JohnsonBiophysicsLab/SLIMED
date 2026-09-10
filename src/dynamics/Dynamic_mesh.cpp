@@ -14,6 +14,19 @@ void DynamicMesh::setup_flat() {
     // Call the superclass's setup_flat()
     Mesh::setup_flat();
 
+    // The dense path stores M^-1, computed once. An edge flip changes four
+    // rows of M, and there is no way to update a stored inverse for that short
+    // of recomputing it -- O(N^3), per accepted flip. A fluid run configured
+    // this way would either be unusably slow or, worse, quietly keep using an
+    // inverse that no longer describes its mesh.
+    if (param.edgeFlipEnabled && param.surfaceSolver != "iterative")
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::setup_flat] edgeFlipEnabled = true needs surfaceSolver = iterative. "
+            "The dense conversion stores an inverse of the limit mask, and an edge flip changes "
+            "the mask it was built from. See docs/edge_flip_plan.md section 3.7.");
+    }
+
     // Assign mesh2surface and surface2mesh
     if (param.VERBOSE_MODE)
     {
@@ -132,10 +145,21 @@ void DynamicMesh::assign_mesh2surface()
             // using 0.5 / 0.0833333 directly for regular patches
             std::vector<int> &iAdjVertices = vertices[i].adjacentVertices;
 
+            // Loop's limit mask: half on the vertex, the other half shared
+            // equally among its neighbours. The denominator used to be a
+            // literal 6 whatever the vertex's valence was, which is right on a
+            // regular mesh and wrong everywhere else -- and a fluid membrane
+            // is mostly not valence 6. On the workloads this tree has run,
+            // every vertex that reaches here is at valence 6, so the
+            // correction changes nothing there.
+            const int valence = static_cast<int>(iAdjVertices.size());
             mesh2surface.set(i, i, 0.5);
-            for (const int &iAdj : iAdjVertices)
+            if (valence > 0)
             {
-                mesh2surface.set(i, iAdj, 0.5 / 6.0);
+                for (const int &iAdj : iAdjVertices)
+                {
+                    mesh2surface.set(i, iAdj, 0.5 / valence);
+                }
             }
         }
         // check if ghost / boundary faces are correctly recongnized
@@ -166,6 +190,60 @@ void DynamicMesh::assign_mesh2surface()
     {
         std::cout << mesh2surface << std::endl;
     }
+}
+
+void DynamicMesh::ensure_surface_solver()
+{
+    if (surfaceSolver.empty() || surfaceSolver.topologyVersion != topologyVersion)
+    {
+        surfaceSolver.build(*this);
+        if (param.VERBOSE_MODE)
+        {
+            std::cout << "[DynamicMesh::ensure_surface_solver] built for topology version "
+                      << topologyVersion << ": " << surfaceSolver.nFree() << " of "
+                      << surfaceSolver.nVertices() << " vertices are degrees of freedom."
+                      << std::endl;
+        }
+    }
+}
+
+void DynamicMesh::apply_mesh_to_surface()
+{
+    if (param.surfaceSolver == "iterative")
+    {
+        ensure_surface_solver();
+        surfaceSolver.mesh_to_surface(matMesh, matSurface);
+        return;
+    }
+    matSurface = mesh2surface * matMesh;
+}
+
+void DynamicMesh::apply_surface_to_mesh()
+{
+    if (param.surfaceSolver == "iterative")
+    {
+        ensure_surface_solver();
+        // The previous step's control net is a very good starting point --
+        // the step moved the surface by a Brownian increment, not by much --
+        // and warm starting cuts the iteration count severalfold.
+        surfaceSolver.surface_to_mesh(matSurface, matMesh, &matMesh);
+        return;
+    }
+    matMesh = surface2mesh * matSurface;
+}
+
+void DynamicMesh::apply_nodal_force_to_surface(const Matrix &nodalForce, Matrix &surfaceForce)
+{
+    if (param.surfaceSolver == "iterative")
+    {
+        ensure_surface_solver();
+        surfaceSolver.nodal_force_to_surface(nodalForce, surfaceForce);
+        return;
+    }
+    // The historical path: M^-1 where M^-T belongs. Identical wherever the
+    // mask is symmetric, which is every interior valence-6 row; the difference
+    // lives in the ghost band, whose vertices the step does not integrate.
+    surfaceForce = surface2mesh * nodalForce;
 }
 
 void DynamicMesh::update_vertices_mat_with_vector()

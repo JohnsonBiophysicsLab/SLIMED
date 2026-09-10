@@ -116,12 +116,24 @@ void DynamicModel::next_step()
         {
             for (int j = 0; j < 3; j++)
             {
+                // The mesh-quality term joins the drive only in fluid mode.
+                // The reference-length regularization is deliberately left out
+                // of it: it is a solid's restoring force toward a
+                // configuration a fluid membrane has no reason to return to,
+                // and with the in-plane displacement zeroed it had nothing to
+                // act on anyway. The edge spring is a real part of the
+                // Hamiltonian the flip sweep samples, so leaving it out of the
+                // dynamics would make the two disagree about the energy.
                 double f = mesh.vertices[i].force.forceCurvature(j, 0) +
                            mesh.vertices[i].force.forceArea(j, 0);
+                if (mesh.param.edgeSpringEnabled)
+                {
+                    f += mesh.vertices[i].force.forceRegularization(j, 0);
+                }
                 nodalForce.set(i, j, std::isnan(f) ? 0.0 : f);
             }
         }
-        driveForce = mesh.surface2mesh * nodalForce;
+        mesh.apply_nodal_force_to_surface(nodalForce, driveForce);
     }
 
     // One key per (run, step); standard_normal() mixes the vertex and axis in.
@@ -165,6 +177,10 @@ void DynamicModel::next_step()
                                 ? driveForce(i, j)
                                 : mesh.vertices[i].force.forceCurvature(j, 0) +
                                       mesh.vertices[i].force.forceArea(j, 0); // Get force term
+                if (!mesh.param.fdtConsistentSurfaceUpdate && mesh.param.edgeSpringEnabled)
+                {
+                    forceterm += mesh.vertices[i].force.forceRegularization(j, 0);
+                }
                 //std::cout << "Force @ " << i << " , "<< j << " = "  << forceterm << std::endl;
                 if (std::isnan(forceterm))
                 {
@@ -172,9 +188,19 @@ void DynamicModel::next_step()
                 }
                 randomterm = standard_normal(stepKey, static_cast<std::uint64_t>(i),
                                              static_cast<std::uint64_t>(j)); // Get random term
-                // x, y direction are trivial for now
-                // ! need to calculate the normal vector for the surface in the future
-                if (j < 2) {
+                // In-plane motion is switched off by default, which is what
+                // this model has always done. It is defensible for a sheet
+                // whose triangulation cannot rearrange: the in-plane degrees
+                // of freedom have nowhere useful to go, and the analysis in
+                // docs/fluctuation_spectrum.md relies on every vertex staying
+                // on its ideal lattice site so the height field can be
+                // transformed without resampling.
+                //
+                // It is not defensible for a fluid membrane. In-plane motion
+                // is half of what fluidity means, and a flip that rearranges
+                // the connectivity while the vertices are pinned laterally is
+                // only doing half the job.
+                if (j < 2 && !mesh.param.inPlaneDynamicsEnabled) {
                     randomterm *= 0.0;
                     forceterm *= 0.0;
                 }

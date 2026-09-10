@@ -95,13 +95,13 @@ void run_dynamics_flat(std::string param_filename) {
     for (model.iteration = 0; model.iteration < mesh.param.maxIterations; model.iteration ++) {
 
         //1.control mesh to limit surface
-        mesh.matSurface = mesh.mesh2surface * mesh.matMesh;
+        mesh.apply_mesh_to_surface();
 
         //2.next time step - calculate displacement on limit surface
         model.next_step(); 
 
         //3.limit surface to control mesh: verticesOnMesh = surface2mesh * verticesProjSurface
-        mesh.matMesh = mesh.surface2mesh * mesh.matSurface;
+        mesh.apply_surface_to_mesh();
 
         //4. postprocessing based on boundary condition
         switch (mesh.param.boundaryCondition) {

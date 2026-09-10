@@ -277,6 +277,31 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("inPlaneDynamicsEnabled") == 0)
+	{
+		param.inPlaneDynamicsEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "inPlaneDynamicsEnabled set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeSpringEnabled") == 0)
+	{
+		param.edgeSpringEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "edgeSpringEnabled set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeSpringConstant") == 0)
+	{
+		param.edgeSpringConstant = std::stod(variableValueStr);
+		std::cout << "edgeSpringConstant set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeSpringRestLength") == 0)
+	{
+		param.edgeSpringRestLength = std::stod(variableValueStr);
+		std::cout << "edgeSpringRestLength set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("surfaceSolver") == 0)
+	{
+		param.surfaceSolver = variableValueStr;
+		std::cout << "surfaceSolver set to: " << variableValueStr << std::endl;
+	}
 	else if (variableNameStr.compare("edgeFlipEnabled") == 0)
 	{
 		param.edgeFlipEnabled = (variableValueStr.compare("true") == 0);

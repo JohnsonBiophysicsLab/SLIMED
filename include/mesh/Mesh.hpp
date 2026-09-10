@@ -1043,6 +1043,25 @@ public:
     void energy_force_regularization();
 
     /**
+     * @brief The fluid-mode mesh-quality term: a spring on every edge.
+     *
+     * E = (k / 2) * sum over edges of (l - l0)^2, with its force written into
+     * the same slots energy_force_regularization() uses. The two are
+     * alternatives: param.edgeSpringEnabled picks between them.
+     *
+     * Why a replacement rather than an addition. The regularization term
+     * measures a face's edges against the same face's edges in coordRef, which
+     * is a solid's memory of its own reference configuration. A fluid membrane
+     * has no such memory, and an edge a flip has just created has no reference
+     * length at all -- coordRef would hand it whatever the two endpoints
+     * happened to be, which is not a rest length, it is an accident.
+     *
+     * Each edge's energy is split between its incident faces so that the sum
+     * over faces is still the total.
+     */
+    void energy_force_edge_spring();
+
+    /**
      * @brief Manages forces depending on different boundary conditions.
      *
      * This method sets the force of nodes that are part of the mesh's boundaries and ghost vertices to zero, based

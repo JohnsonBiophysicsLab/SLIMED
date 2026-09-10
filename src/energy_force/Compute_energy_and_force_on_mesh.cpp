@@ -338,7 +338,17 @@ void Mesh::compute_face_energies_and_forces()
     }
 
     // Step 3.
-    energy_force_regularization(); // regularization Force and Energy
+    // The mesh-quality term. The two are alternatives, not additions: the
+    // reference-length regularization is a solid's memory of where it started,
+    // and a fluid membrane has none -- see energy_force_edge_spring().
+    if (param.edgeSpringEnabled)
+    {
+        energy_force_edge_spring();
+    }
+    else
+    {
+        energy_force_regularization();
+    }
 
 }
 
