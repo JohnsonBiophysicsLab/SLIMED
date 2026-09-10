@@ -362,6 +362,14 @@ void CudaForceBackend::upload_topology(const DeviceMeshLayout &layout, const Pat
     impl.topologyUploaded = true;
 }
 
+void CudaForceBackend::invalidate_topology()
+{
+    // The device copy of the connectivity is made once and reused. An edge
+    // flip changes the connectivity without changing the face or vertex count,
+    // so nothing downstream would have noticed; this is how it is told.
+    impl_->topologyUploaded = false;
+}
+
 void CudaForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
                                 const PatchRowsFlat &rows)
 {

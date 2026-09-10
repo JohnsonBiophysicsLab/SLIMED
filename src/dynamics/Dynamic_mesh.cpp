@@ -60,6 +60,22 @@ void DynamicMesh::mark_slaved_periodic_vertices()
               << (param.integratePeriodicDuplicates ? "integrated anyway (legacy)"
                                                     : "left to their partners")
               << "." << std::endl;
+
+    // A periodic duplicate is not an independent coordinate:
+    // postprocess_ghost_periodic() overwrites it from its partner every step.
+    // Flipping an edge around one would change its connectivity while its
+    // partner's stayed put, so the two would no longer describe the same
+    // patch. Freeze them for the flip move, and re-settle every edge that
+    // touches one.
+    flipFrozenVertex.assign(vertices.size(), 0);
+    for (int i = 0; i < static_cast<int>(vertices.size()); i++)
+    {
+        flipFrozenVertex[i] = isSlavedPeriodic.empty() ? 0 : isSlavedPeriodic[i];
+    }
+    for (int iEdge = 0; iEdge < static_cast<int>(edges.size()); iEdge++)
+    {
+        refresh_edge_flippability(iEdge);
+    }
 }
 
 void DynamicMesh::assign_mesh2surface()

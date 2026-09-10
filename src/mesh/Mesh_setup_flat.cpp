@@ -13,6 +13,8 @@ void Mesh::setup_flat()
     set_adjacent_faces_of_faces();
     sort_vertices_on_faces();
     determine_ghost_vertices_faces();
+    // After the ghost flags, because an edge's flippability depends on them.
+    build_edge_table();
     set_one_ring_vertices_sorted();
     validate_volume_constraint_topology();
     if (param.VERBOSE_MODE)

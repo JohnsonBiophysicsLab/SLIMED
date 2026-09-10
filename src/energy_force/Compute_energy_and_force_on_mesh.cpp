@@ -272,10 +272,25 @@ void Mesh::ensure_device_layout()
     // pre-refinement replaces the whole face and vertex list, and a layout
     // built before it would index vertices that no longer exist -- a silent
     // out-of-bounds read rather than a failure.
+    //
+    // Counts are not enough on their own. An edge flip rewrites the
+    // connectivity while leaving both counts exactly as they were, so the
+    // layout -- which is entirely connectivity-derived, down to the CSR of
+    // every one-ring -- would have gone on being used against a mesh it no
+    // longer described, with nothing to indicate it. topologyVersion is
+    // bumped by every accepted flip and is what actually answers the question.
     if (deviceLayout.empty() || deviceLayout.nFaces() != static_cast<int>(faces.size()) ||
-        deviceLayout.nVertices() != static_cast<int>(vertices.size()))
+        deviceLayout.nVertices() != static_cast<int>(vertices.size()) ||
+        deviceLayoutTopologyVersion != topologyVersion)
     {
         deviceLayout.build(*this);
+        deviceLayoutTopologyVersion = topologyVersion;
+        if (cudaBackend)
+        {
+            // The device holds its own copy of the topology and uploads it
+            // once; tell it to upload again.
+            cudaBackend->invalidate_topology();
+        }
     }
 }
 

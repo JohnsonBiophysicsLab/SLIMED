@@ -56,6 +56,17 @@ public:
     void upload_topology(const DeviceMeshLayout &layout, const PatchRowsFlat &rows);
 
     /**
+     * @brief Forget that the topology was uploaded, so the next evaluate()
+     * uploads it again.
+     *
+     * Needed once connectivity can change mid-run: an edge flip rewrites the
+     * layout without changing any count, and the device would otherwise keep
+     * using the copy it made at startup. Cheap and safe to call when nothing
+     * has changed -- it costs one re-upload.
+     */
+    void invalidate_topology();
+
+    /**
      * @brief Run the force evaluation on the device and write it into `mesh`.
      *
      * Same contract as HostForceBackend::evaluate(): element area and volume

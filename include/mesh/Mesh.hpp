@@ -33,7 +33,7 @@
 #include <omp.h>
 #include <algorithm>
 // model setup
-//#include "Edge.hpp"
+#include "mesh/Edge.hpp"
 #include "mesh/Face.hpp"
 #include "cuda/Cuda_force_backend.hpp"
 #include "cuda/Device_mesh_layout.hpp"
@@ -50,6 +50,71 @@
 
 
 using namespace std;
+
+/**
+ * @brief Which subdivision patch, if any, a face carries.
+ *
+ * The classification used to be inlined in set_one_ring_vertices_sorted() and
+ * its only outputs were "build a one-ring" or "throw". A Monte Carlo flip has
+ * to ask the same question speculatively -- would the mesh still be evaluable
+ * if this edge were flipped? -- so the question and the answer are named here
+ * and the throw is left to the caller that wants one.
+ *
+ * @see docs/edge_flip_plan.md section 3.3
+ */
+enum class PatchKind
+{
+    /// Ghost face outside the boundary; takes no part in any calculation.
+    Ghost,
+    /// A corner is not interior, so there is no complete one-ring and no limit
+    /// surface. A property of the mesh, not an error: oneRingVertices stays
+    /// empty on purpose.
+    Boundary,
+    /// All three corners at valence 6; the closed-form quartic box spline.
+    Regular,
+    /// Exactly one corner in [kMinIrregularValence, kMaxIrregularValence]
+    /// other than 6, with the other two at exactly 6. Stam's reduction, which
+    /// is what IrregularPatchRowTable tabulates.
+    SingleExtraordinary,
+    /// More than one extraordinary corner, every valence still in range. Not
+    /// evaluable by the row tables as they stand, and unavoidable the moment
+    /// edges flip: flipping an edge of a hexagonal lattice turns four
+    /// valence-6 corners into 5, 5, 7, 7. WP1 of docs/edge_flip_plan.md.
+    MultiExtraordinary,
+    /// A valence outside the supported range, or a fan that does not close.
+    Inadmissible,
+};
+
+/**
+ * @brief The classification of one face, and the rotation that anchors it.
+ */
+struct PatchClass
+{
+    PatchKind kind = PatchKind::Inadmissible;
+
+    /**
+     * @brief Which corner (0, 1 or 2 of Face::adjacentVertices) anchors the
+     * patch: the extraordinary one when there is exactly one, corner 0 when
+     * the face is regular, and -1 when the face carries no patch.
+     *
+     * Reading the corners as a rotation starting here preserves the face
+     * winding, which sort_vertices_on_faces() has already made consistent, so
+     * no per-face winding decision is ever taken.
+     */
+    int anchor = -1;
+
+    /// Valences of the three corners, in the face's own order (not rotated).
+    int valence[3] = {0, 0, 0};
+
+    /// Why the face was rejected; empty unless kind is Inadmissible.
+    std::string why;
+
+    /// Whether this face carries a patch the energy kernel can evaluate today.
+    bool has_evaluable_patch() const
+    {
+        return kind == PatchKind::Regular || kind == PatchKind::SingleExtraordinary;
+    }
+};
 
 /**
  * @brief A class representing a triangular mesh that defines a
@@ -174,6 +239,9 @@ public:
      */
     void ensure_device_layout();
 
+    /// The connectivity version deviceLayout was built for. See topologyVersion.
+    long long deviceLayoutTopologyVersion = -1;
+
     /**
      * @brief Which backend Compute_Energy_And_Force() delegates its per-face
      * work to, chosen once from param.forceBackend.
@@ -211,8 +279,162 @@ public:
     std::vector<GagInteraction> gagInteractions; ///< Gag pair interactions defined on rigid subunits
     Matrix gagInitialAlignmentRotation = Matrix(3, 3, true); ///< Initial lattice-to-membrane alignment rotation
 
+    // ---------------------------------------------------------------------
+    // Edge table and connectivity versioning -- see docs/edge_flip_plan.md
+    // ---------------------------------------------------------------------
+
+    /**
+     * @brief Every undirected edge of the control mesh.
+     *
+     * Built once by build_edge_table() and thereafter mutated in place by
+     * flip_edge(). Empty until build_edge_table() is called, which the setup
+     * paths do; a mesh that never flips can ignore it entirely.
+     */
+    std::vector<MeshEdge> edges;
+
+    /// undirected_edge_key(a, b) -> index into edges. Kept in step by flip_edge().
+    std::unordered_map<std::uint64_t, int> edgeIndex;
+
+    /**
+     * @brief Bumped by every accepted connectivity change.
+     *
+     * Everything derived from connectivity -- the device layout, the CUDA
+     * topology upload, the limit-surface conversion matrices -- records the
+     * version it was built for and rebuilds when it differs. Before this, the
+     * only staleness check in the tree was on the face and vertex *counts*
+     * (Mesh::ensure_device_layout()), and a flip changes neither, so a flipped
+     * mesh would have been evaluated against a stale layout with no
+     * indication.
+     */
+    long long topologyVersion = 0;
+
+    /**
+     * @brief Vertices that must not take part in a flip, one entry per vertex.
+     *
+     * Empty means nothing is frozen. DynamicMesh fills it from
+     * isSlavedPeriodic, because a periodic duplicate is not an independent
+     * coordinate and flipping around one would desynchronise it from the
+     * partner that overwrites it every step. Ghost vertices are excluded
+     * separately and do not need an entry here.
+     */
+    std::vector<char> flipFrozenVertex;
+
+    /**
+     * @brief Build `edges` and `edgeIndex` from the current face list.
+     *
+     * O(F). Safe to call again; it rebuilds from scratch. Requires
+     * Face::adjacentVertices to be populated and consistently wound, which is
+     * what sort_vertices_on_faces() guarantees.
+     */
+    void build_edge_table();
+
+    /// Index into `edges` of the edge joining @p a and @p b, or -1.
+    int edge_between(int a, int b) const;
+
+    /**
+     * @brief Recompute MeshEdge::flippable for one edge from the current
+     * connectivity and the frozen-vertex list.
+     */
+    void refresh_edge_flippability(int iEdge);
+
+    /**
+     * @brief Whether flipping @p iEdge right now would leave a mesh the
+     * evaluator can still describe.
+     *
+     * The dynamic half of the admission test: valences after the flip within
+     * the row-table range, and the two opposite corners not already joined
+     * (which would make the flip create a duplicate edge and pinch the
+     * surface). Checked per attempt rather than cached, because an accepted
+     * flip elsewhere in the same sweep can change the answer.
+     *
+     * @param iEdge Edge to test.
+     * @param why   Optional; filled with the reason when the answer is false.
+     */
+    bool edge_flip_is_admissible(int iEdge, std::string *why = nullptr) const;
+
+    /**
+     * @brief The faces whose energy a flip of @p iEdge would change.
+     *
+     * The energy of a face is a functional of its control net -- the union of
+     * its three corners' one-rings -- so a flip changes the energy of every
+     * face incident to any of the four vertices it touches, roughly eighteen
+     * on a near-regular mesh, not just the two it retriangulates. This is the
+     * same "flip patch" TriMem locks for a parallel flip.
+     *
+     * Returned sorted and deduplicated.
+     */
+    std::vector<int> flip_patch_faces(int iEdge) const;
+
+    /**
+     * @brief Flip @p iEdge: retriangulate its two incident faces across the
+     * other diagonal of the quadrilateral they form.
+     *
+     * Replaces the edge (a, b) with (c0, c1), where c0 and c1 are the two
+     * opposite corners, and rewrites every adjacency the change touches: the
+     * two faces' corners, the four vertices' adjacentVertices and
+     * adjacentFaces, the five affected edge records, Face::adjacentFaces on
+     * the faces around the quadrilateral, and the one-rings of every face in
+     * the flip patch. Bumps topologyVersion.
+     *
+     * Winding is preserved without any geometric test: both new triangles are
+     * wound along the same boundary cycle of the quadrilateral that the two
+     * old ones were.
+     *
+     * Flipping the same edge index twice restores the connectivity exactly --
+     * every triangle, every adjacency and every edge record -- with one
+     * caveat worth stating because it is easy to assume away: the two incident
+     * face *indices* come back holding each other's triangle. That is not a
+     * defect in this implementation, it is intrinsic. The quadrilateral offers
+     * no canonical pairing between "the side of target0" before the flip and
+     * either side after it, so every consistent rule composes to the exchange;
+     * OpenMesh's flip behaves the same way.
+     *
+     * It is unobservable here because the only per-face state that survives a
+     * step without being recomputed from connectivity is the spontaneous
+     * curvature, and edge_flip_is_admissible() refuses an edge whose two faces
+     * disagree about it. So a rejected Metropolis trial does restore the mesh.
+     *
+     * @param iEdge Edge to flip. Must be interior; call
+     *              edge_flip_is_admissible() first.
+     * @throw std::invalid_argument if the edge is out of range or on a boundary.
+     */
+    void flip_edge(int iEdge);
+
+    /**
+     * @brief Check that the mesh is still a consistently wound two-manifold.
+     *
+     * Every edge in at most two faces, every interior vertex fan closed, every
+     * shared edge traversed in opposite directions by its two faces, and the
+     * edge table in step with the face list. A test helper and a debugging
+     * aid, not something the hot path calls.
+     *
+     * @param why Optional; filled with the first violation found.
+     */
+    bool validate_manifold_topology(std::string *why = nullptr) const;
+
+    /**
+     * @brief Classify one face's subdivision patch without side effects.
+     *
+     * The predicate the flip sweep needs: setup uses it and throws on the
+     * kinds it cannot evaluate, while a Metropolis trial uses it to reject a
+     * move instead.
+     */
+    PatchClass classify_face(int iFace) const;
+
+    /**
+     * @brief Build Face::oneRingVertices for one face from the live adjacency.
+     *
+     * The per-face body of set_one_ring_vertices_sorted(), extracted so that a
+     * flip can rebuild just the faces it disturbed. Clears the one-ring first,
+     * so a face that stops being evaluable does not keep a stale patch.
+     *
+     * @param iFace Face to rebuild.
+     * @param why   Optional; filled with the reason when the answer is false.
+     * @return Whether the face now carries an evaluable patch.
+     */
+    bool build_one_ring_for_face(int iFace, std::string *why = nullptr);
+
     // New members... for halfedge mesh
-    //std::vector<Edge> edges; ///< Vector to store all edges in the mesh
     //std::vector<Halfedge> halfedges; ///< Vector to store all halfedges in the mesh
 
 

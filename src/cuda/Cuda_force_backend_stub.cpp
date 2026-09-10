@@ -32,6 +32,12 @@ void CudaForceBackend::upload_topology(const DeviceMeshLayout &, const PatchRows
 {
     throw not_built();
 }
+void CudaForceBackend::invalidate_topology()
+{
+    // Deliberately not a throw: Mesh::ensure_device_layout() calls this
+    // whenever it rebuilds, on every build, and a CPU run that never
+    // constructed a backend never gets here anyway. Nothing to forget.
+}
 void CudaForceBackend::evaluate(Mesh &, const DeviceMeshLayout &, const PatchRowsFlat &)
 {
     throw not_built();

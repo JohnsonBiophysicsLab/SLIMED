@@ -133,7 +133,22 @@ void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& ver
     // step 3. Link neighboring geometric components
     set_adjacent_faces_of_vertices_sorted();
     set_adjacent_vertices_of_vertices_sorted();
+    // Face::adjacentFaces used to be left empty on this path -- setup_flat()
+    // filled it and this one did not -- which was invisible only because its
+    // sole consumer, sort_vertices_on_faces(), is not called here either. The
+    // flip move maintains it, so it has to start out correct. Purely additive:
+    // nothing else reads it.
+    set_adjacent_faces_of_faces();
     determine_ghost_vertices_faces();
+    // After the ghost flags, because an edge's flippability depends on them.
+    //
+    // Note that this path deliberately still does not call
+    // sort_vertices_on_faces(): it rewrites Face::adjacentVertices, which
+    // would re-anchor every patch and rebaseline any run built from imported
+    // vertices and faces. An imported mesh is required to arrive consistently
+    // wound, and validate_volume_constraint_topology() below is what reports
+    // it when one does not.
+    build_edge_table();
     set_one_ring_vertices_sorted();
     validate_volume_constraint_topology();
 
