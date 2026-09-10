@@ -2,40 +2,14 @@
 
 #include <cstdint>
 
-namespace
-{
-/// SplitMix64 -- one avalanche round on a 64-bit counter.
-inline std::uint64_t splitmix64(std::uint64_t x)
-{
-    x += 0x9E3779B97F4A7C15ULL;
-    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
-    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
-    return x ^ (x >> 31);
-}
+#include "Counter_rng.hpp"
 
-/// A uniform on (0, 1) -- never exactly 0, so the log() below stays finite.
-inline double uniform_open01(std::uint64_t bits)
-{
-    return (static_cast<double>(bits >> 11) + 0.5) * (1.0 / 9007199254740992.0);
-}
+// The counter-based generator these used to define lives in Counter_rng.hpp
+// now: the Metropolis flip sweep needs the same primitives, and two copies of
+// a generator is two chances for a run to stop being reproducible.
+using slimed::splitmix64;
+using slimed::standard_normal;
 
-/// One standard normal, keyed by (run, iteration, vertex, axis).
-///
-/// Counter-based rather than sequential: what a vertex draws depends only on
-/// where it sits in the run, never on the order the OpenMP team happens to
-/// reach it. The previous code called a shared std::normal_distribution on a
-/// shared std::mt19937 from inside `#pragma omp parallel for`, which is a
-/// data race on the generator state: the noise was neither reproducible nor
-/// guaranteed to still be Gaussian, and an equilibrium fluctuation spectrum
-/// is only ever as good as the noise that drives it.
-inline double standard_normal(std::uint64_t stepKey, std::uint64_t vertex, std::uint64_t axis)
-{
-    const std::uint64_t key = splitmix64(stepKey + splitmix64(vertex * 4ULL + axis));
-    const double u1 = uniform_open01(splitmix64(key));
-    const double u2 = uniform_open01(splitmix64(key ^ 0xD1B54A32D192ED03ULL));
-    return std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * M_PI * u2);
-}
-} // namespace
 
 /**
  * @brief Constructs a new Model object.

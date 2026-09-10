@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0, 1 and 2 landed; 3-6 planned
+**Status:** work packages 0-3 landed; 4-6 planned
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -59,7 +59,10 @@ is accepted with the Metropolis probability `min[1, exp(-ΔE/kT)]`. With a
 uniformly chosen edge, the proposal is symmetric — the reverse flip is proposed
 from the new state with the same probability `1/N_E`, since the flip is an
 involution and `N_E` is conserved — so no proposal-ratio correction is needed
-(Ramakrishnan, Sunil Kumar & Ipsen 2010, eq. 19; Gompper & Kroll 2004).
+(Ramakrishnan, Sunil Kumar & Ipsen 2010, eq. 19; Gompper & Kroll 2004). (there
+is an important subtlety: it is the uniform choice among all edges that makes
+the proposal symmetric. If you choose uniformly only among currently flippable
+edges, the statement is generally no longer true. )
 
 A Monte Carlo sweep in the literature is `N` vertex moves plus one flip attempt
 per edge, i.e. `3(N-2)` attempted flips on a closed surface (Ramakrishnan et
@@ -866,17 +869,87 @@ Three notes on what the implementation settled:
   entire value of this routine is that it agrees with the whole-mesh pass
   exactly.
 
-### WP3 — Metropolis sweep and Poisson schedule
+### WP3 — Metropolis sweep and Poisson schedule — **landed**
 
-The sweep of §3.5, the tagged counter-based RNG, `EdgeFlips.csv`, and the
-log-determinant diagnostic of §1.4(c) as a test (four sparse solves and a 4×4
-determinant on a lattice flip; the number goes into the docs).
+`Mesh::edge_flip_sweep()` in `src/mesh/Edge_flip_sweep.cpp`, the counter-based
+RNG lifted into `include/Counter_rng.hpp`, `EdgeFlipRecord` and the
+`EdgeFlips.csv` writer, and the parameters of §3.10 (`edgeFlipEnabled`,
+`edgeFlipAttemptRate`, `edgeFlipInterval`, `edgeFlipMinValence/MaxValence`).
 
-> Gate: **two-state test** — freeze all edges but one on a small fixture, run
-> the sweep at fixed coordinates for `10⁵` attempts, and check that the
-> occupancy ratio of the two triangulations equals `exp(-ΔE/kT)` within
-> statistical error, at two temperatures. Poisson gate: the attempt count over
-> many sweeps has mean and variance `λ`. Reproducibility: same seed, same flips.
+> Gate: **two-state test** — freeze all edges but one, run the sweep at fixed
+> coordinates, and check that the occupancy ratio of the two triangulations
+> equals `exp(-ΔE/kT)` at two temperatures. Poisson gate: the attempt count has
+> mean and variance `λ`. Reproducibility: same seed, same flips.
+
+**Result: met.** The chain is reconstructed from the sweep's own log — each
+record says whether that attempt was accepted, and an accepted flip toggles the
+state — so what is measured is what the sweep did, random numbers and
+acceptance rule included, rather than the energy re-derived. At `ΔE/kT` of 1
+and 2 the measured ratios sit within counting error of `exp(-1)` and `exp(-2)`.
+10 tests in `tests/test_edge_flip_sweep.cpp`; the suite is 134 passing with the
+same one pre-existing failure, and the shipped workload stays byte-identical.
+
+**Two findings, both about the same failure mode: a face with no patch.**
+
+- **The one-ring walk was wrong on an irregular mesh.** It asked "what is the
+  corner across this edge from that one?" and answered by intersecting the two
+  vertices' neighbour lists, taking a common neighbour that was not the
+  excluded one. That is correct only when they share exactly two — the corners
+  opposite their shared edge — which is what a near-regular mesh gives and what
+  every mesh this tree built was. Flips break it by construction: adjacent
+  vertices start sharing a third neighbour that forms no face with the edge
+  between them, and the walk returned whichever candidate it saw last. The
+  symptom was fans that would not close and faces left with no control net.
+  The edge table answers the question exactly, since an edge of a two-manifold
+  has two incident faces and their third corners are the only candidates there
+  have ever been. Measured: 8 such faces after a sweep before the fix, none
+  after.
+
+- **A flip that would cost a face its patch is now refused.** Not a defect but
+  a policy, and the reasoning matters: a face whose one-ring cannot be built
+  carries *no energy*, and zero is the lowest energy there is. A chain allowed
+  to reach such a configuration would be actively drawn into it — the
+  Hamiltonian would develop a hole and the membrane would tear along it.
+  `evaluate_edge_flip()` checks after the trial flip that no face in the patch
+  lost its control net, and refuses the move if one did. The guard is what
+  keeps a fluid mesh evaluable indefinitely: driving one with every flip the
+  admission test allows and no energy at all, it stays fully evaluable, where
+  the unguarded primitive reaches faces with no patch within a few hundred
+  flips.
+
+**The measure discrepancy, measured.** §1.4(c) noted that the flip samples
+`exp(-E) dC` while the Brownian step samples `exp(-E) dS`, differing by
+`|det M_T|`. Estimated there at 0.05–0.08 in log weight from the
+`-Σ ln(2 N_v)` term alone. Measured over single flips on an icosphere:
+
+```
+largest |ln det M' - ln det M| over one flip: 0.00275   (weight ratio 1.0027)
+```
+
+An order of magnitude smaller than the estimate, because the estimate looked at
+only one of two terms: `ln det M = -n ln 2 - Σ ln N_v + ln det(D + A)`, and the
+two valence-dependent pieces very nearly cancel. A 0.3% bias on the relative
+weight of triangulations, and none at all on the geometry sampled at fixed
+connectivity. The Jacobian correction stays a documented option and is not
+worth taking.
+
+**Acceptance and cost, measured.** A 320-face icosphere with roughly 5 nm
+edges, `kc = 83.4 pN·nm`, `kT = 4.17 pN·nm`, `dt = 1 ns`, serial:
+
+| ν (per edge per µs) | λ per sweep | acceptance | ms per sweep |
+| --- | --- | --- | --- |
+| 0.1 | 0.048 | 26% | 0.04 |
+| 0.5 | 0.24 | 30% | 0.28 |
+| 1.0 | 0.48 | 25% | 0.58 |
+| 5.0 | 2.4 | 25% | 3.0 |
+
+Acceptance is flat in the rate at 25–30%, which is a healthy Metropolis move —
+far above TriMem's 0.17%, because their tether potential is a stiff penalty
+where SLIMED's mesh-quality term is soft. WP4's edge spring will lower it, and
+that is the number to watch when it lands. At the default `ν = 0.5` the sweep
+costs 0.28 ms against tens of milliseconds for the force evaluation it sits
+beside, so fluidity is not what makes a fluid run expensive — the irregular
+faces it creates are (WP1).
 
 ### WP4 — Fluid-mode dynamics
 

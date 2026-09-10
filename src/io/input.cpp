@@ -277,6 +277,31 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("edgeFlipEnabled") == 0)
+	{
+		param.edgeFlipEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "edgeFlipEnabled set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeFlipAttemptRate") == 0)
+	{
+		param.edgeFlipAttemptRate = std::stod(variableValueStr);
+		std::cout << "edgeFlipAttemptRate set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeFlipInterval") == 0)
+	{
+		param.edgeFlipInterval = std::stoi(variableValueStr);
+		std::cout << "edgeFlipInterval set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeFlipMinValence") == 0)
+	{
+		param.edgeFlipMinValence = std::stoi(variableValueStr);
+		std::cout << "edgeFlipMinValence set to: " << variableValueStr << std::endl;
+	}
+	else if (variableNameStr.compare("edgeFlipMaxValence") == 0)
+	{
+		param.edgeFlipMaxValence = std::stoi(variableValueStr);
+		std::cout << "edgeFlipMaxValence set to: " << variableValueStr << std::endl;
+	}
 	else if (variableNameStr.compare("randomSeed") == 0)
 	{
 		param.randomSeed = static_cast<unsigned int>(std::stoul(variableValueStr));

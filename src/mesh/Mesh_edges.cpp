@@ -280,6 +280,13 @@ bool Mesh::edge_flip_is_admissible(int iEdge, std::string *why) const
                               "flipping it would move the curvature onto the other triangle");
     }
 
+    // The range a flip may leave a vertex in. The parameter can narrow it --
+    // a fluid mesh gets cheaper the closer its valences stay to 6 -- but never
+    // widen it past what the patch tables can evaluate, because a valence
+    // outside that has no patch at all and the face would carry no energy.
+    const int minValence = std::max(param.edgeFlipMinValence, kMinIrregularValence);
+    const int maxValence = std::min(param.edgeFlipMaxValence, kMaxIrregularValence);
+
     // Valences after the flip: the two endpoints each lose a neighbour, the two
     // opposite corners each gain one.
     const int valenceAfter[4] = {
@@ -291,13 +298,12 @@ bool Mesh::edge_flip_is_admissible(int iEdge, std::string *why) const
     const int quad[4] = {nodeA, nodeB, target0, target1};
     for (int k = 0; k < 4; ++k)
     {
-        if (valenceAfter[k] < kMinIrregularValence || valenceAfter[k] > kMaxIrregularValence)
+        if (valenceAfter[k] < minValence || valenceAfter[k] > maxValence)
         {
             return reject(label + " would put vertex " + std::to_string(quad[k]) +
                           " at valence " + std::to_string(valenceAfter[k]) +
-                          ", outside the supported range [" +
-                          std::to_string(kMinIrregularValence) + ", " +
-                          std::to_string(kMaxIrregularValence) + "]");
+                          ", outside the supported range [" + std::to_string(minValence) + ", " +
+                          std::to_string(maxValence) + "]");
         }
     }
 

@@ -94,6 +94,49 @@ struct EdgeFlipDelta
 };
 
 /**
+ * @brief One attempted flip, for the diagnostic log.
+ *
+ * Every dynamically triangulated surface paper reports an acceptance rate, and
+ * it is the first number to look at when a fluid run misbehaves: too low and
+ * the membrane is a solid with extra steps, too high and the move is not
+ * sampling anything the energy cares about.
+ */
+struct EdgeFlipRecord
+{
+    long long iteration = 0;
+    int edge = -1;
+    int vertex[4] = {-1, -1, -1, -1}; ///< The two endpoints, then the two targets.
+    double deltaEnergy = 0.0;
+    bool accepted = false;
+};
+
+/// What one Metropolis flip sweep did.
+struct EdgeFlipSweepStats
+{
+    int drawn = 0;         ///< Attempts the Poisson draw asked for.
+    int attempted = 0;     ///< Of those, edges that passed the admission test.
+    int accepted = 0;      ///< Of those, flips Metropolis kept.
+    double deltaEnergy = 0.0; ///< Summed over accepted flips.
+
+    /// Accepted over attempted -- the flip rate the DTS literature reports.
+    double acceptance() const
+    {
+        return (attempted > 0) ? static_cast<double>(accepted) / attempted : 0.0;
+    }
+};
+
+/**
+ * @brief Append a flip log to a CSV, writing the header if the file is new.
+ *
+ * One line per attempt, accepted or not. The acceptance rate is the first
+ * number to look at when a fluid run misbehaves, and the energy differences
+ * say whether the move is sampling anything the Hamiltonian cares about or
+ * just shuffling degenerate configurations.
+ */
+void write_edge_flip_log_csv(const std::vector<EdgeFlipRecord> &records,
+                             const std::string &path);
+
+/**
  * @brief A class representing a triangular mesh that defines a
  * limit surface.
  *
@@ -453,6 +496,43 @@ public:
     bool evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why = nullptr);
 
     /**
+     * @brief One Metropolis sweep of edge flips.
+     *
+     * The move that makes the membrane a fluid. The number of attempts is
+     * drawn from a Poisson distribution with mean
+     *
+     *     lambda = edgeFlipAttemptRate * timeStep * edgeFlipInterval * N_flippable
+     *
+     * so the physical attempt rate per edge is what the parameter says and does
+     * not move when the time step does. Drawing the count rather than fixing it
+     * is what makes that true: a fixed count per step would double the rate
+     * when the step halved.
+     *
+     * Each attempt takes a uniformly chosen edge and accepts with
+     * `min(1, exp(-dE / kT))`. A uniform choice makes the proposal symmetric --
+     * the reverse flip is proposed from the new state with the same
+     * probability, since a flip is an involution and the edge count is
+     * conserved -- so there is no proposal ratio to correct for.
+     *
+     * Flips are evaluated one at a time rather than in a batch. Accepting
+     * several at once multiplies their acceptance probabilities, which is not
+     * the same chain; TriMem makes the same point and keeps the acceptance
+     * step serial for it.
+     *
+     * Coordinates are not touched. The running totals param.area and param.vol
+     * are updated after each accepted flip, because the next attempt's
+     * constraint difference is measured against them. The caller is
+     * responsible for recomputing forces afterwards if any flip was accepted --
+     * the stored per-face energies and forces describe the old connectivity.
+     *
+     * @param iteration Mixed into the RNG key, so a sweep is reproducible from
+     *                  the seed and the step number alone.
+     * @param log       Optional; appended with one record per attempt.
+     */
+    EdgeFlipSweepStats edge_flip_sweep(long long iteration,
+                                       std::vector<EdgeFlipRecord> *log = nullptr);
+
+    /**
      * @brief Check that the mesh is still a consistently wound two-manifold.
      *
      * Every edge in at most two faces, every interior vertex fan closed, every
@@ -652,7 +732,18 @@ public:
      * @param node3
      * @return int vertex index
      */
-    int find_opposite_node_index(const int &node1, const int &node2, const int &node3);
+    /**
+     * @brief The corner across the edge (@p node1, @p node2) from @p node3.
+     *
+     * Reads the edge table, so it needs build_edge_table() to have run. An
+     * edge of a two-manifold has exactly two incident faces and so exactly two
+     * candidates; inferring them from the two vertices' shared neighbours
+     * instead is only correct on a near-regular mesh, which is not what a
+     * fluid membrane is.
+     *
+     * @return The corner, or -1 if there is no such edge or nothing across it.
+     */
+    int find_opposite_node_index(const int &node1, const int &node2, const int &node3) const;
 
     /**
      * @brief find out the one-ring vertices aound face_i. It should be 12 for the flat surface because we set it up only with regular patch.

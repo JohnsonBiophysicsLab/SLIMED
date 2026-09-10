@@ -273,8 +273,55 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
     // exactly the same faces, which is what makes everything outside cancel.
     const std::vector<int> patch = flip_patch_faces(iEdge);
 
+    // Which faces carry a control net now. A flip must not take that away
+    // from any of them -- see the check below.
+    std::vector<char> hadPatch(patch.size(), 0);
+    for (std::size_t i = 0; i < patch.size(); i++)
+    {
+        hadPatch[i] = faces[patch[i]].oneRingVertices.empty() ? 0 : 1;
+    }
+
     const FaceSubsetEnergy before = evaluate_face_subset(patch);
     flip_edge(iEdge);
+
+    // A face whose one-ring cannot be built carries no energy at all, and that
+    // is not a neutral outcome for a Monte Carlo move: zero is the lowest
+    // energy there is, so a chain allowed to reach such a configuration would
+    // be actively drawn into it. The Hamiltonian would develop a hole and the
+    // membrane would tear along it.
+    //
+    // Refusing the move is the honest fix. It keeps the chain inside the set
+    // of configurations the model can actually describe, which is where a
+    // Metropolis chain has to stay for its stationary distribution to mean
+    // anything. Rare in practice -- the configurations that trigger it are
+    // strained enough that the energy would usually reject them anyway -- but
+    // "usually" is not a guarantee when the alternative is a free lunch.
+    //
+    // Note that this guards evaluate_edge_flip(), not flip_edge(). The
+    // primitive stays unguarded on purpose: it is what the trial itself uses
+    // to look ahead, and what a test uses to drive the mesh somewhere
+    // deliberately.
+    bool lostAPatch = false;
+    for (std::size_t i = 0; i < patch.size(); i++)
+    {
+        if (hadPatch[i] != 0 && faces[patch[i]].oneRingVertices.empty())
+        {
+            lostAPatch = true;
+            break;
+        }
+    }
+    if (lostAPatch)
+    {
+        flip_edge(iEdge); // restore
+        if (why != nullptr)
+        {
+            *why = "edge " + std::to_string(iEdge) +
+                   " would leave a face in its neighbourhood without a subdivision patch, so "
+                   "that face would carry no energy and no force";
+        }
+        return false;
+    }
+
     const FaceSubsetEnergy after = evaluate_face_subset(patch);
     flip_edge(iEdge); // restore
 

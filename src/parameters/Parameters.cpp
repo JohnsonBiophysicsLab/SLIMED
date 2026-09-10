@@ -76,6 +76,11 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "thermalFluctuationMinTemperatureKelvin: " << param.thermalFluctuationMinTemperatureKelvin << std::endl;
     os << "thermalFluctuationCoolingRate: " << param.thermalFluctuationCoolingRate << std::endl;
     os << "thermalFluctuationStepScale: " << param.thermalFluctuationStepScale << std::endl;
+    os << "edgeFlipEnabled: " << param.edgeFlipEnabled << std::endl;
+    os << "edgeFlipAttemptRate: " << param.edgeFlipAttemptRate << std::endl;
+    os << "edgeFlipInterval: " << param.edgeFlipInterval << std::endl;
+    os << "edgeFlipMinValence: " << param.edgeFlipMinValence << std::endl;
+    os << "edgeFlipMaxValence: " << param.edgeFlipMaxValence << std::endl;
     os << "energy: " << param.energy << std::endl;
     os << "energyPrev: " << param.energyPrev << std::endl;
     return os;

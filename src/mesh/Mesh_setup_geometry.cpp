@@ -243,35 +243,46 @@ void Mesh::set_adjacent_vertices_of_vertices_sorted()
     }
 }
 
-int Mesh::find_opposite_node_index(const int &node1, const int &node2, const int &node3)
+int Mesh::find_opposite_node_index(const int &node1, const int &node2, const int &node3) const
 {
-    int node = -1;
-    for (int i = 0; i < vertices[node1].adjacentVertices.size(); i++)
+    // The corner across the edge (node1, node2) from node3.
+    //
+    // This used to intersect the two vertices' neighbour lists and take a
+    // common neighbour that was not node3. That is the right answer only when
+    // the two share exactly two neighbours, which on a near-regular mesh they
+    // do -- the two corners opposite their shared edge. It is not true in
+    // general. Two adjacent vertices of an irregular triangulation can easily
+    // share a third neighbour that forms no face with the edge between them,
+    // and then the intersection was ambiguous and the loop returned whichever
+    // one it happened to see last.
+    //
+    // Nothing noticed while connectivity was fixed at setup, because the
+    // meshes this tree builds are near-regular. Edge flips make the mesh
+    // irregular by construction, and the ambiguity turned into fans that did
+    // not close and faces left with no patch at all -- carrying, silently,
+    // zero energy and zero force.
+    //
+    // The edge table answers the question exactly instead of inferring it: an
+    // edge of a two-manifold has exactly two incident faces, and their third
+    // corners are the only two candidates there have ever been.
+    const int iEdge = edge_between(node1, node2);
+    if (iEdge < 0)
     {
-        int nodetmp1 = vertices[node1].adjacentVertices[i];
-        for (int j = 0; j < vertices[node2].adjacentVertices.size(); j++)
+        return -1;
+    }
+    const MeshEdge &edge = edges[iEdge];
+    for (int k = 0; k < 2; k++)
+    {
+        if (edge.face[k] >= 0 && edge.opposite[k] != node3)
         {
-            int nodetmp2 = vertices[node2].adjacentVertices[j];
-            if (nodetmp1 == nodetmp2 && nodetmp1 != node3)
-            {
-                node = nodetmp1;
-            }
+            return edge.opposite[k];
         }
     }
-    if (node == -1 && param.VERBOSE_MODE)
-    {
-        // Not finding one is a legitimate outcome, not a fault: it is how the
-        // two-ring walk reports that a face near the mesh boundary has no
-        // complete one-ring, and build_one_ring_for_face() turns the -1 into a
-        // rejection that names the face and its valences. The print used to
-        // sit outside an empty `if (param.VERBOSE_MODE) {}` block and fire
-        // unconditionally -- harmless at setup, where it happens once per
-        // boundary face, but a flip sweep rebuilds one-rings thousands of
-        // times per run and would bury the log under it.
-        cout << "No efficent oneRingVerticesIndex is found! Node1 = " << node1
-             << ", Node2 = " << node2 << ", Node3 = " << node3 << endl;
-    }
-    return node;
+    // A boundary edge carries one face, and if that face is the one node3
+    // corners then there is nothing across it. That is how the walk reports a
+    // face on the mesh boundary, which is a property of the mesh rather than a
+    // fault; build_one_ring_for_face() turns it into a named rejection.
+    return -1;
 }
 
 /**
@@ -718,6 +729,18 @@ void Mesh::ensure_multi_patch_entries(const std::vector<int> *onlyFaces)
 
 void Mesh::set_one_ring_vertices_sorted()
 {
+    // The one-ring walk resolves "the corner across this edge" through the
+    // edge table. Checked here rather than inside the parallel loop, where a
+    // throw cannot escape: without the table every face would be rejected for
+    // an incomplete fan, which is a confusing way to report a missing setup
+    // step.
+    if (edges.empty() && !faces.empty())
+    {
+        throw std::runtime_error(
+            "[Mesh::set_one_ring_vertices_sorted] the edge table is empty. Call "
+            "build_edge_table() first; the one-ring walk reads it.");
+    }
+
     const int nFaces = static_cast<int>(faces.size());
 
     // Per-face rejection reason, filled in the parallel pass and reported

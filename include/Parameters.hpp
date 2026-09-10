@@ -226,6 +226,36 @@ struct Param
     bool integratePeriodicDuplicates = false; ///< Legacy: give the fourth-ring periodic duplicates their own Brownian kick before overwriting them
     bool surfacepointOutput = true; ///< whether to output surface point file
 
+    // Monte Carlo edge flips -- in-plane fluidity. See docs/edge_flip_plan.md.
+    /// Run the Metropolis flip sweep alongside the Brownian step.
+    bool edgeFlipEnabled = false;
+    /**
+     * @brief Attempts per edge per microsecond: the fluidity knob, nu.
+     *
+     * The number of attempts in a sweep is drawn from a Poisson distribution
+     * with mean nu * timeStep * edgeFlipInterval * (flippable edges), so
+     * halving the time step halves the attempts and the physical rate per edge
+     * is unchanged. That independence is the whole reason the count is drawn
+     * rather than fixed.
+     *
+     * It is a physical quantity, not a numerical one: the accepted-flip rate
+     * sets the membrane's in-plane viscosity and the diffusion of a vertex. A
+     * vertex at lFace = 5 nm stands for of order a hundred lipids, and with a
+     * lipid diffusion constant of 1-10 nm^2/us such a patch exchanges a
+     * neighbour every 0.6-6 us, which puts nu in the range 0.1-1 per
+     * microsecond. WP6 calibrates it against a measured neighbour-survival
+     * time rather than leaving it at a guess.
+     */
+    double edgeFlipAttemptRate = 0.5;
+    /// Steps between sweeps. The attempt count scales with it, so this trades
+    /// sweep frequency against sweep size at a fixed physical rate.
+    int edgeFlipInterval = 1;
+    /// Valences a flip may leave behind, clamped to what the patch tables
+    /// support. Narrowing the range cuts the cost of a fluid mesh, at the
+    /// price of refusing flips a dynamically triangulated surface would allow.
+    int edgeFlipMinValence = 4;
+    int edgeFlipMaxValence = 8;
+
     // thermal fluctuation / annealing for equilibrium searches
     bool thermalFluctuationEnabled = false;           ///< Enable Metropolis thermal trial moves during minimization
     bool thermalFluctuationPureMMC = false;           ///< Run pure Metropolis Monte Carlo trial moves without NCG
