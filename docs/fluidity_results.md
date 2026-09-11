@@ -577,7 +577,8 @@ which analyses `fluid_e` by default and any other run through `SLIMED_FLUID_RUN`
 | solid `tension`, exact resampler | 6401 | -3.09 | 59.4 | +3.62 | | |
 | solid `tension`, subdivision route | 3201 | -3.04 | 59.3 | +3.62 | 57.2 +- 5.4 | 3.79 +- 0.27 |
 | frozen `fluid_c`, subdivision route | 3201 | -3.48 | 60.5 | +2.28 | 47.3 +- 9.7 | 3.01 +- 0.40 |
-| **fluid `fluid_e`**, subdivision route | 3201 | -3.36 | **94.1** | **+2.35** | 85.6 +- 9.5 | 2.97 +- 0.44 |
+| **fluid `fluid_e`** (wall 0.7), subdivision route | 3201 | -3.36 | **94.1** | **+2.35** | 85.6 +- 9.5 | 2.97 +- 0.44 |
+| **fluid `fluid_f`** (wall 0.8), subdivision route | 3201 | -3.28 | **75.6** | **+2.84** | 57.8 +- 15.9 | 3.83 +- 0.73 |
 
 *The frozen run.* `fluid_c` returns the solid's modulus:
 
@@ -599,10 +600,18 @@ constraint puts into a sheet that has to buy its excess area from
 fluctuations. It is also, as section 11 found afterwards, a sheet whose
 connectivity did not move, so the agreement is between two solids.
 
-*The fluid run.* The same fit calls `fluid_e` 50% stiffer than the solid
-(ratio 1.50 +- 0.22, 2.3 standard errors) and 22% less tense, and reads the
-input `kc` of 83.4 to +2.6% where the solid reads it at -31%. Mode by mode
-that is not a stiffer membrane. Against the control the fluid has *more*
+*The fluid runs.* The same fit calls `fluid_e` (wall 0.7) 50% stiffer than
+the solid (ratio 1.50 +- 0.22 by blocks) and 22% less tense, and `fluid_f`
+(wall 0.8) 28% stiffer and 21% less tense on the whole trajectory but the
+same by blocks (1.01 +- 0.29). The block fits carry errors of +-10-16
+pN.nm -- what a two-parameter fit on a crossover spectrum costs over 40 us
+blocks -- and cannot tell the input `kc` of 83.4 from the solid's reading of
+57. The whole-trajectory fits move with the wall, `kc` 59, 76, 94 and
+`sigma` 3.6, 2.8, 2.35 for the solid, `fluid_f` and `fluid_e`; the mean
+effective stiffness in the window is 5-6% below the solid's in both fluid
+runs (174-175 against 184) and the power beyond the window 0.73-0.78 of
+the solid's. Mode by mode (`fluid_e`) that is not a stiffer membrane.
+Against the control the fluid has *more*
 power in the four lowest modes (ratios 1.1-1.5, +- 0.2, at `|q| d_x <= 0.6`:
 wavelengths above 30 nm), about 10% *less* over the bending end of the
 window (0.84-0.98, +- 0.03-0.05, for `|q| d_x` from 0.8 to 1.57) and 27%
@@ -621,17 +630,20 @@ effective tension, `(kc_eff - kc) q^2`, is 3.6 pN/nm at its two lowest modes
 and 2.2-2.6 over the rest of the window; the fluid's is 2.1-2.8 at the
 lowest modes and rises to 3.5-4.0 at the highest. Neither is a Helfrich
 spectrum with one tension, and the two-parameter fit puts each `kc` where
-the spectrum's curvature puts it: the fluid's on the input (86 +- 10 by
-blocks), the solid's a third below, as the solid notebook found for its own
-tension run and as the frozen `fluid_c` -- a solid -- repeated. What the
-fluid sheet does differently is physical at one end and probably not at the
-other. At the longest wavelengths it has more power than the solid, which
-is what a sheet without in-plane stiffness should have: a polymerized
-membrane's bending is renormalised upward at long wavelength by its shear
-modulus, a fluid one's is not. At the shortest wavelengths in the window it
-has 10% less, and 27% less beyond it, on a triangulation whose vertices are
-60% extraordinary and whose edges run from 3 to 9 nm -- the mesh scale, not
-the membrane.
+the spectrum's curvature puts it: the solid's a third below the input, as
+the solid notebook found for its own tension run and as the frozen
+`fluid_c` -- a solid -- repeated; the fluid's above the solid's, by an
+amount that grows as the wall drops. That order is the order of in-plane
+stiffness -- the solid with its reference lengths, then `fluid_c` pressing
+473 pN.nm per frame into its lower wall, then `fluid_f` at 206 and
+`fluid_e` at 103 -- and the less a sheet's vertices resist in plane, the
+more long-wavelength power it has. That is what a sheet without in-plane
+stiffness should have: a polymerized membrane's bending is renormalised
+upward at long wavelength by its shear modulus, a fluid one's is not, and
+the fit reads the difference as a lower tension with a higher `kc`. At the
+shortest wavelengths in the window the fluid has 10% less power, and 27%
+less beyond it, on a triangulation whose vertices are 60% extraordinary and
+whose edges run from 3 to 9 nm -- the mesh scale, not the membrane.
 
 Two things that were suspected and are not it: the altitude floor, which is
 live on the same 5% of interior faces in `fluid_c` (4.6%, 29 pN.nm in it
@@ -648,16 +660,18 @@ periodic images.
 
 ## 12. Not done
 
-**Why the solid at `muS = 250` reads a third below its input `kc`, and the
-fluid does not.** Section 11's fluid membrane fits the input modulus; the
-solid control at the same area elasticity fits 57, and the difference sits
-at the two ends of the window. The tests are a solid run at `muS = 250` with
-its reference-length regularization weakened (if the long-wavelength deficit
-is the shear modulus renormalising `kc`, it goes), a fluid run at `muS =
-500` (the fitted tension should double and `kc` stay), and a finer mesh
-(`lFace = 2.5`, pushing the mesh scale out of the window, for the 10%).
-Until then the fluid result is one run of 5.9 relaxation times with `kc`
-still settling; `fluid_f` at the other wall is its first replicate.
+**`kc` of the fluid membrane at conserved area.** Two runs put its
+two-parameter fit above the solid's (94 and 76 against 59 on the whole
+trajectory) with block errors of +-10-16 pN.nm that cannot tell the input
+83 from the solid's 57, and the difference sits at the two ends of the
+window. The tests are a solid run at `muS = 250` with its reference-length
+regularization weakened (if the long-wavelength deficit is the shear
+modulus renormalising `kc`, it goes), a fluid run at `muS = 500` (the fitted
+tension should double and `kc` stay), a finer mesh (`lFace = 2.5`, pushing
+the mesh scale out of the window, for the 10%), and length: the block error
+falls as the square root of the time, so four runs of 400 us at each wall
+would bring +-16 to +-8. Until then the fluid `kc` is a 400 us number with
+its prefixes still moving (99.6, 96.8, 94.1 at 0.7; 79.1, 78.1, 75.6 at 0.8).
 
 **The default lower wall.** `edgeTetherMinRatio` stays at 0.95 in
 `Parameters.hpp` -- the value at which a run at conserved area freezes --
