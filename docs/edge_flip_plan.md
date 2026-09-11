@@ -1358,13 +1358,14 @@ the crease wall makes valences 4–8 safe there without changing that (0.92);
 the tether's lower wall is the knob: at 0.7 (`fluid_e`) and 0.8 (`fluid_f`)
 of `lFace` the sheet is fluid and flat at once — survival 0.66 after 400 µs,
 MSD exponent 0.8, r.m.s. height 0.7 nm, no fold in 400 000 steps. Its
-spectrum is not yet the solid's: the free fit reads κ_c 94 against 59 with
-σ 2.4 against 3.6, which mode by mode is more power at the longest
-wavelengths and 10% less at the shortest inside the window — the crossover
-moving, not a stiffer membrane (at any fixed σ the fluid's κ_c is 9 pN·nm
-*lower*). The suspects are the altitude floor, live on 5% of the faces at
-that wall, and the reader's projection over the 2% of triangles that
-overhang; `fluidity_results.md` §11–12.
+spectrum fits the input κ_c (86 ± 10 by blocks, 94 whole) where the solid
+control at the same μ_S fits 57 and the frozen `fluid_c` agreed with the
+solid; mode by mode the fluid has more power at the longest wavelengths (no
+in-plane stiffness to renormalise its bending) and 10% less at the shortest
+in the window (the mesh scale). Neither spectrum is a Helfrich one with a
+single tension. The altitude floor and overhangs were checked and are not
+involved; `fluidity_results.md` §11–12 has the mode-by-mode table and the
+tests.
 
 > Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
 > every previous one died at 8 700, 27 800 or 94 000 steps — with the

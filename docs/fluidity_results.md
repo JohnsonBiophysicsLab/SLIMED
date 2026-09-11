@@ -616,32 +616,55 @@ two-parameter fit can only express as a lower `sigma` with a higher `kc`;
 restricted to `|q| d_x <= pi/3` the solid reads `kc` 35 and the fluid 84,
 widened to `3 pi/4` they read 69 and 100.
 
-Two things in this run were not in `fluid_c` and are the candidates for the
-10%. With the wall at 0.7 the smallest triangles sit on the altitude floor
--- the 5th percentile of the smallest altitude is 1.97 nm against a floor of
-2.0, so the shape term is live on over 5% of the faces, and through its
-normal component it is not silent on a short-wavelength height mode -- and
-about 2% of the interior control-net triangles (7 of 384 per frame; none in
-`fluid_c`) overhang in projection, which the Monge reader can only average
-over. The fluid fit is also the less settled one: 320 us analysed, `kc`
-still moving over its prefixes (99.6, 96.8, 94.1) where the control's had
-stopped. The level check (91.4 at level 2 against 90.0 at level 3) and the
-seam (0.73% of the field) rule out the subdivision and the periodic images.
+With `kc` held at the input 83.4 the picture is sharper. The solid's
+effective tension, `(kc_eff - kc) q^2`, is 3.6 pN/nm at its two lowest modes
+and 2.2-2.6 over the rest of the window; the fluid's is 2.1-2.8 at the
+lowest modes and rises to 3.5-4.0 at the highest. Neither is a Helfrich
+spectrum with one tension, and the two-parameter fit puts each `kc` where
+the spectrum's curvature puts it: the fluid's on the input (86 +- 10 by
+blocks), the solid's a third below, as the solid notebook found for its own
+tension run and as the frozen `fluid_c` -- a solid -- repeated. What the
+fluid sheet does differently is physical at one end and probably not at the
+other. At the longest wavelengths it has more power than the solid, which
+is what a sheet without in-plane stiffness should have: a polymerized
+membrane's bending is renormalised upward at long wavelength by its shear
+modulus, a fluid one's is not. At the shortest wavelengths in the window it
+has 10% less, and 27% less beyond it, on a triangulation whose vertices are
+60% extraordinary and whose edges run from 3 to 9 nm -- the mesh scale, not
+the membrane.
+
+Two things that were suspected and are not it: the altitude floor, which is
+live on the same 5% of interior faces in `fluid_c` (4.6%, 29 pN.nm in it
+per frame) as in `fluid_e` (5.1%, 42 pN.nm), and overhangs, of which the
+interior of every one of these runs has none -- the 79 inverted triangles
+the notebook counts per frame are all in the ghost band, whose lattice
+connectivity is stale once the interior has mixed. What did change from
+`fluid_c` to `fluid_e` is the tether: 473 pN.nm per frame in the interior's
+lower wall against 103. The fluid fit is also the less settled one: 320 us
+analysed, `kc` still moving over its prefixes (99.6, 96.8, 94.1) where the
+control's had stopped. The level check (91.4 at level 2 against 90.0 at
+level 3) and the seam (0.73% of the field) rule out the subdivision and the
+periodic images.
 
 ## 12. Not done
 
-**The spectrum of the fluid membrane, and the default lower wall.** At a
-wall of 0.7 the sheet is fluid, flat and stable, and its spectrum differs
-from the solid's at both ends of the window (section 11): more power at the
-longest wavelengths, 10% less at the shortest inside the window, 27% less
-beyond it. The candidates are the altitude floor, live on 5% of the faces at
-this wall, and the overhangs the Monge reader averages over; the tests are a
-run with the floor at 0.3 `lFace` (or `muS` raised, so the floor is not
-reached), and a reader that does not project. Until that is settled
-`edgeTetherMinRatio` stays at 0.95 in `Parameters.hpp` -- the value at which
-a run at conserved area freezes -- and a fluid run has to set 0.7-0.8 in its
-`input.params`. Whichever it becomes, the feasibility report should say what
-packing fraction the wall and the box imply.
+**Why the solid at `muS = 250` reads a third below its input `kc`, and the
+fluid does not.** Section 11's fluid membrane fits the input modulus; the
+solid control at the same area elasticity fits 57, and the difference sits
+at the two ends of the window. The tests are a solid run at `muS = 250` with
+its reference-length regularization weakened (if the long-wavelength deficit
+is the shear modulus renormalising `kc`, it goes), a fluid run at `muS =
+500` (the fitted tension should double and `kc` stay), and a finer mesh
+(`lFace = 2.5`, pushing the mesh scale out of the window, for the 10%).
+Until then the fluid result is one run of 5.9 relaxation times with `kc`
+still settling; `fluid_f` at the other wall is its first replicate.
+
+**The default lower wall.** `edgeTetherMinRatio` stays at 0.95 in
+`Parameters.hpp` -- the value at which a run at conserved area freezes --
+and a fluid run has to set 0.7-0.8 in its `input.params`; 0.8 keeps the
+short edges further from the altitude floor. Whichever it becomes, the
+feasibility report should say what packing fraction the wall and the box
+imply.
 
 **Calibration of `nu` against a physical neighbour-exchange time**, which
 waits on the above.
