@@ -1213,11 +1213,14 @@ Three findings worth carrying forward:
   excluding edges with two copied endpoints from the tether. The earlier
   claim here that the tether range had to be narrow was the same artifact
   measured a different way; the interior is stationary at either range, and
-  `[0.95, 1.75]` is kept for mesh quality. **The seam itself is not
-  fluid-safe**: with the exclusion in place the sheet still folds a face at
-  the corner where two duplicate rings meet, once the far-side vertices those
-  copies follow have diffused off their lattice sites — after 10⁴–10⁵ steps.
-  Genuinely periodic connectivity is the next work package.
+  `[0.95, 1.75]` is kept for mesh quality.
+- **The dynamics is not fluid-safe.** With the exclusion in place the sheet
+  still diverges after 10⁴–10⁵ steps, and the full logs put the first fold
+  in the interior every time. The flat tether bounds edge lengths and not
+  triangle shape; a fluid mesh carries slivers 0.1 nm tall at 1° continuously,
+  and an explicit Brownian step — unlike a Metropolis move — eventually walks
+  one through a fold. A triangle-shape term, or a rejecting step, is the next
+  work package. `docs/fluidity_results.md` section 8 has the numbers.
 - **Fluidity costs 4.7× in throughput** at `-O3` on one thread (the 21× first
   recorded here was measured with the `Makefile.legacy` binary, which has no
   optimisation flag and is a `-O0` build). It is the irregular-patch cost of
