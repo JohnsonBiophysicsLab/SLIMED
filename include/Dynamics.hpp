@@ -140,6 +140,16 @@ public:
      */
     void mark_slaved_periodic_vertices();
 
+    /**
+     * @brief Say at startup whether the flip move can actually move.
+     *
+     * A run with flips on and a tether too stiff to flip over reports its
+     * attempts, accepts none, and looks exactly like a run whose attempt rate
+     * is too low. The barrier is known in closed form before the first step,
+     * so there is no reason to let the run find out by producing nothing.
+     */
+    void report_edge_flip_feasibility();
+
 protected:
     /**
      * @brief calculate real point relative to the given ghost point (index(real) - index(given)) in periodic boundary condition

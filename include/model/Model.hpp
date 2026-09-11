@@ -107,8 +107,18 @@ public:
     Mesh& mesh;     /**< The mesh object. */
     Record& record; /**< The record object. */
     // Optimization
-    int iteration;                    /**< The current iteration count of the optimization algorithm. */
-    double stepSize;                  /**< The current step size */
+    int iteration = 0;                /**< The current iteration count of the optimization algorithm. */
+    /**
+     * @brief The current step size.
+     *
+     * Zero until the line search sets it. It was uninitialized, which is a
+     * read of indeterminate value anywhere it is touched before the first
+     * minimization step -- and one of those places is the restart checkpoint,
+     * which writes it out. A garbage double is very often subnormal, and
+     * libc++'s `operator>>` sets failbit on a subnormal even though it parses
+     * the value correctly, so such a checkpoint could not be read back at all.
+     */
+    double stepSize = 0.0;
     OptimizationAlgorithm oa;         /**< The state for the optimization algorithm. */
     std::vector<Force> ncgDirection0; ///< vector to store the initial direction for nonlinear conjugate gradient optimization
 

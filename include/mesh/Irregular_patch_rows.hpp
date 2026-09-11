@@ -76,6 +76,15 @@ constexpr int kDefaultIrregularDepth = 12;
 int recommended_irregular_depth(int valence);
 
 /**
+ * @brief A recommended depth with Param::irregularPatchDepthScale applied.
+ *
+ * Rounded to the nearest level and floored at 1: a scale small enough to ask
+ * for zero levels would ask for no surface at all, since the depth-0 patch is
+ * the extraordinary corner itself and has no regular child to evaluate.
+ */
+int scaled_irregular_depth(int recommendedDepth, double depthScale);
+
+/**
  * @brief Immutable, thread-shared table of limit-surface rows.
  *
  * Built once at startup. It depends only on the valence and the quadrature
@@ -108,13 +117,21 @@ public:
      * @param depth how many times to recurse. The children tile all but
      *        `4^-depth` of the parameter domain; the remaining sliver around
      *        the extraordinary corner is truncated.
+     * @param depthScale multiplies every valence's recommended depth --
+     *        `Param::irregularPatchDepthScale`. Under `PerValence` the built
+     *        depth follows it, so a scale below 1 is cheaper to build as well
+     *        as to evaluate and a scale above 1 actually has the extra levels
+     *        to hand out. `Uniform` ignores it: that policy exists so the
+     *        convergence study can sweep the depth itself, and a second knob
+     *        on top of the one under study would only confuse it.
      *
      * @throw std::invalid_argument on a non-positive depth or a shape function
      *        that is not `7 x 12`.
      */
     void build(const std::vector<Matrix> &regularShapeFunctions,
                int depth = kDefaultIrregularDepth,
-               DepthPolicy policy = DepthPolicy::PerValence);
+               DepthPolicy policy = DepthPolicy::PerValence,
+               double depthScale = 1.0);
 
     /**
      * @brief The `7 x (N+6)` rows for one child at one sample.
@@ -136,12 +153,15 @@ public:
 
     bool empty() const { return rows_.empty(); }
     int depth() const { return depth_; }
+    /// The depth scale this was built with. See Param::irregularPatchDepthScale.
+    double depth_scale() const { return depthScale_; }
 
     /**
      * @brief Depth to actually consume for this valence.
      *
      * The table is built to one depth for every valence, but callers stop at
-     * the depth that valence needs -- see recommended_irregular_depth().
+     * the depth that valence needs -- see recommended_irregular_depth(), as
+     * scaled by the depth scale this was built with.
      */
     int depth_for(int valence) const;
     int nSamples() const { return nSamples_; }
@@ -158,6 +178,7 @@ private:
     int depth_ = 0;
     int nSamples_ = 0;
     DepthPolicy policy_ = DepthPolicy::PerValence;
+    double depthScale_ = 1.0;
     /// Grouped by (valence, depth, child); each entry holds one Matrix per sample.
     std::vector<std::vector<Matrix>> rows_;
 };

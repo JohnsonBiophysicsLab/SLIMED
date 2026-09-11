@@ -27,24 +27,107 @@ void DynamicMesh::setup_flat() {
             "the mask it was built from. See docs/edge_flip_plan.md section 3.7.");
     }
 
+    // A flip on a triangulation of valence-6 vertices leaves two faces with
+    // extraordinary corners at both ends of the new edge, so a fluid mesh is
+    // full of faces with more than one of them -- and DeviceMeshLayout cannot
+    // build those yet. Left alone, the run would start, flip, and then throw
+    // out of the layout builder partway through, with a mesh already changed.
+    // Say so before the first step instead.
+    if (param.edgeFlipEnabled && param.forceBackend == "gpu")
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::setup_flat] edgeFlipEnabled = true needs forceBackend = cpu. A flip "
+            "creates faces with more than one extraordinary corner, which the device layout "
+            "cannot represent; only the CPU kernel evaluates those. See "
+            "docs/edge_flip_plan.md work package 5.");
+    }
+
+    if (param.edgeFlipEnabled)
+    {
+        report_edge_flip_feasibility();
+    }
+
     // Assign mesh2surface and surface2mesh
-    if (param.VERBOSE_MODE)
+    //
+    // Skipped entirely under the iterative solver, which is the whole point of
+    // it: the dense path allocates two N x N matrices and inverts one of them,
+    // which on a 300 nm sheet (4331 vertices) is 55 seconds and 300 MB before
+    // the first step runs. The sparse structure it is replaced by is built
+    // lazily by ensure_surface_solver(), in a quarter of a millisecond.
+    if (param.surfaceSolver != "iterative")
     {
-        std::cout << "[DynamicMesh] Assigning conversion matrices." << std::endl;
-    }
-    assign_mesh2surface();
-    if (param.VERBOSE_MODE)
-    {
-        std::cout << "[DynamicMesh] mesh2surface matrix : " << std::endl << mesh2surface << std::endl;
-    }
-    mesh2surface.get_inverted(surface2mesh);
-    if (param.VERBOSE_MODE)
-    {
-        std::cout << "[DynamicMesh] surface2mesh matrix : " << std::endl << surface2mesh << std::endl;
+        if (param.VERBOSE_MODE)
+        {
+            std::cout << "[DynamicMesh] Assigning conversion matrices." << std::endl;
+        }
+        assign_mesh2surface();
+        if (param.VERBOSE_MODE)
+        {
+            std::cout << "[DynamicMesh] mesh2surface matrix : " << std::endl
+                      << mesh2surface << std::endl;
+        }
+        mesh2surface.get_inverted(surface2mesh);
+        if (param.VERBOSE_MODE)
+        {
+            std::cout << "[DynamicMesh] surface2mesh matrix : " << std::endl
+                      << surface2mesh << std::endl;
+        }
     }
     matMesh = mat_calloc(vertices.size(), 3);
     matSurface = mat_calloc(vertices.size(), 3);
     mark_slaved_periodic_vertices();
+}
+
+void DynamicMesh::report_edge_flip_feasibility()
+{
+    // A flip on a rhombus of two equilateral triangles of side l replaces the
+    // short diagonal l by the long one, l * sqrt(3). With a harmonic tether at
+    // rest length l the move therefore has to climb
+    //
+    //     dE = (k / 2) (sqrt(3) - 1)^2 l^2
+    //
+    // and Metropolis accepts it with probability exp(-dE / kT). That barrier
+    // grows with the square of the mesh spacing, so a stiffness that is
+    // reasonable at one lFace can freeze the membrane solid at another, and
+    // nothing downstream says so: the run proceeds, reports its attempts, and
+    // accepts none of them. This is why the dynamically triangulated surface
+    // literature uses a flat-bottomed tether rather than a spring -- inside
+    // the allowed range a flip costs nothing.
+    if (param.edgeSpringEnabled)
+    {
+        const double restLength =
+            (param.edgeSpringRestLength > 0.0) ? param.edgeSpringRestLength : param.lFace;
+        const double reach = std::sqrt(3.0) - 1.0;
+        const double barrier = 0.5 * param.edgeSpringConstant * reach * reach * restLength *
+                               restLength;
+        const double inKT = (param.KBT > 0.0) ? barrier / param.KBT : 0.0;
+        std::cout << "[DynamicMesh] Edge-flip barrier from the edge spring: " << barrier
+                  << " pN.nm = " << inKT << " kT (k = " << param.edgeSpringConstant
+                  << " pN/nm, l0 = " << restLength << " nm)." << std::endl;
+        if (inKT > 10.0)
+        {
+            std::cout << "[DynamicMesh] WARNING: at " << inKT
+                      << " kT that barrier accepts roughly exp(-" << inKT
+                      << ") of the flips offered, so the membrane will not be fluid. The "
+                         "acceptance is what edgeFlipAttemptRate is calibrated against, and it "
+                         "will read as zero however high the rate is set. Lower "
+                         "edgeSpringConstant -- a few kT of barrier means k of order "
+                      << 10.0 * param.KBT / (0.5 * reach * reach * restLength * restLength)
+                      << " pN/nm at this lFace." << std::endl;
+        }
+    }
+    else
+    {
+        std::cout
+            << "[DynamicMesh] WARNING: edgeFlipEnabled = true with edgeSpringEnabled = false. "
+               "The regularization then in force measures each face against its own edges in "
+               "the reference configuration, which an edge a flip has just created never had. "
+               "Those faces carry an energy that is not a function of the mesh, and the "
+               "Metropolis sweep samples it: measured on a 100 nm sheet, every accepted flip "
+               "reported about -1200 pN.nm of it. Set edgeSpringEnabled = true. See "
+               "docs/edge_flip_plan.md section 3.7."
+            << std::endl;
+    }
 }
 
 void DynamicMesh::mark_slaved_periodic_vertices()

@@ -282,6 +282,17 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
     }
 
     const FaceSubsetEnergy before = evaluate_face_subset(patch);
+
+    // The trial below flips and flips back, and each of those bumps
+    // topologyVersion. That leaves the mesh exactly as it was but the version
+    // two ahead, which is not a harmless overcount: the version is the signal
+    // every connectivity-keyed cache invalidates on, and it is what says
+    // whether a trajectory frame needs its connectivity written beside it. A
+    // rejected attempt would rebuild the device layout and the sparse limit
+    // mask, and write a duplicate face frame, for a mesh that never moved --
+    // and on a fluid run most attempts are rejected. Put it back with the
+    // mesh.
+    const long long versionBeforeTrial = topologyVersion;
     flip_edge(iEdge);
 
     // A face whose one-ring cannot be built carries no energy at all, and that
@@ -313,6 +324,7 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
     if (lostAPatch)
     {
         flip_edge(iEdge); // restore
+        topologyVersion = versionBeforeTrial;
         if (why != nullptr)
         {
             *why = "edge " + std::to_string(iEdge) +
@@ -324,6 +336,7 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
 
     const FaceSubsetEnergy after = evaluate_face_subset(patch);
     flip_edge(iEdge); // restore
+    topologyVersion = versionBeforeTrial;
 
     delta.bending = after.bending - before.bending;
     delta.regularization = after.regularization - before.regularization;

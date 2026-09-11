@@ -141,7 +141,9 @@ bool write_model_restart_checkpoint(const Model &model,
     }
 
     outfile << std::setprecision(17);
-    outfile << "SLIMED_RESTART_V1\n";
+    // V2 adds the faces block below. The reader still accepts V1, which had no
+    // connectivity in it because nothing could change it.
+    outfile << "SLIMED_RESTART_V2\n";
     outfile << "nextIteration " << nextIteration << "\n";
     outfile << "stepSize " << model.stepSize << "\n";
     outfile << "oa "
@@ -188,6 +190,17 @@ bool write_model_restart_checkpoint(const Model &model,
         outfile << ' ';
         write_matrix3(outfile, model.ncgDirection0[vertex.index].forceTotal);
         outfile << "\n";
+    }
+
+    // The connectivity, which an edge flip changes and which nothing else in
+    // the checkpoint records. Restoring the coordinates of a fluid run onto
+    // the triangulation setup_flat() builds would give a mesh whose every
+    // energy is wrong with nothing to indicate it.
+    outfile << "faces " << model.mesh.faces.size() << ' ' << model.mesh.topologyVersion << "\n";
+    for (const Face &face : model.mesh.faces)
+    {
+        outfile << face.index << ' ' << face.adjacentVertices[0] << ' '
+                << face.adjacentVertices[1] << ' ' << face.adjacentVertices[2] << "\n";
     }
 
     outfile << "scaffoldingPoints " << model.mesh.param.scaffoldingPoints.size() << "\n";
@@ -253,7 +266,10 @@ bool load_model_restart_checkpoint(Model &model, const std::string &filepath)
 
     std::string tag;
     infile >> tag;
-    if (tag != "SLIMED_RESTART_V1")
+    // V1 predates edge flips and carries no connectivity; V2 carries a faces
+    // block. Both are read, so an existing checkpoint still restarts.
+    const bool hasFacesBlock = (tag == "SLIMED_RESTART_V2");
+    if (tag != "SLIMED_RESTART_V1" && !hasFacesBlock)
     {
         std::cerr << "[load_model_restart_checkpoint] Unsupported checkpoint format in "
                   << filepath << "." << std::endl;
@@ -348,6 +364,55 @@ bool load_model_restart_checkpoint(Model &model, const std::string &filepath)
         {
             return false;
         }
+    }
+
+    if (hasFacesBlock)
+    {
+        long long storedTopologyVersion = 0;
+        infile >> tag >> count >> storedTopologyVersion;
+        if (tag != "faces")
+        {
+            return false;
+        }
+        if (count != static_cast<int>(model.mesh.faces.size()))
+        {
+            std::cerr << "[load_model_restart_checkpoint] Face count mismatch: the checkpoint has "
+                      << count << ", the mesh has " << model.mesh.faces.size() << "." << std::endl;
+            return false;
+        }
+        std::vector<std::array<int, 3>> faceCorners(count);
+        for (int row = 0; row < count; ++row)
+        {
+            int index = -1;
+            infile >> index;
+            if (index < 0 || index >= count)
+            {
+                return false;
+            }
+            for (int k = 0; k < 3; ++k)
+            {
+                if (!(infile >> faceCorners[index][k]))
+                {
+                    return false;
+                }
+            }
+        }
+        std::string why;
+        if (!model.mesh.restore_face_connectivity(faceCorners, &why))
+        {
+            std::cerr << "[load_model_restart_checkpoint] Could not restore the checkpoint's "
+                         "connectivity: "
+                      << why << std::endl;
+            return false;
+        }
+        // restore_face_connectivity() counts its own change, so the restored
+        // mesh is one version past whatever it started at rather than at the
+        // one the run had reached. Adopt the checkpoint's number so the
+        // restarted run continues its own numbering. Nothing is cached against
+        // the intermediate value -- no cache is consulted between the restore
+        // and here -- and every consumer tests the version for inequality, so
+        // a version that moves backwards still invalidates correctly.
+        model.mesh.topologyVersion = storedTopologyVersion;
     }
 
     infile >> tag >> count;
@@ -503,6 +568,9 @@ namespace
 std::ofstream trajectorySurfacePointCsv;
 std::ofstream trajectoryMeshPointCsv;
 
+/// Connectivity of the last face frame written, so an unchanged one is skipped.
+long long lastFaceFrameTopologyVersion = -1;
+
 /// Append one frame: every vertex as "x,y,z," on a single line.
 void write_trajectory_frame(std::ostream &out, const Matrix &coords, int nVertices)
 {
@@ -522,6 +590,10 @@ void dynamics_create_trajectory_files(DynamicMesh &mesh, const std::string &file
     trajectoryMeshPointCsv.clear();
     trajectorySurfacePointCsv.open("surfacepoint" + filename + ".csv");
     trajectoryMeshPointCsv.open("meshpoint" + filename + ".csv");
+    // -1 rather than the mesh's current version, so the first face frame of a
+    // fluid run is always written and every later frame has a baseline to be
+    // compared against.
+    lastFaceFrameTopologyVersion = -1;
 
     const int nVertices = static_cast<int>(mesh.vertices.size());
     write_trajectory_frame(trajectoryMeshPointCsv, mesh.matMesh, nVertices);
@@ -556,6 +628,43 @@ void dynamics_output_trajectory_files(DynamicMesh &mesh, const std::string &file
         write_trajectory_frame(trajectoryMeshPointCsv, mesh.matMesh, nVertices);
         write_trajectory_frame(trajectorySurfacePointCsv, mesh.matSurface, nVertices);
     }
+}
+
+bool dynamics_output_face_frame(DynamicMesh &mesh, const std::string &filename,
+                                long long iteration)
+{
+    if (mesh.topologyVersion == lastFaceFrameTopologyVersion)
+    {
+        return false;
+    }
+
+    const std::string path = filename + "face_" + std::to_string(iteration) + ".csv";
+    std::ofstream outfile(path);
+    if (!outfile.is_open())
+    {
+        std::cerr << "[dynamics_output_face_frame] Could not open " << path << " for writing."
+                  << std::endl;
+        return false;
+    }
+    // Same three-column layout as Mesh::write_faces_csv(), so the analysis
+    // reads a face frame with whatever it already reads face.csv with. Written
+    // here rather than through that function because it logs a line per call,
+    // and this one is called every frame.
+    for (const Face &face : mesh.faces)
+    {
+        outfile << face.adjacentVertices[0] << ',' << face.adjacentVertices[1] << ','
+                << face.adjacentVertices[2] << '\n';
+    }
+    outfile.close();
+    if (!outfile)
+    {
+        std::cerr << "[dynamics_output_face_frame] Failed while writing " << path << "."
+                  << std::endl;
+        return false;
+    }
+
+    lastFaceFrameTopologyVersion = mesh.topologyVersion;
+    return true;
 }
 
 /*

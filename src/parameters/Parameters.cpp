@@ -81,6 +81,7 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "edgeSpringConstant: " << param.edgeSpringConstant << std::endl;
     os << "edgeSpringRestLength: " << param.edgeSpringRestLength << std::endl;
     os << "surfaceSolver: " << param.surfaceSolver << std::endl;
+    os << "irregularPatchDepthScale: " << param.irregularPatchDepthScale << std::endl;
     os << "edgeFlipEnabled: " << param.edgeFlipEnabled << std::endl;
     os << "edgeFlipAttemptRate: " << param.edgeFlipAttemptRate << std::endl;
     os << "edgeFlipInterval: " << param.edgeFlipInterval << std::endl;

@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0-4 landed; 5-6 planned
+**Status:** work packages 0-5 landed; 6 planned
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -1039,19 +1039,146 @@ the spring is not, because its rest length is a parameter rather than a memory.
 The spring's force joins the Brownian drive, which the old term's never did —
 with the in-plane displacement zeroed it had nothing to act on.
 
-### WP5 — Wiring, output, GPU
+### WP5 — Wiring, output, GPU — **landed**
 
 Sweep call in `Run_dynamics_flat.cpp` after the end-of-step force evaluation;
 version-based invalidation (§3.6); `face_<iteration>.csv`; checkpoint faces
-block; parameters. Host side only if CUDA cannot be built here (it cannot —
-see the GPU memory note); the device layout rebuild is exercised by the
-`HostForceBackend` tests that already pin the layout against the CPU loop.
+block; `irregularPatchDepthScale`.
 
 > Gate: a short flat run with flips on writes paired coordinate/face frames
 > that reload into a consistent mesh; the layout rebuild fires exactly on
 > steps with accepted flips.
 
+**Result: met, with one part of the gate found to be unreachable and replaced.**
+21 tests in `tests/test_fluid_run_io.cpp`; the suite is 163, 162 passing and 1
+skipped (CUDA, no local device). The shipped periodic workload is byte-identical
+to a serial build at `1fdffbd` across all 8 outputs with the new flags off. A
+3000-step fluid run on a 100 nm sheet (525 vertices, 960 faces,
+`edgeSpringConstant = 20`, `meshpointOutputInterval = 10`) accepted 17 flips and
+wrote 15 face frames: none duplicated, all two-manifold, a baseline at iteration
+0, so every coordinate frame pairs with a connectivity.
+
+**The device-layout half of the gate cannot be met and was not faked.**
+`DeviceMeshLayout` refuses a face with more than one extraordinary corner, and a
+flip leaves extraordinary corners at *both* ends of the new edge — so a flipped
+mesh is exactly what it cannot build. The GPU backend therefore cannot run a
+fluid membrane at all until the device kernel gains WP1's multi-extraordinary
+path. `DynamicMesh::setup_flat()` now refuses `edgeFlipEnabled` with
+`forceBackend = gpu` before the first step, rather than letting the run flip and
+then throw out of the layout builder with a mesh already changed. What is tested
+instead is the invalidation predicate itself, on a mesh the layout can build: a
+version change rebuilds it and an unchanged version does not.
+
+#### A trial flip was moving the invalidation signal
+
+`evaluate_edge_flip()` flips the edge, measures, and flips it back, and each of
+those bumped `topologyVersion`. A *rejected* attempt therefore left the mesh
+exactly as it was and the version two ahead. Nothing became wrong —
+over-invalidation is safe — but the version is what says whether a cache is
+stale and whether a frame needs its connectivity written beside it, and on a
+fluid run most attempts are rejected. Measured before the fix: a 500-step run
+with 121 attempts and **zero** acceptances wrote **112** identical face frames
+and rebuilt the sparse limit mask 121 times. The trial now restores the version
+with the mesh; the same run writes one baseline frame and nothing else.
+
+#### Two defects found in the paths this wiring runs through
+
+- **`set_adjacent_faces_of_vertices_sorted()` is only valid for the pristine
+  grid.** It reads a vertex's six adjacent faces off the generated flat sheet's
+  face numbering and *erases* anything not among them. After a flip a vertex can
+  have seven, and the seventh has no grid index, so it was silently dropped —
+  the vertex then claimed fewer faces than named it. `flip_edge()` maintains
+  these as sets rather than fans for exactly this reason. Split into
+  `set_adjacent_faces_of_vertices_unsorted()`, which the connectivity restore
+  uses. (`nFaceX` defaults to `-1`, so on an imported mesh the sorting loop
+  never ran and the bug was invisible there.)
+- **`Model::stepSize` was uninitialized**, and the restart checkpoint writes it.
+  A garbage double is very often subnormal, and libc++'s `operator>>` sets
+  failbit on a subnormal even though it parses the value correctly — so such a
+  checkpoint could not be read back at all. Initialized to `0.0`. The residual
+  risk is unfixed: any genuinely subnormal double anywhere in a checkpoint still
+  makes it unreadable on this platform.
+
+#### Output and restart
+
+- `<prefix>face_<iteration>.csv`, written beside a trajectory frame whose
+  connectivity differs from the last one written, in the same three-column
+  layout as `face.csv`. Gated on `edgeFlipEnabled`, so a run with flips off
+  produces exactly the files it always did.
+- `<prefix>EdgeFlips.csv`, one line per attempt, buffered and flushed in blocks.
+- The checkpoint is `SLIMED_RESTART_V2` and carries a `faces` block. The reader
+  still accepts V1. `Mesh::restore_face_connectivity()` puts the connectivity
+  back and rebuilds everything derived from it; a restore that would not produce
+  a two-manifold is refused with the mesh untouched, including when the rebuild
+  *throws* rather than returning a verdict.
+- A run whose total energy goes non-finite stops at the first such step. The
+  3000-step run that found the tether problem below wrote NaN into every row
+  after step 1535 and spent four minutes doing it; it now stops in 69 s with no
+  NaN written.
+
+#### `irregularPatchDepthScale`
+
+Multiplies every valence's recommended depth, rounded, floored at one level.
+Under `PerValence` the *built* depth follows it too, so a scale below 1 is
+cheaper to build as well as to evaluate. `1.0` reproduces the unscaled table
+exactly. At `0.5` the built depth drops from 12 to 6 and the icosphere's total
+energy moves by under 5% — a coarser answer, not a different one. `Uniform`
+ignores it, so the convergence study can still sweep the depth itself.
+
+#### The harmonic tether has no usable stiffness — for WP6
+
+The edge spring of §3.7 is harmonic at rest length `l0`. A flip on a rhombus of
+two equilateral triangles replaces the short diagonal by the long one, so the
+move has to climb
+
+```text
+    ΔE = (k / 2) (√3 − 1)² l0²
+```
+
+and Metropolis accepts it with probability `exp(−ΔE/kT)`. Two requirements pull
+`k` in opposite directions:
+
+| requirement | condition | at `l0 = 5 nm`, `kT = 4.17` |
+| --- | --- | --- |
+| flips are possible (barrier ≲ 5 kT) | `k ≤ 10 kT / ((√3−1)² l0²)` | `k ≲ 3.1 pN/nm` |
+| the triangulation survives (bond fluctuation ≤ 0.1 `l0`) | `k ≥ 100 kT / l0²` | `k ≳ 16.7 pN/nm` |
+
+**The window is empty, by a factor of about five.** Measured on the 100 nm
+sheet, 3000 steps:
+
+| `edgeSpringConstant` | barrier | accepted / attempted | outcome |
+| --- | --- | --- | --- |
+| `83.4` (the default, `kCurv`) | 134 kT | 0 / 121 | frozen solid |
+| `20.0` | 32 kT | 17 / 801 (2.1%) | stable, barely fluid |
+| `1.0` | 1.6 kT | 37 / 415 (8.9%) | **diverges at step 1535** |
+
+The `k = 1.0` divergence begins in the dynamics, not in the flip move —
+`E_curvature` reaches `2.1e7` at step 1535, before the first large flip `ΔE` at
+step 1540 — and it needs the flips to trigger it: the same configuration with
+`edgeFlipEnabled = false` is stable at `E = 2001` after 3000 steps. A tether too
+weak to prevent a degenerate triangle leaves the energy unbounded below in a
+direction the flip move can reach, and the move then walks down it.
+
+This is why every dynamically triangulated surface model in §7 uses a
+**flat-bottomed** tether — zero energy for `l ∈ [l_min, l_max]`, a wall outside
+— rather than a spring. Inside the range a flip costs nothing, so the barrier
+and the constraint stop competing. Implementing that is the first item of WP6.
+
+Until then, `DynamicMesh::setup_flat()` reports the barrier in kT at startup and
+warns above 10 kT, and warns separately when flips are enabled with the spring
+off — that configuration leaves the *reference-length* regularization in force,
+which measures an edge a flip just created against a length it never had, and
+the sweep samples it: measured at about −1200 pN·nm per accepted flip of pure
+artifact.
+
 ### WP6 — Validation of fluidity and physics
+
+**First item, ahead of the measurements below: replace the harmonic edge spring
+with a flat-bottomed tether.** WP5 measured the harmonic one to have no usable
+stiffness — see the table there. Every measurement in this package is a
+measurement of the flip move's behaviour, and with the current tether the move
+either never fires or drives the run to divergence.
+
 
 On the periodic sheet and on an icosphere:
 

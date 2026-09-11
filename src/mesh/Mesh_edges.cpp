@@ -558,6 +558,121 @@ void Mesh::flip_edge(int iEdge)
     ++topologyVersion;
 }
 
+bool Mesh::restore_face_connectivity(const std::vector<std::array<int, 3>> &faceCorners,
+                                     std::string *why)
+{
+    auto reject = [&](const std::string &reason) {
+        if (why != nullptr)
+        {
+            *why = reason;
+        }
+        return false;
+    };
+
+    if (faceCorners.size() != faces.size())
+    {
+        return reject("the connectivity has " + std::to_string(faceCorners.size()) +
+                      " faces but the mesh has " + std::to_string(faces.size()) +
+                      ". A flip never changes the face count, so this is a different mesh.");
+    }
+
+    const int nVertices = static_cast<int>(vertices.size());
+    for (int iFace = 0; iFace < static_cast<int>(faceCorners.size()); ++iFace)
+    {
+        const std::array<int, 3> &corners = faceCorners[iFace];
+        for (int k = 0; k < 3; ++k)
+        {
+            if (corners[k] < 0 || corners[k] >= nVertices)
+            {
+                return reject("face " + std::to_string(iFace) + " names vertex " +
+                              std::to_string(corners[k]) + ", which does not exist");
+            }
+        }
+        if (corners[0] == corners[1] || corners[1] == corners[2] || corners[0] == corners[2])
+        {
+            return reject("face " + std::to_string(iFace) + " has a repeated corner");
+        }
+    }
+
+    // Kept so the mesh can be put back exactly as it was if the rebuilt
+    // topology turns out not to be a manifold. Half-restoring a mesh is worse
+    // than refusing: the caller would go on to integrate a surface whose
+    // one-rings and edge table disagree with its faces.
+    std::vector<std::vector<int>> previousCorners(faces.size());
+    for (int iFace = 0; iFace < static_cast<int>(faces.size()); ++iFace)
+    {
+        previousCorners[iFace] = faces[iFace].adjacentVertices;
+    }
+
+    bool changed = false;
+    for (int iFace = 0; iFace < static_cast<int>(faces.size()); ++iFace)
+    {
+        std::vector<int> &corners = faces[iFace].adjacentVertices;
+        corners.assign(faceCorners[iFace].begin(), faceCorners[iFace].end());
+        if (corners != previousCorners[iFace])
+        {
+            changed = true;
+        }
+    }
+    if (!changed)
+    {
+        // The mesh already had this connectivity. Rebuilding would be correct
+        // but would throw away the one-rings and patch tables for nothing, and
+        // bumping topologyVersion would invalidate every cache keyed on it.
+        return true;
+    }
+
+    // The same derivation setup_from_vertices_faces() runs, minus the two
+    // steps that do not depend on the adjacency: the ghost flags come from a
+    // vertex's grid position, and the pre-refinement has already happened.
+    auto rebuild = [this]() {
+        // Unsorted, deliberately. The sorted pass reads a vertex's fan off the
+        // generated grid's face numbering and drops anything that is not in
+        // it, so on a mesh that has flipped -- where a vertex can have seven
+        // adjacent faces -- it would silently lose the seventh. flip_edge()
+        // maintains these as sets for the same reason, so nothing downstream
+        // depends on the fan order once a flip has happened.
+        set_adjacent_faces_of_vertices_unsorted();
+        set_adjacent_vertices_of_vertices_sorted();
+        set_adjacent_faces_of_faces();
+        build_edge_table();
+        set_one_ring_vertices_sorted();
+    };
+    auto putBack = [&]() {
+        for (int iFace = 0; iFace < static_cast<int>(faces.size()); ++iFace)
+        {
+            faces[iFace].adjacentVertices = previousCorners[iFace];
+        }
+        rebuild();
+    };
+
+    // The rebuild is not only a source of a wrong answer, it is a source of
+    // throws: set_one_ring_vertices_sorted() rejects a mesh whose fans do not
+    // close, which is exactly what a corrupt connectivity produces, and it
+    // does so before validate_manifold_topology() below ever runs. Catch it
+    // and restore, so a bad checkpoint is a refusal rather than a mesh left
+    // halfway between two triangulations.
+    std::string violation;
+    try
+    {
+        rebuild();
+        if (!validate_manifold_topology(&violation))
+        {
+            putBack();
+            return reject("the restored connectivity is not a two-manifold: " + violation);
+        }
+    }
+    catch (const std::exception &error)
+    {
+        putBack();
+        return reject(std::string("the restored connectivity could not be rebuilt: ") +
+                      error.what());
+    }
+
+    ++topologyVersion;
+    return true;
+}
+
 bool Mesh::validate_manifold_topology(std::string *why) const
 {
     auto reject = [&](const std::string &reason) {

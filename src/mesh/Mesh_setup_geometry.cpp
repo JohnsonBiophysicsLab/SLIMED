@@ -4,12 +4,11 @@
 #include <cstdint>
 
 
-void Mesh::set_adjacent_faces_of_vertices_sorted()
+void Mesh::set_adjacent_faces_of_vertices_unsorted()
 {
-    // 1. Get adjacent faces unsorted
     // Initialize vector of empty vectors for adjacent faces
     vector<vector<int>> adjFaces(vertices.size());
-    
+
     // Populate adjacent faces for each vertex
     for (int j = 0; j < faces.size(); j++)
     {
@@ -19,12 +18,18 @@ void Mesh::set_adjacent_faces_of_vertices_sorted()
             adjFaces[i].push_back(j);
         }
     }
-    
+
     // Transfer adjacent faces from temp vector to each vertex
     for (int i = 0; i < vertices.size(); i++)
     {
         vertices[i].adjacentFaces = std::move(adjFaces[i]);
     }
+}
+
+void Mesh::set_adjacent_faces_of_vertices_sorted()
+{
+    // 1. Get adjacent faces unsorted
+    set_adjacent_faces_of_vertices_unsorted();
 
     if (param.VERBOSE_MODE)
     {
@@ -33,6 +38,18 @@ void Mesh::set_adjacent_faces_of_vertices_sorted()
 
     // 2. Sort faces so that adjacentFaces that are adjacent to each
     // other are of +/- 1 index.
+    //
+    // Note what this is: the six faces around a vertex read straight off the
+    // generated grid's face numbering, with anything not among them dropped.
+    // It is therefore only valid for a mesh that still *is* that grid. After
+    // an edge flip a vertex can have seven adjacent faces, and the seventh has
+    // no grid index -- so it would be erased here, leaving the vertex claiming
+    // fewer faces than name it. flip_edge() maintains adjacentFaces as a set
+    // rather than a fan for that reason, and anything rebuilding the adjacency
+    // of a mesh that has flipped must call the unsorted pass directly.
+    //
+    // nFaceX and nFaceY default to -1, so on an imported mesh these loops do
+    // not run at all and the unsorted lists stand.
     for (int j = 0; j < param.nFaceY + 1; j++) // iterate along y-axis
     {
         for (int i = 0; i < param.nFaceX + 1; i++) // iterate along x-axis

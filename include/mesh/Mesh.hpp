@@ -533,6 +533,29 @@ public:
                                        std::vector<EdgeFlipRecord> *log = nullptr);
 
     /**
+     * @brief Replace the face corner lists and rebuild everything derived.
+     *
+     * A restart checkpoint of a fluid run carries the connectivity the run had
+     * reached, which is not the connectivity `setup_flat()` builds. Reloading
+     * the coordinates onto the setup triangulation would give a mesh whose
+     * every energy is wrong with nothing to indicate it, so the checkpoint
+     * carries the faces and this puts them back.
+     *
+     * Only the corner lists move. Ghost flags, insertion patches and
+     * spontaneous curvatures are per-face or per-vertex attributes of a grid
+     * position rather than of an adjacency, and a flip never touched them.
+     *
+     * The mesh is left untouched if the restore would not produce a
+     * two-manifold, so a corrupt checkpoint fails rather than half-loads.
+     *
+     * @param faceCorners One triple per face, in face-index order.
+     * @param why Optional; filled with the reason on refusal.
+     * @return false if the corners were rejected, in which case nothing moved.
+     */
+    bool restore_face_connectivity(const std::vector<std::array<int, 3>> &faceCorners,
+                                   std::string *why = nullptr);
+
+    /**
      * @brief Check that the mesh is still a consistently wound two-manifold.
      *
      * Every edge in at most two faces, every interior vertex fan closed, every
@@ -670,6 +693,15 @@ public:
      * shapefunction calculation.
      *
      */
+    /**
+     * @brief Fill Vertex::adjacentFaces from the face list, in face order.
+     *
+     * The general form, valid for any triangulation. The sorted variant below
+     * reorders these into a fan using the generated grid's face numbering,
+     * which is only meaningful while the mesh still is that grid.
+     */
+    void set_adjacent_faces_of_vertices_unsorted();
+
     void set_adjacent_faces_of_vertices_sorted();
 
     /**

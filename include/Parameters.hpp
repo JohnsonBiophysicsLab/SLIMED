@@ -300,6 +300,28 @@ struct Param
      */
     std::string surfaceSolver = "dense";
 
+    /**
+     * @brief Multiplies the per-valence subdivision depth of irregular patches.
+     *
+     * A face with an extraordinary corner is evaluated by recursing down a
+     * chain of regular children, and the depth of that chain is what the patch
+     * costs. recommended_irregular_depth() picks a depth per valence for a
+     * bending-energy tail below 1e-4 relative, which is the right target for a
+     * minimization whose answer is a single converged shape.
+     *
+     * A Brownian run is not that. It lives in thermal noise several orders
+     * above 1e-4, and a fluid mesh is mostly irregular -- measured at WP1 as
+     * 36x the cost of an all-regular mesh -- so the depth is the largest lever
+     * on the cost of fluidity. This scales every valence's depth together, so
+     * a run can trade patch accuracy for throughput and WP6 can measure what
+     * the spectrum actually needs.
+     *
+     * 1.0 is the converged depth and reproduces every existing run exactly.
+     * Below 1.0 is cheaper and less accurate; above 1.0 costs build time and
+     * memory for accuracy the sampling noise hides.
+     */
+    double irregularPatchDepthScale = 1.0;
+
     // thermal fluctuation / annealing for equilibrium searches
     bool thermalFluctuationEnabled = false;           ///< Enable Metropolis thermal trial moves during minimization
     bool thermalFluctuationPureMMC = false;           ///< Run pure Metropolis Monte Carlo trial moves without NCG

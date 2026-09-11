@@ -38,7 +38,8 @@ Mesh::Mesh(Param &srcParam) : param(srcParam)
     // Collapse the irregular-patch recursion into limit-surface rows. Depends
     // only on the valence and the quadrature rule, so it is built once here
     // and shared, immutable, for the life of the mesh.
-    irregularRows.build(param.shapeFunctions);
+    irregularRows.build(param.shapeFunctions, kDefaultIrregularDepth, DepthPolicy::PerValence,
+                        param.irregularPatchDepthScale);
 
     // initialze scaffolding points matrices
     centerScaffoldingSphere = mat_calloc(3, 1); ///< Center of the scaffolding cap sphere
@@ -62,7 +63,8 @@ Mesh::Mesh(const std::vector<Vertex> &srcVertices,
     // Collapse the irregular-patch recursion into limit-surface rows. Depends
     // only on the valence and the quadrature rule, so it is built once here
     // and shared, immutable, for the life of the mesh.
-    irregularRows.build(param.shapeFunctions);
+    irregularRows.build(param.shapeFunctions, kDefaultIrregularDepth, DepthPolicy::PerValence,
+                        param.irregularPatchDepthScale);
 
     // initialze scaffolding points matrices
     centerScaffoldingSphere = mat_calloc(3, 1); ///< Center of the scaffolding cap sphere
