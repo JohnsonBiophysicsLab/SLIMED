@@ -46,6 +46,12 @@ void DynamicMesh::setup_flat() {
     // the fluid term's second half; on top of the reference-length term it
     // would be a fluid wall on a solid's memory, and the drive would carry
     // neither or both. Refuse the mixture rather than define it.
+    if (param.creaseWallEnabled && !param.edgeSpringEnabled)
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::setup_flat] creaseWallEnabled = true needs edgeSpringEnabled = true. "
+            "The crease wall is part of the fluid mesh-quality term; see Param::creaseWallEnabled.");
+    }
     if (param.triangleShapeEnabled && !param.edgeSpringEnabled)
     {
         throw std::runtime_error(
@@ -210,7 +216,24 @@ void DynamicMesh::report_edge_flip_feasibility()
                       << std::endl;
         }
     }
+    if (param.creaseWallEnabled)
+    {
+        const double full = 0.5 * param.creaseWallConstant *
+                            std::pow(std::cos(param.creaseWallAngle * M_PI / 180.0) + 1.0, 2.0);
+        std::cout << "[DynamicMesh] Crease wall: from " << param.creaseWallAngle
+                  << " degrees between adjacent face normals; a full fold costs " << full
+                  << " pN.nm = " << full / param.KBT << " kT." << std::endl;
+    }
     else if (param.edgeSpringEnabled && param.edgeFlipEnabled && param.inPlaneDynamicsEnabled)
+    {
+        std::cout << "[DynamicMesh] WARNING: a fluid run without creaseWallEnabled. The first "
+                     "triangle-shape run folded a face onto its neighbour at step 82 000 with every "
+                     "altitude healthy; the crease wall is what forbids that. See "
+                     "Param::creaseWallEnabled."
+                  << std::endl;
+    }
+    if (!param.triangleShapeEnabled && param.edgeSpringEnabled && param.edgeFlipEnabled &&
+        param.inPlaneDynamicsEnabled)
     {
         std::cout << "[DynamicMesh] WARNING: a fluid run without triangleShapeEnabled. The tether "
                      "bounds edge lengths and not shape; every long fluid run without the shape "

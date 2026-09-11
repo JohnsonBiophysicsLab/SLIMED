@@ -343,6 +343,24 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "triangleShapeConstant set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("creaseWallEnabled") == 0)
+	{
+		param.creaseWallEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "creaseWallEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("creaseWallAngle") == 0)
+	{
+		param.creaseWallAngle = std::stod(variableValueStr);
+		std::cout << "creaseWallAngle set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("creaseWallConstant") == 0)
+	{
+		param.creaseWallConstant = std::stod(variableValueStr);
+		std::cout << "creaseWallConstant set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("surfaceSolver") == 0)
 	{
 		param.surfaceSolver = variableValueStr;

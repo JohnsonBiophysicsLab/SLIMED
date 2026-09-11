@@ -158,6 +158,10 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
         {
             result.regularization += face_shape_energy(iFace);
         }
+        if (param.creaseWallEnabled)
+        {
+            result.regularization += face_crease_energy(iFace);
+        }
 
         if (face.isBoundary)
         {

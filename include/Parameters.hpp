@@ -401,6 +401,54 @@ struct Param
     double triangleShapeConstant = 83.4;   ///< k, in pN/nm; the tether's stiffness by default.
 
     /**
+     * @brief Bound the crease between adjacent faces.
+     *
+     * The third mesh-quality term, and the one a dynamically triangulated
+     * surface gets for free: its bending energy lives on the control net,
+     * so a face folded onto its neighbour costs the bending modulus outright.
+     * SLIMED's bending energy lives on the limit surface, which smooths a
+     * crease in the control net away until the net is two layers deep and
+     * the limit surface pinches. Measured (WP7): with slivers removed by the
+     * altitude floor, the sheet still folded at step 82 000 through creases
+     * of 177-180 degrees that built up from step 20 000 at valence-8
+     * vertices, which the tether's lower wall leaves unable to flatten.
+     * Restricting flips to valences 5-7 cut those creases to three in
+     * 60 000 steps; this term is what forbids them.
+     *
+     * For each interior edge, with `c = n1 . n2` the cosine of the angle
+     * between its two faces' unit normals,
+     *
+     * ```text
+     *     E = (k / 2) max(0, cos(theta_max) - c)^2
+     * ```
+     *
+     * Zero while the faces are within `theta_max` of coplanar, quadratic in
+     * the cosine beyond it, and smooth everywhere -- a wall on the angle
+     * itself would have a singular gradient at a full fold, which is where
+     * it matters most. Requires the tether, like the shape term.
+     */
+    bool creaseWallEnabled = false;
+    /**
+     * @brief The angle between adjacent face normals beyond which the wall
+     * starts, in degrees.
+     *
+     * Thermal undulations on this mesh put adjacent normals a few degrees
+     * apart and a fluid run's worst healthy edge under 45; a flap is at 180.
+     * 60 leaves the physics alone and puts a full fold at
+     * `(k/2)(1 + 1/2)^2 = 1.125 k`.
+     */
+    double creaseWallAngle = 60.0;
+    /**
+     * @brief k, in pN.nm (the energy is in the cosine, so the constant carries
+     * the units).
+     *
+     * 500 makes a right-angle crease cost 15 kT and a full fold 135 kT at
+     * room temperature: the fold a frustrated vertex drives toward is
+     * forbidden, and the crease a thermal kick makes is not noticed.
+     */
+    double creaseWallConstant = 500.0;
+
+    /**
      * @brief How the limit surface and the control net are converted.
      *
      * "dense" builds the whole mask as an N x N matrix and inverts it once,

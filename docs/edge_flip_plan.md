@@ -1278,6 +1278,38 @@ regularization slot with it.
 Parameters: `triangleShapeEnabled` (`false`), `triangleShapeMinAltitudeRatio`
 (`0.4`), `triangleShapeConstant` (`83.4` pN/nm). `tests/test_triangle_shape.cpp`.
 
+**What the first gate run found.** With the altitude floor holding every
+triangle above 1.4 nm, the sheet still folded at step 82 000 — not a sliver
+but a *flap*: adjacent faces at 177–180°, a face folded flat onto its
+neighbour, growing in number from step 20 000 and every one at a valence-8 or
+valence-4 vertex. The reason is geometric. A flat vertex of valence N with
+legs of `1.1·lFace` (where a fluid run's edges sit) needs opposite edges of
+`2.2·lFace·sin(π/N)`: 4.2 nm at valence 8 against a tether wall at 4.75. It
+cannot flatten, its surplus angle buckles the neighbourhood, and with the
+limit-surface bending energy indifferent to a crease in the control net the
+buckle becomes a flap whose limit surface pinches. Three 60 000-step probes:
+widening the tether made it worse (short edges let the bending force crush
+triangles through the altitude wall); **flips restricted to valences 5–7**
+gave zero creases for three quarters of the run and three at the end. That
+is now the default, and setup reports whether the lower wall lets a vertex
+of the maximum valence flatten.
+
+**The crease wall.** The third term, and the one a dynamically triangulated
+surface gets for free from its control-net bending energy: for each interior
+edge, with `c = n̂₁·n̂₂` the cosine between its faces' normals,
+
+```text
+    E_edge = (k/2) max(0, cos θ_max − c)²,    θ_max = 60°, k = 500 pN·nm
+```
+
+zero within 60° of coplanar, smooth everywhere (a wall on the angle itself
+has a singular gradient at a full fold, which is where it matters), 15 kT at
+a right angle and 135 kT at a full fold. Closed-form gradient
+(`∇_p c = e_k × (n̂₂ − c n̂₁)/|n₁|` for a corner of face 1), one expression
+for the force pass and the flip trial, half of each edge to each of its
+faces. Parameters: `creaseWallEnabled` (`false`), `creaseWallAngle`,
+`creaseWallConstant`. `tests/test_crease_wall.cpp`.
+
 > Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
 > every previous one died at 8 700, 27 800 or 94 000 steps — with the
 > smallest interior altitude held above the floor's shadow, the bending

@@ -355,6 +355,10 @@ void Mesh::compute_face_energies_and_forces()
     {
         energy_force_triangle_shape();
     }
+    if (param.creaseWallEnabled)
+    {
+        energy_force_crease_wall();
+    }
 
 }
 

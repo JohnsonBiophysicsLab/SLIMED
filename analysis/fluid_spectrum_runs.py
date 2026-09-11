@@ -77,12 +77,18 @@ SPECS = {
                 "meshpointOutputInterval": 100, "randomSeed": 101},
     "tension": {"usMembraneStretching": 250.0, "maxIterations": 800_000,
                 "meshpointOutputInterval": 100, "randomSeed": 202},
-    # the fluid membrane
+    # the fluid membrane: tether, altitude floor, flips leaving valences 5-7
     "fluid_a": dict({"usMembraneStretching": 0.0, "maxIterations": 400_000,
                      "meshpointOutputInterval": 100, "randomSeed": 404,
                      "timeStep": 0.001}, **FLUID),
+    # the same with the crease wall, which forbids the flaps the valence
+    # restriction only made rare
+    "fluid_b": dict({"usMembraneStretching": 0.0, "maxIterations": 400_000,
+                     "meshpointOutputInterval": 100, "randomSeed": 404,
+                     "timeStep": 0.001}, **FLUID,
+                    creaseWallEnabled="true", creaseWallAngle=60.0, creaseWallConstant=500.0),
 }
-SCALABLE = ("pure_a", "tension", "fluid_a")
+SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b")
 MARKER = ".made-by-this-notebook"
 
 

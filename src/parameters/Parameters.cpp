@@ -86,6 +86,9 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "triangleShapeEnabled: " << param.triangleShapeEnabled << std::endl;
     os << "triangleShapeMinAltitudeRatio: " << param.triangleShapeMinAltitudeRatio << std::endl;
     os << "triangleShapeConstant: " << param.triangleShapeConstant << std::endl;
+    os << "creaseWallEnabled: " << param.creaseWallEnabled << std::endl;
+    os << "creaseWallAngle: " << param.creaseWallAngle << std::endl;
+    os << "creaseWallConstant: " << param.creaseWallConstant << std::endl;
     os << "surfaceSolver: " << param.surfaceSolver << std::endl;
     os << "irregularPatchDepthScale: " << param.irregularPatchDepthScale << std::endl;
     os << "edgeFlipEnabled: " << param.edgeFlipEnabled << std::endl;

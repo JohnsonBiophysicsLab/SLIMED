@@ -498,6 +498,15 @@ public:
     double face_shape_energy(int iFace) const;
 
     /**
+     * @brief A face's share of the crease-wall energy of its three edges.
+     *
+     * Half of each interior edge's energy, as for the tether, so that the sum
+     * over faces is the sum over edges and the flip trial differences the
+     * same term the force pass computes. See Param::creaseWallEnabled.
+     */
+    double face_crease_energy(int iFace) const;
+
+    /**
      * @brief A face's share of the tether energy of its three edges.
      *
      * The mesh-quality term is a sum over edges, but every energy in this tree
@@ -1159,6 +1168,12 @@ public:
      * the slot. See Param::triangleShapeEnabled.
      */
     void energy_force_triangle_shape();
+
+    /**
+     * @brief The crease wall: energy into the regularization slot, force
+     * added to forceRegularization. See Param::creaseWallEnabled.
+     */
+    void energy_force_crease_wall();
 
     /**
      * @brief Manages forces depending on different boundary conditions.
