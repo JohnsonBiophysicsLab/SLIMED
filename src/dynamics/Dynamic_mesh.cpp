@@ -163,6 +163,37 @@ void DynamicMesh::report_edge_flip_feasibility()
             }
         }
     }
+    // A flat vertex of valence N whose legs are lFace needs opposite edges of
+    // 2 lFace sin(pi/N): 3.8 nm at valence 8 and 4.3 at valence 7 on a 5 nm
+    // mesh. A lower tether wall above that leaves the vertex unable to
+    // flatten, the surplus angle buckles its neighbourhood, and the buckle
+    // becomes a flap folded 180 degrees onto its neighbour -- which is what
+    // preceded the divergence of the first triangle-shape run, at valence-8
+    // vertices every time.
+    if (param.edgeSpringEnabled && param.edgeFlipEnabled)
+    {
+        const double restLength =
+            (param.edgeSpringRestLength > 0.0) ? param.edgeSpringRestLength : param.lFace;
+        const int maxValence = param.edgeFlipMaxValence;
+        // Legs at 1.1 lFace, which is where a fluid run's edges actually sit.
+        const double flatBase = 2.0 * 1.1 * restLength * std::sin(M_PI / maxValence);
+        const double lowerWall = (param.edgeTetherShape == "harmonic")
+                                     ? restLength
+                                     : param.edgeTetherMinRatio * restLength;
+        std::cout << "[DynamicMesh] A flat vertex of valence " << maxValence
+                  << " with legs of 1.1 lFace needs opposite edges of " << flatBase
+                  << " nm; the tether's lower wall is at " << lowerWall << " nm." << std::endl;
+        if (flatBase < lowerWall)
+        {
+            std::cout << "[DynamicMesh] WARNING: the lower tether wall forbids a flat vertex of "
+                         "valence "
+                      << maxValence << ". Such vertices buckle and fold; lower edgeTetherMinRatio "
+                         "below "
+                      << flatBase / restLength << " or edgeFlipMaxValence below " << maxValence
+                      << "." << std::endl;
+        }
+    }
+
     if (param.triangleShapeEnabled)
     {
         const double floorAltitude = param.triangleShapeMinAltitudeRatio * param.lFace;

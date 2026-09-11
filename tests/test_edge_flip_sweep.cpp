@@ -93,6 +93,12 @@ MeshFixture build_icosphere(int level, double radius)
 
 void configure(Param &param, bool withConstraints)
 {
+    // The icosphere's twelve original vertices have valence 5, and these tests
+    // exercise the flip primitive on whatever edge comes first. The shipped
+    // default of 5-7 (see Param::edgeFlipMinValence) would refuse a flip that
+    // takes one of them to 4 before the mechanics under test are reached.
+    param.edgeFlipMinValence = 4;
+    param.edgeFlipMaxValence = 8;
     param.VERBOSE_MODE = false;
     param.boundaryCondition = BoundaryType::Fixed;
     param.kCurv = 83.4;

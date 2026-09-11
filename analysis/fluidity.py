@@ -479,6 +479,42 @@ def altitude_stats(run: Run, frame: int = -1, floor: float | None = None) -> dic
     return out
 
 
+def crease_stats(run: Run, frame: int = -1) -> dict:
+    """Dihedral angles between adjacent interior faces at one frame.
+
+    A crease of 180 degrees is a face folded flat onto its neighbour: every
+    edge and altitude can be healthy while the control net is locally two
+    layers deep, and the limit surface built on it pinches.  Measured because
+    that is what preceded the divergence of the first triangle-shape run --
+    creases of 177-180 degrees from step 20 000 on, always at a valence-8 or
+    valence-4 vertex.
+    """
+    iterations = sorted(run.face_frames)
+    target = run.frame_iterations[frame] if frame >= 0 else run.frame_iterations[-1]
+    usable = [it for it in iterations if it <= target] or [iterations[0]]
+    faces = run.face_frames[usable[-1]]
+    points = run.coords[frame]
+    keep = set(np.intersect1d(interior_vertices(faces), run.free_vertices).tolist())
+
+    n = np.cross(points[faces[:, 1]] - points[faces[:, 0]], points[faces[:, 2]] - points[faces[:, 0]])
+    n /= np.linalg.norm(n, axis=1)[:, None] + 1e-300
+    faces_of_edge: dict = {}
+    for fi, tri in enumerate(faces):
+        for k in range(3):
+            a, b = int(tri[k]), int(tri[(k + 1) % 3])
+            faces_of_edge.setdefault((min(a, b), max(a, b)), []).append(fi)
+    angles = []
+    for (a, b), fs in faces_of_edge.items():
+        if len(fs) == 2 and a in keep and b in keep:
+            angles.append(np.degrees(np.arccos(np.clip(np.dot(n[fs[0]], n[fs[1]]), -1.0, 1.0))))
+    angles = np.array(angles)
+    if angles.size == 0:
+        return {"n": 0}
+    return {"n": int(angles.size), "max": float(angles.max()),
+            "over_45": int((angles > 45).sum()), "over_90": int((angles > 90).sum()),
+            "over_150": int((angles > 150).sum())}
+
+
 def report(run: Run) -> str:
     """Everything above, as text for a results document."""
     lines = [f"run: {run.directory}",
@@ -522,6 +558,11 @@ def report(run: Run) -> str:
         lines.append(f"  triangle altitudes (smallest per face, {alt['n']} interior faces): "
                      f"min {alt['min']:.3f} nm, 5th pct {alt['p5']:.3f}, median {alt['median']:.3f} "
                      f"(lattice 4.330)")
+    cr = crease_stats(run)
+    if cr["n"]:
+        lines.append(f"  creases (angle between adjacent face normals, {cr['n']} interior edges): "
+                     f"max {cr['max']:.1f} deg, over 45: {cr['over_45']}, over 90: {cr['over_90']}, "
+                     f"over 150: {cr['over_150']}")
     return "\n".join(lines)
 
 

@@ -250,11 +250,29 @@ struct Param
     /// Steps between sweeps. The attempt count scales with it, so this trades
     /// sweep frequency against sweep size at a fixed physical rate.
     int edgeFlipInterval = 1;
-    /// Valences a flip may leave behind, clamped to what the patch tables
-    /// support. Narrowing the range cuts the cost of a fluid mesh, at the
-    /// price of refusing flips a dynamically triangulated surface would allow.
-    int edgeFlipMinValence = 4;
-    int edgeFlipMaxValence = 8;
+    /**
+     * @brief Valences a flip may leave behind, clamped to what the patch
+     * tables support (4 to 8).
+     *
+     * 5 to 7, and not the tables' full 4 to 8, because of geometry. A flat
+     * vertex of valence N with legs of length l needs opposite edges of
+     * `2 l sin(pi/N)`: with the edges a fluid run actually has, about
+     * 1.1 lFace, that is 4.8 nm at valence 7 and 4.2 at valence 8 on a 5 nm
+     * mesh, against a tether wall at 4.75. A valence-8 vertex cannot flatten,
+     * its surplus angle buckles the neighbourhood, and with the limit-surface
+     * bending energy indifferent to a crease in the control net the buckle
+     * becomes a flap folded 180 degrees onto its neighbour, whose limit
+     * surface pinches and blows the integrator up. Measured (WP7): every
+     * fold in the first triangle-shape run sat at a valence-8 or valence-4
+     * vertex, and restricting flips to 5-7 gave zero creases where 4-8 gave
+     * a dozen. Widening the tether instead makes it worse, because short
+     * edges let the bending force crush triangles through the altitude wall.
+     *
+     * The price is fluidity: fewer flips are admissible, and neighbour
+     * survival at a given attempt rate decays more slowly.
+     */
+    int edgeFlipMinValence = 5;
+    int edgeFlipMaxValence = 7;
 
     // Fluid-mode dynamics. See docs/edge_flip_plan.md section 3.7.
     /**

@@ -59,6 +59,10 @@ FLUID = {
     "edgeFlipEnabled": "true",
     "edgeFlipAttemptRate": 0.5,         # nu, attempts per edge per us
     "edgeFlipInterval": 1,
+    # WP7: valence 8 cannot flatten inside the tether's lower wall and folds;
+    # 5-7 gave zero creases where 4-8 gave a dozen.
+    "edgeFlipMinValence": 5,
+    "edgeFlipMaxValence": 7,
     "irregularPatchDepthScale": 1.0,
     # WP7: the tether bounds edge lengths, this bounds triangle shape. Every
     # long fluid run without it folded a sliver after 1e4-1e5 steps.
