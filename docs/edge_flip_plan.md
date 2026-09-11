@@ -1310,6 +1310,19 @@ for the force pass and the flip trial, half of each edge to each of its
 faces. Parameters: `creaseWallEnabled` (`false`), `creaseWallAngle`,
 `creaseWallConstant`. `tests/test_crease_wall.cpp`.
 
+**Gate met, and what it then measured.** The 400 000-step run with the
+altitude floor and valences 5–7 finished — no crease over 90° in its second
+half, altitude floor at 1.4–2.0 nm, survival 0.70, MSD exponent 0.75 — and
+with the crease wall on, zero creases at every eighth. Its spectrum, though,
+is a crumpled membrane's: κ_c 24 pN·nm at slope −6.8, r.m.s. height 9 nm.
+At μ_S = 0 nothing sets the control net's length scale but the tether walls;
+the mean edge grows to 6.15 nm and the 50% of excess area buckles out of
+plane in a box of fixed projected area. The 94 µs run of WP6 had matched the
+solid only because its slivers absorbed that excess as length without area.
+The comparison at conserved area — μ_S = 250, the fluid `fluid_c` against
+the solid `tension` — is the one the notebook now makes by default;
+`fluidity_results.md` §10–11.
+
 > Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
 > every previous one died at 8 700, 27 800 or 94 000 steps — with the
 > smallest interior altitude held above the floor's shadow, the bending

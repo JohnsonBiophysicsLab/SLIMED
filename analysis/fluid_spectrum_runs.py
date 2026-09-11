@@ -87,8 +87,17 @@ SPECS = {
                      "meshpointOutputInterval": 100, "randomSeed": 404,
                      "timeStep": 0.001}, **FLUID,
                     creaseWallEnabled="true", creaseWallAngle=60.0, creaseWallConstant=500.0),
+    # fluid_b at conserved area. With muS = 0 nothing sets the control net's
+    # length scale but the tether walls: the mean edge grows to 6.15 nm, the
+    # excess area buckles the sheet out of plane (r.m.s. height 9 nm against
+    # the solid's 1), and the spectrum is that of a crumpled membrane. The
+    # comparison with the solid `tension` run is the one at matched area.
+    "fluid_c": dict({"usMembraneStretching": 250.0, "maxIterations": 400_000,
+                     "meshpointOutputInterval": 100, "randomSeed": 505,
+                     "timeStep": 0.001}, **FLUID,
+                    creaseWallEnabled="true", creaseWallAngle=60.0, creaseWallConstant=500.0),
 }
-SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b")
+SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b", "fluid_c")
 MARKER = ".made-by-this-notebook"
 
 

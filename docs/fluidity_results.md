@@ -467,6 +467,20 @@ the end, and an in-plane MSD growth exponent of **0.75** -- the most fluid
 signature yet. The bending energy equilibrates from the flat start over the
 first quarter and holds.
 
+**What the full-length spectrum then showed.** On that run the fit returns
+`kc = 24.5 +- 2.1 pN.nm` at a slope of `-6.8`, against the solid control's
+86.7 at `-4.0`, and the field's r.m.s. height is 9.1 nm against the solid's
+0.97. The reader is not the cause -- levels 2 and 3 agree to 1% -- the
+membrane is. With `muS = 0` nothing sets the control net's length scale but
+the tether walls, entropy takes the mean edge from 5.0 to 6.15 nm, and in a
+box of fixed projected area that 50% of excess area can only go out of plane
+at the longest wavelengths: the spectrum of a crumpled sheet, not a
+bending one. The 94 us run of section 9 had matched the solid at `muS = 0`
+only because its slivers absorbed the excess *length* without area. A fluid
+membrane at zero tension in a fixed frame buckles; the comparison that asks
+the question is at conserved area, `muS = 250` for both, the fluid `fluid_c`
+against the solid `tension` -- section 11.
+
 **The crease wall** (`creaseWallEnabled`) forbids the flaps outright rather
 than making them rare: the same run with it on (`fluid_b`) shows zero
 creases over 90 degrees at every eighth and a sharpest edge of 50 degrees
