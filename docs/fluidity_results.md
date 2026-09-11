@@ -511,7 +511,7 @@ that of the flat start.
 | `fluid_a` | 5-7 | off | 0 | 0.29 | 0.70 | 0.75 | 9-10 nm | 6.15 | ~1 750 |
 | `fluid_b` | 5-7 | on | 0 | 0.30 | 0.72 | 0.76 | 10.3 | 6.13 | ~1 750 |
 | `fluid_c` | 5-7 | on | 250 | 0.43 | **0.93** | **0.13** | 0.6-1.0 | 5.47 | ~600 |
-| `fluid_d` | 4-8 | on | 250 | | | | | | *running* |
+| `fluid_d` | 4-8 | on | 250 | 0.34 | **0.92** | **0.25** | 0.8 | 5.55 | ~570 |
 | solid `tension` | -- | -- | 250 | -- | 1 | -- | 0.66 | 5.04 | -- |
 
 Two regimes, and neither is yet the membrane one wants.
@@ -522,14 +522,36 @@ grows with an exponent of 0.75 -- and crumpled: the excess area of section
 three times. Its spectrum is not a bending spectrum.
 
 At `muS = 250` the sheet is flat -- r.m.s. height and bending energy at the
-solid's scale, edges pinned near 5.5 nm -- and barely fluid on this
-timescale: 7% of neighbours exchanged in 400 us, an MSD that has all but
-saturated, even though 43% of the flips offered are accepted. With the
-edges held between a 4.75 nm wall and a 5.5 nm mean there is little room to
-move in plane, and with valences confined to 5-7 most accepted flips are
-undone by the next. `fluid_d` asks whether the crease wall makes the full
-4-8 range safe at conserved area, which would return the mobility that
-range had.
+solid's scale, edges pinned near 5.5 nm -- and not fluid at all, although
+34-43% of the flips offered are accepted. The survival curve says which
+kind of not: `fluid_a` falls steadily (0.95, 0.89, 0.78, 0.74, 0.70 at 50,
+100, 200, 300, 400 us), while `fluid_c` and `fluid_d` fall to 0.94-0.95
+within the first 10 us and stay there. The 5-8% of "exchanged" neighbours
+is not an exchange but a population: the flips at conserved area are
+flickers. Of consecutive accepted flips on the same edge, 99% are exact
+reversals in `fluid_c` and `fluid_d` (a median 2 800-3 600 steps apart),
+against 80% in `fluid_a` and `fluid_b` -- and the 20% that go elsewhere are
+what turns the crumpled sheet over. `fluid_d` settles the valence question:
+the crease wall makes 4-8 safe at conserved area (400 000 steps, no crease
+over 42 degrees, smallest altitude 1.4 nm, 10% of the vertices at valence 4
+and 11% at 8, bending energy the same as `fluid_c`'s) and shows the range
+was not the limit, survival 0.92 against 0.93.
+
+What holds the connectivity is the packing. The box fixes the mean edge at
+5.5 nm and the tether's lower wall sits at 4.75, so the vertices are a
+two-dimensional system 1.17 hard-core diameters apart -- a packing fraction
+of 0.66 in hard-disc terms, at the freezing line before the bending
+stiffness and the altitude floor are counted -- and a crystal's flip is a
+bound pair of dislocations that the next flip annihilates. At `muS = 0` the
+sheet dilates to 6.15 nm, 1.30 diameters (packing fraction 0.54), and is a
+liquid; the Monte Carlo membranes put their tether at 1.7 diameters and let
+the bonds fill the range between for the same reason. The knob is therefore
+the lower wall, not the valence range or the attempt rate. `fluid_e`
+(`edgeTetherMinRatio = 0.7`, the mean edge at 1.6 diameters, packing
+fraction 0.37) and `fluid_f` (0.8, packing fraction 0.48) are running.
+Lowering the wall also removes the geometric frustration of section 10 -- a
+flat valence-8 vertex needs opposite edges of 0.84 lFace, which a wall at
+0.8 or below allows -- so the crease wall should have less to do there.
 
 **The spectrum at conserved area** -- `fluid_c` against the solid `tension`
 run, both through the subdivision reader, fitting `kc` and `sigma`
@@ -560,11 +582,12 @@ fluctuations.
 
 ## 12. Not done
 
-**Fluidity at conserved area**, for the reason in section 11: stable and
-flat, but with a neighbour-exchange time far beyond 400 us at `nu = 0.5`.
-Whether the 4-8 range with the crease wall restores it (`fluid_d`), or the
-attempt rate has to be raised, or the tether's lower wall lowered where the
-crease wall now guards against the consequence, is the next measurement.
+**Fluidity at conserved area**, for the reason in section 11: the
+connectivity is frozen by the packing, not slowed. `fluid_e` and `fluid_f`
+lower the tether's wall from 0.95 to 0.7 and 0.8 of `lFace`, with the
+altitude floor and the crease wall guarding what the narrow wall used to;
+whether they are fluid, still stable, and still return the solid's spectrum
+is the next measurement.
 
 **Calibration of `nu` against a physical neighbour-exchange time**, which
 waits on the above.

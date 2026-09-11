@@ -104,8 +104,29 @@ SPECS = {
                 **FLUID,
                 "creaseWallEnabled": "true", "creaseWallAngle": 60.0, "creaseWallConstant": 500.0,
                 "edgeFlipMinValence": 4, "edgeFlipMaxValence": 8},
+    # fluid_d with the tether's lower wall moved down. The crease wall made
+    # 4-8 safe at conserved area but not fluid: 99% of the accepted flips are
+    # undone by the next flip of the same edge (80% at muS = 0), because the
+    # box holds the mean edge at 1.17 times the wall and a 2D system that
+    # close to its hard core is a crystal, whose flips are bound dislocation
+    # pairs. Moving the wall to 0.7 puts the mean at 1.6 walls (a liquid, in
+    # hard-disc terms) and also removes the valence-8 frustration of section
+    # 10, since a flat valence-8 vertex needs opposite edges of 0.84 lFace.
+    "fluid_e": {**{"usMembraneStretching": 250.0, "maxIterations": 400_000,
+                   "meshpointOutputInterval": 100, "randomSeed": 707, "timeStep": 0.001},
+                **FLUID,
+                "creaseWallEnabled": "true", "creaseWallAngle": 60.0, "creaseWallConstant": 500.0,
+                "edgeFlipMinValence": 4, "edgeFlipMaxValence": 8,
+                "edgeTetherMinRatio": 0.7},
+    # the half-way point, for the dose
+    "fluid_f": {**{"usMembraneStretching": 250.0, "maxIterations": 400_000,
+                   "meshpointOutputInterval": 100, "randomSeed": 808, "timeStep": 0.001},
+                **FLUID,
+                "creaseWallEnabled": "true", "creaseWallAngle": 60.0, "creaseWallConstant": 500.0,
+                "edgeFlipMinValence": 4, "edgeFlipMaxValence": 8,
+                "edgeTetherMinRatio": 0.8},
 }
-SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b", "fluid_c", "fluid_d")
+SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b", "fluid_c", "fluid_d", "fluid_e", "fluid_f")
 MARKER = ".made-by-this-notebook"
 
 

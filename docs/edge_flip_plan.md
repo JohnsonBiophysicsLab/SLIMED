@@ -1350,10 +1350,13 @@ The comparison at conserved area — μ_S = 250, the fluid `fluid_c` against
 the solid `tension` — is the one the notebook now makes by default:
 **κ_c fluid/solid = 1.02** on the whole-trajectory fit (0.83 ± 0.19 by
 blocks), tension 3.0 against 3.8 pN/nm, no earlier roll-off, reader
-converged. What that run does not yet have is fluidity: at conserved area
-with valences 5–7 the neighbour survival is 0.93 after 400 µs. Whether the
-crease wall makes the full 4–8 range safe there (`fluid_d`) is the next
-measurement; `fluidity_results.md` §10–12.
+converged. What that run does not have is fluidity: at conserved area the
+neighbour survival plateaus at 0.93 within 10 µs and 99% of the accepted
+flips are undone by the next flip of the same edge — bound dislocation
+pairs in a vertex system packed 1.17 tether walls apart. `fluid_d` showed
+the crease wall makes valences 4–8 safe there without changing that (0.92);
+the tether's lower wall is the knob (`fluid_e` at 0.7, `fluid_f` at 0.8,
+running); `fluidity_results.md` §10–12.
 
 > Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
 > every previous one died at 8 700, 27 800 or 94 000 steps — with the
