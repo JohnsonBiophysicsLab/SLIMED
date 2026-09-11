@@ -130,8 +130,49 @@ def load_run(directory: str, prefix: str = "input",
     return run
 
 
+def _lattice_free_vertices(run: Run) -> np.ndarray | None:
+    """The free vertices of the generated periodic sheet, from its parameters.
+
+    The sheet is nFaceX+1 by nFaceY+1 vertices with three ghost rings and a
+    ring of periodic duplicates inside them, so a vertex is free exactly when
+    its ring index -- distance in rows or columns from the sheet's edge -- is
+    four or more.  Exact, and independent of the trajectory, which the
+    correlation method below is not: on a run of thousands of frames the
+    copies' eight-digit round-off decorrelates them enough to slip through,
+    and a ghost's lattice-connected copy of a mixed interior is exactly the
+    kind of distorted triangle that would then be reported as the membrane's.
+    Returns None for anything that is not a flat sheet.
+    """
+    path = run.path("input.params")
+    if not os.path.exists(path):
+        return None
+    text = open(path, encoding="utf-8", errors="replace").read()
+    try:
+        side_x = float(re.search(r"^\s*sideX\s*=\s*([-+0-9.eE]+)", text, re.M).group(1))
+        side_y = float(re.search(r"^\s*sideY\s*=\s*([-+0-9.eE]+)", text, re.M).group(1))
+        l_face = float(re.search(r"^\s*lFace\s*=\s*([-+0-9.eE]+)", text, re.M).group(1))
+    except AttributeError:
+        return None
+    if not re.search(r"^\s*boundaryType\s*=\s*Periodic", text, re.M):
+        return None
+    n_face_x = round(side_x / l_face)
+    d_face_y = (3.0 ** 0.5) / 2.0 * side_x / n_face_x
+    n_face_y = round(side_y / d_face_y)
+    if n_face_y % 2 == 1:
+        n_face_y += 1
+    nvx, nvy = n_face_x + 1, n_face_y + 1
+    if nvx * nvy != run.coords.shape[1]:
+        return None
+    ring = np.array([min(i, j, n_face_x - i, n_face_y - j) for j in range(nvy) for i in range(nvx)])
+    return np.nonzero(ring >= 4)[0]
+
+
 def _free_vertices(run: Run) -> np.ndarray:
     """Vertices whose trajectory is their own.
+
+    On the generated periodic sheet this is known from the parameters and is
+    taken from them; see _lattice_free_vertices().  Otherwise it is inferred
+    from the trajectory as below.
 
     Two kinds are not.  A ghost is frozen, so its displacement sequence is
     identically zero.  A periodic duplicate is overwritten from its partner
@@ -147,6 +188,10 @@ def _free_vertices(run: Run) -> np.ndarray:
     Nothing here depends on which ring of a periodic sheet is which, so it
     works for a run with any boundary condition.
     """
+    from_lattice = _lattice_free_vertices(run)
+    if from_lattice is not None and from_lattice.size:
+        return from_lattice
+
     n = run.coords.shape[1]
     if run.coords.shape[0] < 3:
         return _free_vertices_from_types(run)

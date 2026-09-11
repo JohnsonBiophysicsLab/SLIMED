@@ -399,7 +399,87 @@ folds in projection 6% of the time and the limit net 0.6%, which is why the
 reader triangulates the projected limit points afresh rather than reusing the
 mesh's faces.
 
-## 10. Not done
+## 10. WP7: what folds a healthy mesh, and the terms that stop it
+
+Section 8's diagnosis was a sliver. The triangle-shape term
+(`triangleShapeEnabled`, a wall on each face's three altitudes below
+`0.4 lFace`) removes them: over 250 fluid steps the smallest interior
+altitude reaches 0.09 nm without the term and 1.23 nm with it, and over a
+long run it holds at 1.4-1.7 nm with 1-4% of faces inside the 2 nm wall.
+
+**The first gate run folded anyway**, at step 82 047, with every altitude
+above 1.4 nm and the membrane's energies flat up to a blow-up of fourteen
+orders of magnitude in five steps. The fold was a *flap*: adjacent faces at
+177-180 degrees, a face folded flat onto its neighbour, with every edge and
+altitude healthy and the control net locally two layers deep -- which is
+what pinches the limit surface. They appeared from step 20 000 and grew to
+fifteen, and every one sat at a valence-8 or valence-4 vertex:
+
+| step | creases over 90 degrees | sharpest | inverted control faces (xy) |
+| ---: | ---: | ---: | ---: |
+| 10 000 | 0 | 52 | 0 |
+| 20 000 | 6 | 177 | 2 |
+| 50 000 | 9 | 178 | 3 |
+| 70 000 | 15 | 180 | 7 |
+| 81 700 | 12 | 180 | 6 |
+
+The reason is geometric. A flat vertex of valence N with legs of `1.1 lFace`
+-- where a fluid run's edges sit -- needs opposite edges of
+`2.2 lFace sin(pi/N)`: 4.8 nm at valence 7 and 4.2 at valence 8, against the
+tether's lower wall at 4.75. A valence-8 vertex cannot flatten. Its surplus
+angle buckles the neighbourhood, and with the limit-surface bending energy
+indifferent to a crease in the control net, the buckle becomes a flap.
+
+Three 60 000-step probes, same seed, `nu = 0.5`, shape term on:
+
+| tether | valences | creases over 90 at quarters | smallest altitude | acceptance | survival |
+| --- | --- | --- | ---: | ---: | ---: |
+| `[0.95, 1.75]` | 4-8 (the failed gate) | 0, 6, 15, 12 (to 82 000) | 1.43 | 0.306 | 0.914 at 81 500 |
+| `[0.7, 1.8]` | 4-8 | 0, 14, 19, 19 (to 34 000) | **0.19** | 0.293 | 0.812 at 33 800 |
+| `[0.95, 1.75]` | **5-7** | **0, 0, 0, 0, 0, 0, 3, 3** (eighths, to 60 000) | 1.73 | 0.416 | 0.934 at 60 000 |
+
+Widening the tether makes it worse: short edges let the bending force of a
+crumpling patch crush triangles straight through the altitude wall. The
+valence restriction is the lever -- zero creases for three quarters of the
+run, a valence histogram of 18 / 65 / 17 at 5 / 6 / 7, and a *higher*
+acceptance than 4-8 -- and it is the new default. Three creases at the end
+say it makes flaps rare, not impossible: valence 7 is marginal (4.8 against
+4.75).
+
+**The gate, met.** With the altitude floor and flips restricted to 5-7, the
+100 nm sheet ran its full **400 000 steps** -- the first fluid run to reach
+its length; every previous one died at 8 700, 27 800, 82 000 or 94 000.
+Measured over the deep interior (every vertex four rings in; the ghost band's
+lattice-connected copies of a mixed interior are distorted by construction
+and had briefly contaminated these statistics):
+
+| eighth of the run | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| creases over 90 degrees | 6 | 6 | 0 | 3 | 0 | 0 | 0 | 0 |
+| smallest altitude (nm) | 1.67 | 1.41 | 2.00 | 1.79 | 1.86 | 1.76 | 1.53 | 1.63 |
+| bending energy (pN.nm) | 747 | 1210 | 1635 | 1556 | 1698 | 1842 | 1796 | 1731 |
+
+Not a single crease in the second half; the sharpest edge at the end is
+65 degrees. Edges 3.9-9.3 nm, altitude median 4.1 (lattice 4.33), tether
+energy 175 pN.nm over 604 interior edges. Acceptance 0.29 over 39 284
+attempts, valences 24 / 52 / 24 at 5 / 6 / 7, neighbour survival 0.70 at
+the end, and an in-plane MSD growth exponent of **0.75** -- the most fluid
+signature yet. The bending energy equilibrates from the flat start over the
+first quarter and holds.
+
+**The crease wall** (`creaseWallEnabled`) forbids the flaps outright rather
+than making them rare: the same run with it on (`fluid_b`) shows zero
+creases over 90 degrees at every eighth and a sharpest edge of 50 degrees
+through 224 000 steps, at acceptance 0.33. For each
+interior edge, with `c` the cosine between its faces' normals,
+`E = (k/2) max(0, cos 60 - c)^2` with `k = 500 pN.nm`: zero within 60
+degrees of coplanar, 15 kT at a right angle, 135 kT at a full fold, smooth
+where a wall on the angle would be singular. It is the term a dynamically
+triangulated surface gets for free from a control-net bending energy, and
+what a limit-surface bending energy cannot supply. `tests/test_crease_wall.cpp`
+pins its gradient and its consistency with the flip trial.
+
+
 
 **The fluctuation spectrum at full length**, which waits on the seam. Once a
 fluid run reaches 400 000 steps, re-executing
