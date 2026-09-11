@@ -96,8 +96,16 @@ SPECS = {
                      "meshpointOutputInterval": 100, "randomSeed": 505,
                      "timeStep": 0.001}, **FLUID,
                     creaseWallEnabled="true", creaseWallAngle=60.0, creaseWallConstant=500.0),
+    # fluid_c with the patch tables' full valence range: at conserved area the
+    # 5-7 restriction leaves the mesh stable but barely fluid (neighbour
+    # survival 0.93 after 400 us), and the crease wall may make 4-8 safe.
+    "fluid_d": {**{"usMembraneStretching": 250.0, "maxIterations": 400_000,
+                   "meshpointOutputInterval": 100, "randomSeed": 606, "timeStep": 0.001},
+                **FLUID,
+                "creaseWallEnabled": "true", "creaseWallAngle": 60.0, "creaseWallConstant": 500.0,
+                "edgeFlipMinValence": 4, "edgeFlipMaxValence": 8},
 }
-SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b", "fluid_c")
+SCALABLE = ("pure_a", "tension", "fluid_a", "fluid_b", "fluid_c", "fluid_d")
 MARKER = ".made-by-this-notebook"
 
 

@@ -482,9 +482,13 @@ the question is at conserved area, `muS = 250` for both, the fluid `fluid_c`
 against the solid `tension` -- section 11.
 
 **The crease wall** (`creaseWallEnabled`) forbids the flaps outright rather
-than making them rare: the same run with it on (`fluid_b`) shows zero
-creases over 90 degrees at every eighth and a sharpest edge of 50 degrees
-through 224 000 steps, at acceptance 0.33. For each
+than making them rare. The same run with it on (`fluid_b`) also finished its
+400 000 steps, with zero creases over 90 degrees at every eighth and a
+sharpest edge of 40-63 degrees throughout; smallest altitude 1.5-2.3 nm,
+acceptance 0.30, valences 24 / 52 / 24, survival 0.72, MSD exponent 0.76.
+It costs nothing visible next to `fluid_a`, and it removes the one failure
+the valence restriction only made rare. A fluid run should have all three
+terms on. For each
 interior edge, with `c` the cosine between its faces' normals,
 `E = (k/2) max(0, cos 60 - c)^2` with `k = 500 pN.nm`: zero within 60
 degrees of coplanar, 15 kT at a right angle, 135 kT at a full fold, smooth
@@ -495,27 +499,82 @@ pins its gradient and its consistency with the flip trial.
 
 
 
-**The fluctuation spectrum at full length**, which waits on the seam. Once a
-fluid run reaches 400 000 steps, re-executing
-`analysis/membrane_fluctuation_fluid_cpu.ipynb` repeats every number of
-section 9 on it; the lowest modes and the fitted `sigma` are what it settles.
-Independent replicas of the present length would tighten everything but the
-slowest mode.
+## 11. The fluid membrane at conserved area
 
-**Calibration of `nu` against a physical neighbour-exchange time**, for the
-reason in section 5.
+Four fluid runs of 400 000 steps each on the 100 nm sheet, all with the
+altitude floor, none of which diverged. `fluid_a` and `fluid_b` are at
+`muS = 0`; `fluid_c` and `fluid_d` at `muS = 250`, with the reference area
+that of the flat start.
 
-**A triangle-shape term, or a rejecting Brownian step**, for the reason at
-the end of section 8. Until then every fluid run ends in a fold after
-`1e4`-`1e5` steps, and the spectrum of section 9 is measured on the 94 us the
-longest of them gave.
+| run | valences | crease wall | `muS` | acceptance | survival at 400 us | MSD exponent | r.m.s. height | mean edge | bending E |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `fluid_a` | 5-7 | off | 0 | 0.29 | 0.70 | 0.75 | 9-10 nm | 6.15 | ~1 750 |
+| `fluid_b` | 5-7 | on | 0 | 0.30 | 0.72 | 0.76 | 10.3 | 6.13 | ~1 750 |
+| `fluid_c` | 5-7 | on | 250 | 0.43 | **0.93** | **0.13** | 0.6-1.0 | 5.47 | ~600 |
+| `fluid_d` | 4-8 | on | 250 | | | | | | *running* |
+| solid `tension` | -- | -- | 250 | -- | 1 | -- | 0.66 | 5.04 | -- |
+
+Two regimes, and neither is yet the membrane one wants.
+
+At `muS = 0` the sheet is fluid -- neighbours turn over, the in-plane MSD
+grows with an exponent of 0.75 -- and crumpled: the excess area of section
+10 puts its r.m.s. height at ten times the solid's and its bending energy at
+three times. Its spectrum is not a bending spectrum.
+
+At `muS = 250` the sheet is flat -- r.m.s. height and bending energy at the
+solid's scale, edges pinned near 5.5 nm -- and barely fluid on this
+timescale: 7% of neighbours exchanged in 400 us, an MSD that has all but
+saturated, even though 43% of the flips offered are accepted. With the
+edges held between a 4.75 nm wall and a 5.5 nm mean there is little room to
+move in plane, and with valences confined to 5-7 most accepted flips are
+undone by the next. `fluid_d` asks whether the crease wall makes the full
+4-8 range safe at conserved area, which would return the mobility that
+range had.
+
+**The spectrum at conserved area** -- `fluid_c` against the solid `tension`
+run, both through the subdivision reader, fitting `kc` and `sigma`
+together over `|q| d_x <= pi/2` (`analysis/membrane_fluctuation_fluid_cpu.ipynb`):
+
+| | frames | slope | `kc` (pN.nm) | `sigma` (pN/nm) | `kc`, block mean +- s.e. | `sigma`, blocks |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| solid `tension`, exact resampler | 6401 | -3.09 | 59.4 | +3.62 | | |
+| solid `tension`, subdivision route | 3201 | -3.04 | 59.3 | +3.62 | 57.2 +- 5.4 | 3.79 +- 0.27 |
+| **fluid `fluid_c`**, subdivision route | 3201 | -3.48 | **60.5** | **+2.28** | 47.3 +- 9.7 | 3.01 +- 0.40 |
+
+`kc` fluid / solid = **1.02** on the whole-trajectory fit, 0.83 +- 0.19 on
+the block means -- a two-parameter fit on a crossover spectrum is
+ill-conditioned block by block, which is the honest size of the error. The
+fluid fit has converged over its own prefixes (62.2, 60.4, 60.5 pN.nm over
+the last three), levels 2 and 3 of the reader agree to 1.7%, the power
+beyond the window is 0.95 of the solid's (no earlier roll-off), and the
+control net is 0.07% inverted where the crumpled runs were 6%. Both `kc`
+read a third below the input 83.4, as the solid notebook found for its own
+tension run: with a tension in the box the fitting window catches the
+`q^-4` to `q^-2` crossover mid-turn, which is why the solid notebook fits
+`kc` at `muS = 0` -- a choice a fluid membrane in a fixed frame does not
+have. **The fluid membrane returns the solid's bending modulus and a
+slightly lower tension** (3.0 against 3.8 pN/nm, two standard errors): with
+flips and in-plane motion it can relieve some of the stress the area
+constraint puts into a sheet that has to buy its excess area from
+fluctuations.
+
+## 12. Not done
+
+**Fluidity at conserved area**, for the reason in section 11: stable and
+flat, but with a neighbour-exchange time far beyond 400 us at `nu = 0.5`.
+Whether the 4-8 range with the crease wall restores it (`fluid_d`), or the
+attempt rate has to be raised, or the tether's lower wall lowered where the
+crease wall now guards against the consequence, is the next measurement.
+
+**Calibration of `nu` against a physical neighbour-exchange time**, which
+waits on the above.
 
 **Mirroring flips across the periodic seam.** The connectivity is periodic
-only up to one ring; the notebook measures the mismatch at 0.11% of the
-field. Not what folds the mesh, but not right either.
+only up to one ring; the notebook measures the mismatch at well under a per
+cent of the field. Not what folds the mesh, but not right either.
 
 **The flip move on the GPU.** `DeviceMeshLayout` refuses a face with more than
 one extraordinary corner, and a flip creates exactly those, so
-`edgeFlipEnabled` with `forceBackend = gpu` is refused at setup. Given the 21x
-in section 7, the device path is where a production fluid run should eventually
-go.
+`edgeFlipEnabled` with `forceBackend = gpu` is refused at setup. Given the
+4.7x of section 7, the device path is where a production fluid run should
+eventually go.

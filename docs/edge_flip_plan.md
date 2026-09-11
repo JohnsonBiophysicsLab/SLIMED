@@ -1,13 +1,14 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0-6 landed; 7 in progress
+**Status:** work packages 0-7 landed
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
 check this work must keep passing)
 **Scope:** in-plane fluidity by Metropolis edge flips, scheduled as a Poisson
 process in physical time, interleaved with the existing Brownian dynamics.
-Fixed surface topology — no fusion or fission.
+Fixed surface topology — no fusion or fission (the cut-and-paste moves of
+Gompper & Kroll 1998 are out of scope).
 
 The control mesh of a subdivision surface is a solid: two vertices that are
 neighbours stay neighbours forever, so the membrane carries an in-plane shear
@@ -44,7 +45,8 @@ binding test before the flip move itself is wired in.
 A DTS represents the membrane as `N` vertices joined into a triangulation `T`.
 The statistical weight is the Boltzmann factor of the discrete Hamiltonian,
 summed over all triangulations with equal prior weight and integrated over
-vertex positions:
+vertex positions (Gompper & Kroll 2004; Ramakrishnan, Sunil Kumar &
+Radhakrishnan 2015):
 
 ```text
 Z = Σ_T ∫ Π_v dX_v  exp(-E(X, T) / kT)
@@ -55,7 +57,8 @@ Two Monte Carlo moves sample this: a vertex displacement at fixed `T`, and a
 two adjacent triangles `(i, j, k)` and `(i, l, j)` is removed and replaced by
 `(k, l)`, giving triangles `(i, l, k)` and `(j, k, l)`. The four valences change
 by `-1, -1, +1, +1`; the number of vertices, edges and faces does not. The move
-is accepted with the Metropolis probability `min[1, exp(-ΔE/kT)]`. With a
+is accepted with the Metropolis probability `min[1, exp(-ΔE/kT)]` (Metropolis
+et al. 1953). With a
 uniformly chosen edge, the proposal is symmetric — the reverse flip is proposed
 from the new state with the same probability `1/N_E`, since the flip is an
 involution and `N_E` is conserved — so no proposal-ratio correction is needed
@@ -108,11 +111,15 @@ them with a continuous integrator, and the combination is what SLIMED needs:
   accepted flip that lowers the energy extracts work that the thermostat
   replaces as heat — "an entropy production mechanism comparable to viscous
   loss."
-- **TriMem (2022)** alternates hybrid-MC trajectories with flip sweeps and
-  verifies Boltzmann sampling by reproducing the vesicle phase diagram.
-- **FreeDTS (2024)** puts `N_T` flip attempts, `N_v` vertex updates and the
-  inclusion moves into one MC step, and folds the *global* constraints into
-  the local energy change of each move.
+- **TriMem** (Siggel et al. 2022) alternates hybrid-MC trajectories with flip
+  sweeps and verifies Boltzmann sampling by reproducing the vesicle phase
+  diagram.
+- **PyMembrane** (2023) offers a fixed-connectivity elastic membrane and a
+  bond-flipping liquid one in one framework — the same pair of modes
+  §3.10's `edgeFlipEnabled` switches between.
+- **FreeDTS** (Pezeshkian & Ipsen 2024) puts `N_T` flip attempts, `N_v` vertex
+  updates and the inclusion moves into one MC step, and folds the *global*
+  constraints into the local energy change of each move.
 - **OrganL (2024)** is the closest analogue to this tree — curved (Nagata
   cubic) elements with dynamic triangulation — and reports that after a flip
   round "neighbor lists [are] rebuilt", that the remeshing move "is executed
@@ -150,11 +157,13 @@ which "the number of flips conforms to a distribution scaled with the time step
 and the size of the membrane."
 
 `ν` is the fluidity parameter. It is not free: the accepted-flip rate sets the
-membrane's in-plane viscosity (Noguchi & Gompper) and the vertex diffusion,
+membrane's in-plane viscosity (Noguchi & Gompper 2004, 2005; quantified as
+`η = η_∞ exp(C_φ/φ)` by Sadeghi, Weikl & Noé 2018) and the vertex diffusion,
 and should be calibrated (WP6) against the physical neighbour-exchange time of
 a mesh vertex. A vertex at `lFace = 5 nm` stands for a patch of order a hundred
-lipids; with a lipid diffusion constant of `1–10 nm²/µs` the time for a patch
-to exchange a neighbour is `l² / 4D ≈ 0.6–6 µs`, so `ν` in the range
+lipids; with a lipid diffusion constant of `1–10 nm²/µs` — the fluid-phase
+range reviewed by Almeida & Vaz (1995), `10⁻⁸–10⁻⁷ cm²/s` — the time for a
+patch to exchange a neighbour is `l² / 4D ≈ 0.6–6 µs`, so `ν` in the range
 `0.1–1 /µs` is the physical starting point. For the shipped `input.params`
 (`timeStep = 0.001 µs`) on the `data/example` mesh (3,680 faces, `N_E ≈ 5,500`)
 that is `λ ≈ 0.5–5` attempts per step. The cost of a flip attempt is a local
@@ -169,16 +178,17 @@ net, the union of the one-rings of its three corners
 `i`, `j`, `k` and `l`, so it changes the control net — and the energy — of every
 face incident to any of the four. That set, the **flip patch**, is
 `|F(i)| + |F(j)| + |F(k)| + |F(l)|` minus overlaps, about 18 faces on a
-near-regular mesh. It is the same object TriMem locks for a parallel flip (their
-Fig. 2, which notes it is "significantly larger than the patch required for a
-flip subject to the Delaunay criterion"). Everything outside the flip patch
-has an unchanged control net and an unchanged energy; that is what makes `ΔE`
-local.
+near-regular mesh. It is the same object TriMem locks for a parallel flip
+(Siggel et al. 2022, Fig. 2, which notes it is "significantly larger than the
+patch required for a flip subject to the Delaunay criterion"). Everything
+outside the flip patch has an unchanged control net and an unchanged energy;
+that is what makes `ΔE` local.
 
 **(b) Faces with several extraordinary corners are unavoidable.** Stam's
-evaluation, and the row tables built on it, need exactly one extraordinary
-corner per face. That is achievable at mesh generation, and WP7's global
-refinement makes any mesh satisfy it. A flip destroys it immediately:
+evaluation (Stam 1998), and the row tables built on it, need exactly one
+extraordinary corner per face. That is achievable at mesh generation, and
+WP7's global refinement makes any mesh satisfy it. A flip destroys it
+immediately:
 
 ```text
        k                    k
@@ -196,9 +206,10 @@ that a partial refinement changes the limit surface elsewhere
 (`Mesh_refine.cpp:5-9`). The way out is Stam's original observation, applied
 per face rather than per mesh: **one Loop subdivision of a face's own control
 net produces four children, each with at most one extraordinary corner**, and
-the limit surface is unchanged because Loop subdivision is exactly the map the
-limit surface is defined by. The child at corner `v_a` keeps the valence of
-`v_a` and gets two valence-6 neighbours; the centre child is regular.
+the limit surface is unchanged because Loop subdivision (Loop 1987) is exactly
+the map the limit surface is defined by. The child at corner `v_a` keeps the
+valence of `v_a` and gets two valence-6 neighbours; the centre child is
+regular.
 
 The key fact that makes this local and cheap: **every control point of every
 child lies inside the parent's own patch.** A child's corner is either an old
@@ -227,9 +238,9 @@ coordinates. WP1 builds it.
 the limit-surface points `S = M C` with isotropic noise, so at fixed `T` it
 samples `exp(-E) dS`. A flip at fixed control net `C` with plain Metropolis
 samples `exp(-E) dC` across triangulations. These differ by the Jacobian
-`|det M_T|`, which depends on `T`. With Warren's weights the limit mask row of
-a valence-`N` vertex is `1/2` on itself and `1/(2N)` on each neighbour, so
-`M = ½ D⁻¹ (D + A)` and
+`|det M_T|`, which depends on `T`. With Warren's weights (Warren & Weimer 2001)
+the limit mask row of a valence-`N` vertex is `1/2` on itself and `1/(2N)` on
+each neighbour, so `M = ½ D⁻¹ (D + A)` and
 
 ```text
 ln det M_T = -Σ_v ln(2 N_v) + ln det(D + A)
@@ -273,7 +284,8 @@ E_A = (uSurf / 2 area0) (A - area0)²,       E_V = (uVol / 2 vol0) (V - vol0)²
 ```
 
 A flip changes `A` and `V` only through the flip patch, so with `ΔA` and `ΔV`
-summed over the patch the exact change is the OrganL / FreeDTS form:
+summed over the patch the exact change is the OrganL (2024) / FreeDTS
+(Pezeshkian & Ipsen 2024) form:
 
 ```text
 ΔE_A = (uSurf / 2 area0) · ΔA · (ΔA + 2 (A - area0))                      (2)
@@ -287,12 +299,12 @@ the next attempt sees the right `A`.
 ### 1.6 Mesh quality: the tether becomes an edge spring
 
 DTS models keep triangles well-shaped with a tether potential — hard walls in
-the Monte Carlo models, a smooth well in the MD ones (Noguchi & Gompper
-introduced "a smooth bond-interaction potential, which makes the model
-amenable for molecular dynamics"; TriMem's eq. 14 is a continuous version for
-the same reason). The Metropolis flip then automatically prefers the
-Delaunay-like diagonal, because the other one is longer and costs tether
-energy.
+the Monte Carlo models (Gompper & Kroll 2004), a smooth well in the MD ones
+(Noguchi & Gompper 2004 introduced "a smooth bond-interaction potential, which
+makes the model amenable for molecular dynamics"; TriMem's eq. 14, Siggel et
+al. 2022, is a continuous version for the same reason). The Metropolis flip
+then automatically prefers the Delaunay-like diagonal, because the other one is
+longer and costs tether energy.
 
 SLIMED's regularization (`energy_force_regularization()`,
 `Compute_energy_and_force_on_mesh.cpp:802-975`) is a spring on each face's three
@@ -315,8 +327,10 @@ as the Hamiltonian's mesh-quality term, with its force included in the
 Brownian drive, and the flip's `ΔE` includes the spring change of the one
 removed and one added edge. Its physical footprint is a small contribution to
 the area modulus and, with flips, none to the shear modulus; the fluctuation
-spectrum fit in `membrane_spectrum.py` reports an effective tension, which is
-the check that the spring is not adding one (WP6).
+spectrum fit in `membrane_spectrum.py` reports an effective tension against
+the Helfrich `q⁻⁴` law (Helfrich 1973; see
+[`fluctuation_spectrum.md`](fluctuation_spectrum.md)), which is the check that
+the spring is not adding one (WP6).
 
 ---
 
@@ -469,7 +483,8 @@ found while building it: **the two incident face indices come back holding
 each other's triangle.** That is intrinsic, not an implementation artefact.
 The quadrilateral offers no canonical pairing between "the side of `c0`"
 before the flip and either side after it, so every consistent assignment rule
-composes to the exchange; OpenMesh's `flip()` does the same. It is
+composes to the exchange; OpenMesh's `flip()` does the same (Botsch et al.
+2002). It is
 unobservable here because the only per-face state that survives a step without
 being recomputed from connectivity is the spontaneous curvature, and the
 admission test refuses an edge whose two faces disagree about it. The
@@ -499,8 +514,9 @@ any face in the flip patch, is a ghost or a periodic duplicate
 (`Particle::faceIndex` would need remapping — out of scope). The dynamic part,
 evaluated per attempt: valences `N_i - 1`, `N_j - 1 ≥ N_min` and
 `N_k + 1`, `N_l + 1 ≤ N_max`; `k` and `l` not already adjacent. With `[4, 8]`
-that is more restrictive than the DTS convention `[3, 9]`; extending the
-generator to `N = 3` (Loop's `β = 3/16` special case) and `N = 9, 10` is a
+that is more restrictive than the DTS convention `[3, 9]` (Gompper & Kroll
+2004); extending the generator to `N = 3` (Loop's `β = 3/16` special case,
+Loop 1987) and `N = 9, 10` is a
 one-day follow-up once flips are running and the measured valence histogram
 says whether it matters.
 
@@ -512,7 +528,7 @@ says whether it matters.
    beyond the shared corners; the construction uses the actual sets);
 2. `A_loc` (`(N_0 + N_1 + N_2) × K`): Loop's vertex rule with `β = 3/(8N)` on the
    three corners, the edge rule `(3/8, 3/8, 1/8, 1/8)` on every edge incident to
-   a corner — every stencil entry is in `P` by §1.4(b);
+   a corner (Loop 1987) — every stencil entry is in `P` by §1.4(b);
 3. four child selections `P_c`, produced by running the *same* one-ring walk
    used on the real mesh over the subdivided local topology — the way
    `build_canonical_patch()` already does for the canonical patch;
@@ -619,7 +635,8 @@ flags off:
    energy and its force to `nodalForce`. Implemented over the edge table, so
    each edge is counted once.
 3. **Valence-aware, sparse conversion.** `assign_mesh2surface()` writes the
-   Loop limit mask for the actual valence, `(1/2, 1/(2N))`, as a sparse
+   Loop limit mask for the actual valence, `(1/2, 1/(2N))` (Warren & Weimer
+   2001), as a sparse
    row structure rebuilt for the four changed rows after a flip. `M` is
    `½(I + W)` with `W` the random-walk matrix of the triangulation, so its
    eigenvalues are `½(1 + μ)` with `μ ∈ (-1, 1]`; `μ = -1` needs a bipartite
@@ -936,7 +953,8 @@ connectivity. The Jacobian correction stays a documented option and is not
 worth taking.
 
 **Acceptance and cost, measured.** A 320-face icosphere with roughly 5 nm
-edges, `kc = 83.4 pN·nm`, `kT = 4.17 pN·nm`, `dt = 1 ns`, serial:
+edges, `kc = 83.4 pN·nm` (20 kT, the bilayer value of Rawicz et al. 2000),
+`kT = 4.17 pN·nm`, `dt = 1 ns`, serial:
 
 | ν (per edge per µs) | λ per sweep | acceptance | ms per sweep |
 | --- | --- | --- | --- |
@@ -946,12 +964,12 @@ edges, `kc = 83.4 pN·nm`, `kT = 4.17 pN·nm`, `dt = 1 ns`, serial:
 | 5.0 | 2.4 | 25% | 3.0 |
 
 Acceptance is flat in the rate at 25–30%, which is a healthy Metropolis move —
-far above TriMem's 0.17%, because their tether potential is a stiff penalty
-where SLIMED's mesh-quality term is soft. WP4's edge spring will lower it, and
-that is the number to watch when it lands. At the default `ν = 0.5` the sweep
-costs 0.28 ms against tens of milliseconds for the force evaluation it sits
-beside, so fluidity is not what makes a fluid run expensive — the irregular
-faces it creates are (WP1).
+far above TriMem's 0.17% (Siggel et al. 2022; §1.1), because their tether
+potential is a stiff penalty where SLIMED's mesh-quality term is soft. WP4's
+edge spring will lower it, and that is the number to watch when it lands. At
+the default `ν = 0.5` the sweep costs 0.28 ms against tens of milliseconds for
+the force evaluation it sits beside, so fluidity is not what makes a fluid run
+expensive — the irregular faces it creates are (WP1).
 
 ### WP4 — Fluid-mode dynamics — **landed**
 
@@ -983,8 +1001,9 @@ vertices the mask factors as
 
 with `D` the valences and `A` the adjacency, so `K` is symmetric by
 construction. It is also positive definite: `D + A` is the signless Laplacian,
-positive semidefinite for any graph and singular only on a bipartite one, and a
-triangulation has triangles. Both directions then reduce to the same system:
+positive semidefinite for any graph and singular only on a bipartite one
+(Cvetković, Rowlinson & Simić 2007), and a triangulation has triangles. Both
+directions then reduce to the same system:
 
 ```text
     M C = S      ⟺   K C = D S
@@ -1163,8 +1182,10 @@ direction the flip move can reach, and the move then walks down it.
 
 This is why every dynamically triangulated surface model in §7 uses a
 **flat-bottomed** tether — zero energy for `l ∈ [l_min, l_max]`, a wall outside
-— rather than a spring. Inside the range a flip costs nothing, so the barrier
-and the constraint stop competing. Implementing that is the first item of WP6.
+— rather than a spring (Gompper & Kroll 2004; Ramakrishnan, Sunil Kumar &
+Ipsen 2010; Pezeshkian & Ipsen 2024). Inside the range a flip costs nothing, so
+the barrier and the constraint stop competing. Implementing that is the first
+item of WP6.
 
 Until then, `DynamicMesh::setup_flat()` reports the barrier in kT at startup and
 warns above 10 kT, and warns separately when flips are enabled with the spring
@@ -1231,21 +1252,25 @@ Three findings worth carrying forward:
 On the periodic sheet and on an icosphere:
 
 1. acceptance rate and valence histogram versus `ν` (DTS equilibrium meshes
-   are roughly 60% valence 6, 20% each 5 and 7 — a sanity band, not a target);
+   are roughly 60% valence 6, 20% each 5 and 7, the coordination distributions
+   reported by Gompper & Kroll 2004 and Ramakrishnan, Sunil Kumar &
+   Radhakrishnan 2015 — a sanity band, not a target);
 2. **neighbour survival**: the fraction of initial edges still present after
    time `t`, whose decay time is the microscopic fluidity time scale and the
-   thing `ν` should be calibrated by;
+   thing `ν` should be calibrated by — the bond-flip time scale Noguchi &
+   Gompper (2004, 2005) tie to the membrane viscosity `η_mb`;
 3. **in-plane MSD** of tagged vertices: saturating at the cage size without
-   flips, linear in `t` with them — the classical signature of a fluid;
+   flips, linear in `t` with them — the classical signature of a fluid, and the
+   in-plane diffusion Sadeghi, Weikl & Noé (2018) tie to the flip frequency;
 4. the fluctuation spectrum with flips on, through the resampled pipeline:
-   the same `kc` from the `q⁻⁴` fit, and an effective tension that does not
-   grow with `k_S`;
+   the same `kc` from the Helfrich `q⁻⁴` fit (Helfrich 1973), and an effective
+   tension that does not grow with `k_S`;
 5. throughput per step against §6 risk 1, at depth scale 1.0 and 0.5.
 
 > Gate: (3) and (4). Numbers recorded in a results document, as
 > `irregular_patch_results.md` did for its plan.
 
-### WP7 — The triangle-shape term
+### WP7 — The triangle-shape term — **landed**
 
 The tether bounds every edge of a fluid mesh and nothing else, and every long
 fluid run ended in a folded sliver whose edges were all inside the walls:
@@ -1295,8 +1320,10 @@ is now the default, and setup reports whether the lower wall lets a vertex
 of the maximum valence flatten.
 
 **The crease wall.** The third term, and the one a dynamically triangulated
-surface gets for free from its control-net bending energy: for each interior
-edge, with `c = n̂₁·n̂₂` the cosine between its faces' normals,
+surface gets for free from its `Σ (1 − n̂₁·n̂₂)` discretization of the bending
+energy (Gompper & Kroll 2004; Helfrich 1973 for the continuum term it
+discretizes): for each interior edge, with `c = n̂₁·n̂₂` the cosine between its
+faces' normals,
 
 ```text
     E_edge = (k/2) max(0, cos θ_max − c)²,    θ_max = 60°, k = 500 pN·nm
@@ -1320,8 +1347,13 @@ the mean edge grows to 6.15 nm and the 50% of excess area buckles out of
 plane in a box of fixed projected area. The 94 µs run of WP6 had matched the
 solid only because its slivers absorbed that excess as length without area.
 The comparison at conserved area — μ_S = 250, the fluid `fluid_c` against
-the solid `tension` — is the one the notebook now makes by default;
-`fluidity_results.md` §10–11.
+the solid `tension` — is the one the notebook now makes by default:
+**κ_c fluid/solid = 1.02** on the whole-trajectory fit (0.83 ± 0.19 by
+blocks), tension 3.0 against 3.8 pN/nm, no earlier roll-off, reader
+converged. What that run does not yet have is fluidity: at conserved area
+with valences 5–7 the neighbour survival is 0.93 after 400 µs. Whether the
+crease wall makes the full 4–8 range safe there (`fluid_d`) is the next
+measurement; `fluidity_results.md` §10–12.
 
 > Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
 > every previous one died at 8 700, 27 800 or 94 000 steps — with the
@@ -1356,7 +1388,7 @@ can go wrong quietly, which is why its gate is an exact identity.
 | Risk | Handling |
 | ---- | -------- |
 | **A fluid mesh is mostly irregular, and irregular faces are expensive.** **Measured at WP1: 36× an all-regular mesh**, reached by the time 15% of edges have flipped. In a fluid steady state almost every face has at least one extraordinary corner and most have several, each costing `3·D` samples per corner instead of 3. | This is the real cost of fluidity and it is not specific to this design — any subdivision membrane that flips pays it. Levers, in order: `irregularPatchDepthScale` (the `1e-4` bending tail the depths were chosen for is far below the thermal noise a Brownian run lives in; WP6 measures what depth the spectrum actually needs); the GPU backend, which was built for exactly this kind of face-parallel load; a higher-order rule on the children so that a given accuracy needs fewer levels. Now a known quantity rather than a risk, but it moves `irregularPatchDepthScale` from a convenience to a requirement. |
-| **The measure question** (§1.4c). | Plain Metropolis at fixed `C` is the literature standard; the log-det diagnostic quantifies the discrepancy; the corrected acceptance is a documented option. Geometry sampled at fixed `T` is unaffected either way. |
+| **The measure question** (§1.4c). | Plain Metropolis at fixed `C` is the literature standard (Gompper & Kroll 2004; Ramakrishnan, Sunil Kumar & Ipsen 2010; Siggel et al. 2022); the log-det diagnostic quantifies the discrepancy; the corrected acceptance is a documented option. Geometry sampled at fixed `T` is unaffected either way. |
 | **Periodic band stays solid** (§3.8). | Accepted for phase 1; the interior tile is what the analysis measures. Torus-periodic connectivity is a separate plan. |
 | **Valence range `[4, 8]`** rejects flips that DTS models would allow. | Measure the histogram; extend the generator to `3` and `9–10` if the rejection rate at the bounds is material. `N = 3` needs Loop's `β = 3/16`. |
 | **Scaffolding and insertion faces.** `Particle::faceIndex` and per-face `spontCurvature` are indexed by face. | Faces carrying either are excluded from flips in phase 1; remapping on flip is straightforward but is its own change. |
@@ -1377,33 +1409,94 @@ can go wrong quietly, which is why its gate is an exact identity.
 
 ## 7. References
 
+Cited inline where a result, a model or a parameter value is taken from the
+source rather than derived here.
+
+### Dynamically triangulated membranes
+
 - Gompper, G. & Kroll, D. M. *Triangulated-surface models of fluctuating
   membranes*, in *Statistical Mechanics of Membranes and Surfaces* (2004).
+  The partition function of §1.1, the flip validity checks, the hard-wall
+  tether, the `[3, 9]` valence convention, the equilibrium coordination
+  distribution of §4 WP6, and the `Σ (1 − n̂₁·n̂₂)` bending discretization
+  of WP7.
   https://www.researchgate.net/publication/285604301_Triangulated-surface_models_of_fluctuating_membranes
 - Gompper, G. & Kroll, D. M. *Membranes with fluctuating topology: Monte Carlo
-  simulations*, PRL 81, 2284 (1998). https://ui.adsabs.harvard.edu/abs/1998PhRvL..81.2284G/abstract
+  simulations*, PRL 81, 2284 (1998). The topology-changing moves this plan
+  excludes. https://ui.adsabs.harvard.edu/abs/1998PhRvL..81.2284G/abstract
 - Ramakrishnan, N., Sunil Kumar, P. B. & Ipsen, J. H. *Monte Carlo simulations
   of fluid vesicles with in-plane orientational ordering*, PRE 81, 041922
-  (2010). https://arxiv.org/abs/1004.4509
+  (2010). Eq. 19, the symmetric flip proposal of §1.1; the sweep definition;
+  the `√3 a_0` tether. https://arxiv.org/abs/1004.4509
 - Ramakrishnan, N., Sunil Kumar, P. B. & Radhakrishnan, R. *Monte Carlo
   simulations of fluid vesicles*, J. Phys.: Condens. Matter 27, 273104 (2015).
+  Review; the DTS partition function of §1.1 and the valence statistics of WP6.
   https://iopscience.iop.org/article/10.1088/0953-8984/27/27/273104
 - Noguchi, H. & Gompper, G. *Fluid vesicles with viscous membranes in shear
-  flow*, PRL 93, 258102 (2004). https://arxiv.org/abs/cond-mat/0404356
+  flow*, PRL 93, 258102 (2004). The bond-flip rate as the membrane-viscosity
+  knob (§1.2, §1.3, WP6 item 2) and the smooth bond potential of §1.6.
+  https://arxiv.org/abs/cond-mat/0404356
 - Noguchi, H. & Gompper, G. *Dynamics of fluid vesicles in shear flow: Effect of
   membrane viscosity and thermal fluctuations*, PRE 72, 011901 (2005).
   https://journals.aps.org/pre/abstract/10.1103/PhysRevE.72.011901
 - Sadeghi, M., Weikl, T. R. & Noé, F. *Particle-based membrane model for
   mesoscopic simulation of cellular dynamics*, J. Chem. Phys. 148, 044901
-  (2018). https://arxiv.org/abs/1710.06907
+  (2018). Flips at frequency `φ` alongside Langevin dynamics,
+  `η = η_∞ exp(C_φ/φ)`, and the entropy-production argument of §1.2.
+  https://arxiv.org/abs/1710.06907
 - Siggel, M. et al. *TriMem: A parallelized hybrid Monte Carlo software for
   efficient simulations of lipid membranes*, J. Chem. Phys. 157, 174801 (2022).
-  https://www.biorxiv.org/content/10.1101/2022.05.25.493239v1
+  Eq. 19 (the acceptance `ε`, and the 0.17% WP3 compares against), eq. 14 (the
+  continuous tether), Fig. 2 (the flip patch of §1.4a), and the sequential-flip
+  argument of §1.1. https://www.biorxiv.org/content/10.1101/2022.05.25.493239v1
 - Pezeshkian, W. & Ipsen, J. H. *Mesoscale simulation of biomembranes with
-  FreeDTS*, Nat. Commun. 15, 548 (2024). https://www.nature.com/articles/s41467-024-44819-w
+  FreeDTS*, Nat. Commun. 15, 548 (2024). The `[l_dts, 3 l_dts]` flat tether and
+  the global-constraint-in-a-local-move form of §1.5.
+  https://www.nature.com/articles/s41467-024-44819-w
 - *OrganL: Dynamic triangulation of biomembranes using curved elements* (2024).
+  Curved elements with dynamic triangulation; the
+  `ΔF_Φ = λ/2 ΔΦ (ΔΦ − 2(Φ − Φ_0))` form equation (2) takes.
   https://pmc.ncbi.nlm.nih.gov/articles/PMC11213972/
 - *PyMembrane: A flexible framework for efficient simulations of elastic and
-  liquid membranes* (2023). https://arxiv.org/abs/2308.12754
-- Stam, J. *Evaluation of Loop subdivision surfaces* (1998); the one-subdivision
-  isolation argument that §1.4(b) applies per face.
+  liquid membranes* (2023). Elastic and liquid membranes in one framework, the
+  pair `edgeFlipEnabled` switches between. https://arxiv.org/abs/2308.12754
+
+### Membrane physics and parameter values
+
+- Helfrich, W. *Elastic properties of lipid bilayers: theory and possible
+  experiments*, Z. Naturforsch. C 28, 693–703 (1973). The bending energy whose
+  `q⁻⁴` spectrum §1.6 and WP6 item 4 fit against.
+  https://doi.org/10.1515/znc-1973-11-1209
+- Rawicz, W., Olbrich, K. C., McIntosh, T., Needham, D. & Evans, E. *Effect of
+  chain length and unsaturation on elasticity of lipid bilayers*, Biophys. J.
+  79, 328–339 (2000). The `κ ≈ 20 kT` bilayer bending rigidity behind
+  `kc = 83.4 pN·nm`.
+- Almeida, P. F. F. & Vaz, W. L. C. *Lateral diffusion in membranes*, in
+  *Handbook of Biological Physics* vol. 1, ch. 6, 305–357 (1995). The
+  `10⁻⁸–10⁻⁷ cm²/s` fluid-phase lipid diffusion constants §1.3 calibrates `ν`
+  against.
+
+### Subdivision surfaces, meshes and methods
+
+- Loop, C. T. *Smooth subdivision surfaces based on triangles*, M.S. thesis,
+  University of Utah (1987). The subdivision scheme itself: the vertex rule
+  `β = 3/(8N)` (and `3/16` at `N = 3`) and the `(3/8, 3/8, 1/8, 1/8)` edge rule
+  that build `A_loc` in §3.3.
+- Stam, J. *Evaluation of Loop subdivision surfaces*, SIGGRAPH 1998 course
+  notes. The exact evaluation the row tables implement, and the
+  one-subdivision isolation argument that §1.4(b) applies per face.
+- Warren, J. & Weimer, H. *Subdivision methods for geometric design: a
+  constructive approach*, Morgan Kaufmann (2001). The `(1/2, 1/(2N))` limit
+  mask of §1.4(c) and §3.7.
+- Botsch, M., Steinberg, S., Bischoff, S. & Kobbelt, L. *OpenMesh — a generic
+  and efficient polygon mesh data structure*, OpenSG Symposium (2002). Its
+  `flip()` shows the same face-label exchange as §3.2.
+  https://www.graphics.rwth-aachen.de/software/openmesh/
+- Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H. & Teller,
+  E. *Equation of state calculations by fast computing machines*, J. Chem.
+  Phys. 21, 1087–1092 (1953). The acceptance rule of §1.1 and §3.5.
+  https://doi.org/10.1063/1.1699114
+- Cvetković, D., Rowlinson, P. & Simić, S. K. *Signless Laplacians of finite
+  graphs*, Linear Algebra Appl. 423, 155–171 (2007). `D + A` is positive
+  semidefinite and singular only on a bipartite graph — what makes the WP4
+  solve SPD.
