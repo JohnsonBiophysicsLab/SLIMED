@@ -134,6 +134,11 @@ TEST(FluidDynamicsTest, TheEdgeSpringForceIsMinusTheGradientOfItsEnergy)
     Param param;
     configure(param);
     param.edgeSpringEnabled = true;
+    // Explicitly the harmonic shape. The default is now the flat-bottomed
+    // tether, whose energy is identically zero for a mesh whose edges are all
+    // inside the allowed range -- which this icosphere's are, so these tests
+    // would pass against nothing. See WP6.
+    param.edgeTetherShape = "harmonic";
     param.edgeSpringConstant = 40.0;
     param.edgeSpringRestLength = 6.0;
     param.kCurv = 0.0; // the spring alone, so nothing else can compensate
@@ -179,6 +184,11 @@ TEST(FluidDynamicsTest, TheEdgeSpringIsASumOverTheEdgesThatExistNow)
     Param param;
     configure(param);
     param.edgeSpringEnabled = true;
+    // Explicitly the harmonic shape. The default is now the flat-bottomed
+    // tether, whose energy is identically zero for a mesh whose edges are all
+    // inside the allowed range -- which this icosphere's are, so these tests
+    // would pass against nothing. See WP6.
+    param.edgeTetherShape = "harmonic";
     param.edgeSpringConstant = 40.0;
     param.edgeSpringRestLength = 6.0;
 
@@ -246,6 +256,7 @@ TEST(FluidDynamicsTest, TheSpringAndTheReferenceLengthTermAreAlternatives)
         Param param;
         configure(param);
         param.edgeSpringEnabled = useSpring;
+        param.edgeTetherShape = "harmonic";
         param.edgeSpringConstant = 40.0;
         param.edgeSpringRestLength = 6.0;
         Mesh mesh(param);

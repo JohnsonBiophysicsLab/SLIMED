@@ -140,10 +140,20 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
     {
         const Face &face = faces[iFace];
 
-        // energy_force_regularization() runs over every face, ghosts included,
-        // and every face's energy is summed into the total. A flip never
-        // touches a ghost, so this only ever matters for consistency.
-        result.regularization += face_regularization_energy(iFace);
+        // Whichever mesh-quality term the dynamics is actually integrating.
+        // These are alternatives, and a trial that differenced the wrong one
+        // would hand the Metropolis sweep a Hamiltonian the Brownian step does
+        // not share: the chain would then sample neither. Measured when this
+        // read face_regularization_energy() unconditionally, on a run with the
+        // tether on -- every accepted flip reported about -750 pN.nm of a
+        // reference length that a newly created edge never had, and the mesh's
+        // total energy climbed while the flips claimed to be lowering it.
+        //
+        // Both run over every face, ghosts included, and every face's energy is
+        // summed into the total. A flip never touches a ghost, so that only
+        // ever matters for consistency.
+        result.regularization += param.edgeSpringEnabled ? face_tether_energy(iFace)
+                                                         : face_regularization_energy(iFace);
 
         if (face.isBoundary)
         {

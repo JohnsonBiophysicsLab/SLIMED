@@ -80,6 +80,9 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "edgeSpringEnabled: " << param.edgeSpringEnabled << std::endl;
     os << "edgeSpringConstant: " << param.edgeSpringConstant << std::endl;
     os << "edgeSpringRestLength: " << param.edgeSpringRestLength << std::endl;
+    os << "edgeTetherShape: " << param.edgeTetherShape << std::endl;
+    os << "edgeTetherMinRatio: " << param.edgeTetherMinRatio << std::endl;
+    os << "edgeTetherMaxRatio: " << param.edgeTetherMaxRatio << std::endl;
     os << "surfaceSolver: " << param.surfaceSolver << std::endl;
     os << "irregularPatchDepthScale: " << param.irregularPatchDepthScale << std::endl;
     os << "edgeFlipEnabled: " << param.edgeFlipEnabled << std::endl;

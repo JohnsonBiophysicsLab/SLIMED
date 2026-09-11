@@ -97,23 +97,58 @@ void DynamicMesh::report_edge_flip_feasibility()
     {
         const double restLength =
             (param.edgeSpringRestLength > 0.0) ? param.edgeSpringRestLength : param.lFace;
-        const double reach = std::sqrt(3.0) - 1.0;
-        const double barrier = 0.5 * param.edgeSpringConstant * reach * reach * restLength *
-                               restLength;
+        // The reference move: a rhombus of two equilateral triangles of side
+        // l0, whose short diagonal l0 the flip replaces by the long one,
+        // l0 * sqrt(3). That is the cheapest flip a near-regular mesh offers,
+        // so whatever it costs is a lower bound on the barrier.
+        const double flippedLength = std::sqrt(3.0) * restLength;
+        double barrier = 0.0;
+        if (param.edgeTetherShape == "harmonic")
+        {
+            const double reach = flippedLength - restLength;
+            barrier = 0.5 * param.edgeSpringConstant * reach * reach;
+        }
+        else
+        {
+            const double upperBound = param.edgeTetherMaxRatio * restLength;
+            const double over = flippedLength - upperBound;
+            barrier = (over > 0.0) ? 0.5 * param.edgeSpringConstant * over * over : 0.0;
+        }
         const double inKT = (param.KBT > 0.0) ? barrier / param.KBT : 0.0;
-        std::cout << "[DynamicMesh] Edge-flip barrier from the edge spring: " << barrier
-                  << " pN.nm = " << inKT << " kT (k = " << param.edgeSpringConstant
-                  << " pN/nm, l0 = " << restLength << " nm)." << std::endl;
+        std::cout << "[DynamicMesh] Edge-flip barrier from the " << param.edgeTetherShape
+                  << " tether: " << barrier << " pN.nm = " << inKT << " kT (k = "
+                  << param.edgeSpringConstant << " pN/nm, l0 = " << restLength << " nm";
+        if (param.edgeTetherShape != "harmonic")
+        {
+            std::cout << ", range [" << param.edgeTetherMinRatio * restLength << ", "
+                      << param.edgeTetherMaxRatio * restLength << "] nm";
+        }
+        std::cout << ")." << std::endl;
+
         if (inKT > 10.0)
         {
             std::cout << "[DynamicMesh] WARNING: at " << inKT
                       << " kT that barrier accepts roughly exp(-" << inKT
                       << ") of the flips offered, so the membrane will not be fluid. The "
                          "acceptance is what edgeFlipAttemptRate is calibrated against, and it "
-                         "will read as zero however high the rate is set. Lower "
-                         "edgeSpringConstant -- a few kT of barrier means k of order "
-                      << 10.0 * param.KBT / (0.5 * reach * reach * restLength * restLength)
-                      << " pN/nm at this lFace." << std::endl;
+                         "will read as zero however high the rate is set."
+                      << std::endl;
+            if (param.edgeTetherShape == "harmonic")
+            {
+                std::cout << "[DynamicMesh]   A harmonic tether has no stiffness that is both "
+                             "soft enough to flip and stiff enough to hold the triangulation "
+                             "together -- see docs/edge_flip_plan.md work package 5. Use "
+                             "edgeTetherShape = flat."
+                          << std::endl;
+            }
+            else
+            {
+                std::cout << "[DynamicMesh]   A flip of an equilateral rhombus produces an edge "
+                             "of sqrt(3) l0 = "
+                          << flippedLength << " nm, and edgeTetherMaxRatio puts the wall at "
+                          << param.edgeTetherMaxRatio * restLength
+                          << " nm. Raise edgeTetherMaxRatio above 1.733." << std::endl;
+            }
         }
     }
     else

@@ -286,6 +286,64 @@ struct Param
     double edgeSpringRestLength = -1.0;
 
     /**
+     * @brief The shape of that term: "flat" (default) or "harmonic".
+     *
+     * "harmonic" is the spring above, `(k/2)(l - l0)^2`, and it does not work
+     * for a fluid membrane. A flip on a rhombus of two equilateral triangles
+     * replaces the short diagonal by the long one, so it has to climb
+     * `(k/2)(sqrt(3) - 1)^2 l0^2` whatever the rest of the energy says. Two
+     * requirements then pull `k` in opposite directions: flips need a barrier
+     * of a few kT, and a triangulation that does not degenerate needs a bond
+     * fluctuation `sqrt(kT/k)` well below `l0`. At `l0 = 5 nm` and room
+     * temperature the first wants `k <= 3.1 pN/nm` and the second wants
+     * `k >= 16.7`. The window is empty, and the measurements are in
+     * docs/edge_flip_plan.md work package 5.
+     *
+     * "flat" is the tether every dynamically triangulated surface model uses:
+     * zero inside an allowed range, a quadratic wall outside it.
+     *
+     * ```text
+     *     E = (k/2)(l_min - l)^2   l < l_min
+     *         0                    l_min <= l <= l_max
+     *         (k/2)(l - l_max)^2   l > l_max
+     * ```
+     *
+     * A flip that leaves every edge inside the range costs nothing, so the
+     * barrier and the shape constraint stop competing: `k` can be as stiff as
+     * the walls need to be, and the flip is decided by the bending energy and
+     * the constraints -- which is the physics the sweep exists to sample.
+     */
+    std::string edgeTetherShape = "flat";
+    /**
+     * @brief The allowed range, as multiples of the rest length.
+     *
+     * Squeezed between two requirements that nearly meet.
+     *
+     * The upper bound must exceed `sqrt(3) = 1.733`: a flip of an equilateral
+     * rhombus of side `l` produces an edge of `l sqrt(3)`, so a wall below
+     * that forbids exactly the move this exists to permit.
+     *
+     * The range must also be *narrow*, and that is what WP6 measured. Inside
+     * the flat region there is no restoring force at all, so nothing sets a
+     * length scale for the control net except these walls and the constraint
+     * on the limit surface's area -- and a control net can be wildly
+     * non-uniform while its limit surface stays smooth and the right size. Let
+     * the walls stand far apart and a fluid mesh coarsens into them without
+     * ever settling: at `[0.6, 1.8]`, 20000 steps of the 60 nm sheet at
+     * `nu = 2` took the mean control-net edge from 5.00 to 6.17 nm with the
+     * spread still widening, and the tether energy from 600 to 13800 pN.nm
+     * with no sign of a plateau. At `[0.95, 1.75]` the same run settles: the
+     * edge distribution holds at 5.3 +- 1.0 nm and the tether energy
+     * fluctuates about 3000 pN.nm without trend.
+     *
+     * 1.84 is therefore about as wide as the ratio may be, and `sqrt(3)` is
+     * the floor -- barely 6% apart. That the window exists at all is what
+     * makes the flat tether workable where the harmonic one is not.
+     */
+    double edgeTetherMinRatio = 0.95;
+    double edgeTetherMaxRatio = 1.75;
+
+    /**
      * @brief How the limit surface and the control net are converted.
      *
      * "dense" builds the whole mask as an N x N matrix and inverts it once,

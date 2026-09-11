@@ -25,14 +25,115 @@
  * modulus -- which is the point. The fluctuation spectrum's fitted tension is
  * what says whether the spring is quietly adding one.
  *
- * @see docs/edge_flip_plan.md section 1.6
+ * ### Why that spring does not work, and what replaced it
+ *
+ * A flip on a rhombus of two equilateral triangles of side `l` replaces the
+ * short diagonal by the long one, so it has to climb
+ * `(k/2)(sqrt(3) - 1)^2 l^2` no matter what the rest of the Hamiltonian says.
+ * Two requirements then pull `k` in opposite directions -- flips need a
+ * barrier of a few kT, and a triangulation that does not degenerate needs the
+ * bond fluctuation `sqrt(kT/k)` well below `l` -- and at `l = 5 nm` and room
+ * temperature there is no `k` that satisfies both. Measured on a 100 nm sheet
+ * over 3000 steps: `k = 83.4` accepts 0 flips of 121, `k = 20` accepts 2.1%,
+ * `k = 1` accepts 8.9% and the run diverges at step 1535.
+ *
+ * So the default is the flat-bottomed tether the Monte Carlo models use:
+ *
+ *     E = (k/2)(l_min - l)^2   below the range
+ *         0                    inside it
+ *         (k/2)(l - l_max)^2   above it
+ *
+ * A flip that leaves every edge inside the range costs nothing, so the wall
+ * stiffness and the flip barrier stop being the same number. `k` can then be
+ * whatever the walls need. The harmonic form is kept behind
+ * `edgeTetherShape = harmonic`, because it is the smooth one and a
+ * minimization that never flips has no reason to prefer a piecewise term.
+ *
+ * @see docs/edge_flip_plan.md sections 1.6 and work packages 5 and 6
  */
 
 #include "mesh/Mesh.hpp"
 
 #include <cmath>
+#include <stdexcept>
+#include <string>
 
 #include "energy_force/Patch_kernel.hpp"
+
+double Mesh::edge_tether_energy(double length) const
+{
+    const double restLength =
+        (param.edgeSpringRestLength >= 0.0) ? param.edgeSpringRestLength : param.lFace;
+
+    // Displacement from the nearest point of the allowed interval: zero inside
+    // it, signed outside. The harmonic form is the degenerate case where the
+    // interval is the single point l0, which is what lets one expression serve
+    // both shapes.
+    double extension = 0.0;
+    if (param.edgeTetherShape == "harmonic")
+    {
+        extension = length - restLength;
+    }
+    else
+    {
+        const double lowerBound = param.edgeTetherMinRatio * restLength;
+        const double upperBound = param.edgeTetherMaxRatio * restLength;
+        if (!(lowerBound <= upperBound))
+        {
+            throw std::runtime_error(
+                "[Mesh::edge_tether_energy] edgeTetherMinRatio exceeds edgeTetherMaxRatio; the "
+                "tether has no allowed range, so every edge is against a wall.");
+        }
+        if (length < lowerBound)
+        {
+            extension = length - lowerBound;
+        }
+        else if (length > upperBound)
+        {
+            extension = length - upperBound;
+        }
+    }
+    return 0.5 * param.edgeSpringConstant * extension * extension;
+}
+
+double Mesh::face_tether_energy(int iFace) const
+{
+    const std::vector<int> &corners = faces[iFace].adjacentVertices;
+    if (corners.size() != 3)
+    {
+        return 0.0;
+    }
+
+    double sum = 0.0;
+    for (int k = 0; k < 3; k++)
+    {
+        const int a = corners[k];
+        const int b = corners[(k + 1) % 3];
+        double along[3];
+        for (int axis = 0; axis < 3; axis++)
+        {
+            along[axis] = vertices[a].coord.get(axis, 0) - vertices[b].coord.get(axis, 0);
+        }
+        const double energy = edge_tether_energy(slimed::v3_norm(along));
+
+        // The same split energy_force_edge_spring() applies: half to each of
+        // the two faces an edge separates, all of it to the one face of a
+        // boundary edge. Read off the edge table so the two agree even where
+        // the table and the corner walk would disagree about incidence.
+        const int iEdge = edge_between(a, b);
+        int nIncident = 2;
+        if (iEdge >= 0)
+        {
+            const MeshEdge &edge = edges[iEdge];
+            nIncident = (edge.face[0] >= 0 ? 1 : 0) + (edge.face[1] >= 0 ? 1 : 0);
+        }
+        if (nIncident > 0)
+        {
+            sum += energy / nIncident;
+        }
+    }
+    return sum;
+}
 
 void Mesh::energy_force_edge_spring()
 {
@@ -45,6 +146,36 @@ void Mesh::energy_force_edge_spring()
     // A negative rest length means "the edge length the mesh was built for".
     const double restLength =
         (param.edgeSpringRestLength >= 0.0) ? param.edgeSpringRestLength : param.lFace;
+
+    const bool flatBottomed = (param.edgeTetherShape != "harmonic");
+    const double lowerBound = param.edgeTetherMinRatio * restLength;
+    const double upperBound = param.edgeTetherMaxRatio * restLength;
+    if (flatBottomed && !(lowerBound <= upperBound))
+    {
+        throw std::runtime_error(
+            "[Mesh::energy_force_edge_spring] edgeTetherMinRatio exceeds edgeTetherMaxRatio; the "
+            "tether has no allowed range, so every edge is against a wall.");
+    }
+
+    // Displacement from the nearest point of the allowed interval: zero inside
+    // it, signed outside. The harmonic form is the degenerate case where the
+    // interval is the single point l0, which is what makes one expression
+    // serve both shapes -- and what makes the force below identical in form.
+    const auto displacementFromRest = [&](double length) {
+        if (!flatBottomed)
+        {
+            return length - restLength;
+        }
+        if (length < lowerBound)
+        {
+            return length - lowerBound;
+        }
+        if (length > upperBound)
+        {
+            return length - upperBound;
+        }
+        return 0.0;
+    };
 
     for (Face &face : faces)
     {
@@ -87,8 +218,11 @@ void Mesh::energy_force_edge_spring()
             continue; // coincident vertices carry no direction to push along
         }
 
-        const double extension = length - restLength;
+        const double extension = displacementFromRest(length);
         const double energy = 0.5 * springConstant * extension * extension;
+        // edge_tether_energy() is the same expression, reached by the flip
+        // trial. Kept as one definition would be better still, but the force
+        // below needs the signed displacement and not just the energy.
 
         // -dE/dx_a, with the sign flipped on b: a stretched edge pulls its
         // endpoints together.

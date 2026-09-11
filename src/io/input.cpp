@@ -307,6 +307,24 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "irregularPatchDepthScale set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("edgeTetherShape") == 0)
+	{
+		param.edgeTetherShape = variableValueStr;
+		std::cout << "edgeTetherShape set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeTetherMinRatio") == 0)
+	{
+		param.edgeTetherMinRatio = std::stod(variableValueStr);
+		std::cout << "edgeTetherMinRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeTetherMaxRatio") == 0)
+	{
+		param.edgeTetherMaxRatio = std::stod(variableValueStr);
+		std::cout << "edgeTetherMaxRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("surfaceSolver") == 0)
 	{
 		param.surfaceSolver = variableValueStr;

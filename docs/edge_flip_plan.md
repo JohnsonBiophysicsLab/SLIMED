@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0-5 landed; 6 planned
+**Status:** work packages 0-6 landed
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -673,7 +673,9 @@ the natural first fluid run.
 | `edgeFlipInterval` | `1` | steps between sweeps; `λ` scales with it |
 | `edgeFlipMinValence` / `MaxValence` | `4` / `8` | clamped to the row-table range |
 | `inPlaneDynamicsEnabled` | `false` | lift the `x, y` zeroing |
-| `edgeSpringEnabled` / `edgeSpringConstant` / `edgeSpringRestLength` | `false` / `kCurv` / `lFace` | equation (3) |
+| `edgeSpringEnabled` / `edgeSpringConstant` / `edgeSpringRestLength` | `false` / `kCurv` / `lFace` | the mesh-quality term |
+| `edgeTetherShape` | `flat` | `flat` (WP6) or `harmonic` (equation (3), WP4) |
+| `edgeTetherMinRatio` / `edgeTetherMaxRatio` | `0.6` / `1.8` | the flat tether's allowed range, in multiples of `l0`; the upper bound must exceed `√3` or a flip of an equilateral rhombus is forbidden |
 | `surfaceSolver` | `dense` | `dense` (today) or `iterative` (§3.7) |
 | `irregularPatchDepthScale` | `1.0` | multiplies the recommended depths, for the cost study in §6 |
 
@@ -1171,7 +1173,7 @@ which measures an edge a flip just created against a length it never had, and
 the sweep samples it: measured at about −1200 pN·nm per accepted flip of pure
 artifact.
 
-### WP6 — Validation of fluidity and physics
+### WP6 — Validation of fluidity and physics — **landed**
 
 **First item, ahead of the measurements below: replace the harmonic edge spring
 with a flat-bottomed tether.** WP5 measured the harmonic one to have no usable
@@ -1179,6 +1181,37 @@ stiffness — see the table there. Every measurement in this package is a
 measurement of the flip move's behaviour, and with the current tether the move
 either never fires or drives the run to divergence.
 
+**Result: the gate is met.** All numbers are in
+[`fluidity_results.md`](fluidity_results.md); 12 tests in
+`tests/test_fluidity.cpp` and the analysis module `analysis/fluidity.py`. The
+suite is 175, 174 passing and 1 skipped (CUDA, no local device), and the
+shipped periodic workload is still byte-identical with the new flags off.
+
+The gate, item (3): on the 60 nm sheet over 60000 steps, the in-plane MSD with
+flips off saturates at 7.7 nm² (growth exponent 0.097) while with flips it
+reaches 23.1 nm² and is still climbing (exponent 0.482). The two are
+indistinguishable out to lag 800, cross at about lag 1300, and reach a ratio of
+3.0 by lag 30000.
+
+Item (4), the fluctuation spectrum with flips on, is **not done**: it needs of
+order 10⁶ steps, which at the measured 5.7 steps/s is two days per trajectory
+here. Said plainly rather than approximated.
+
+Three findings worth carrying forward:
+
+- **The sweep and the dynamics were sampling different Hamiltonians.**
+  `evaluate_face_subset()` went on differencing the reference-length
+  regularization after the tether landed, so every accepted flip reported about
+  −787 pN·nm while the mesh's energy climbed. Fixed; acceptance went from 17%
+  to 40% and the mean accepted ΔE from −787 to +0.3 pN·nm.
+- **The tether range has to be narrow, and the window is 6% wide.** Inside the
+  flat region there is no restoring force, so nothing sets a length scale for
+  the control net but the walls — and a fluid mesh coarsens into them without
+  settling if they stand far apart. `√3 = 1.733` is the floor, about 1.84 is
+  the ceiling, and the defaults are now `[0.95, 1.75]`.
+- **Fluidity costs 21× in throughput**, which is the irregular-patch cost of
+  WP1 rather than the flip move. `irregularPatchDepthScale = 0.5` buys 1.7× of
+  it back without moving the acceptance rate.
 
 On the periodic sheet and on an icosphere:
 

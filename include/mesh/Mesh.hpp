@@ -457,6 +457,31 @@ public:
     double face_regularization_energy(int iFace) const;
 
     /**
+     * @brief The tether energy of a single edge at a given length.
+     *
+     * One definition of the term's shape, so the whole-mesh force pass and the
+     * flip trial cannot disagree about it. See Param::edgeTetherShape.
+     */
+    double edge_tether_energy(double length) const;
+
+    /**
+     * @brief A face's share of the tether energy of its three edges.
+     *
+     * The mesh-quality term is a sum over edges, but every energy in this tree
+     * is accumulated per face, so an edge's energy is split between the two
+     * faces it separates -- the same convention energy_force_edge_spring()
+     * uses, so summing this over every face gives the same total.
+     *
+     * This is what a flip trial must difference when the tether is in force.
+     * Using face_regularization_energy() there instead -- which measures each
+     * face against its own edges in coordRef -- gives the trial a different
+     * Hamiltonian from the one the dynamics integrates, and the Metropolis
+     * chain then samples neither. Measured before this existed: every accepted
+     * flip reported about -750 pN.nm while the mesh's total energy rose.
+     */
+    double face_tether_energy(int iFace) const;
+
+    /**
      * @brief Energy and geometry of a set of faces, with no side effects.
      *
      * Evaluates exactly what the whole-mesh passes evaluate, over a subset:
