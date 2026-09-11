@@ -96,6 +96,15 @@ double Mesh::edge_tether_energy(double length) const
     return 0.5 * param.edgeSpringConstant * extension * extension;
 }
 
+bool Mesh::edge_carries_tether(const MeshEdge &edge) const
+{
+    const auto isCopy = [this](int v) {
+        const bool frozen = !flipFrozenVertex.empty() && flipFrozenVertex[v] != 0;
+        return vertices[v].isGhost || frozen;
+    };
+    return !(isCopy(edge.v[0]) && isCopy(edge.v[1]));
+}
+
 double Mesh::face_tether_energy(int iFace) const
 {
     const std::vector<int> &corners = faces[iFace].adjacentVertices;
@@ -109,13 +118,6 @@ double Mesh::face_tether_energy(int iFace) const
     {
         const int a = corners[k];
         const int b = corners[(k + 1) % 3];
-        double along[3];
-        for (int axis = 0; axis < 3; axis++)
-        {
-            along[axis] = vertices[a].coord.get(axis, 0) - vertices[b].coord.get(axis, 0);
-        }
-        const double energy = edge_tether_energy(slimed::v3_norm(along));
-
         // The same split energy_force_edge_spring() applies: half to each of
         // the two faces an edge separates, all of it to the one face of a
         // boundary edge. Read off the edge table so the two agree even where
@@ -125,8 +127,18 @@ double Mesh::face_tether_energy(int iFace) const
         if (iEdge >= 0)
         {
             const MeshEdge &edge = edges[iEdge];
+            if (!edge_carries_tether(edge))
+            {
+                continue; // a stale copy of an interior edge; see the header
+            }
             nIncident = (edge.face[0] >= 0 ? 1 : 0) + (edge.face[1] >= 0 ? 1 : 0);
         }
+        double along[3];
+        for (int axis = 0; axis < 3; axis++)
+        {
+            along[axis] = vertices[a].coord.get(axis, 0) - vertices[b].coord.get(axis, 0);
+        }
+        const double energy = edge_tether_energy(slimed::v3_norm(along));
         if (nIncident > 0)
         {
             sum += energy / nIncident;
@@ -198,6 +210,10 @@ void Mesh::energy_force_edge_spring()
     for (int iEdge = 0; iEdge < nEdges; iEdge++)
     {
         const MeshEdge &edge = edges[iEdge];
+        if (!edge_carries_tether(edge))
+        {
+            continue; // a stale copy of an interior edge; see the header
+        }
 #ifdef OMP
         const int threadIndex = omp_get_thread_num();
 #else

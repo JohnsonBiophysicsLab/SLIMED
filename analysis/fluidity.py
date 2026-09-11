@@ -201,6 +201,28 @@ def _free_vertices_from_types(run: Run) -> np.ndarray:
     return np.array(keep if keep else range(n))
 
 
+def truncate(run: Run, before_iteration: int) -> Run:
+    """The part of a run before `before_iteration`, as a new Run.
+
+    For a run that diverged: the integrator writes a few frames of astronomical
+    coordinates on its way to NaN, and one of them in a time average is enough
+    to make every number about the run meaningless.  Keep what was written
+    while the energy was still finite, which the divergence guard reports.
+    """
+    keep = run.frame_iterations < before_iteration
+    out = Run(directory=run.directory, prefix=run.prefix)
+    out.coords = run.coords[keep]
+    out.frame_iterations = run.frame_iterations[keep]
+    out.face_frames = {it: f for it, f in run.face_frames.items() if it < before_iteration}
+    if run.flip_iteration is not None:
+        m = run.flip_iteration < before_iteration
+        out.flip_iteration = run.flip_iteration[m]
+        out.flip_delta_energy = run.flip_delta_energy[m]
+        out.flip_accepted = run.flip_accepted[m]
+    out.free_vertices = _free_vertices(out)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # 1. Acceptance and valences
 # ---------------------------------------------------------------------------

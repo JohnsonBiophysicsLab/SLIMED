@@ -62,46 +62,37 @@ leaves every edge inside the range costs nothing, so the wall stiffness and the
 flip barrier stop being the same number and `k` can be as stiff as the walls
 need. The harmonic form stays available for a minimization that never flips.
 
-## 2. The range is narrower than it looks
+## 2. The tether range, and a measurement that was wrong
 
-Two requirements again, and this time they *just* meet.
+The upper wall must exceed `sqrt(3) = 1.733`, or it forbids exactly the move
+it is there to permit. The lower wall is a matter of mesh quality, and the
+range as a whole follows the dynamically triangulated surface literature,
+whose tether ratio is 1.68-1.73. **The defaults are `[0.95, 1.75]`**, a ratio
+of 1.84.
 
-The upper wall must exceed `sqrt(3) = 1.733`, or it forbids exactly the move it
-is there to permit.
+The first version of this section said something stronger: that the range
+*had* to be narrow, because at `[0.6, 1.8]` the tether energy climbed without
+settling and the mean control-net edge grew from 5.00 to 6.17 nm over 20 000
+steps. Both numbers were computed over every edge of the sheet, ghost band
+included. Split by band, they say the opposite:
 
-The range must also be narrow, which is the part WP6 measured and did not
-expect. Inside the flat region there is no restoring force at all, so nothing
-sets a length scale for the control net except these walls and the constraint
-on the limit surface's area -- and a control net can be wildly non-uniform
-while its limit surface stays smooth and the right size. Let the walls stand
-far apart and a fluid mesh coarsens into them without ever settling.
+| 60 nm sheet, `[0.6, 1.8]`, `nu = 2` | ghost-band tether E | interior tether E | interior edge |
+| ---: | ---: | ---: | --- |
+| step 10 000 | 7 683 | 9 | 5.53 +- 1.72 |
+| step 30 000 | 43 421 | 1 | 5.78 +- 1.66 |
+| step 40 000 | 85 361 | 9 | 5.66 +- 1.87 |
+| step 60 000 | 50 047 | 29 | 5.64 +- 1.76 |
 
-60 nm sheet, `nu = 2`, tether energy and control-net edge length against step:
+The interior tether energy never exceeds 29 pN.nm -- a few hundredths of kT
+per edge -- and the interior edge distribution is stationary from the first
+frame. Everything that climbed was in the ghost band, for the reason in
+section 8. The wide range is fine; so is the narrow one, whose interior on the
+100 nm sheet holds at 5.88 +- 1.3 nm with 0.15 kT per edge over 94 000 steps.
 
-| step | `[0.6, 1.8]` tether E | edge length | `[0.95, 1.75]` tether E | edge length |
-| ---: | ---: | --- | ---: | --- |
-| 0 | 0 | 5.00 +- 0.00 | 0 | 5.00 +- 0.00 |
-| 2000 | 597 | 5.58 +- 1.66 | 1928 | 5.23 +- 0.91 |
-| 5000 | 988 | 5.60 +- 1.77 | 5410 | 5.27 +- 1.11 |
-| 11000 | 9074 | 5.72 +- 1.93 | — | — |
-| 16000 | 9523 | 6.03 +- 2.19 | — | — |
-| 20000 | 13806 | 6.17 +- 2.26 | — | — |
-| 7000 | — | — | 1681 | 5.34 +- 1.03 |
-
-The wide range never settles: the mean edge is still growing at step 20000 and
-the spread with it. The narrow one does: the edge distribution holds at
-`5.3 +- 1.0` and the tether energy fluctuates about 3000 pN.nm without trend.
-The same sheet with flips off sits at a tether energy of about 50 indefinitely.
-
-So `1.84` is about as wide as the ratio may be and `sqrt(3) = 1.73` is the
-floor -- barely 6% apart. **The defaults are now `[0.95, 1.75]`.** That the
-window exists at all is what makes the flat tether workable where the harmonic
-one is not.
-
-The cost is a little interference with the free energy: at the narrow range the
-bending energy runs about 5% higher (614 against 587 pN.nm on the 100 nm sheet
-at 3000 steps) and the acceptance drops from 42% to 31%. Both are acceptable;
-an unbounded drift is not.
+What the narrow range actually costs and buys: acceptance falls from 42% to
+31%, the bending energy runs about 5% higher, and the thinnest triangle the
+walls permit has a height of 1.85 nm instead of 0.6 nm. It is kept as the
+default for the last of those, not for stationarity.
 
 ## 3. The sweep and the dynamics were sampling different Hamiltonians
 
@@ -236,38 +227,158 @@ the half a test can reach.
 
 ## 7. Throughput
 
-100 nm sheet, 400 steps, `nu = 2`, trajectory output off.
+100 nm sheet, 300 steps from the flat start, `nu = 0.5`, trajectory output off.
+Two binaries: the `Makefile.legacy` build, whose `CXXFLAGS = -std=c++14`
+carries **no optimisation flag** and so is a `-O0` build, and the CMake Release
+build (`-O3`, OpenMP on). The optimisation matters far more for a fluid mesh
+than for a solid one, because a fluid mesh spends its time in the irregular
+patch kernels, which are pure arithmetic.
 
-| configuration | steps/s | relative |
+| configuration | `-O0` serial | `-O3`, 1 thread | 2 | 4 | 8 threads |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dense solver, no flips (the path every earlier run used) | 139 | 331 | 370 | 396 | 345 |
+| iterative solver, no flips | 129 | 539 | 629 | 717 | 523 |
+| fluid, `irregularPatchDepthScale = 1.0` | 17.1 | 115 | 184 | 219 | **268** |
+| fluid, `irregularPatchDepthScale = 0.5` | 23.0 | 147 | 218 | 259 | **307** |
+
+steps per second. The 27 accepted flips are identical across a row: the thread
+count changes nothing but the wall clock.
+
+Read at one thread and `-O3`, **fluidity costs 4.7x** (539 against 115), and
+half depth buys 1.3x of that back (147). The `-O0` column exaggerates the
+ratio to 7.5x because the irregular kernels are the part `-O0` hurts most.
+Threads help the fluid case far more than the solid one -- 2.3x at 8 threads
+against 1.3x -- for the same reason: the per-face work is where the time goes,
+and it parallelises. The solid case tops out at 4 threads, which is the number
+of performance cores on this machine.
+
+These numbers are at the flat start. A fluid mesh disorders over the first few
+thousand steps and its per-step cost rises with the fraction of irregular
+faces -- in the 3000-step runs of section 4 the average rate was about 2.6x
+below the initial one -- so a long fluid run at 8 threads should be planned at
+roughly 100 steps/s. That is **400 000 steps in about an hour**, which is what
+the fluid spectrum run in `membrane_fluctuation_fluid_cpu.ipynb` uses.
+
+**Correction to the earlier record.** The first version of this section, and
+the WP5 and WP6 commit messages, quoted 21x for the cost of fluidity and "two
+days per trajectory" for a spectrum run. Both were measured with the `-O0`
+Makefile binary after the mesh had disordered, and the ratio was inflated by
+the optimiser's absence. The 4.7x here is the number to carry.
+
+## 8. The ghost band: why every long fluid run diverged
+
+Found while setting up the spectrum run, and it took three wrong diagnoses to
+get right.
+
+**What happened.** The 100 nm sheet with the fluid flags, `muS = 0`, diverged
+at step 8 702 at `dt = 0.002` and at step 94 078 at `dt = 0.001`: a sudden
+blow-up over fifty steps, preceded in the log by a face normal reversing in
+the last real row of faces. Three 25 000-step probes ruled out an OpenMP race
+(the same configuration diverges at step 8 703 on one thread) and showed the
+*total* tether energy climbing without settling in every fluid configuration,
+area constraint or not:
+
+| configuration | tether E at step 5 000 | at 25 000 |
 | --- | ---: | ---: |
-| flips off | 120.8 | 1.0 |
-| flips on, `irregularPatchDepthScale = 1.0` | 5.7 | **21x slower** |
-| flips on, `irregularPatchDepthScale = 0.5` | 9.7 | 12x slower |
+| `dt = 0.001`, `muS = 0` | 5 463 | 18 556 |
+| `dt = 0.002`, `muS = 250` | 5 583 | 23 974 |
 
-The 21x is the cost of fluidity itself, not of the flip move: a fluid mesh is
-mostly irregular, and an irregular face costs `3D` samples per extraordinary
-corner instead of 3. WP1 measured 36x for a fully irregular mesh; 400 steps
-gets part of the way there.
+**Where it was.** Split by band over the 94 000-step run:
 
-Halving the depth buys **1.7x** and does not disturb the Monte Carlo: the
-acceptance is 0.375 at full depth and 0.369 at half, and the drawn counts are
-identical. That makes `irregularPatchDepthScale` the practical lever on fluid
-run cost, with the caveat that what a *spectrum* needs from the depth is not
-measured -- see below.
+| step | total (as the C++ reports it) | ghost band, rings 0-2 | seam, ring 3 | interior | longest ghost edge |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 000 | 7 762 | 7 316 | 65 | 594 | 11.1 nm |
+| 50 000 | 17 446 | 16 976 | 176 | 671 | 13.1 nm |
+| 90 000 | 29 531 | 29 697 | 49 | 654 | 16.9 nm |
 
-## 8. Not done
+93-98% of it is in the ghost band, and the interior is flat at about 0.15 kT
+per edge. The bending energy is flat throughout as well.
 
-**The fluctuation spectrum with flips on** -- gate item 4 of the plan. The
-existing pipeline needs of order `1e6` steps to fit `kc` from the `q^-4` tail,
-and at 5.7 steps/s a fluid run of that length is two days per trajectory on
-this machine. The 60000-step runs here give 600 frames, which is short by more
-than an order of magnitude. It also needs the resampling path
-(`analysis/membrane_resample.py`), because with in-plane motion on, the height
-field is no longer sampled on a regular lattice. Nothing here says the spectrum
-is wrong; it says it has not been measured.
+**Why.** Periodicity is realised by three rings of ghost vertices and one ring
+of duplicates whose *positions* are copied from the far side every step, but
+whose *connectivity* is the lattice they were built with -- a flip is refused
+wherever it would touch one. Once the interior has mixed, a ghost-band edge
+joins two positions that stopped being neighbours long ago, and it stretches
+with `1 - survival`: to 17 nm here. The tether charges for that, which is the
+bookkeeping half. The other half is that the tether force on a duplicate is
+mapped through `M^-T` and spread into the interior *before* the duplicate is
+overwritten by its partner, so a force that should not exist is injected at
+the seam every step, growing as the ghost edges grow, until a face at the seam
+folds and the explicit step blows up.
+
+**The fix.** `Mesh::edge_carries_tether()`: an edge with both endpoints ghost
+or duplicate is a stale copy and carries no tether, in the force pass and in
+the flip trial alike. On a closed surface, or any mesh without ghosts, every
+edge still qualifies. The shipped workload is unaffected (tether off) and
+stays byte-identical.
+
+**What it does not fix.** The connectivity at the seam is still not periodic:
+the interior next to the frozen ring has flipped and its image across the box
+has not, so the limit surface differs across the seam by an amount
+`membrane_fluid_surface.seam_mismatch()` measures. Mirroring each flip onto
+its periodic image would make the mesh genuinely periodic and remove both
+this and the exclusion above; it is the right next step, and it is not done.
+
+## 9. The fluctuation spectrum with flips on
+
+Gate item 4 of the plan, measured in `analysis/membrane_fluctuation_fluid_cpu.ipynb`
+against the solid `pure_a` run of `membrane_fluctuation_resample_cpu.ipynb`.
+The fluid run is the same 100 nm box with the fluid flags added, `mu_S = 0`,
+`dt = 0.001`, `nu = 0.5`; the trajectory analysed is the 93 500 steps written
+before the divergence of section 8 -- 94 us, 749 frames after burn-in, 725
+distinct connectivities -- over which the bending energy was stationary.
+
+The reader is the subdivision route of `analysis/membrane_fluid_surface.py`,
+at level 2, applied to both runs so that the comparison is between membranes
+and not between readers. Its own checks: exact on the lattice (4e-8 nm, the
+CSV's precision), 8e-7 nm against the C++ `surfacepoint` limit points on 41
+flipped frames, and level 3 moves `kc` by 1.3% with an r.m.s. height change of
+4e-3 nm.
+
+| | frames | slope | `kc` (pN.nm) | `kc`, block mean +- s.e. | `sigma` (pN/nm) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| solid, exact resampler | 6401 | -3.974 | 91.51 | | +0.013 |
+| solid, subdivision route | 3201 | -3.968 | 91.47 | 86.70 +- 3.38 | +0.33 +- 0.20 |
+| **fluid, subdivision route** | 749 | -4.326 | 91.97 | **86.39 +- 5.00** | +1.05 +- 0.27 |
+
+**`kc` fluid / solid = 0.996 +- 0.070**, 0.1 standard errors from 1. The fluid
+membrane returns the same bending modulus as the solid one, to the 7% the run
+length allows; both read a few per cent above the input 83.4, which is how
+the discrete bending energy relates to the continuum one on this mesh and is
+the same in both.
+
+Two things the run is too short to settle. It covers 1.4 relaxation times of
+the slowest mode in the box, and the fit from growing prefixes of it is still
+moving (83.9, 87.6, 92.0 pN.nm over the last three). And the two-parameter fit
+returns `sigma = 1.05 +- 0.27` against the solid's `0.33 +- 0.20`: a small
+curvature at the lowest `|q|`, of exactly the kind an under-sampled slowest
+mode produces, and also of the kind a real tension would. The tether is zero
+inside its range and should add none; the run with the ghost-band fix
+(section 8) is going to its full 400 000 steps and is what decides it.
+
+Also measured, and not in the plan: beyond the fitting window the fluid
+spectrum carries 0.60 of the solid one's power (median over 105 modes). That is
+outside the window because the mesh does not resolve those modes, but it is
+not the reader -- levels 2 and 3 agree there -- and it says a fluid mesh's
+limit surface is smoother than a lattice's at the mesh scale. The control net
+folds in projection 6% of the time and the limit net 0.6%, which is why the
+reader triangulates the projected limit points afresh rather than reusing the
+mesh's faces.
+
+## 10. Not done
+
+**The fluctuation spectrum at full length.** Section 9 is measured on 94 us;
+the run with the ghost-band fix is going to 400 000 steps, and re-executing
+`analysis/membrane_fluctuation_fluid_cpu.ipynb` once `~/slimed_runs/fluid_a`
+has its `inputvertex_final.csv` repeats every number there on the full
+trajectory. The lowest modes and the fitted `sigma` are what it settles.
 
 **Calibration of `nu` against a physical neighbour-exchange time**, for the
 reason in section 5.
+
+**Mirroring flips across the periodic seam**, for the reason at the end of
+section 8. Until then a fluid sheet's connectivity is periodic only up to one
+ring, and the notebook measures how much that shows.
 
 **The flip move on the GPU.** `DeviceMeshLayout` refuses a face with more than
 one extraordinary corner, and a flip creates exactly those, so

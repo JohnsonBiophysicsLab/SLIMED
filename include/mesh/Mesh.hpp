@@ -465,6 +465,29 @@ public:
     double edge_tether_energy(double length) const;
 
     /**
+     * @brief Whether an edge is part of the membrane rather than of the copies
+     * around it.
+     *
+     * The periodic sheet is surrounded by ghost rings and a ring of
+     * duplicates whose *positions* are copied from the far side every step
+     * but whose *connectivity* is the lattice they were built with -- a flip
+     * is refused wherever it would touch one. Once the interior has mixed,
+     * an edge joining two such vertices connects positions that stopped being
+     * neighbours long ago: measured on the 100 nm sheet, those edges reached
+     * 17 nm and carried 93-98% of the reported tether energy while the
+     * interior's stayed flat. Worse than the bookkeeping, the tether force on
+     * a duplicate is spread into the interior by the M^-T map before the
+     * duplicate is overwritten, and that injection is what folded a face at
+     * the seam and diverged the run.
+     *
+     * An edge with at least one free endpoint is the membrane's; one with
+     * both endpoints ghost or duplicate is a copy, and a stale one. On a mesh
+     * without ghosts or duplicates -- a closed surface, or a plain Mesh --
+     * every edge qualifies.
+     */
+    bool edge_carries_tether(const MeshEdge &edge) const;
+
+    /**
      * @brief A face's share of the tether energy of its three edges.
      *
      * The mesh-quality term is a sum over edges, but every energy in this tree

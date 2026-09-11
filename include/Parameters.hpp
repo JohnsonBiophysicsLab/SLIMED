@@ -323,22 +323,18 @@ struct Param
      * rhombus of side `l` produces an edge of `l sqrt(3)`, so a wall below
      * that forbids exactly the move this exists to permit.
      *
-     * The range must also be *narrow*, and that is what WP6 measured. Inside
-     * the flat region there is no restoring force at all, so nothing sets a
-     * length scale for the control net except these walls and the constraint
-     * on the limit surface's area -- and a control net can be wildly
-     * non-uniform while its limit surface stays smooth and the right size. Let
-     * the walls stand far apart and a fluid mesh coarsens into them without
-     * ever settling: at `[0.6, 1.8]`, 20000 steps of the 60 nm sheet at
-     * `nu = 2` took the mean control-net edge from 5.00 to 6.17 nm with the
-     * spread still widening, and the tether energy from 600 to 13800 pN.nm
-     * with no sign of a plateau. At `[0.95, 1.75]` the same run settles: the
-     * edge distribution holds at 5.3 +- 1.0 nm and the tether energy
-     * fluctuates about 3000 pN.nm without trend.
+     * The lower bound is a matter of mesh quality, and the range as a whole
+     * follows the dynamically triangulated surface literature, whose tether
+     * ratio is 1.68-1.73: the narrower the range, the fewer thin triangles a
+     * fluid mesh can form, at the cost of acceptance (31% here against 42%
+     * at `[0.6, 1.8]`) and a few per cent of bending energy.
      *
-     * 1.84 is therefore about as wide as the ratio may be, and `sqrt(3)` is
-     * the floor -- barely 6% apart. That the window exists at all is what
-     * makes the flat tether workable where the harmonic one is not.
+     * An earlier version of this comment claimed the range had to be narrow
+     * for the mesh to be stationary at all. That was measured with the tether
+     * energy summed over every edge, ghost band included, and the ghost
+     * band's lattice edges stretch without limit as the interior mixes -- see
+     * edge_carries_tether(). Restricted to the membrane, the interior is
+     * stationary at either range: docs/fluidity_results.md section 2.
      */
     double edgeTetherMinRatio = 0.95;
     double edgeTetherMaxRatio = 1.75;

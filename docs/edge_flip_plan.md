@@ -1193,9 +1193,10 @@ reaches 23.1 nm² and is still climbing (exponent 0.482). The two are
 indistinguishable out to lag 800, cross at about lag 1300, and reach a ratio of
 3.0 by lag 30000.
 
-Item (4), the fluctuation spectrum with flips on, is **not done**: it needs of
-order 10⁶ steps, which at the measured 5.7 steps/s is two days per trajectory
-here. Said plainly rather than approximated.
+Item (4), the fluctuation spectrum with flips on, is measured separately in
+`analysis/membrane_fluctuation_fluid_cpu.ipynb`, once the throughput
+correction below made a 400 000-step fluid run an hour rather than the two
+days first estimated.
 
 Three findings worth carrying forward:
 
@@ -1204,14 +1205,21 @@ Three findings worth carrying forward:
   regularization after the tether landed, so every accepted flip reported about
   −787 pN·nm while the mesh's energy climbed. Fixed; acceptance went from 17%
   to 40% and the mean accepted ΔE from −787 to +0.3 pN·nm.
-- **The tether range has to be narrow, and the window is 6% wide.** Inside the
-  flat region there is no restoring force, so nothing sets a length scale for
-  the control net but the walls — and a fluid mesh coarsens into them without
-  settling if they stand far apart. `√3 = 1.733` is the floor, about 1.84 is
-  the ceiling, and the defaults are now `[0.95, 1.75]`.
-- **Fluidity costs 21× in throughput**, which is the irregular-patch cost of
-  WP1 rather than the flip move. `irregularPatchDepthScale = 0.5` buys 1.7× of
-  it back without moving the acceptance rate.
+- **The ghost band is not the membrane.** Every long fluid run diverged, and
+  the tether energy climbed beforehand in every configuration — all of it in
+  the ghost band, whose lattice edges join positions that stopped being
+  neighbours once the interior mixed, and whose tether force reached the
+  interior through `M⁻ᵀ` before the duplicates were overwritten. Fixed by
+  excluding edges with two copied endpoints from the tether. The earlier
+  claim here that the tether range had to be narrow was the same artifact
+  measured a different way; the interior is stationary at either range, and
+  `[0.95, 1.75]` is kept for mesh quality.
+- **Fluidity costs 4.7× in throughput** at `-O3` on one thread (the 21× first
+  recorded here was measured with the `Makefile.legacy` binary, which has no
+  optimisation flag and is a `-O0` build). It is the irregular-patch cost of
+  WP1 rather than the flip move; `irregularPatchDepthScale = 0.5` buys 1.3× of
+  it back without moving the acceptance rate, and OpenMP buys 2.3× at 8
+  threads because the per-face work is where the time goes.
 
 On the periodic sheet and on an icosphere:
 
