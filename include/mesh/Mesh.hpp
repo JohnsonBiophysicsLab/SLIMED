@@ -488,6 +488,16 @@ public:
     bool edge_carries_tether(const MeshEdge &edge) const;
 
     /**
+     * @brief The triangle-shape term of one face, without its force.
+     *
+     * The three altitude walls of Param::triangleShapeEnabled, for one face:
+     * the same expression energy_force_triangle_shape() differentiates, so
+     * the flip trial and the force pass cannot disagree about it. Zero for a
+     * ghost face and for any face all of whose altitudes clear the floor.
+     */
+    double face_shape_energy(int iFace) const;
+
+    /**
      * @brief A face's share of the tether energy of its three edges.
      *
      * The mesh-quality term is a sum over edges, but every energy in this tree
@@ -1140,6 +1150,15 @@ public:
      * over faces is still the total.
      */
     void energy_force_edge_spring();
+
+    /**
+     * @brief The triangle-shape term: energy into the regularization slot,
+     * force added to forceRegularization.
+     *
+     * Adds rather than sets, so it runs after whichever edge-based term wrote
+     * the slot. See Param::triangleShapeEnabled.
+     */
+    void energy_force_triangle_shape();
 
     /**
      * @brief Manages forces depending on different boundary conditions.

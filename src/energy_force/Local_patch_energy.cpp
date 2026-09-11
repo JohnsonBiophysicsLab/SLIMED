@@ -154,6 +154,10 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
         // ever matters for consistency.
         result.regularization += param.edgeSpringEnabled ? face_tether_energy(iFace)
                                                          : face_regularization_energy(iFace);
+        if (param.triangleShapeEnabled)
+        {
+            result.regularization += face_shape_energy(iFace);
+        }
 
         if (face.isBoundary)
         {

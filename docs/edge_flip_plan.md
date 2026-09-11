@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0-6 landed
+**Status:** work packages 0-6 landed; 7 in progress
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -1244,6 +1244,45 @@ On the periodic sheet and on an icosphere:
 
 > Gate: (3) and (4). Numbers recorded in a results document, as
 > `irregular_patch_results.md` did for its plan.
+
+### WP7 — The triangle-shape term
+
+The tether bounds every edge of a fluid mesh and nothing else, and every long
+fluid run ended in a folded sliver whose edges were all inside the walls:
+interior triangles 0.1 nm tall at one degree in every frame, whose normals
+turn through tens of degrees under a single 0.05 nm Brownian kick, whose
+limit-surface patches self-intersect, and whose bending force is then not
+finite. A Monte Carlo model never takes that step, because the energy rejects
+it; an explicit Brownian step has no refusal in it, so the Hamiltonian has to
+carry one. (`fluidity_results.md` §8 has the logs and the altitude tables.)
+
+The term bounds the quantity that vanishes in a sliver — the altitude from
+each corner to its opposite edge, `h_i = 2A/l_i` — with the tether's own
+flat-bottomed wall:
+
+```text
+    E_face = (k/2) Σ_{i=1..3} max(0, h₀ − h_i)²,    h₀ = triangleShapeMinAltitudeRatio · lFace
+```
+
+Zero for any healthy triangle, so it adds no tension and does nothing inside
+the allowed region. The gradient is closed-form (`∇_{p_k} A = ½ e_k × n̂`,
+`∇ l_i` the unit edge), and one expression serves the force pass and the flip
+trial, which is the WP6 lesson made structural. The floor's ceiling is fixed
+by geometry: a flip of an equilateral rhombus makes two triangles of altitude
+exactly `lFace/2`, so the ratio must stay below 0.5 or the term forbids the
+move the model exists to permit; 0.4 leaves that flip a margin and puts the
+wall at 2 nm on a 5 nm mesh, where a Brownian kick turns a normal by under two
+degrees. It requires the tether (setup refuses it without) and shares the
+regularization slot with it.
+
+Parameters: `triangleShapeEnabled` (`false`), `triangleShapeMinAltitudeRatio`
+(`0.4`), `triangleShapeConstant` (`83.4` pN/nm). `tests/test_triangle_shape.cpp`.
+
+> Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
+> every previous one died at 8 700, 27 800 or 94 000 steps — with the
+> smallest interior altitude held above the floor's shadow, the bending
+> energy stationary, and the flip acceptance intact; then the fluctuation
+> spectrum re-measured on the full trajectory.
 
 **Size.** WP0 ≈ 400 lines, WP1 ≈ 700, WP2–3 ≈ 500, WP4 ≈ 400, WP5 ≈ 300, plus
 tests of similar size. The first four are the substance; WP1 is the one that

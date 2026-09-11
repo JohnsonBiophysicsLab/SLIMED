@@ -108,14 +108,14 @@ struct Param
     double uSurf = 250.0; ///< Surface area constraint i.e. surface constant (us)
     double uVol = 0.0;    ///< Volume constraint i.e. volume constant (uv)
     double kReg = 83.4;    ///< Coefficient of the regularization constraint (k)
-    double kSpring;       ///< Spring constant for insertion zones (K)
+    double kSpring = 0.0;       ///< Spring constant for insertion zones (K)
     bool setRelaxAreaToDefault = false; ///< true to set area0 equal to area of starting config
-    double area0;         ///< Target area for membrane (S0)
-    double area;          ///< Total area of the membrane (S)
-    double vol0;        ///< Target volume for membrane (V0)
-    double vol;         ///< Total volume of the membrane (V)
-    double insertCurv;  ///< Spontaneous curvature of insertions (C0)
-    double spontCurv;   ///< Spontaneous curvature of membrane (c0)
+    double area0 = 0.0;         ///< Target area for membrane (S0)
+    double area = 0.0;          ///< Total area of the membrane (S)
+    double vol0 = 0.0;        ///< Target volume for membrane (V0)
+    double vol = 0.0;         ///< Total volume of the membrane (V)
+    double insertCurv = 0.0;  ///< Spontaneous curvature of insertions (C0)
+    double spontCurv = 0.0;   ///< Spontaneous curvature of membrane (c0)
 
     // membrane size and axes division
     double sideX = 100.0;                           ///< X-axis length for flat membrane
@@ -124,9 +124,9 @@ struct Param
     double lFace = 5.0;                           ///< lFace
     int nFaceX = -1;                        ///< Number of faces (edges) along X axis for flat membrane
     int nFaceY = -1;                        ///< Number of faces (edges) along Y axis for flat membrane
-    double dFaceX;                          ///< Initial actual face side length along X axis for flat membrane
-    double dFaceY;                          ///< Initial actual face side length along Y axis for flat membrane
-    double meanL;                           ///< Mean length of edges after subdivision
+    double dFaceX = 0.0;                          ///< Initial actual face side length along X axis for flat membrane
+    double dFaceY = 0.0;                          ///< Initial actual face side length along Y axis for flat membrane
+    double meanL = 0.0;                           ///< Mean length of edges after subdivision
     double sigma = 0.0;                     ///< Noise level for vertex positions
     bool isInsertionAreaConstraint = false; ///< Whether to apply area constraint to insertions
     bool isAdditiveScheme = false;          ///< Whether to use additive scheme for constraints
@@ -148,7 +148,7 @@ struct Param
      * below roughly 10^5 faces it does not.
      */
     std::string forceBackend = "cpu";
-    double elementTriangleArea0;            ///< Target area for individual triangles
+    double elementTriangleArea0 = 0.0;            ///< Target area for individual triangles
 
     // gauss quadrature
     int gaussQuadratureN = 2;    ///< Number of Gaussian quadrature points to use
@@ -338,6 +338,49 @@ struct Param
      */
     double edgeTetherMinRatio = 0.95;
     double edgeTetherMaxRatio = 1.75;
+
+    /**
+     * @brief Bound triangle shape, not only edge length.
+     *
+     * The tether bounds every edge and nothing else, and a fluid mesh under
+     * in-plane motion and flips fills with slivers inside those bounds: on
+     * the 100 nm sheet, interior triangles 0.1 nm tall at an angle of one
+     * degree in every frame, with every edge inside its walls. A sliver's
+     * normal turns through tens of degrees under a single Brownian kick, its
+     * limit-surface patch self-intersects, and the bending force on it is
+     * not finite -- every long fluid run ended that way, after 1e4 to 1e5
+     * steps. A Monte Carlo model never takes that step; an explicit Brownian
+     * one has nothing that refuses it, so the Hamiltonian has to.
+     *
+     * This term charges a face for each of its three altitudes -- the
+     * distance from a corner to the opposite edge, `h_i = 2A / l_i`, which is
+     * exactly the quantity that vanishes in a sliver -- that falls below a
+     * floor:
+     *
+     * ```text
+     *     E = (k / 2) sum over faces, corners  max(0, h0 - h_i)^2,
+     *     h0 = triangleShapeMinAltitudeRatio * lFace
+     * ```
+     *
+     * Zero for any healthy triangle, so it adds no tension and does nothing
+     * inside the allowed region, like the tether. It is the second half of
+     * the fluid mesh-quality term and requires the tether; setup refuses it
+     * without.
+     */
+    bool triangleShapeEnabled = false;
+    /**
+     * @brief The altitude floor, as a fraction of lFace.
+     *
+     * The lattice's altitude is 0.866 lFace. A flip of an equilateral rhombus
+     * makes two triangles of altitude exactly 0.5 lFace, so the floor must
+     * stay below 0.5 or it forbids the move the model exists to permit; the
+     * dynamically triangulated surface literature's tether ratio of 1.7 puts
+     * the thinnest allowed triangle at about 0.5 of the minimum edge. 0.4
+     * leaves the flip a margin and puts the wall at 2 nm on a 5 nm mesh,
+     * where a 0.05 nm Brownian kick turns a normal by under two degrees.
+     */
+    double triangleShapeMinAltitudeRatio = 0.4;
+    double triangleShapeConstant = 83.4;   ///< k, in pN/nm; the tether's stiffness by default.
 
     /**
      * @brief How the limit surface and the control net are converted.

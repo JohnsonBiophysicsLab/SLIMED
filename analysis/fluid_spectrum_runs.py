@@ -60,6 +60,11 @@ FLUID = {
     "edgeFlipAttemptRate": 0.5,         # nu, attempts per edge per us
     "edgeFlipInterval": 1,
     "irregularPatchDepthScale": 1.0,
+    # WP7: the tether bounds edge lengths, this bounds triangle shape. Every
+    # long fluid run without it folded a sliver after 1e4-1e5 steps.
+    "triangleShapeEnabled": "true",
+    "triangleShapeMinAltitudeRatio": 0.4,
+    "triangleShapeConstant": 83.4,
 }
 
 SPECS = {

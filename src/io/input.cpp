@@ -325,6 +325,24 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "edgeTetherMaxRatio set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("triangleShapeEnabled") == 0)
+	{
+		param.triangleShapeEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "triangleShapeEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("triangleShapeMinAltitudeRatio") == 0)
+	{
+		param.triangleShapeMinAltitudeRatio = std::stod(variableValueStr);
+		std::cout << "triangleShapeMinAltitudeRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("triangleShapeConstant") == 0)
+	{
+		param.triangleShapeConstant = std::stod(variableValueStr);
+		std::cout << "triangleShapeConstant set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("surfaceSolver") == 0)
 	{
 		param.surfaceSolver = variableValueStr;

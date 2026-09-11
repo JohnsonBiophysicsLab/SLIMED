@@ -349,6 +349,12 @@ void Mesh::compute_face_energies_and_forces()
     {
         energy_force_regularization();
     }
+    // The second half of the fluid term, added on top of whichever edge-based
+    // term wrote the slot. See Param::triangleShapeEnabled.
+    if (param.triangleShapeEnabled)
+    {
+        energy_force_triangle_shape();
+    }
 
 }
 

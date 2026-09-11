@@ -42,6 +42,18 @@ void DynamicMesh::setup_flat() {
             "docs/edge_flip_plan.md work package 5.");
     }
 
+    // The shape term shares the regularization slot with the tether and is
+    // the fluid term's second half; on top of the reference-length term it
+    // would be a fluid wall on a solid's memory, and the drive would carry
+    // neither or both. Refuse the mixture rather than define it.
+    if (param.triangleShapeEnabled && !param.edgeSpringEnabled)
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::setup_flat] triangleShapeEnabled = true needs edgeSpringEnabled = true. "
+            "The triangle-shape term is the second half of the fluid mesh-quality term; see "
+            "Param::triangleShapeEnabled.");
+    }
+
     if (param.edgeFlipEnabled)
     {
         report_edge_flip_feasibility();
@@ -151,7 +163,31 @@ void DynamicMesh::report_edge_flip_feasibility()
             }
         }
     }
-    else
+    if (param.triangleShapeEnabled)
+    {
+        const double floorAltitude = param.triangleShapeMinAltitudeRatio * param.lFace;
+        std::cout << "[DynamicMesh] Triangle-shape floor: altitude " << floorAltitude << " nm ("
+                  << param.triangleShapeMinAltitudeRatio << " lFace; the lattice's is "
+                  << 0.5 * std::sqrt(3.0) * param.lFace << ", a flip of an equilateral rhombus makes "
+                  << 0.5 * param.lFace << ") at k = " << param.triangleShapeConstant << " pN/nm."
+                  << std::endl;
+        if (param.triangleShapeMinAltitudeRatio >= 0.5)
+        {
+            std::cout << "[DynamicMesh] WARNING: triangleShapeMinAltitudeRatio >= 0.5 charges the "
+                         "flip of an equilateral rhombus, whose new triangles have altitude "
+                         "exactly 0.5 lFace. Lower it below 0.5."
+                      << std::endl;
+        }
+    }
+    else if (param.edgeSpringEnabled && param.edgeFlipEnabled && param.inPlaneDynamicsEnabled)
+    {
+        std::cout << "[DynamicMesh] WARNING: a fluid run without triangleShapeEnabled. The tether "
+                     "bounds edge lengths and not shape; every long fluid run without the shape "
+                     "term ended in a folded sliver after 1e4-1e5 steps. See "
+                     "Param::triangleShapeEnabled."
+                  << std::endl;
+    }
+    if (!param.edgeSpringEnabled)
     {
         std::cout
             << "[DynamicMesh] WARNING: edgeFlipEnabled = true with edgeSpringEnabled = false. "

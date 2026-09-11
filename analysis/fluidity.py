@@ -447,6 +447,38 @@ def edge_length_stats(run: Run, frame: int = -1, interior_only: bool = True) -> 
             "percentiles": {p: float(np.percentile(lengths, p)) for p in (1, 25, 50, 75, 99)}}
 
 
+def altitude_stats(run: Run, frame: int = -1, floor: float | None = None) -> dict:
+    """Triangle altitudes of the interior faces at one frame.
+
+    The altitude from a corner to its opposite edge is the quantity that
+    vanishes in a sliver, and the one the triangle-shape term bounds.  Faces
+    whose corners are all interior and free; `floor` is the term's wall, if
+    one is given, so that the fraction of faces under it can be reported.
+    """
+    iterations = sorted(run.face_frames)
+    target = run.frame_iterations[frame] if frame >= 0 else run.frame_iterations[-1]
+    usable = [it for it in iterations if it <= target] or [iterations[0]]
+    faces = run.face_frames[usable[-1]]
+    points = run.coords[frame]
+    keep = set(np.intersect1d(interior_vertices(faces), run.free_vertices).tolist())
+    inner = np.array([all(int(v) in keep for v in tri) for tri in faces])
+    F = faces[inner]
+    if F.size == 0:
+        return {"n": 0}
+    a, b, c = points[F[:, 0]], points[F[:, 1]], points[F[:, 2]]
+    two_area = np.linalg.norm(np.cross(b - a, c - a), axis=1)
+    lengths = np.stack([np.linalg.norm(b - c, axis=1), np.linalg.norm(c - a, axis=1),
+                        np.linalg.norm(a - b, axis=1)], axis=1)
+    h = two_area[:, None] / lengths                      # (n_faces, 3)
+    smallest = h.min(axis=1)
+    out = {"n": int(F.shape[0]), "min": float(smallest.min()),
+           "p5": float(np.percentile(smallest, 5)), "median": float(np.median(smallest))}
+    if floor is not None:
+        out["floor"] = float(floor)
+        out["fraction_below"] = float((smallest < floor).mean())
+    return out
+
+
 def report(run: Run) -> str:
     """Everything above, as text for a results document."""
     lines = [f"run: {run.directory}",
@@ -485,6 +517,11 @@ def report(run: Run) -> str:
     lines.append(f"  edge lengths: mean {stats['mean']:.3f} +- {stats['std']:.3f} nm, "
                  f"range [{stats['min']:.3f}, {stats['max']:.3f}], "
                  f"1-99% [{stats['percentiles'][1]:.3f}, {stats['percentiles'][99]:.3f}]")
+    alt = altitude_stats(run)
+    if alt["n"]:
+        lines.append(f"  triangle altitudes (smallest per face, {alt['n']} interior faces): "
+                     f"min {alt['min']:.3f} nm, 5th pct {alt['p5']:.3f}, median {alt['median']:.3f} "
+                     f"(lattice 4.330)")
     return "\n".join(lines)
 
 
