@@ -312,12 +312,27 @@ the flip trial alike. On a closed surface, or any mesh without ghosts, every
 edge still qualifies. The shipped workload is unaffected (tether off) and
 stays byte-identical.
 
-**What it does not fix.** The connectivity at the seam is still not periodic:
-the interior next to the frozen ring has flipped and its image across the box
-has not, so the limit surface differs across the seam by an amount
-`membrane_fluid_surface.seam_mismatch()` measures. Mirroring each flip onto
-its periodic image would make the mesh genuinely periodic and remove both
-this and the exclusion above; it is the right next step, and it is not done.
+**What it does not fix.** The run with the exclusion in place diverged too,
+at step 27 774 -- from a state in which the reported tether energy had been
+flat at 500-670 pN.nm and the bending energy flat for the whole run, in about
+two hundred steps, and once more with a face normal reversing in the last
+real row of faces. The three divergences folded faces 831, 832 and 833: the
+same spot every time, row 20 at column 16, where the top duplicate ring meets
+the right one. A seam face there is built on three independently copied
+vertices, each following a free vertex on the far side of the box, and a
+fluid vertex diffuses -- 4 nm r.m.s. over this run. Once a far-side source has
+drifted half an edge from its lattice site, the lattice-connected face it is
+copied into folds in three dimensions and its patch energy is not finite. The
+bottom and left seams are made of ghost faces, whose energy is not counted,
+which is why it is always the top-right corner.
+
+So the fluid interior is stationary and correct, and the sheet's periodic
+seam is not fluid-safe: it holds for `1e4` to `1e5` steps and then folds. The
+remedy is genuinely periodic connectivity -- the duplicate ring and the seam
+faces following the far side's flips, or a mesh with no duplicates at all --
+and it is the first item of whatever comes after this package. Until then a
+fluid run on this sheet is a run of that length, and `analysis/fluidity.py`
+and the notebook read it up to the divergence.
 
 ## 9. The fluctuation spectrum with flips on
 
@@ -367,18 +382,20 @@ mesh's faces.
 
 ## 10. Not done
 
-**The fluctuation spectrum at full length.** Section 9 is measured on 94 us;
-the run with the ghost-band fix is going to 400 000 steps, and re-executing
-`analysis/membrane_fluctuation_fluid_cpu.ipynb` once `~/slimed_runs/fluid_a`
-has its `inputvertex_final.csv` repeats every number there on the full
-trajectory. The lowest modes and the fitted `sigma` are what it settles.
+**The fluctuation spectrum at full length**, which waits on the seam. Once a
+fluid run reaches 400 000 steps, re-executing
+`analysis/membrane_fluctuation_fluid_cpu.ipynb` repeats every number of
+section 9 on it; the lowest modes and the fitted `sigma` are what it settles.
+Independent replicas of the present length would tighten everything but the
+slowest mode.
 
 **Calibration of `nu` against a physical neighbour-exchange time**, for the
 reason in section 5.
 
-**Mirroring flips across the periodic seam**, for the reason at the end of
-section 8. Until then a fluid sheet's connectivity is periodic only up to one
-ring, and the notebook measures how much that shows.
+**A fluid-safe periodic seam**, for the reason at the end of section 8. Until
+then every fluid run on the sheet ends in a seam fold after `1e4`-`1e5` steps,
+and the spectrum of section 9 is measured on the 94 us the longest of them
+gave.
 
 **The flip move on the GPU.** `DeviceMeshLayout` refuses a face with more than
 one extraordinary corner, and a flip creates exactly those, so
