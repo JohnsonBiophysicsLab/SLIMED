@@ -49,8 +49,21 @@ vertex positions (Gompper & Kroll 2004; Ramakrishnan, Sunil Kumar &
 Radhakrishnan 2015):
 
 ```text
-Z = Σ_T ∫ Π_v dX_v  exp(-E(X, T) / kT)
+Z = (1/N!) Σ_T ∫ Π_v dX_v  exp(-E(X, T) / kT)
 ```
+
+The `1/N!` is the Gibbs factor for indistinguishable vertices. The sum runs
+over *labelled* triangulations — the labels exist only so that `T` can be
+written down as a graph — and relabelling the vertices by any permutation
+`π` takes `(X, T)` to `(πX, πT)`, the same surface, so without the factor
+every surface is counted `N!/|Aut(T)|` times; with it the labelled sum
+equals the sum over abstract triangulations with their symmetry factors,
+as the random-surface literature writes it. At fixed `N` it is a constant
+that cancels from every acceptance ratio — a flip conserves `N`, `E` and `F`
+— so nothing below, and no measured observable, depends on it, which is why
+the DTS papers mostly omit it. It matters for an absolute free energy or
+entropy, and it would enter the acceptance of any move that changes `N`
+(vertex insertion or removal), which SLIMED does not have.
 
 Two Monte Carlo moves sample this: a vertex displacement at fixed `T`, and a
 **link (bond, edge) flip** at fixed `X`. In a flip the shared edge `(i, j)` of
