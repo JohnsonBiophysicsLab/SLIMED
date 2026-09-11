@@ -501,18 +501,20 @@ pins its gradient and its consistency with the flip trial.
 
 ## 11. The fluid membrane at conserved area
 
-Four fluid runs of 400 000 steps each on the 100 nm sheet, all with the
+Six fluid runs of 400 000 steps each on the 100 nm sheet, all with the
 altitude floor, none of which diverged. `fluid_a` and `fluid_b` are at
-`muS = 0`; `fluid_c` and `fluid_d` at `muS = 250`, with the reference area
-that of the flat start.
+`muS = 0`; the rest at `muS = 250`, with the reference area that of the flat
+start. The lower wall is `edgeTetherMinRatio`, in units of `lFace`.
 
-| run | valences | crease wall | `muS` | acceptance | survival at 400 us | MSD exponent | r.m.s. height | mean edge | bending E |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `fluid_a` | 5-7 | off | 0 | 0.29 | 0.70 | 0.75 | 9-10 nm | 6.15 | ~1 750 |
-| `fluid_b` | 5-7 | on | 0 | 0.30 | 0.72 | 0.76 | 10.3 | 6.13 | ~1 750 |
-| `fluid_c` | 5-7 | on | 250 | 0.43 | **0.93** | **0.13** | 0.6-1.0 | 5.47 | ~600 |
-| `fluid_d` | 4-8 | on | 250 | 0.34 | **0.92** | **0.25** | 0.8 | 5.55 | ~570 |
-| solid `tension` | -- | -- | 250 | -- | 1 | -- | 0.66 | 5.04 | -- |
+| run | valences | lower wall | crease wall | `muS` | acceptance | survival at 400 us | MSD exponent | r.m.s. height | mean edge | bending E |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `fluid_a` | 5-7 | 0.95 | off | 0 | 0.29 | 0.70 | 0.75 | 9-10 nm | 6.15 | ~1 750 |
+| `fluid_b` | 5-7 | 0.95 | on | 0 | 0.30 | 0.72 | 0.76 | 10.3 | 6.13 | ~1 750 |
+| `fluid_c` | 5-7 | 0.95 | on | 250 | 0.43 | **0.93** | **0.13** | 0.6-1.0 | 5.47 | ~580 |
+| `fluid_d` | 4-8 | 0.95 | on | 250 | 0.34 | **0.92** | **0.25** | 0.8 | 5.55 | ~570 |
+| `fluid_e` | 4-8 | **0.7** | on | 250 | 0.30 | **0.66** | **0.81** | 0.7 | 5.43 | ~490 |
+| `fluid_f` | 4-8 | **0.8** | on | 250 | 0.32 | **0.66** | **0.78** | 0.7 | 5.41 | ~510 |
+| solid `tension` | -- | -- | -- | 250 | -- | 1 | -- | 0.66 | 5.04 | -- |
 
 Two regimes, and neither is yet the membrane one wants.
 
@@ -546,22 +548,38 @@ bound pair of dislocations that the next flip annihilates. At `muS = 0` the
 sheet dilates to 6.15 nm, 1.30 diameters (packing fraction 0.54), and is a
 liquid; the Monte Carlo membranes put their tether at 1.7 diameters and let
 the bonds fill the range between for the same reason. The knob is therefore
-the lower wall, not the valence range or the attempt rate. `fluid_e`
-(`edgeTetherMinRatio = 0.7`, the mean edge at 1.6 diameters, packing
-fraction 0.37) and `fluid_f` (0.8, packing fraction 0.48) are running.
-Lowering the wall also removes the geometric frustration of section 10 -- a
-flat valence-8 vertex needs opposite edges of 0.84 lFace, which a wall at
-0.8 or below allows -- so the crease wall should have less to do there.
+the lower wall, not the valence range or the attempt rate.
 
-**The spectrum at conserved area** -- `fluid_c` against the solid `tension`
-run, both through the subdivision reader, fitting `kc` and `sigma`
-together over `|q| d_x <= pi/2` (`analysis/membrane_fluctuation_fluid_cpu.ipynb`):
+**`fluid_e` and `fluid_f` confirm it.** With the wall at 0.7 (the mean edge
+at 1.6 diameters, packing fraction 0.37) and at 0.8 (packing fraction 0.48)
+the sheet is fluid and flat at once: survival 0.66 after 400 us in both,
+MSD exponent 0.81 and 0.78, r.m.s. height 0.7 nm, bending energy 490 and
+510 against `fluid_c`'s 580 -- a sheet that can rearrange relaxes a little
+further. The survival curve has two parts now, 0.90 at 10 us and 0.76 at 50
+(the flicker population, larger with the wider range) and then a steady
+decline, 0.70 at 100 us to 0.66 at 400; the reversal fraction is 59% and
+64%. Neither run folded: smallest altitude 1.6 and 1.4 nm, four and two
+creases over 45 degrees and none over 53, so the crease wall at 60 was
+touched but not crossed. Lowering the wall also removes the geometric
+frustration of section 10 -- a flat valence-8 vertex needs opposite edges
+of 0.84 lFace, which a wall at 0.8 or below allows -- which is why 4-8 is
+safe here with room to spare. The two walls give the same fluidity; 0.8
+keeps the short edges further from the altitude floor (1st percentile 3.6
+against 3.1 nm) and is the smaller change from the solid's mesh.
+
+**The spectrum at conserved area** -- the fluid runs against the solid
+`tension` run, all through the subdivision reader, fitting `kc` and `sigma`
+together over `|q| d_x <= pi/2` (`analysis/membrane_fluctuation_fluid_cpu.ipynb`,
+which analyses `fluid_e` by default and any other run through `SLIMED_FLUID_RUN`):
 
 | | frames | slope | `kc` (pN.nm) | `sigma` (pN/nm) | `kc`, block mean +- s.e. | `sigma`, blocks |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | solid `tension`, exact resampler | 6401 | -3.09 | 59.4 | +3.62 | | |
 | solid `tension`, subdivision route | 3201 | -3.04 | 59.3 | +3.62 | 57.2 +- 5.4 | 3.79 +- 0.27 |
-| **fluid `fluid_c`**, subdivision route | 3201 | -3.48 | **60.5** | **+2.28** | 47.3 +- 9.7 | 3.01 +- 0.40 |
+| frozen `fluid_c`, subdivision route | 3201 | -3.48 | 60.5 | +2.28 | 47.3 +- 9.7 | 3.01 +- 0.40 |
+| **fluid `fluid_e`**, subdivision route | 3201 | -3.36 | **94.1** | **+2.35** | 85.6 +- 9.5 | 2.97 +- 0.44 |
+
+*The frozen run.* `fluid_c` returns the solid's modulus:
 
 `kc` fluid / solid = **1.02** on the whole-trajectory fit, 0.83 +- 0.19 on
 the block means -- a two-parameter fit on a crossover spectrum is
@@ -578,16 +596,52 @@ have. **The fluid membrane returns the solid's bending modulus and a
 slightly lower tension** (3.0 against 3.8 pN/nm, two standard errors): with
 flips and in-plane motion it can relieve some of the stress the area
 constraint puts into a sheet that has to buy its excess area from
-fluctuations.
+fluctuations. It is also, as section 11 found afterwards, a sheet whose
+connectivity did not move, so the agreement is between two solids.
+
+*The fluid run.* The same fit calls `fluid_e` 50% stiffer than the solid
+(ratio 1.50 +- 0.22, 2.3 standard errors) and 22% less tense, and reads the
+input `kc` of 83.4 to +2.6% where the solid reads it at -31%. Mode by mode
+that is not a stiffer membrane. Against the control the fluid has *more*
+power in the four lowest modes (ratios 1.1-1.5, +- 0.2, at `|q| d_x <= 0.6`:
+wavelengths above 30 nm), about 10% *less* over the bending end of the
+window (0.84-0.98, +- 0.03-0.05, for `|q| d_x` from 0.8 to 1.57) and 27%
+less beyond it. The mean effective stiffness in the window, `kT/(A q^4 S)`,
+is 5% *lower* for the fluid (175 against 184 pN.nm), and with `sigma` held
+at any common value the fluid's `kc` comes out 9 pN.nm *below* the solid's
+(94 against 103 at 2.35 pN/nm; 72 against 81 at 3.0; 50 against 60 at 3.62).
+What the free fit reports as +50% in `kc` is the crossover moving -- more
+long-wavelength power and a little less short-wavelength power, which a
+two-parameter fit can only express as a lower `sigma` with a higher `kc`;
+restricted to `|q| d_x <= pi/3` the solid reads `kc` 35 and the fluid 84,
+widened to `3 pi/4` they read 69 and 100.
+
+Two things in this run were not in `fluid_c` and are the candidates for the
+10%. With the wall at 0.7 the smallest triangles sit on the altitude floor
+-- the 5th percentile of the smallest altitude is 1.97 nm against a floor of
+2.0, so the shape term is live on over 5% of the faces, and through its
+normal component it is not silent on a short-wavelength height mode -- and
+about 2% of the interior control-net triangles (7 of 384 per frame; none in
+`fluid_c`) overhang in projection, which the Monge reader can only average
+over. The fluid fit is also the less settled one: 320 us analysed, `kc`
+still moving over its prefixes (99.6, 96.8, 94.1) where the control's had
+stopped. The level check (91.4 at level 2 against 90.0 at level 3) and the
+seam (0.73% of the field) rule out the subdivision and the periodic images.
 
 ## 12. Not done
 
-**Fluidity at conserved area**, for the reason in section 11: the
-connectivity is frozen by the packing, not slowed. `fluid_e` and `fluid_f`
-lower the tether's wall from 0.95 to 0.7 and 0.8 of `lFace`, with the
-altitude floor and the crease wall guarding what the narrow wall used to;
-whether they are fluid, still stable, and still return the solid's spectrum
-is the next measurement.
+**The spectrum of the fluid membrane, and the default lower wall.** At a
+wall of 0.7 the sheet is fluid, flat and stable, and its spectrum differs
+from the solid's at both ends of the window (section 11): more power at the
+longest wavelengths, 10% less at the shortest inside the window, 27% less
+beyond it. The candidates are the altitude floor, live on 5% of the faces at
+this wall, and the overhangs the Monge reader averages over; the tests are a
+run with the floor at 0.3 `lFace` (or `muS` raised, so the floor is not
+reached), and a reader that does not project. Until that is settled
+`edgeTetherMinRatio` stays at 0.95 in `Parameters.hpp` -- the value at which
+a run at conserved area freezes -- and a fluid run has to set 0.7-0.8 in its
+`input.params`. Whichever it becomes, the feasibility report should say what
+packing fraction the wall and the box imply.
 
 **Calibration of `nu` against a physical neighbour-exchange time**, which
 waits on the above.

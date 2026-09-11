@@ -1355,8 +1355,16 @@ neighbour survival plateaus at 0.93 within 10 µs and 99% of the accepted
 flips are undone by the next flip of the same edge — bound dislocation
 pairs in a vertex system packed 1.17 tether walls apart. `fluid_d` showed
 the crease wall makes valences 4–8 safe there without changing that (0.92);
-the tether's lower wall is the knob (`fluid_e` at 0.7, `fluid_f` at 0.8,
-running); `fluidity_results.md` §10–12.
+the tether's lower wall is the knob: at 0.7 (`fluid_e`) and 0.8 (`fluid_f`)
+of `lFace` the sheet is fluid and flat at once — survival 0.66 after 400 µs,
+MSD exponent 0.8, r.m.s. height 0.7 nm, no fold in 400 000 steps. Its
+spectrum is not yet the solid's: the free fit reads κ_c 94 against 59 with
+σ 2.4 against 3.6, which mode by mode is more power at the longest
+wavelengths and 10% less at the shortest inside the window — the crossover
+moving, not a stiffer membrane (at any fixed σ the fluid's κ_c is 9 pN·nm
+*lower*). The suspects are the altitude floor, live on 5% of the faces at
+that wall, and the reader's projection over the 2% of triangles that
+overhang; `fluidity_results.md` §11–12.
 
 > Gate: a 400 000-step fluid run on the 100 nm sheet that does not diverge —
 > every previous one died at 8 700, 27 800 or 94 000 steps — with the
