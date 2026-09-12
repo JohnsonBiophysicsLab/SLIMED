@@ -14,14 +14,13 @@
 namespace slimed
 {
 
-SLIMED_HD inline const double *rows_for_face(const ForceKernelArgs &args, int face, int child)
+SLIMED_HD inline const double *rows_for_patch(const ForceKernelArgs &args, int valence, int child)
 {
-    const FacePatchDescriptor &descriptor = args.descriptors[face];
-    if (descriptor.kind == DevicePatchKind::Regular)
+    if (valence == 6)
     {
         return args.regularRows;
     }
-    if (descriptor.kind != DevicePatchKind::Irregular || args.irregularOffsets == nullptr)
+    if (args.irregularOffsets == nullptr)
     {
         return nullptr;
     }
@@ -29,10 +28,57 @@ SLIMED_HD inline const double *rows_for_face(const ForceKernelArgs &args, int fa
     // the table, using the same slot arithmetic PatchRowsFlat uses.
     const int depth = child / kChildrenPerSubdivisionStep;
     const int childInStep = child % kChildrenPerSubdivisionStep;
-    const int valenceSlot = args.faceValence[face] - kMinPatchValence;
+    const int valenceSlot = valence - kMinPatchValence;
     const int slot =
         (valenceSlot * args.irregularDepth + depth) * kChildrenPerSubdivisionStep + childInStep;
     return args.irregularRows + args.irregularOffsets[slot];
+}
+
+SLIMED_HD inline void integrate_patch(const ForceKernelArgs &args, int valence, int nChildren,
+                                      const double *ctrlPts, int nCtrl, double &area,
+                                      double &volume)
+{
+    for (int child = 0; child < nChildren; child++)
+    {
+        element_area_volume_pod(rows_for_patch(args, valence, child), args.gaussCoeff,
+                                args.nSamples, ctrlPts, nCtrl, area, volume);
+    }
+}
+
+SLIMED_HD inline void evaluate_patch(const ForceKernelArgs &args, int valence, int nChildren,
+                                     const double *ctrlPts, int nCtrl, const PatchParams &p,
+                                     double &eBend, double &meanCurv, double normVector[3],
+                                     double *fBend, double *fArea, double *fVolume)
+{
+    eBend = 0.0;
+    for (int child = 0; child < nChildren; child++)
+    {
+        double childEBend = 0.0;
+        double childMeanCurv = 0.0;
+        double childNormVector[3] = {0.0, 0.0, 0.0};
+        element_energy_force_patch_pod(rows_for_patch(args, valence, child), args.gaussCoeff,
+                                       args.nSamples, ctrlPts, nCtrl, p, childEBend,
+                                       childMeanCurv, childNormVector, fBend, fArea, fVolume);
+        eBend += childEBend;
+        // A regular patch has one child and takes its values directly. An
+        // irregular patch reports the child nearest the patch centre -- depth
+        // 0, the middle child -- rather than summing a curvature and a normal,
+        // which do not add.
+        const bool isReportingChild = (valence == 6) || (child == 1);
+        if (isReportingChild)
+        {
+            meanCurv = childMeanCurv;
+            normVector[0] = childNormVector[0];
+            normVector[1] = childNormVector[1];
+            normVector[2] = childNormVector[2];
+        }
+    }
+}
+
+/// The valence a Regular or Irregular face is evaluated at.
+SLIMED_HD inline int patch_valence(const ForceKernelArgs &args, int face)
+{
+    return (args.descriptors[face].kind == DevicePatchKind::Regular) ? 6 : args.faceValence[face];
 }
 
 /// Copy one face's control points out of the coordinate array.
@@ -63,11 +109,25 @@ SLIMED_HD inline void area_volume_for_face(const ForceKernelArgs &args, int face
     {
         double ctrlPts[kMaxControlPoints * 3];
         load_control_points(args, face, descriptor.nControlPoints, ctrlPts);
-        for (int child = 0; child < descriptor.nChildren; child++)
+        if (descriptor.kind == DevicePatchKind::Multi)
         {
-            element_area_volume_pod(rows_for_face(args, face, child), args.gaussCoeff,
-                                    args.nSamples, ctrlPts, descriptor.nControlPoints, area,
-                                    volume);
+            // The same four children the energy uses, over the same
+            // prolongations, so geometry and energy read the same rows for
+            // the same face -- as Mesh::calculate_element_area_volume() does.
+            const DeviceMultiPatchEntry &entry = args.multiEntries[descriptor.multiEntry];
+            for (int c = 0; c < kMultiPatchChildren; c++)
+            {
+                double childCoords[kMaxControlPoints * 3];
+                multi_patch_prolong_pod(args.multiProlongations + entry.childOffset[c], ctrlPts,
+                                        entry.nControl, entry.childNControl[c], childCoords);
+                integrate_patch(args, entry.childValence[c], entry.childNChildren[c], childCoords,
+                                entry.childNControl[c], area, volume);
+            }
+        }
+        else
+        {
+            integrate_patch(args, patch_valence(args, face), descriptor.nChildren, ctrlPts,
+                            descriptor.nControlPoints, area, volume);
         }
     }
 
@@ -96,29 +156,59 @@ SLIMED_HD inline void patch_force_for_face(const ForceKernelArgs &args, int face
         PatchParams patchParams = args.patchParams;
         patchParams.spontCurv = args.faceSpontCurvature[face];
 
-        for (int child = 0; child < descriptor.nChildren; child++)
+        if (descriptor.kind == DevicePatchKind::Multi)
         {
-            double childEBend = 0.0;
-            double childMeanCurv = 0.0;
-            double childNormVector[3] = {0.0, 0.0, 0.0};
-            element_energy_force_patch_pod(rows_for_face(args, face, child), args.gaussCoeff,
-                                           args.nSamples, ctrlPts, nControlPoints, patchParams,
-                                           childEBend, childMeanCurv, childNormVector, fBend,
-                                           fArea, fVolume);
-            eBend += childEBend;
-            // A regular face has one child and takes its values directly. An
-            // irregular face reports the child nearest the patch centre --
-            // depth 0, the middle child -- rather than summing a curvature and
-            // a normal, which do not add.
-            const bool isReportingChild =
-                (descriptor.kind == DevicePatchKind::Regular) || (child == 1);
-            if (isReportingChild)
+            // A face with several extraordinary corners has no single corner
+            // to run Stam's reduction from. Subdividing its own control net
+            // once splits it into four children that each do -- three corner
+            // children and a regular centre -- and every one of their control
+            // points is a fixed linear combination of this face's, so the
+            // whole thing is a prolongation matrix per child and then the
+            // path above, unchanged. Mirrors the CPU loop in
+            // Mesh::compute_face_energies_and_forces() operation for operation.
+            const DeviceMultiPatchEntry &entry = args.multiEntries[descriptor.multiEntry];
+            for (int c = 0; c < kMultiPatchChildren; c++)
             {
-                meanCurv = childMeanCurv;
-                normVector[0] = childNormVector[0];
-                normVector[1] = childNormVector[1];
-                normVector[2] = childNormVector[2];
+                const double *prolongation = args.multiProlongations + entry.childOffset[c];
+                double childCoords[kMaxControlPoints * 3];
+                multi_patch_prolong_pod(prolongation, ctrlPts, entry.nControl,
+                                        entry.childNControl[c], childCoords);
+
+                double childBend[kMaxControlPoints * 3] = {0.0};
+                double childArea[kMaxControlPoints * 3] = {0.0};
+                double childVolume[kMaxControlPoints * 3] = {0.0};
+                double childEBend = 0.0;
+                double childMeanCurv = 0.0;
+                double childNormVector[3] = {0.0, 0.0, 0.0};
+                evaluate_patch(args, entry.childValence[c], entry.childNChildren[c], childCoords,
+                               entry.childNControl[c], patchParams, childEBend, childMeanCurv,
+                               childNormVector, childBend, childArea, childVolume);
+
+                eBend += childEBend;
+                // The centre child covers the middle of the face, so it is
+                // the honest place to read a single per-face curvature and
+                // normal from.
+                if (c == kMultiPatchChildren - 1)
+                {
+                    meanCurv = childMeanCurv;
+                    normVector[0] = childNormVector[0];
+                    normVector[1] = childNormVector[1];
+                    normVector[2] = childNormVector[2];
+                }
+
+                multi_patch_scatter_pod(prolongation, childBend, entry.nControl,
+                                        entry.childNControl[c], fBend);
+                multi_patch_scatter_pod(prolongation, childArea, entry.nControl,
+                                        entry.childNControl[c], fArea);
+                multi_patch_scatter_pod(prolongation, childVolume, entry.nControl,
+                                        entry.childNControl[c], fVolume);
             }
+        }
+        else
+        {
+            evaluate_patch(args, patch_valence(args, face), descriptor.nChildren, ctrlPts,
+                           nControlPoints, patchParams, eBend, meanCurv, normVector, fBend, fArea,
+                           fVolume);
         }
 
         // Each face owns these slots outright, so no other thread writes here.
@@ -152,6 +242,21 @@ SLIMED_HD inline void patch_force_for_face(const ForceKernelArgs &args, int face
 
 SLIMED_HD inline void regularization_for_face(const ForceKernelArgs &args, int face)
 {
+    if (!args.regularizationEnabled)
+    {
+        // Fluid mode: the edge tether replaces this term and is evaluated on
+        // the host after the pipeline. Zeros rather than nothing, because the
+        // gather reads every corner slot and the scratch is never cleared.
+        args.faceERegular[face] = 0.0;
+        args.faceDeformCase[face] = 0;
+        double *corner = args.cornerForceRegular + face * 9;
+        for (int j = 0; j < 9; j++)
+        {
+            corner[j] = 0.0;
+        }
+        return;
+    }
+
     const int *corners = args.faceCorners + face * 3;
     const int iVertex0 = corners[0];
     const int iVertex1 = corners[1];

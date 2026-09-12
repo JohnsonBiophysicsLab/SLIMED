@@ -47,6 +47,12 @@ struct ForceKernelArgs
     const int *vertexCorners = nullptr;
     int nFaces = 0;
     int nVertices = 0;
+    /// The prolongation table for faces with several extraordinary corners,
+    /// indexed by FacePatchDescriptor::multiEntry. Both null on a mesh with
+    /// no such faces, and never read then.
+    const DeviceMultiPatchEntry *multiEntries = nullptr;
+    const double *multiProlongations = nullptr;
+    int nMultiEntries = 0;
 
     // --- shape functions, uploaded once -----------------------------------
     const double *regularRows = nullptr;
@@ -66,6 +72,12 @@ struct ForceKernelArgs
     double gamaShape = 0.0;
     double gamaArea = 0.0;
     bool usingRpi = true;
+    /// Whether the reference-length regularization is part of this run's
+    /// Hamiltonian. False in fluid mode, where the edge tether replaces it
+    /// (Param::edgeSpringEnabled) and is evaluated on the host over the edge
+    /// table after this pipeline; the regularization stage then writes zeros
+    /// so that the gather stays valid and nothing stale reaches the mesh.
+    bool regularizationEnabled = true;
 
     // --- output ------------------------------------------------------------
     double *faceArea = nullptr;      ///< nFaces
@@ -92,8 +104,24 @@ struct ForceKernelArgs
     double *vertexForceRegular = nullptr; ///< nVertices * 3
 };
 
-/// The shape-function block set for one face, or nullptr if it has none.
-SLIMED_HD inline const double *rows_for_face(const ForceKernelArgs &args, int face, int child);
+/// The shape-function block for child `child` of a patch of the given
+/// valence: the regular block at valence 6, else Stam's child at that slot.
+/// nullptr if the table holds no rows for it.
+SLIMED_HD inline const double *rows_for_patch(const ForceKernelArgs &args, int valence, int child);
+
+/// Area and signed volume of one patch, accumulated into `area` and `volume`:
+/// a regular patch is one block, an irregular one is `nChildren` of them.
+SLIMED_HD inline void integrate_patch(const ForceKernelArgs &args, int valence, int nChildren,
+                                      const double *ctrlPts, int nCtrl, double &area,
+                                      double &volume);
+
+/// Bending energy, curvature, normal and forces of one patch over `nChildren`
+/// blocks. `eBend` is overwritten; the forces accumulate, so the caller zeroes
+/// them first. What Compute_Energy_And_Force()'s evaluateOnePatch does.
+SLIMED_HD inline void evaluate_patch(const ForceKernelArgs &args, int valence, int nChildren,
+                                     const double *ctrlPts, int nCtrl, const PatchParams &p,
+                                     double &eBend, double &meanCurv, double normVector[3],
+                                     double *fBend, double *fArea, double *fVolume);
 
 /// Face `face`'s limit-surface area and signed volume. Ghost faces get zero.
 SLIMED_HD inline void area_volume_for_face(const ForceKernelArgs &args, int face);

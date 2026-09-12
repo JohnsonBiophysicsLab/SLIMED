@@ -867,33 +867,37 @@ TEST(FluidRunTest, TheDeviceLayoutRebuildsOnAVersionChangeAndNotOtherwise)
 }
 
 /**
- * @brief Flips and the GPU backend are refused together, before the first step.
+ * @brief Flips and the GPU backend are an ordinary combination at setup.
  *
- * A flip leaves extraordinary corners at both ends of the new edge, so a fluid
- * mesh is full of faces with more than one of them, and DeviceMeshLayout
- * cannot build those. Without this the run starts, flips, and throws out of
- * the layout builder with a mesh already changed -- a crash partway through
- * rather than a configuration error.
+ * They used to be refused together, because DeviceMeshLayout could not build a
+ * face with more than one extraordinary corner and every flip makes two. It
+ * can now -- the device evaluates those through the same prolongations the
+ * CPU loop uses -- so setup accepts the pair. Whether a device is actually
+ * usable is decided where it always was, at the first force evaluation, and
+ * "gpu" still fails loudly there rather than falling back.
  */
-TEST(FluidRunTest, FlipsWithTheGpuBackendAreRefusedAtSetup)
+TEST(FluidRunTest, FlipsWithTheGpuBackendAreAcceptedAtSetup)
 {
-    Param param;
-    configure_flat(param);
-    param.surfaceSolver = "iterative";
-    param.edgeFlipEnabled = true;
-    param.forceBackend = "gpu";
+    for (const char *backend : {"gpu", "auto", "cpu"})
+    {
+        SCOPED_TRACE(std::string("forceBackend = ") + backend);
+        Param param;
+        configure_flat(param);
+        param.surfaceSolver = "iterative";
+        param.edgeFlipEnabled = true;
+        param.forceBackend = backend;
+        DynamicMesh mesh(param);
+        EXPECT_NO_THROW(mesh.setup_flat());
+    }
 
-    DynamicMesh mesh(param);
-    EXPECT_THROW(mesh.setup_flat(), std::runtime_error);
-
-    // And the supported combination is not refused.
-    Param cpuParam;
-    configure_flat(cpuParam);
-    cpuParam.surfaceSolver = "iterative";
-    cpuParam.edgeFlipEnabled = true;
-    cpuParam.forceBackend = "cpu";
-    DynamicMesh cpuMesh(cpuParam);
-    EXPECT_NO_THROW(cpuMesh.setup_flat());
+    // The other precondition on the same line is untouched: flips still need
+    // the sparse surface solver, whichever backend evaluates the forces.
+    Param dense;
+    configure_flat(dense);
+    dense.edgeFlipEnabled = true;
+    dense.forceBackend = "gpu";
+    DynamicMesh denseMesh(dense);
+    EXPECT_THROW(denseMesh.setup_flat(), std::runtime_error);
 }
 
 /**

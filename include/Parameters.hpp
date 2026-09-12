@@ -144,8 +144,12 @@ struct Param
      *
      * All three compute the same thing: the device path runs the same kernel
      * bodies over the same flattened mesh, and the tests pin it against the
-     * CPU. See docs/gpu_acceleration.md for where the GPU actually wins --
-     * below roughly 10^5 faces it does not.
+     * CPU. That includes a fluid run -- edgeFlipEnabled with faces of several
+     * extraordinary corners -- since docs/edge_flip_plan.md WP8; the fluid
+     * mesh-quality terms (tether, triangle shape, crease wall) are evaluated
+     * on the host after the device returns on either backend. See
+     * docs/cuda_implementation.md for what the GPU was measured to gain and
+     * for the test to run before trusting a new machine.
      */
     std::string forceBackend = "cpu";
     double elementTriangleArea0 = 0.0;            ///< Target area for individual triangles

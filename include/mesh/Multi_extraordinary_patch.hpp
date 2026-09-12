@@ -73,6 +73,7 @@
 #include <map>
 #include <vector>
 
+#include "energy_force/Patch_kernel.hpp"
 #include "linalg/Linear_algebra.hpp"
 
 /**
@@ -138,8 +139,9 @@ public:
     struct Entry
     {
         std::array<int, 3> valence{{0, 0, 0}};
-        int nControl = 0;              ///< K, the parent patch width
-        std::array<Child, 4> children; ///< corner 0, corner 1, corner 2, centre
+        int nControl = 0; ///< K, the parent patch width
+        /// Corner 0, corner 1, corner 2, centre.
+        std::array<Child, slimed::kMultiPatchChildren> children;
     };
 
     /**
@@ -161,6 +163,9 @@ public:
 
     /// All prolongation matrices back to back; Child::offset indexes into this.
     const double *data() const { return buffer_.empty() ? nullptr : buffer_.data(); }
+    /// Doubles behind data(), for copying the whole table somewhere else --
+    /// the device layout takes a snapshot of it.
+    std::size_t data_count() const { return buffer_.size(); }
     std::size_t memory_bytes() const { return buffer_.size() * sizeof(double); }
 
     void clear();
@@ -174,6 +179,10 @@ private:
 /**
  * @brief The child's control net: Xc = M * X.
  *
+ * The body lives in Patch_kernel.hpp as slimed::multi_patch_prolong_pod(), so
+ * that the device kernel and this host path run the same arithmetic; this is
+ * the host-side name the force loops call it by.
+ *
  * @param prolongation  nChild x nParent, row-major.
  * @param parentCoords  nParent x 3, row-major.
  * @param childCoords   nChild x 3, row-major. Overwritten.
@@ -181,53 +190,17 @@ private:
 inline void multi_patch_prolong(const double *prolongation, const double *parentCoords,
                                 int nParent, int nChild, double *childCoords)
 {
-    for (int row = 0; row < nChild; row++)
-    {
-        const double *weights = prolongation + static_cast<std::size_t>(row) * nParent;
-        double accumulated[3] = {0.0, 0.0, 0.0};
-        for (int column = 0; column < nParent; column++)
-        {
-            const double weight = weights[column];
-            if (weight == 0.0)
-            {
-                continue;
-            }
-            accumulated[0] += weight * parentCoords[column * 3 + 0];
-            accumulated[1] += weight * parentCoords[column * 3 + 1];
-            accumulated[2] += weight * parentCoords[column * 3 + 2];
-        }
-        childCoords[row * 3 + 0] = accumulated[0];
-        childCoords[row * 3 + 1] = accumulated[1];
-        childCoords[row * 3 + 2] = accumulated[2];
-    }
+    slimed::multi_patch_prolong_pod(prolongation, parentCoords, nParent, nChild, childCoords);
 }
 
 /**
  * @brief Push a child's force back onto the parent's control points:
- * f += M^T * fc.
- *
- * The chain rule and nothing more. The energy of a child is a function of
- * Xc = M * X, so dE/dX = M^T dE/dXc, and the kernel already returns the
- * negative gradient.
+ * f += M^T * fc. See slimed::multi_patch_scatter_pod().
  *
  * @param parentForce  nParent x 3, row-major. Accumulated into.
  */
 inline void multi_patch_scatter(const double *prolongation, const double *childForce, int nParent,
                                 int nChild, double *parentForce)
 {
-    for (int row = 0; row < nChild; row++)
-    {
-        const double *weights = prolongation + static_cast<std::size_t>(row) * nParent;
-        for (int column = 0; column < nParent; column++)
-        {
-            const double weight = weights[column];
-            if (weight == 0.0)
-            {
-                continue;
-            }
-            parentForce[column * 3 + 0] += weight * childForce[row * 3 + 0];
-            parentForce[column * 3 + 1] += weight * childForce[row * 3 + 1];
-            parentForce[column * 3 + 2] += weight * childForce[row * 3 + 2];
-        }
-    }
+    slimed::multi_patch_scatter_pod(prolongation, childForce, nParent, nChild, parentForce);
 }

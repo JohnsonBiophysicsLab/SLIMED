@@ -70,6 +70,11 @@ constexpr int kMaxPatchValence = 8;
 constexpr int kChildrenPerSubdivisionStep = 3;
 /** @} */
 
+/// Children one Loop subdivision splits a face into: three corner children
+/// and the centre. The multi-extraordinary path evaluates a face as these four
+/// (Multi_extraordinary_patch.hpp); the device reads them off the same table.
+constexpr int kMultiPatchChildren = 4;
+
 // --------------------------------------------------------------------------
 // 3-vector primitives. Each mirrors one free function from Linear_algebra.cpp.
 // --------------------------------------------------------------------------
@@ -189,6 +194,74 @@ struct PatchParams
     double vol = 0.0;           ///< Current enclosed volume.
     double vol0 = 0.0;          ///< Reference enclosed volume.
 };
+
+/**
+ * @brief The child's control net: Xc = M * X.
+ *
+ * The multi-extraordinary path hands the existing kernels a linear image of
+ * the parent's control net rather than the net itself. One body for the host
+ * force loop and the device kernel, so the two cannot drift: the zero skip is
+ * part of the arithmetic, not an optimisation, because it fixes which
+ * additions happen.
+ *
+ * @param prolongation  nChild x nParent, row-major.
+ * @param parentCoords  nParent x 3, row-major.
+ * @param childCoords   nChild x 3, row-major. Overwritten.
+ */
+SLIMED_HD inline void multi_patch_prolong_pod(const double *prolongation,
+                                              const double *parentCoords, int nParent,
+                                              int nChild, double *childCoords)
+{
+    for (int row = 0; row < nChild; row++)
+    {
+        const double *weights = prolongation + static_cast<long>(row) * nParent;
+        double accumulated[3] = {0.0, 0.0, 0.0};
+        for (int column = 0; column < nParent; column++)
+        {
+            const double weight = weights[column];
+            if (weight == 0.0)
+            {
+                continue;
+            }
+            accumulated[0] += weight * parentCoords[column * 3 + 0];
+            accumulated[1] += weight * parentCoords[column * 3 + 1];
+            accumulated[2] += weight * parentCoords[column * 3 + 2];
+        }
+        childCoords[row * 3 + 0] = accumulated[0];
+        childCoords[row * 3 + 1] = accumulated[1];
+        childCoords[row * 3 + 2] = accumulated[2];
+    }
+}
+
+/**
+ * @brief Push a child's force back onto the parent's control points:
+ * f += M^T * fc.
+ *
+ * The chain rule and nothing more: the child's energy is a function of
+ * Xc = M * X, so dE/dX = M^T dE/dXc, and the kernel already returns the
+ * negative gradient.
+ *
+ * @param parentForce  nParent x 3, row-major. Accumulated into.
+ */
+SLIMED_HD inline void multi_patch_scatter_pod(const double *prolongation, const double *childForce,
+                                              int nParent, int nChild, double *parentForce)
+{
+    for (int row = 0; row < nChild; row++)
+    {
+        const double *weights = prolongation + static_cast<long>(row) * nParent;
+        for (int column = 0; column < nParent; column++)
+        {
+            const double weight = weights[column];
+            if (weight == 0.0)
+            {
+                continue;
+            }
+            parentForce[column * 3 + 0] += weight * childForce[row * 3 + 0];
+            parentForce[column * 3 + 1] += weight * childForce[row * 3 + 1];
+            parentForce[column * 3 + 2] += weight * childForce[row * 3 + 2];
+        }
+    }
+}
 
 /**
  * @brief C = A * B for the shape-function contraction, beta = 0.

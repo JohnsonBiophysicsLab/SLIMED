@@ -340,14 +340,22 @@ void Mesh::compute_face_energies_and_forces()
     // Step 3.
     // The mesh-quality term. The two are alternatives, not additions: the
     // reference-length regularization is a solid's memory of where it started,
-    // and a fluid membrane has none -- see energy_force_edge_spring().
+    // and a fluid membrane has none -- see energy_force_edge_spring(). The
+    // device backend evaluates this one in its regularization stage (writing
+    // zeros when the spring is on) and then calls energy_force_fluid_terms()
+    // exactly as this does, so both paths end in the same slots.
+    if (!param.edgeSpringEnabled)
+    {
+        energy_force_regularization();
+    }
+    energy_force_fluid_terms();
+}
+
+void Mesh::energy_force_fluid_terms()
+{
     if (param.edgeSpringEnabled)
     {
         energy_force_edge_spring();
-    }
-    else
-    {
-        energy_force_regularization();
     }
     // The second half of the fluid term, added on top of whichever edge-based
     // term wrote the slot. See Param::triangleShapeEnabled.
@@ -359,7 +367,6 @@ void Mesh::compute_face_energies_and_forces()
     {
         energy_force_crease_wall();
     }
-
 }
 
 void Mesh::ensure_device_layout()
@@ -443,10 +450,18 @@ void Mesh::Compute_Energy_And_Force()
         ensure_patch_rows_flat();
         ensure_device_layout();
         // Steps 1 to 3 below, on the device: element area and volume and the
-        // totals they sum to, the patch energies and forces, and the
-        // regularization term. Same kernel bodies, same results -- see
+        // totals they sum to, the patch energies and forces -- faces with
+        // several extraordinary corners included, through the same
+        // prolongations the CPU loop uses -- and the reference-length
+        // regularization. Same kernel bodies, same results -- see
         // CudaForceBackendTest.
         cudaBackend->evaluate(*this, deviceLayout, patchRowsFlat);
+        // The fluid-mode mesh-quality terms are sums over the edge table with
+        // closed-form gradients: cheap, and not what the device is for. They
+        // run on the host over the coordinates the device just read, exactly
+        // as they do after the CPU loop. With the spring on, the device wrote
+        // zeros into the regularization slots this overwrites.
+        energy_force_fluid_terms();
     }
     else
     {

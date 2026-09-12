@@ -23,3 +23,6 @@ static_assert(slimed::kChildrenPerSubdivisionStep == kRegularChildrenPerStep,
               "slimed::kChildrenPerSubdivisionStep has drifted from kRegularChildrenPerStep");
 static_assert(kMaxIrregularValence + 6 <= slimed::kMaxControlPoints,
               "the widest patch no longer fits the kernel's stack buffers");
+static_assert(3 * kMaxIrregularValence - 6 <= slimed::kMaxControlPoints,
+              "the widest multi-extraordinary patch (N0 + N1 + N2 - 6) no longer fits the "
+              "kernel's stack buffers");

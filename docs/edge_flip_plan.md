@@ -1,6 +1,6 @@
 # Monte Carlo Edge Flips for a Fluid Membrane
 
-**Status:** work packages 0-7 landed
+**Status:** work packages 0-8 landed
 **Base:** `JohnsonBiophysicsLab/SLIMED @ 1fdffbd`
 **Builds on:** [`irregular_patch_results.md`](irregular_patch_results.md) (valence 4–8
 row tables), [`fluctuation_spectrum.md`](fluctuation_spectrum.md) (the end-to-end
@@ -426,7 +426,8 @@ evaluable?" without side effects. **[blocking]**
 (`Compute_energy_and_force_on_mesh.cpp:269-280`); `CudaForceBackend::topologyUploaded`
 is set once (`Cuda_force_backend.cu:362`); `ensure_patch_rows_flat()` checks
 `empty()` only (harmless — the row tables are valence-keyed and do not change).
-A flip changes no count. **[blocking for the GPU path]**
+A flip changes no count. **[blocking for the GPU path]** (Closed by WP5's
+`topologyVersion`; the device could not *evaluate* a flipped mesh until WP8.)
 
 ### 2.6 Nothing persists connectivity
 
@@ -1092,16 +1093,17 @@ to a serial build at `1fdffbd` across all 8 outputs with the new flags off. A
 wrote 15 face frames: none duplicated, all two-manifold, a baseline at iteration
 0, so every coordinate frame pairs with a connectivity.
 
-**The device-layout half of the gate cannot be met and was not faked.**
-`DeviceMeshLayout` refuses a face with more than one extraordinary corner, and a
-flip leaves extraordinary corners at *both* ends of the new edge — so a flipped
-mesh is exactly what it cannot build. The GPU backend therefore cannot run a
-fluid membrane at all until the device kernel gains WP1's multi-extraordinary
-path. `DynamicMesh::setup_flat()` now refuses `edgeFlipEnabled` with
-`forceBackend = gpu` before the first step, rather than letting the run flip and
-then throw out of the layout builder with a mesh already changed. What is tested
-instead is the invalidation predicate itself, on a mesh the layout can build: a
-version change rebuilds it and an unchanged version does not.
+**The device-layout half of the gate could not be met at the time and was
+not faked** — it is met by WP8. `DeviceMeshLayout` refused a face with more
+than one extraordinary corner, and a flip leaves extraordinary corners at
+*both* ends of the new edge — so a flipped mesh was exactly what it could not
+build, and the GPU backend could not run a fluid membrane until the device
+kernel gained WP1's multi-extraordinary path. `DynamicMesh::setup_flat()`
+refused `edgeFlipEnabled` with `forceBackend = gpu` before the first step,
+rather than letting the run flip and then throw out of the layout builder with
+a mesh already changed. What was tested at WP5 is the invalidation predicate
+itself, on a mesh the layout could build: a version change rebuilds it and an
+unchanged version does not.
 
 #### A trial flip was moving the invalidation signal
 
@@ -1388,9 +1390,84 @@ were checked and are not involved. Not settled; `fluidity_results.md`
 > energy stationary, and the flip acceptance intact; then the fluctuation
 > spectrum re-measured on the full trajectory.
 
-**Size.** WP0 ≈ 400 lines, WP1 ≈ 700, WP2–3 ≈ 500, WP4 ≈ 400, WP5 ≈ 300, plus
-tests of similar size. The first four are the substance; WP1 is the one that
-can go wrong quietly, which is why its gate is an exact identity.
+### WP8 — Edge flips on the GPU backend — **landed**
+
+What WP5 left open: the device could not evaluate a face with more than one
+extraordinary corner, so it could not evaluate a flipped mesh, and
+`setup_flat()` refused `edgeFlipEnabled` with `forceBackend = gpu`. Both are
+gone. The device now runs WP1's path and a fluid run may name either backend.
+
+> Gate: the flattened pipeline agrees with the production CPU evaluation on a
+> mesh with flipped edges — faces with two and three extraordinary corners —
+> to the same `1e-13` the regular and single-extraordinary fixtures are held
+> to, with and without the fluid-mode terms; the mesh-owned layout rebuilds
+> after an accepted flip and evaluates the faces the flip created;
+> `CudaForceBackendTest` covers the same fixtures.
+
+**Result: met**, host-side. 4 new tests in `tests/test_device_mesh_layout.cpp`
+(8 total there); `FluidRunTest.FlipsWithTheGpuBackendAreAcceptedAtSetup`
+replaces the refusal test. Suite: 193, 192 passing and 1 skipped (CUDA, no
+local device). The `.cu` was additionally compiled and *executed* here against
+a stand-in runtime with each launch expanded to a serial loop over the same
+index range: `CudaForceBackendTest` then runs for real and passes on every
+fixture, flipped ones included. That exercises the new device buffers, the
+upload, the argument wiring and the regularization flag; what it cannot
+exercise is the hardware, so a GPU build should run `ctest -R CudaForceBackend`
+first, as `cuda_implementation.md` §9 says.
+
+**What changed, and where.**
+
+- **Layout** (`Device_mesh_layout.{hpp,cpp}`). `DevicePatchKind::Multi`; the
+  descriptor gains `multiEntry`, the same number as `Face::patchEntry`; the
+  layout takes a snapshot of `MultiPatchTable` — one `DeviceMultiPatchEntry`
+  per valence triple (parent width and, per child, its valence, width, block
+  count and offset) plus the prolongation buffer — and uploads it with the
+  topology. A snapshot rather than a pointer, because the table can grow
+  during a *rejected* trial without the version moving; a face only indexes an
+  entry it was given by a flip that did move it, so the version-keyed rebuild
+  always sees what the descriptors name. The build refuses an entry index the
+  snapshot does not hold or a width the entry does not match: a plausible
+  wrong force is the one outcome worth a throw.
+- **Kernel bodies** (`Force_kernels.inl`). `evaluate_patch()` and
+  `integrate_patch()` factor out "evaluate a patch of this valence over this
+  many blocks" — what a face of that kind already did — and the multi branch
+  is then the CPU loop's, operation for operation: prolong `Xc = M X`,
+  evaluate the child as a face of its own kind, scatter `Mᵀ fc`, take the
+  curvature and normal from the centre child. `multi_patch_prolong_pod()` and
+  `multi_patch_scatter_pod()` now live in the GSL-free `Patch_kernel.hpp`, and
+  the host functions of the same name forward to them, so there is one body
+  for both drivers; the zero-weight skip is part of it, since it fixes which
+  additions happen.
+- **Fluid terms** (`Compute_energy_and_force_on_mesh.cpp`). Step 3 is now
+  "reference-length regularization unless the spring is on, then
+  `energy_force_fluid_terms()`" — tether, triangle shape, crease wall, each
+  behind its flag — and the CUDA branch calls the same function after the
+  device returns. Those are sums over the edge table with closed-form
+  gradients, cheap and not what the device is for, so they stay on the host on
+  both paths. With the spring on, the device's regularization stage writes
+  zeros (`ForceKernelArgs::regularizationEnabled`), which the tether
+  overwrites — the same replacement the CPU path makes by not calling
+  `energy_force_regularization()` at all. Before this, a fluid GPU run would
+  have silently dropped all three terms.
+- **The refusal** in `DynamicMesh::setup_flat()` is removed. Whether a device
+  is usable is `resolve_force_backend()`'s question, asked at the first force
+  evaluation, and `gpu` still fails loudly there rather than falling back.
+
+**Cost, expected rather than measured.** An accepted sweep costs one layout
+rebuild (host, `O(N)`) and one topology upload — about 60 bytes per face plus
+the table, which is under 100 kB — before the next force evaluation; a step
+with no accepted flip costs the device nothing new. The multi branch holds up
+to eight `18 × 3` stack arrays per thread, some 3.5 kB of local memory on top
+of the kernel's own, so `kBlockSize = 128` may want to become 64 on a fluid
+mesh; that is a measurement for the cluster, not a guess to bake in. The face
+work itself is the WP1 cost — a fluid mesh at roughly 36× an all-regular one —
+which is exactly the face-parallel load the backend was built for, and the
+reason this package exists.
+
+**Size.** WP0 ≈ 400 lines, WP1 ≈ 700, WP2–3 ≈ 500, WP4 ≈ 400, WP5 ≈ 300,
+WP8 ≈ 350, plus tests of similar size. The first four are the substance; WP1
+is the one that can go wrong quietly, which is why its gate is an exact
+identity.
 
 ---
 
@@ -1414,7 +1491,7 @@ can go wrong quietly, which is why its gate is an exact identity.
 
 | Risk | Handling |
 | ---- | -------- |
-| **A fluid mesh is mostly irregular, and irregular faces are expensive.** **Measured at WP1: 36× an all-regular mesh**, reached by the time 15% of edges have flipped. In a fluid steady state almost every face has at least one extraordinary corner and most have several, each costing `3·D` samples per corner instead of 3. | This is the real cost of fluidity and it is not specific to this design — any subdivision membrane that flips pays it. Levers, in order: `irregularPatchDepthScale` (the `1e-4` bending tail the depths were chosen for is far below the thermal noise a Brownian run lives in; WP6 measures what depth the spectrum actually needs); the GPU backend, which was built for exactly this kind of face-parallel load; a higher-order rule on the children so that a given accuracy needs fewer levels. Now a known quantity rather than a risk, but it moves `irregularPatchDepthScale` from a convenience to a requirement. |
+| **A fluid mesh is mostly irregular, and irregular faces are expensive.** **Measured at WP1: 36× an all-regular mesh**, reached by the time 15% of edges have flipped. In a fluid steady state almost every face has at least one extraordinary corner and most have several, each costing `3·D` samples per corner instead of 3. | This is the real cost of fluidity and it is not specific to this design — any subdivision membrane that flips pays it. Levers, in order: `irregularPatchDepthScale` (the `1e-4` bending tail the depths were chosen for is far below the thermal noise a Brownian run lives in; WP6 measures what depth the spectrum actually needs); the GPU backend, which was built for exactly this kind of face-parallel load and since WP8 evaluates a fluid mesh; a higher-order rule on the children so that a given accuracy needs fewer levels. Now a known quantity rather than a risk, but it moves `irregularPatchDepthScale` from a convenience to a requirement. |
 | **The measure question** (§1.4c). | Plain Metropolis at fixed `C` is the literature standard (Gompper & Kroll 2004; Ramakrishnan, Sunil Kumar & Ipsen 2010; Siggel et al. 2022); the log-det diagnostic quantifies the discrepancy; the corrected acceptance is a documented option. Geometry sampled at fixed `T` is unaffected either way. |
 | **Periodic band stays solid** (§3.8). | Accepted for phase 1; the interior tile is what the analysis measures. Torus-periodic connectivity is a separate plan. |
 | **Valence range `[4, 8]`** rejects flips that DTS models would allow. | Measure the histogram; extend the generator to `3` and `9–10` if the rejection rate at the bounds is material. `N = 3` needs Loop's `β = 3/16`. |

@@ -313,6 +313,20 @@ public:
     /// The device backend stands in for exactly this much.
     void compute_face_energies_and_forces();
 
+    /**
+     * @brief The fluid-mode mesh-quality terms: the edge tether, the
+     * triangle-shape term and the crease wall, each behind its own flag.
+     *
+     * The tail of step 3 of the force evaluation, split out so that the CPU
+     * loop and the device backend run the same thing after their per-face
+     * work: these are sums over the edge table with closed-form gradients,
+     * and they stay on the host on both paths. When the spring is on the
+     * device's regularization stage writes zeros, which energy_force_edge_spring()
+     * then overwrites -- the same replacement the CPU loop makes by not
+     * calling energy_force_regularization() at all.
+     */
+    void energy_force_fluid_terms();
+
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
     std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold

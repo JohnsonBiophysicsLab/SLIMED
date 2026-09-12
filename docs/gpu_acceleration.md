@@ -101,6 +101,19 @@ physics to keep in sync — there is one body, compiled twice.
 The `.cu` is consequently thin: four three-line kernels, and otherwise
 allocation, transfer and launch.
 
+### Step 4 — faces with several extraordinary corners, and edge flips
+
+A fluid membrane (`edge_flip_plan.md`) is mostly faces with two or three
+extraordinary corners, which the device could not evaluate until the layout
+learned to carry the prolongation table those faces are evaluated through.
+It does now: `DevicePatchKind::Multi`, a snapshot of `MultiPatchTable` uploaded
+with the topology, and the same prolong–evaluate–scatter loop the CPU runs.
+An accepted flip re-uploads the topology through the existing
+`topologyVersion` invalidation, and the fluid-mode terms — tether, triangle
+shape, crease wall — run on the host after the device returns, on both
+backends. Details and the verification status in
+[`cuda_implementation.md`](cuda_implementation.md), section 11.
+
 ## Building with CUDA
 
 ```bash
@@ -162,6 +175,9 @@ CUDA toolkit. At that time:
   expanded into a serial sweep over the same index range. It reproduced the
   production force evaluation to 1.1e-15 on every fixture. That exercises the
   buffer sizing, the transfers, the argument wiring and the launch bounds.
+  The same stand-in run was repeated for step 4 (the prolongation table and
+  the multi-extraordinary branch): `CudaForceBackendTest` passes on the
+  flipped fixtures too, with and without the fluid-mode terms.
 
 **Since verified on real hardware** (NVIDIA RTX 4050 Laptop, compute 8.9, nvcc
 13.3.73): nvcc compiles `Cuda_force_backend.cu` with no errors and no warnings,

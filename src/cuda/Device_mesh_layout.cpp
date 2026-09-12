@@ -5,6 +5,7 @@
 
 #include "energy_force/Patch_kernel.hpp"
 #include "mesh/Mesh.hpp"
+#include "mesh/Multi_extraordinary_patch.hpp"
 
 namespace slimed
 {
@@ -21,6 +22,46 @@ void DeviceMeshLayout::build(const Mesh &mesh)
     faceIsBoundary_.assign(nFaces_, 0);
     faceCorners_.assign(static_cast<std::size_t>(nFaces_) * 3, 0);
     oneRingIndices_.clear();
+    nMultiFaces_ = 0;
+
+    // The prolongation table, entry for entry, so a face's patchEntry indexes
+    // the snapshot exactly as it indexes the mesh's table. Copied before the
+    // face loop so that the loop can check each Multi face against it.
+    const MultiPatchTable &table = mesh.multiPatchTable;
+    multiEntries_.assign(static_cast<std::size_t>(table.size()), DeviceMultiPatchEntry{});
+    multiProlongations_.clear();
+    if (table.data() != nullptr)
+    {
+        multiProlongations_.assign(table.data(), table.data() + table.data_count());
+    }
+    for (int e = 0; e < table.size(); e++)
+    {
+        const MultiPatchTable::Entry &entry = table.entry(e);
+        DeviceMultiPatchEntry &flat = multiEntries_[e];
+        flat.nControl = entry.nControl;
+        for (int c = 0; c < kMultiPatchChildren; c++)
+        {
+            const MultiPatchTable::Child &child = entry.children[c];
+            flat.childValence[c] = child.valence;
+            flat.childNControl[c] = child.nControl;
+            // A child is evaluated exactly as a face of its own kind would be:
+            // one block when regular, Stam's tiling otherwise. Same numbers
+            // the descriptors below carry for such faces.
+            flat.childNChildren[c] =
+                (child.valence == 6)
+                    ? 1
+                    : mesh.irregularRows.depth_for(child.valence) * kRegularChildrenPerStep;
+            if (child.offset + static_cast<std::size_t>(child.nControl) * entry.nControl >
+                    multiProlongations_.size() ||
+                child.offset > static_cast<std::size_t>(0x7fffffff))
+            {
+                throw std::invalid_argument(
+                    "[DeviceMeshLayout] prolongation entry " + std::to_string(e) + " child " +
+                    std::to_string(c) + " lies outside the table's buffer");
+            }
+            flat.childOffset[c] = static_cast<int>(child.offset);
+        }
+    }
 
     for (int f = 0; f < nFaces_; f++)
     {
@@ -46,30 +87,16 @@ void DeviceMeshLayout::build(const Mesh &mesh)
         // quietly drop that area from the constraint the energy is measured
         // against.
         //
-        // A face with several extraordinary corners is evaluated by
-        // subdividing its own control net once, which the device path does not
-        // implement yet. Its width cannot be told apart from a
-        // single-extraordinary face's either -- a 6/5/7 face and a regular one
-        // are both 12 wide -- so inferring the kind from the width would give
-        // a confidently wrong answer rather than a missing one. Refuse.
-        //
-        // Reachable only through an edge flip or a mesh whose extraordinary
-        // vertices are not isolated, and only with forceBackend = gpu or auto.
-        // WP5 of docs/edge_flip_plan.md is where the device side gets it.
-        if (face.patchKind == ::PatchKind::MultiExtraordinary)
-        {
-            throw std::invalid_argument(
-                "[DeviceMeshLayout] face " + std::to_string(f) +
-                " has more than one extraordinary corner (valences " +
-                std::to_string(face.patchValence[0]) + ", " +
-                std::to_string(face.patchValence[1]) + ", " +
-                std::to_string(face.patchValence[2]) +
-                "). The device backend cannot evaluate it yet; run this mesh with "
-                "forceBackend = cpu. See docs/edge_flip_plan.md.");
-        }
-
+        // The kind is read off the face, never inferred from the width: a
+        // 6/5/7 face and a regular one are both 12 wide. A face with several
+        // extraordinary corners resolves to a prolongation entry when it is
+        // classified (Mesh::ensure_multi_patch_entries()); one that has not --
+        // patchEntry still -1 -- carries no patch on the CPU either, and the
+        // device mirrors that rather than inventing a different answer.
         const bool hasRegularRing = (face.patchKind == ::PatchKind::Regular);
         const bool hasIrregularRing = (face.patchKind == ::PatchKind::SingleExtraordinary);
+        const bool hasMultiRing =
+            (face.patchKind == ::PatchKind::MultiExtraordinary && face.patchEntry >= 0);
         if (width > slimed::kMaxControlPoints)
         {
             throw std::invalid_argument(
@@ -77,7 +104,7 @@ void DeviceMeshLayout::build(const Mesh &mesh)
                 std::to_string(width) + " vertices, wider than the kernel's " +
                 std::to_string(slimed::kMaxControlPoints) + "-point buffers");
         }
-        if (!(hasRegularRing || hasIrregularRing))
+        if (!(hasRegularRing || hasIrregularRing || hasMultiRing))
         {
             descriptor.kind = DevicePatchKind::None;
             descriptor.nControlPoints = 0;
@@ -91,12 +118,38 @@ void DeviceMeshLayout::build(const Mesh &mesh)
             descriptor.kind = DevicePatchKind::Regular;
             descriptor.nChildren = 1;
         }
-        else
+        else if (hasIrregularRing)
         {
             const int valence = width - 6;
             descriptor.kind = DevicePatchKind::Irregular;
             faceValence_[f] = valence;
             descriptor.nChildren = mesh.irregularRows.depth_for(valence) * kRegularChildrenPerStep;
+        }
+        else
+        {
+            // The entry must exist in the snapshot and describe a patch of
+            // this face's width; anything else would index the prolongation
+            // buffer somewhere meaningless and produce a plausible wrong
+            // force, which is the one outcome worth a throw.
+            if (face.patchEntry >= static_cast<int>(multiEntries_.size()))
+            {
+                throw std::invalid_argument(
+                    "[DeviceMeshLayout] face " + std::to_string(f) + " names prolongation entry " +
+                    std::to_string(face.patchEntry) + " but the mesh's table holds " +
+                    std::to_string(multiEntries_.size()) +
+                    "; the face was classified against a table this layout is not seeing");
+            }
+            if (multiEntries_[face.patchEntry].nControl != width)
+            {
+                throw std::invalid_argument(
+                    "[DeviceMeshLayout] face " + std::to_string(f) + " is " +
+                    std::to_string(width) + " wide but its prolongation entry expects " +
+                    std::to_string(multiEntries_[face.patchEntry].nControl));
+            }
+            descriptor.kind = DevicePatchKind::Multi;
+            descriptor.nChildren = kMultiPatchChildren;
+            descriptor.multiEntry = face.patchEntry;
+            nMultiFaces_++;
         }
 
         for (int j = 0; j < width; j++)
@@ -181,7 +234,8 @@ std::size_t DeviceMeshLayout::memory_bytes() const
             vertexCorners_.size()) *
                sizeof(int) +
            faceSpontCurvature_.size() * sizeof(double) + faceIsGhost_.size() +
-           faceIsBoundary_.size();
+           faceIsBoundary_.size() + multiEntries_.size() * sizeof(DeviceMultiPatchEntry) +
+           multiProlongations_.size() * sizeof(double);
 }
 
 } // namespace slimed

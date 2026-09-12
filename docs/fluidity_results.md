@@ -265,6 +265,29 @@ days per trajectory" for a spectrum run. Both were measured with the `-O0`
 Makefile binary after the mesh had disordered, and the ratio was inflated by
 the optimiser's absence. The 4.7x here is the number to carry.
 
+**Re-measured after WP8** (2026-09-12, same sheet, same 300 steps, same
+`bench.py`; `docs/fluidity_benchmark_wp8.tsv`), on the tree that moved the
+multi-extraordinary prolong/scatter bodies into the shared kernel header and
+restructured step 3 of the force evaluation for the device backend:
+
+| configuration | `-O0` serial | `-O3`, 1 thread | 2 | 4 | 8 threads |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dense solver, no flips | 112 | 264 | 361 | 386 | 344 |
+| iterative solver, no flips | 102 | 536 | 647 | 711 | 595 |
+| fluid, `irregularPatchDepthScale = 1.0` | 16.7 | 126 | 202 | 240 | **296** |
+| fluid, `irregularPatchDepthScale = 0.5` | 25.0 | 179 | 273 | 318 | **365** |
+
+steps per second. The fluid rows are at or above the record above, and the
+flip count is again identical across each row -- 23 accepted of 52 admissible
+(71 drawn) at depth 1.0, 25 of 51 at 0.5. The counts differ from the 27 of 68
+recorded above because WP7 narrowed the flip valence range to 5-7 after this
+table was first measured; against the commit immediately before WP8 the
+300-step fluid run is byte-identical across all 26 output files. The one
+number that moved the other way, the dense solver at a single `-O3` thread
+(264 against 331), is noise: the same configuration run three times each with
+serial Release builds of the pre-WP8 and WP8 trees gives 0.94 s best on both,
+319 steps/s, identical.
+
 ## 8. The ghost band: why every long fluid run diverged
 
 Found while setting up the spectrum run, and it took three wrong diagnoses to

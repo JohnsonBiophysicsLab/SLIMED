@@ -27,20 +27,14 @@ void DynamicMesh::setup_flat() {
             "the mask it was built from. See docs/edge_flip_plan.md section 3.7.");
     }
 
-    // A flip on a triangulation of valence-6 vertices leaves two faces with
-    // extraordinary corners at both ends of the new edge, so a fluid mesh is
-    // full of faces with more than one of them -- and DeviceMeshLayout cannot
-    // build those yet. Left alone, the run would start, flip, and then throw
-    // out of the layout builder partway through, with a mesh already changed.
-    // Say so before the first step instead.
-    if (param.edgeFlipEnabled && param.forceBackend == "gpu")
-    {
-        throw std::runtime_error(
-            "[DynamicMesh::setup_flat] edgeFlipEnabled = true needs forceBackend = cpu. A flip "
-            "creates faces with more than one extraordinary corner, which the device layout "
-            "cannot represent; only the CPU kernel evaluates those. See "
-            "docs/edge_flip_plan.md work package 5.");
-    }
+    // Flips and the device backend used to be refused together here, because
+    // DeviceMeshLayout could not build a face with more than one extraordinary
+    // corner and every flip makes two. It can now -- the device evaluates them
+    // through the same prolongations the CPU loop does, and the layout is
+    // rebuilt and re-uploaded on every topologyVersion bump -- so the
+    // combination is an ordinary one. Whether a device is actually usable is
+    // still resolve_force_backend()'s question, asked at the first force
+    // evaluation.
 
     // The shape term shares the regularization slot with the tether and is
     // the fluid term's second half; on top of the reference-length term it

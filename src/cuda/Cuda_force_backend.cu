@@ -31,8 +31,11 @@ namespace slimed
 namespace
 {
 /// Threads per block. 128 suits a kernel with this register pressure: the
-/// patch body holds a dozen or so 3-vectors plus a 14x3 control net in
+/// patch body holds a dozen or so 3-vectors plus an 18x3 control net in
 /// registers and local memory, so a larger block trades occupancy for spills.
+/// A face with several extraordinary corners adds a child net and three child
+/// force buffers of the same size, about 3.5 kB of local memory per thread on
+/// top; whether a fluid mesh wants 64 here is a measurement not yet made.
 constexpr int kBlockSize = 128;
 
 constexpr int grid_for(int n) { return (n + kBlockSize - 1) / kBlockSize; }
@@ -176,6 +179,8 @@ struct CudaForceBackend::Impl
     DeviceBuffer<int> vertexSlots;
     DeviceBuffer<int> vertexCornerOffsets;
     DeviceBuffer<int> vertexCorners;
+    DeviceBuffer<DeviceMultiPatchEntry> multiEntries;
+    DeviceBuffer<double> multiProlongations;
 
     DeviceBuffer<double> regularRows;
     DeviceBuffer<double> gaussCoeff;
@@ -232,6 +237,9 @@ struct CudaForceBackend::Impl
         a.vertexCorners = vertexCorners.data();
         a.nFaces = layout.nFaces();
         a.nVertices = layout.nVertices();
+        a.multiEntries = multiEntries.count() > 0 ? multiEntries.data() : nullptr;
+        a.multiProlongations = multiProlongations.count() > 0 ? multiProlongations.data() : nullptr;
+        a.nMultiEntries = static_cast<int>(multiEntries.count());
 
         a.regularRows = regularRows.data();
         a.gaussCoeff = gaussCoeff.data();
@@ -313,6 +321,13 @@ void CudaForceBackend::upload_topology(const DeviceMeshLayout &layout, const Pat
     impl.vertexSlots.upload(layout.vertexSlots(), nSlots);
     impl.vertexCornerOffsets.upload(layout.vertexCornerOffsets(), nVertices + 1);
     impl.vertexCorners.upload(layout.vertexCorners(), nFaces * 3);
+    // The prolongation table for faces with several extraordinary corners.
+    // Part of the topology: a flip that creates a new valence triple grows
+    // it, and the same version bump that rebuilds the layout re-uploads it.
+    // Empty on a mesh with no such faces, and never indexed then.
+    impl.multiEntries.upload(layout.multiEntries(),
+                             static_cast<std::size_t>(layout.nMultiEntries()));
+    impl.multiProlongations.upload(layout.multiProlongations(), layout.multiProlongationCount());
 
     const std::size_t nSamples = static_cast<std::size_t>(rows.nSamples());
     impl.regularRows.upload(rows.regular(), nSamples * slimed::kShapeRows * 12);
@@ -429,6 +444,10 @@ void CudaForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
     args.gamaShape = param.gamaShape;
     args.gamaArea = param.gamaArea;
     args.usingRpi = param.usingRpi;
+    // Fluid mode: the edge tether replaces the reference-length term and is
+    // evaluated on the host over the edge table once this returns
+    // (Mesh::energy_force_fluid_terms()); the stage writes zeros instead.
+    args.regularizationEnabled = !param.edgeSpringEnabled;
 
     patch_force_kernel<<<grid_for(args.nFaces), kBlockSize>>>(args);
     check_launch("patch_force_kernel");
@@ -503,7 +522,8 @@ std::size_t CudaForceBackend::device_memory_bytes() const
     return i.descriptors.bytes() + i.oneRingIndices.bytes() + i.faceValence.bytes() +
            i.faceSpontCurvature.bytes() + i.faceIsGhost.bytes() + i.faceIsBoundary.bytes() +
            i.faceCorners.bytes() + i.vertexSlotOffsets.bytes() + i.vertexSlots.bytes() +
-           i.vertexCornerOffsets.bytes() + i.vertexCorners.bytes() + i.regularRows.bytes() +
+           i.vertexCornerOffsets.bytes() + i.vertexCorners.bytes() + i.multiEntries.bytes() +
+           i.multiProlongations.bytes() + i.regularRows.bytes() +
            i.gaussCoeff.bytes() + i.irregularRows.bytes() + i.irregularOffsets.bytes() +
            i.coords.bytes() + i.coordsRef.bytes() + i.faceArea.bytes() + i.faceVolume.bytes() +
            i.faceEBend.bytes() + i.faceMeanCurv.bytes() + i.faceNormal.bytes() +

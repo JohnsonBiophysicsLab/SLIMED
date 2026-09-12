@@ -52,7 +52,9 @@ public:
     /// Name and compute capability of the device in use, for the startup log.
     std::string device_description() const;
 
-    /// Upload the parts that do not change: topology and shape-function rows.
+    /// Upload the parts that do not change between flips: topology, the
+    /// prolongation table for faces with several extraordinary corners, and
+    /// the shape-function rows.
     void upload_topology(const DeviceMeshLayout &layout, const PatchRowsFlat &rows);
 
     /**

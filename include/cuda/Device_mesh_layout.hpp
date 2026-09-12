@@ -17,9 +17,12 @@
  *
  * Two lifetimes are kept apart:
  *
- *   - Topology (build()). One-ring lists, patch widths, row-block offsets and
- *     the gather maps. Fixed for as long as the mesh connectivity is, so it is
- *     uploaded once and never touched again.
+ *   - Topology (build()). One-ring lists, patch widths, row-block offsets,
+ *     the prolongation table for faces with several extraordinary corners,
+ *     and the gather maps. Fixed for as long as the mesh connectivity is, so
+ *     it is uploaded once per connectivity. An edge flip changes the
+ *     connectivity without changing any count; Mesh::topologyVersion is what
+ *     tells Mesh::ensure_device_layout() to build this again.
  *   - Coordinates. The only thing a line-search trial changes, and the only
  *     thing that has to be refreshed per force evaluation.
  */
@@ -27,6 +30,10 @@
 
 #include <cstddef>
 #include <vector>
+
+// GSL-free, so this header stays as portable as it was; it supplies
+// kMultiPatchChildren.
+#include "energy_force/Patch_kernel.hpp"
 
 class Face;
 class Mesh;
@@ -47,25 +54,62 @@ enum class DevicePatchKind : int
     /// A valence+6 point one-ring, tiled by regular children at increasing
     /// depth and evaluated once per child.
     Irregular = 2,
+    /// More than one extraordinary corner: an N0 + N1 + N2 - 6 point one-ring,
+    /// evaluated as the four children of one Loop subdivision of its own
+    /// control net, each child a Regular or Irregular patch in its own right.
+    /// Every edge flip produces two of these; a fluid mesh is mostly them.
+    Multi = 3,
 };
 
 /**
  * @brief One face's entry in the flattened mesh.
  *
- * Sixteen bytes, trivially copyable, and laid out so a thread reads its whole
+ * Twenty bytes, trivially copyable, and laid out so a thread reads its whole
  * descriptor in one go.
  */
 struct FacePatchDescriptor
 {
     DevicePatchKind kind = DevicePatchKind::None;
-    /// Control points in this face's one-ring: 12, or valence + 6.
+    /// Control points in this face's one-ring: 12, valence + 6, or
+    /// N0 + N1 + N2 - 6 for a Multi face.
     int nControlPoints = 0;
     /// Where this face's one-ring indices start in oneRingIndices(), and
     /// equally where its force slots start in a per-slot scratch buffer.
     int oneRingOffset = 0;
     /// Number of shape-function blocks to integrate: 1 for a regular face,
-    /// depth_for(valence) * kRegularChildrenPerStep for an irregular one.
+    /// depth_for(valence) * kRegularChildrenPerStep for an irregular one,
+    /// kMultiPatchChildren for a Multi face (each of which then integrates
+    /// its own blocks, counted in DeviceMultiPatchEntry).
     int nChildren = 0;
+    /// Index into multiEntries() for a Multi face; -1 otherwise. The same
+    /// number as Face::patchEntry, because the snapshot keeps the table's
+    /// order.
+    int multiEntry = -1;
+};
+
+/**
+ * @brief One valence triple's prolongations, as the device reads them.
+ *
+ * A flattened MultiPatchTable::Entry: the parent width and, per child, the
+ * valence the existing kernels evaluate it at, its own width, how many
+ * shape-function blocks that evaluation integrates, and where its
+ * (child width) x nControl prolongation matrix starts in multiProlongations().
+ * Child order is the table's: corner 0, corner 1, corner 2, centre.
+ */
+struct DeviceMultiPatchEntry
+{
+    /// K, the parent patch width. Equals the face's nControlPoints.
+    int nControl = 0;
+    /// 6 for a regular child, else the corner's valence.
+    int childValence[kMultiPatchChildren] = {0, 0, 0, 0};
+    /// 12, or valence + 6.
+    int childNControl[kMultiPatchChildren] = {0, 0, 0, 0};
+    /// Blocks the child integrates: 1 when regular, else
+    /// depth_for(valence) * kRegularChildrenPerStep -- exactly what a face of
+    /// that kind carries in FacePatchDescriptor::nChildren.
+    int childNChildren[kMultiPatchChildren] = {0, 0, 0, 0};
+    /// First double of the child's prolongation matrix in multiProlongations().
+    int childOffset[kMultiPatchChildren] = {0, 0, 0, 0};
 };
 
 /**
@@ -95,7 +139,9 @@ public:
      * Call again if the connectivity changes -- after a refinement, say.
      *
      * @throw std::invalid_argument if a face's one-ring is wider than
-     *        slimed::kMaxControlPoints, which no patch table can evaluate.
+     *        slimed::kMaxControlPoints, which no patch table can evaluate, or
+     *        if a face with several extraordinary corners does not resolve to
+     *        an entry of the mesh's MultiPatchTable that matches its width.
      */
     void build(const Mesh &mesh);
 
@@ -127,6 +173,34 @@ public:
     /// Whether a face is on the boundary, which excludes it from energy and
     /// force. See faceIsGhost().
     const unsigned char *faceIsBoundary() const { return faceIsBoundary_.data(); }
+
+    /**
+     * @name The prolongation table, for faces with several extraordinary corners
+     *
+     * A snapshot of the mesh's MultiPatchTable taken at build(), entry for
+     * entry, so FacePatchDescriptor::multiEntry and Face::patchEntry are the
+     * same number. A snapshot rather than a pointer into the mesh so that the
+     * layout is self-contained -- the device gets one copy of exactly what the
+     * descriptors index -- and because the table can grow during a rejected
+     * flip trial without the topology version moving; a face only ever
+     * indexes an entry it was given during a flip that did move it, so a
+     * rebuild keyed on the version sees every entry it needs. Both are empty
+     * on a mesh with no such faces, and the kernels never index them then.
+     * @{
+     */
+    const DeviceMultiPatchEntry *multiEntries() const
+    {
+        return multiEntries_.empty() ? nullptr : multiEntries_.data();
+    }
+    int nMultiEntries() const { return static_cast<int>(multiEntries_.size()); }
+    const double *multiProlongations() const
+    {
+        return multiProlongations_.empty() ? nullptr : multiProlongations_.data();
+    }
+    std::size_t multiProlongationCount() const { return multiProlongations_.size(); }
+    /// How many faces build() classified as Multi, for the startup diagnostic.
+    int nMultiFaces() const { return nMultiFaces_; }
+    /** @} */
     /// The three corner vertices per face, for the regularization term.
     const int *faceCorners() const { return faceCorners_.data(); }
 
@@ -164,6 +238,9 @@ private:
     std::vector<unsigned char> faceIsGhost_;
     std::vector<unsigned char> faceIsBoundary_;
     std::vector<int> faceCorners_;
+    int nMultiFaces_ = 0;
+    std::vector<DeviceMultiPatchEntry> multiEntries_;
+    std::vector<double> multiProlongations_;
     std::vector<int> vertexSlotOffsets_;
     std::vector<int> vertexSlots_;
     std::vector<int> vertexCornerOffsets_;
