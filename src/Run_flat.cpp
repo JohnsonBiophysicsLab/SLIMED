@@ -6,7 +6,8 @@ void run_flat(std::string param_filename)
     import_param_file(inputParam, param_filename + ".params");
     const bool restartRequested = !inputParam.restartInputFile.empty();
     Mesh mesh(inputParam);
-    mesh.setup_flat();
+    // The generated flat sheet, or the mesh files when the parameters name them.
+    setup_mesh_from_parameters(mesh);
 
     //testing
     /*
@@ -66,11 +67,21 @@ void run_flat(std::string param_filename)
         //}
     }
 
+    // Whatever the initialization above moved, the periodic images follow
+    // their sources. A no-op on a mesh without images.
+    mesh.sync_periodic_images();
+
     // Output the vertices and faces matrix
     if (!restartRequested)
     {
         mesh.write_faces_csv("face.csv");
         mesh.write_vertices_csv("vertex_begin.csv");
+        if (mesh.param.boundaryCondition == BoundaryType::Mixed)
+        {
+            // The mesh with its boundary types, in the form meshVerticesFile
+            // and meshFacesFile read back.
+            export_mesh_to_vertices_faces(mesh, "mesh_vertices.csv", "mesh_faces.csv");
+        }
     }
     
     // Initialize all value before minimum energy search 

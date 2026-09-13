@@ -434,11 +434,28 @@ $$
 
 ## Boundary Conditions
 
-Three types of boundary conditions are provided currently in both models. Note that "ghost vertices" are defined as points on the boundary of the triangular mesh that only serve to provide reference when calculating limit surface on the boundary, as calculating position of a point on the limit surface require the coordinates of 12 neighboring vertices (if regular). However, the "ghost vertices" themselves do not correspond to real points on the surface.
+Three global boundary modes are provided in both models, selected with `boundaryType`. Note that "ghost vertices" are defined as points on the boundary of the triangular mesh that only serve to provide reference when calculating limit surface on the boundary, as calculating position of a point on the limit surface require the coordinates of 12 neighboring vertices (if regular). However, the "ghost vertices" themselves do not correspond to real points on the surface.
 
 - Fixed: 2 rings of ghost vertices are fixed in space
 - Periodic: 3 rings of ghost vertices that mimics the movement of the vertices on the opposite side of the membrane.
 - Free: 2 rings of ghost vertices are generated after movement by forming parallelogram extend from the real points on the control mesh
+
+These three decide the boundary from the position of each vertex in the generated grid, so they describe a rectangular sheet with the same boundary on every side. A fourth mode makes the boundary condition a property of each vertex instead:
+
+- Mixed (`boundaryType = Mixed`): every vertex is `free`, `fixed`, or a `periodic` image of another vertex that follows it at a fixed offset and folds its force onto it. This is what a sheet periodic along `x` and clamped along `y`, or a tube periodic along its axis and open at a neck, needs, and it is the mode under which a mesh can be loaded from files.
+
+For the generated flat sheet under `Mixed`, `boundaryTypeX` and `boundaryTypeY` (each `Periodic`, `Free` or `Fixed`) set the boundary of each axis and `fixedBoundaryRings` how many rings a fixed side clamps. To load a custom mesh instead, set `meshVerticesFile` (one `x, y, z[, type[, mirror]]` per line) and `meshFacesFile` (one `v0, v1, v2[, copy]` per line); every `Mixed` run writes its own mesh in that format, and `data/example/mixed_sheet_vertices.csv` / `mixed_sheet_faces.csv` are an example. The dynamics needs `surfaceSolver = iterative` under `Mixed`. The format, the semantics and the limits are in [docs/mixed_boundary_conditions.md](docs/mixed_boundary_conditions.md).
+
+```text
+boundaryType = Mixed
+boundaryTypeX = Periodic
+boundaryTypeY = Fixed
+fixedBoundaryRings = 1
+surfaceSolver = iterative
+# or, instead of the generated sheet:
+# meshVerticesFile = data/example/mixed_sheet_vertices.csv
+# meshFacesFile = data/example/mixed_sheet_faces.csv
+```
 
 
 ## For Developers

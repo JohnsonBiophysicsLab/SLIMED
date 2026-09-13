@@ -78,6 +78,11 @@ struct ForceKernelArgs
     /// table after this pipeline; the regularization stage then writes zeros
     /// so that the gather stays valid and nothing stale reaches the mesh.
     bool regularizationEnabled = true;
+    /// Leave ghost faces out of the regularization. True under
+    /// BoundaryType::Mixed, where a ghost face is a periodic copy of a
+    /// physical face that is charged elsewhere; the global modes keep their
+    /// ghost faces in the term, as the CPU loop always has.
+    bool regularizationSkipsGhostFaces = false;
 
     // --- output ------------------------------------------------------------
     double *faceArea = nullptr;      ///< nFaces

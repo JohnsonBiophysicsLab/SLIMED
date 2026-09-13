@@ -13,6 +13,44 @@ Mesh(srcParam)
 void DynamicMesh::setup_flat() {
     // Call the superclass's setup_flat()
     Mesh::setup_flat();
+    finish_dynamic_setup();
+}
+
+void DynamicMesh::setup_from_vertices_faces(const std::vector<std::vector<double>> &verticesData,
+                                            const std::vector<std::vector<int>> &facesData)
+{
+    Mesh::setup_from_vertices_faces(verticesData, facesData);
+    finish_dynamic_setup();
+}
+
+void DynamicMesh::setup_from_vertices_faces(const std::vector<std::vector<double>> &verticesData,
+                                            const std::vector<std::vector<int>> &facesData,
+                                            const std::vector<VertexType> &vertexTypes,
+                                            const std::vector<int> &mirrorVertices,
+                                            const std::vector<char> &faceIsCopy)
+{
+    Mesh::setup_from_vertices_faces(verticesData, facesData, vertexTypes, mirrorVertices,
+                                    faceIsCopy);
+    finish_dynamic_setup();
+}
+
+void DynamicMesh::finish_dynamic_setup()
+{
+    // The per-vertex boundary is only expressed in the iterative solver: an
+    // image is an affine function of its source there, substituted row by
+    // row, and the force map is the transpose of the same map. The dense
+    // path builds M as a plain matrix product with a row per vertex, which
+    // cannot say that an image is not a coordinate; it would give the images
+    // rows of their own and then need them overwritten -- the approximation
+    // the global Periodic mode lives with and this mode exists to remove.
+    if (param.boundaryCondition == BoundaryType::Mixed && param.surfaceSolver != "iterative")
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::finish_dynamic_setup] boundaryType = Mixed needs surfaceSolver = "
+            "iterative. The dense conversion gives every vertex a row of its own and cannot "
+            "express a periodic image as its source plus an offset. See "
+            "docs/mixed_boundary_conditions.md.");
+    }
 
     // The dense path stores M^-1, computed once. An edge flip changes four
     // rows of M, and there is no way to update a stored inverse for that short
@@ -252,6 +290,27 @@ void DynamicMesh::report_edge_flip_feasibility()
 void DynamicMesh::mark_slaved_periodic_vertices()
 {
     isSlavedPeriodic.assign(vertices.size(), 0);
+
+    // Per-vertex boundary: the slaved set is the images, which the mesh has
+    // already resolved and frozen. Read it off the vertices rather than the
+    // grid, which an imported mesh does not have.
+    if (param.boundaryCondition == BoundaryType::Mixed)
+    {
+        for (int v : periodicImageVertices)
+        {
+            isSlavedPeriodic[v] = 1;
+        }
+        std::cout << "[DynamicMesh::mark_slaved_periodic_vertices] "
+                  << periodicImageVertices.size() << " of " << vertices.size()
+                  << " vertices are periodic images; they follow their sources." << std::endl;
+        flipFrozenVertex = isSlavedPeriodic;
+        for (int iEdge = 0; iEdge < static_cast<int>(edges.size()); iEdge++)
+        {
+            refresh_edge_flippability(iEdge);
+        }
+        return;
+    }
+
     if (param.boundaryCondition != BoundaryType::Periodic)
     {
         return;

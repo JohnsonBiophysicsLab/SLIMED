@@ -10,9 +10,15 @@ void run_dynamics_flat(std::string param_filename) {
     Param inputParam;
     import_param_file(inputParam, param_filename + ".params");
     DynamicMesh mesh(inputParam);
-    mesh.setup_flat();
-    for (Vertex& vertex: mesh.vertices){
-        vertex.coord.set(2, 0, 10.0);
+    // The generated flat sheet, or the mesh files when the parameters name them.
+    setup_mesh_from_parameters(mesh);
+    if (!mesh_comes_from_files(mesh.param))
+    {
+        // The generated sheet is lifted off z = 0. An imported mesh keeps the
+        // geometry its file gave it.
+        for (Vertex& vertex: mesh.vertices){
+            vertex.coord.set(2, 0, 10.0);
+        }
     }
 
     //
@@ -66,10 +72,21 @@ void run_dynamics_flat(std::string param_filename) {
         mesh.set_scaffolding_vertices_correspondence();
     }
 
+    // Whatever the initialization above moved, the periodic images follow
+    // their sources. A no-op on a mesh without images.
+    mesh.sync_periodic_images();
+
     // Output the vertices and faces matrix
     mesh.write_faces_csv(param_filename + "face.csv");
     mesh.write_vertices_csv(param_filename + "vertex_begin.csv");
     mesh.write_vertices_csv_with_type(param_filename + "vertex_type_begin.csv");
+    if (mesh.param.boundaryCondition == BoundaryType::Mixed)
+    {
+        // The mesh with its boundary types, in the form meshVerticesFile and
+        // meshFacesFile read back.
+        export_mesh_to_vertices_faces(mesh, param_filename + "mesh_vertices.csv",
+                                      param_filename + "mesh_faces.csv");
+    }
     
     // Initialize all value before minimum energy search 
     mesh.calculate_element_area_volume(); // Calculate the elemental area and volume per triangles (faces)
@@ -129,15 +146,8 @@ void run_dynamics_flat(std::string param_filename) {
         mesh.apply_surface_to_mesh();
 
         //4. postprocessing based on boundary condition
-        switch (mesh.param.boundaryCondition) {
-            case BoundaryType::Periodic:
-                mesh.postprocess_ghost_periodic();
-                break;
-            default:
-                // Handle default boundary condition type.
-                break;
-        }
-        
+        mesh.postprocess_boundary();
+
         mesh.update_vertices_vector_with_mat();
         //@todo move this to io.hpp
         //4.update values of vertex (vector of double) with verticesOnMesh (gsl matrix)

@@ -19,7 +19,18 @@ deltaForceScaleConverge = 1e-4  # converging criteria for max force scale
 ## Boundary Conditions
 ############################################
 
-boundaryType = Periodic          # boundary condition type : Fixed, Free or Periodic
+boundaryType = Periodic          # boundary condition type : Fixed, Free, Periodic or Mixed
+
+# Mixed: the boundary condition is a property of each vertex (free, fixed, or
+# a periodic image of another vertex), so the two axes of the generated sheet
+# can differ and a mesh can be loaded from files. See
+# docs/mixed_boundary_conditions.md. The dynamics then needs
+# surfaceSolver = iterative.
+# boundaryTypeX = Periodic       # Periodic, Free or Fixed: the x boundary of the generated sheet
+# boundaryTypeY = Fixed          # Periodic, Free or Fixed: the y boundary of the generated sheet
+# fixedBoundaryRings = 1         # rings of vertices a Fixed side clamps
+# meshVerticesFile = data/example/mixed_sheet_vertices.csv   # load the mesh from files instead of
+# meshFacesFile = data/example/mixed_sheet_faces.csv         # generating the sheet (set both)
 
 ############################################
 ## Geometric Parameters

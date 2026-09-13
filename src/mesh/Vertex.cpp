@@ -1,4 +1,5 @@
 #include "mesh/Vertex.hpp"
+#include <cctype>
 
 /****************************************************************/
 /**************************Constructors**************************/
@@ -78,4 +79,65 @@ std::ostream &operator<<(std::ostream &stream, const Vertex& vertex)
 {
     stream << vertex.coord << std::endl;
     return stream;
+}
+/****************************************************************/
+/*********************Boundary type spelling*********************/
+/****************************************************************/
+
+const char *vertex_type_name(VertexType type)
+{
+    switch (type)
+    {
+    case VertexType::Free:
+        return "free";
+    case VertexType::Fixed:
+        return "fixed";
+    case VertexType::Periodic:
+        return "periodic";
+    case VertexType::Ghost:
+        return "ghost";
+    case VertexType::PeriodicBoundary:
+        return "periodic_boundary";
+    }
+    return "unknown";
+}
+
+bool parse_vertex_type(const std::string &text, VertexType &type)
+{
+    std::string lowered;
+    lowered.reserve(text.size());
+    for (char c : text)
+    {
+        if (c == ' ' || c == '\t' || c == '\r')
+        {
+            continue;
+        }
+        lowered.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+    }
+    if (lowered == "free" || lowered == "real" || lowered == "0")
+    {
+        type = VertexType::Free;
+        return true;
+    }
+    if (lowered == "fixed" || lowered == "1")
+    {
+        type = VertexType::Fixed;
+        return true;
+    }
+    if (lowered == "periodic" || lowered == "image" || lowered == "3")
+    {
+        type = VertexType::Periodic;
+        return true;
+    }
+    if (lowered == "ghost" || lowered == "4")
+    {
+        type = VertexType::Ghost;
+        return true;
+    }
+    if (lowered == "2")
+    {
+        type = VertexType::PeriodicBoundary;
+        return true;
+    }
+    return false;
 }

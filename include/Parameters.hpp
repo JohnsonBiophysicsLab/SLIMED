@@ -32,6 +32,13 @@
 
 /**
  * @brief The type of boundary condition for the simulation.
+ *
+ * The first three are the global modes: the flat-sheet generator lays out
+ * ghost rings by grid position and every boundary rule in the code indexes
+ * the grid directly. Mixed is the per-vertex mode, where the rule is carried
+ * by each vertex (VertexType) and the grid is never consulted -- which is what
+ * a mesh with different boundaries on different sides, or an imported mesh
+ * with no grid at all, needs. See docs/mixed_boundary_conditions.md.
  */
 enum class BoundaryType
 {
@@ -42,8 +49,30 @@ enum class BoundaryType
     Periodic,
 
     /** Free boundary condition. */
-    Free
+    Free,
+
+    /**
+     * @brief The boundary condition is a property of each vertex.
+     *
+     * Every vertex is Free, Fixed or a Periodic image of another vertex
+     * (VertexType). A periodic image is not a coordinate: it follows its
+     * source at a fixed offset and the force it accumulates is folded onto the
+     * source, so the periodic energy's gradient is exact at the seam. Faces
+     * that duplicate a physical face carry no energy. The generated flat sheet
+     * takes its types from boundaryConditionX and boundaryConditionY; an
+     * imported mesh takes them from its vertex file.
+     */
+    Mixed
 };
+
+/// "Fixed", "Periodic", "Free" or "Mixed", as the parameter file spells them.
+const char *boundary_type_name(BoundaryType type);
+
+/**
+ * @brief Parse a boundary type as the parameter file spells it, in any letter case.
+ * @return false if the text names no type; @p type is then left untouched.
+ */
+bool parse_boundary_type(const std::string &text, BoundaryType &type);
 
 /**
  * @brief Bookkeeps the shape and area deformation count of Mesh.
@@ -163,7 +192,45 @@ struct Param
     std::vector<Matrix> shapeFunctions; ///< List of shape functions for each triangle
 
     // boundary conditions
-    BoundaryType boundaryCondition = BoundaryType::Periodic; ///< Type of boundary condition ("Fixed", "Periodic", "Free")
+    BoundaryType boundaryCondition = BoundaryType::Periodic; ///< Type of boundary condition ("Fixed", "Periodic", "Free", "Mixed")
+
+    /**
+     * @brief The boundary of each axis of the generated flat sheet under
+     * BoundaryType::Mixed: Periodic, Free or Fixed.
+     *
+     * Periodic lays out the same band the global Periodic mode does -- three
+     * rings of images and one ring of duplicates on each side, so every real
+     * face has a complete one-ring -- but as per-vertex images whose forces
+     * fold onto their sources. Fixed clamps the outermost fixedBoundaryRings
+     * rings of vertices. Free leaves the edge open: the outermost ring of
+     * faces has no complete one-ring and so no limit surface, and the edge
+     * vertices move under the forces of the faces one ring in. Ignored by the
+     * global modes and by an imported mesh, whose types come from its file.
+     */
+    BoundaryType boundaryConditionX = BoundaryType::Periodic;
+    BoundaryType boundaryConditionY = BoundaryType::Periodic;
+
+    /**
+     * @brief How many rings of vertices a Fixed side of the generated sheet
+     * clamps.
+     *
+     * One ring pins the control points on the edge and leaves the slope free
+     * (a simply supported edge); two rings pin the tangent as well (a clamped
+     * edge). The outermost ring of faces carries no energy either way,
+     * because its one-ring is incomplete.
+     */
+    int fixedBoundaryRings = 1;
+
+    /**
+     * @brief Load the mesh from files instead of generating the flat sheet.
+     *
+     * Both must be set together. The vertex file is "x, y, z" per line with
+     * an optional type and mirror column, the faces file "v0, v1, v2" with an
+     * optional copy flag; see io.hpp for the format and
+     * export_mesh_to_vertices_faces() for the writer.
+     */
+    std::string meshVerticesFile = "";
+    std::string meshFacesFile = "";
 
     // optimization methods
     bool usingNCG = true;      ///< Whether to use nonlinear conjugate gradient method

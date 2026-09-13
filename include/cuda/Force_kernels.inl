@@ -242,7 +242,8 @@ SLIMED_HD inline void patch_force_for_face(const ForceKernelArgs &args, int face
 
 SLIMED_HD inline void regularization_for_face(const ForceKernelArgs &args, int face)
 {
-    if (!args.regularizationEnabled)
+    if (!args.regularizationEnabled ||
+        (args.regularizationSkipsGhostFaces && args.faceIsGhost[face]))
     {
         // Fluid mode: the edge tether replaces this term and is evaluated on
         // the host after the pipeline. Zeros rather than nothing, because the

@@ -135,6 +135,9 @@ void HostForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
     // runs on the host afterwards (Mesh::energy_force_fluid_terms()); the
     // regularization stage then writes zeros. Same choice the CPU loop makes.
     args.regularizationEnabled = !param.edgeSpringEnabled;
+    // Under the per-vertex boundary a ghost face is a periodic copy that the
+    // CPU loop leaves out of this term; see energy_force_regularization().
+    args.regularizationSkipsGhostFaces = (param.boundaryCondition == BoundaryType::Mixed);
 
 #pragma omp parallel for
     for (int face = 0; face < args.nFaces; face++)

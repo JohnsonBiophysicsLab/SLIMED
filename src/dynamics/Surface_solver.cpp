@@ -10,13 +10,25 @@
 #include "dynamics/Surface_solver.hpp"
 
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 #include "mesh/Mesh.hpp"
 
 namespace slimed
 {
+
+namespace
+{
+/// Pack an ordered pair of compact indices into one key.
+inline std::uint64_t ordered_pair_key(int from, int to)
+{
+    return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(from)) << 32) |
+           static_cast<std::uint32_t>(to);
+}
+} // namespace
 
 void SurfaceSolver::build(const Mesh &mesh)
 {
@@ -29,32 +41,80 @@ void SurfaceSolver::build(const Mesh &mesh)
     column_.clear();
     pinnedRowStart_.clear();
     pinnedColumn_.clear();
+    imageRoot_.assign(nVertices_, -1);
+    imageOffset_.assign(static_cast<std::size_t>(nVertices_) * 3, 0.0);
+    imageVertices_.clear();
+    neighbourOffsetSum_.clear();
     topologyVersion = mesh.topologyVersion;
 
-    // A vertex with no adjacent face that contributes to the physical surface
-    // has no limit point of its own, and the mask gives it the identity. That
-    // is the same test the dense path applies, kept identical so the two agree
-    // about which vertices are degrees of freedom.
-    for (int v = 0; v < nVertices_; v++)
+    perVertexBoundary_ = (mesh.param.boundaryCondition == BoundaryType::Mixed);
+
+    // Under the per-vertex boundary an image is an affine function of its
+    // source and gets no row: it is written from the source after every
+    // solve, and wherever a free row reaches it the source is substituted.
+    // The mesh has already flattened every mirror chain, so a root is never
+    // itself an image.
+    if (perVertexBoundary_)
     {
-        bool hasRealFace = false;
-        for (int iFace : mesh.vertices[v].adjacentFaces)
+        for (int v : mesh.periodicImageVertices)
         {
-            const Face &face = mesh.faces[iFace];
-            if (!face.isGhost && !face.isBoundary)
+            const Vertex &image = mesh.vertices[v];
+            imageRoot_[v] = image.reflectiveVertexIndex;
+            for (int axis = 0; axis < 3; axis++)
             {
-                hasRealFace = true;
-                break;
+                imageOffset_[static_cast<std::size_t>(v) * 3 + axis] = image.mirrorOffset[axis];
             }
+            imageVertices_.push_back(v);
         }
-        const int valence = static_cast<int>(mesh.vertices[v].adjacentVertices.size());
-        pinned_[v] = (!hasRealFace || valence == 0) ? 1 : 0;
-        valence_[v] = pinned_[v] ? 0 : valence;
     }
 
     for (int v = 0; v < nVertices_; v++)
     {
-        if (!pinned_[v])
+        if (imageRoot_[v] >= 0)
+        {
+            // Neither pinned nor free: written from its source.
+            valence_[v] = 0;
+            continue;
+        }
+
+        const Vertex &vertex = mesh.vertices[v];
+        const int valence = static_cast<int>(vertex.adjacentVertices.size());
+        bool pinned = false;
+        if (perVertexBoundary_)
+        {
+            // A clamped or ghost vertex is known before anything is solved.
+            // Everything else with a fan is a degree of freedom -- whether or
+            // not the faces around it in this copy of the sheet carry energy,
+            // because its physical fan is complete somewhere among its images.
+            pinned = vertex.is_fixed() || vertex.type == VertexType::Ghost || vertex.isGhost ||
+                     valence == 0;
+        }
+        else
+        {
+            // A vertex with no adjacent face that contributes to the physical
+            // surface has no limit point of its own, and the mask gives it the
+            // identity. That is the same test the dense path applies, kept
+            // identical so the two agree about which vertices are degrees of
+            // freedom.
+            bool hasRealFace = false;
+            for (int iFace : vertex.adjacentFaces)
+            {
+                const Face &face = mesh.faces[iFace];
+                if (!face.isGhost && !face.isBoundary)
+                {
+                    hasRealFace = true;
+                    break;
+                }
+            }
+            pinned = (!hasRealFace || valence == 0);
+        }
+        pinned_[v] = pinned ? 1 : 0;
+        valence_[v] = pinned ? 0 : valence;
+    }
+
+    for (int v = 0; v < nVertices_; v++)
+    {
+        if (!pinned_[v] && imageRoot_[v] < 0)
         {
             compactOfVertex_[v] = static_cast<int>(freeOfCompact_.size());
             freeOfCompact_.push_back(v);
@@ -66,22 +126,72 @@ void SurfaceSolver::build(const Mesh &mesh)
     pinnedRowStart_.reserve(nFreeVertices + 1);
     rowStart_.push_back(0);
     pinnedRowStart_.push_back(0);
+    neighbourOffsetSum_.assign(static_cast<std::size_t>(nFreeVertices) * 3, 0.0);
     for (int compact = 0; compact < nFreeVertices; compact++)
     {
         const int v = freeOfCompact_[compact];
         for (int neighbour : mesh.vertices[v].adjacentVertices)
         {
-            if (pinned_[neighbour])
+            // An image neighbour stands for its source, and carries its offset
+            // into the constant of this row.
+            const int root = (imageRoot_[neighbour] >= 0) ? imageRoot_[neighbour] : neighbour;
+            if (imageRoot_[neighbour] >= 0)
             {
-                pinnedColumn_.push_back(neighbour);
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    neighbourOffsetSum_[static_cast<std::size_t>(compact) * 3 + axis] +=
+                        imageOffset_[static_cast<std::size_t>(neighbour) * 3 + axis];
+                }
+            }
+            if (pinned_[root])
+            {
+                pinnedColumn_.push_back(root);
             }
             else
             {
-                column_.push_back(compactOfVertex_[neighbour]);
+                column_.push_back(compactOfVertex_[root]);
             }
         }
         rowStart_.push_back(static_cast<int>(column_.size()));
         pinnedRowStart_.push_back(static_cast<int>(pinnedColumn_.size()));
+    }
+
+    // The conjugate gradient below assumes K symmetric, which on the wrapped
+    // adjacency holds exactly when the image structure is consistent: if an
+    // image of w is adjacent to v, then an image of v is adjacent to w. A
+    // mesh whose images say otherwise would be solved silently wrong, so it
+    // is refused here, naming the pair.
+    if (perVertexBoundary_)
+    {
+        std::unordered_map<std::uint64_t, int> count;
+        count.reserve(column_.size());
+        for (int i = 0; i < nFreeVertices; i++)
+        {
+            for (int k = rowStart_[i]; k < rowStart_[i + 1]; k++)
+            {
+                count[ordered_pair_key(i, column_[k])]++;
+            }
+        }
+        for (const auto &entry : count)
+        {
+            const int i = static_cast<int>(entry.first >> 32);
+            const int j = static_cast<int>(entry.first & 0xFFFFFFFFu);
+            const auto back = count.find(ordered_pair_key(j, i));
+            const int reverse = (back == count.end()) ? 0 : back->second;
+            if (reverse != entry.second)
+            {
+                throw std::runtime_error(
+                    "[SurfaceSolver] the periodic image structure is not consistent: vertex " +
+                    std::to_string(freeOfCompact_[i]) + " is adjacent to vertex " +
+                    std::to_string(freeOfCompact_[j]) + " or its images " +
+                    std::to_string(entry.second) + " time(s), but vertex " +
+                    std::to_string(freeOfCompact_[j]) + " is adjacent to vertex " +
+                    std::to_string(freeOfCompact_[i]) + " or its images " +
+                    std::to_string(reverse) +
+                    " time(s). Every image relation must be mirrored: if an image of one "
+                    "vertex neighbours another, an image of the other must neighbour the one.");
+            }
+        }
     }
 }
 
@@ -89,6 +199,10 @@ void SurfaceSolver::mesh_to_surface(const Matrix &control, Matrix &surface) cons
 {
     for (int v = 0; v < nVertices_; v++)
     {
+        if (imageRoot_[v] >= 0)
+        {
+            continue; // written from its source below
+        }
         if (pinned_[v])
         {
             for (int axis = 0; axis < 3; axis++)
@@ -110,7 +224,21 @@ void SurfaceSolver::mesh_to_surface(const Matrix &control, Matrix &surface) cons
             {
                 sum += neighbourWeight * control(pinnedColumn_[k], axis);
             }
+            if (perVertexBoundary_)
+            {
+                sum += neighbourWeight *
+                       neighbourOffsetSum_[static_cast<std::size_t>(compact) * 3 + axis];
+            }
             surface.set(v, axis, sum);
+        }
+    }
+    for (int v : imageVertices_)
+    {
+        const int root = imageRoot_[v];
+        for (int axis = 0; axis < 3; axis++)
+        {
+            surface.set(v, axis,
+                        surface(root, axis) + imageOffset_[static_cast<std::size_t>(v) * 3 + axis]);
         }
     }
 }
@@ -249,7 +377,8 @@ int SurfaceSolver::surface_to_mesh(const Matrix &surface, Matrix &control,
         // becomes
         //     N_v C_v + sum over neighbours of C_u = 2 N_v S_v,
         // which is 2 K C = 2 D S with K symmetric. The known pinned
-        // neighbours move across to the right.
+        // neighbours move across to the right, and so does the offset an
+        // image neighbour carries.
         for (int i = 0; i < n; i++)
         {
             const int v = freeOfCompact_[i];
@@ -257,6 +386,10 @@ int SurfaceSolver::surface_to_mesh(const Matrix &surface, Matrix &control,
             for (int k = pinnedRowStart_[i]; k < pinnedRowStart_[i + 1]; k++)
             {
                 value -= 0.5 * control(pinnedColumn_[k], axis);
+            }
+            if (perVertexBoundary_)
+            {
+                value -= 0.5 * neighbourOffsetSum_[static_cast<std::size_t>(i) * 3 + axis];
             }
             rhs[i] = value;
         }
@@ -277,10 +410,21 @@ int SurfaceSolver::surface_to_mesh(const Matrix &surface, Matrix &control,
         }
     }
 
+    // An image is its source plus its offset, exactly.
+    for (int v : imageVertices_)
+    {
+        const int root = imageRoot_[v];
+        for (int axis = 0; axis < 3; axis++)
+        {
+            control.set(v, axis,
+                        control(root, axis) + imageOffset_[static_cast<std::size_t>(v) * 3 + axis]);
+        }
+    }
+
     // What the caller actually cares about: how well M C reproduces S.
     for (int v = 0; v < nVertices_; v++)
     {
-        if (pinned_[v])
+        if (pinned_[v] || imageRoot_[v] >= 0)
         {
             continue;
         }
@@ -297,6 +441,11 @@ int SurfaceSolver::surface_to_mesh(const Matrix &surface, Matrix &control,
             {
                 sum += neighbourWeight * control(pinnedColumn_[k], axis);
             }
+            if (perVertexBoundary_)
+            {
+                sum += neighbourWeight *
+                       neighbourOffsetSum_[static_cast<std::size_t>(compact) * 3 + axis];
+            }
             lastResidual_ = std::max(lastResidual_, std::abs(sum - surface(v, axis)));
         }
     }
@@ -310,10 +459,12 @@ int SurfaceSolver::nodal_force_to_surface(const Matrix &nodalForce, Matrix &surf
     // Mᵀ = (D⁻¹ K)ᵀ = K D⁻¹ over the free vertices, so solving Mᵀ F_S = F_C
     // is solving K y = F_C and then scaling: F_S = D y.
     //
-    // Pinned vertices are left at zero. They are not integrated -- the
-    // Brownian step skips ghosts and the periodic post-process overwrites the
-    // duplicates -- so a force on them would be discarded anyway, and writing
-    // one would suggest otherwise.
+    // Pinned vertices and images are left at zero. They are not integrated --
+    // the Brownian step skips ghosts, clamped vertices and images, and the
+    // periodic post-process overwrites the duplicates -- so a force on them
+    // would be discarded anyway, and writing one would suggest otherwise. An
+    // image's force has already been folded onto its source by the time the
+    // nodal force reaches here.
     for (int v = 0; v < nVertices_; v++)
     {
         for (int axis = 0; axis < 3; axis++)

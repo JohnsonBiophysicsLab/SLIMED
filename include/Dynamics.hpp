@@ -74,6 +74,51 @@ public:
     void setup_flat();
 
     /**
+     * @brief The same for an imported mesh: Mesh::setup_from_vertices_faces()
+     * and then the dynamics' own setup.
+     *
+     * Both overloads hide Mesh's, so a DynamicMesh loaded through
+     * import_mesh_from_vertices_faces() is ready to step, exactly as one built
+     * by setup_flat() is.
+     */
+    void setup_from_vertices_faces(const std::vector<std::vector<double>> &verticesData,
+                                   const std::vector<std::vector<int>> &facesData);
+    void setup_from_vertices_faces(const std::vector<std::vector<double>> &verticesData,
+                                   const std::vector<std::vector<int>> &facesData,
+                                   const std::vector<VertexType> &vertexTypes,
+                                   const std::vector<int> &mirrorVertices,
+                                   const std::vector<char> &faceIsCopy);
+
+    /**
+     * @brief What the dynamics adds on top of Mesh's setup, whichever way the
+     * mesh was built.
+     *
+     * The configuration checks a fluid run needs, the dense conversion
+     * matrices (unless the iterative solver is in use), the coordinate
+     * matrices, and the slaved-vertex map. Called by every setup entry point
+     * above.
+     */
+    void finish_dynamic_setup();
+
+    /**
+     * @brief The per-step boundary post-processing for the run's boundary mode.
+     *
+     * Periodic: postprocess_ghost_periodic(). Mixed:
+     * postprocess_periodic_images(). Fixed and Free: nothing.
+     */
+    void postprocess_boundary();
+
+    /**
+     * @brief BoundaryType::Mixed: put every periodic image row of matMesh at
+     * its source's row plus its offset.
+     *
+     * The iterative solver already writes those rows this way, so on the
+     * path the driver takes this is a no-op that pins the invariant; it is
+     * what keeps a caller that fills matMesh some other way honest.
+     */
+    void postprocess_periodic_images();
+
+    /**
      * @brief Assign the mesh2surface member.
      *
      * Assign values to mesh2surface matrix that convertes mesh to surface point
