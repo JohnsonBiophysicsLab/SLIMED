@@ -1,4 +1,4 @@
-"""Height-fluctuation spectroscopy for a periodic flat SLIMED membrane.
+"""True FFT spectrum for a periodic flat SLIMED membrane.
 
 What this module is for
 -----------------------
@@ -22,7 +22,7 @@ a primer", and Brannigan/Brown-style spectral analyses of membrane simulations.
 
 Why the obvious implementation gets the wrong answer
 ----------------------------------------------------
-Four things about a SLIMED trajectory break a naive `np.fft.fft2` of the z
+4 things about SLIMED that break a naive `np.fft.fft2` of the z
 column, and each of them is corrected here.
 
 1. The vertices are not a Cartesian grid.  `Mesh::set_vertices_faces_flat()`
