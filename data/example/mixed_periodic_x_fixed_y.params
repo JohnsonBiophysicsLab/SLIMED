@@ -1,0 +1,93 @@
+# Example: a membrane strip, periodic along x and clamped along y.
+#
+# The case the three global boundary modes cannot express: the sheet wraps in
+# one direction and is held in the other. Under boundaryType = Mixed the
+# boundary is a property of each vertex, so the two axes are set separately.
+#
+#   x: Periodic -- three rings of images and one ring of duplicates on each
+#      side, each image following the vertex one period away and folding its
+#      force onto it.
+#   y: Fixed    -- the outermost fixedBoundaryRings rings of vertices are
+#      clamped. One ring pins the edge and leaves its slope free; two rings
+#      pin the tangent as well.
+#
+# Run it from the top of the source tree, which is where the programs look for
+# ./input.params:
+#
+#   mkdir -p ~/slimed_runs/strip && cp data/example/mixed_periodic_x_fixed_y.params \
+#       ~/slimed_runs/strip/input.params && cd ~/slimed_runs/strip
+#   ~/Workspace/SLIMED/build/bin/membrane_dynamics
+#
+# Besides the usual trajectory it writes inputmesh_vertices.csv and
+# inputmesh_faces.csv: this same membrane in the mesh-file format, which
+# meshVerticesFile / meshFacesFile read back.
+#
+# See docs/mixed_boundary_conditions.md.
+
+############################################
+## Boundary Conditions
+############################################
+
+boundaryType = Mixed             # per-vertex boundary: free, fixed or periodic image
+boundaryTypeX = Periodic         # the sheet wraps along x
+boundaryTypeY = Fixed            # and is clamped along y
+fixedBoundaryRings = 1           # 1 ring: the edge is pinned, its slope is free
+
+# Required by the dynamics under Mixed. The dense conversion gives every
+# vertex a row of its own and cannot express an image as its source plus an
+# offset; the iterative solver substitutes the source and wraps with it.
+surfaceSolver = iterative
+
+############################################
+## Geometric Parameters
+############################################
+
+lFace = 5.0                      # target edge length of the triangular mesh (nm)
+isFlat = true
+sideX = 120.0                    # x side (nm); a periodic axis needs at least 10 faces
+sideY = 120.0                    # y side (nm)
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4         # bending modulus (pN.nm)
+usMembraneStretching = 250.0     # stretching modulus (pN/nm)
+uvVolumeConstraint = 0.0         # a sheet with images encloses no volume; leave at 0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17                       # 1 kBT = 4.17 pN.nm
+
+############################################
+## Dynamics
+############################################
+
+maxIterations = 1000
+timeStep = 0.001                 # us
+diffConst = 1.0                  # nm^2/us
+meshpointOutput = true
+meshpointOutputInterval = 10     # a frame every 10 steps keeps the trajectory small
+xyzOutput = true
+fdtConsistentSurfaceUpdate = true
+
+# In-plane motion is off, as it is for every non-fluid run: the vertices move
+# along z only. Turning it on needs the edge tether and the other mesh-quality
+# terms -- see docs/edge_flip_plan.md.
+inPlaneDynamicsEnabled = false
+
+############################################
+## Off for this example
+############################################
+
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+edgeFlipEnabled = false
+
+############################################
+## Developer options
+############################################
+
+VERBOSE_MODE = false

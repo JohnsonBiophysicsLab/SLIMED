@@ -165,9 +165,20 @@ double force_magnitude(const Vertex &vertex)
     return std::sqrt(sum);
 }
 
-/// Whether an image sits exactly at its source plus its offset.
+/**
+ * @brief Whether every image still sits at its source plus its offset.
+ *
+ * To a tolerance, not bit for bit. On a mesh read from a file the offset is
+ * computed as `image - source`, and `(a - b) + b` is not required to return
+ * `a` in floating point -- the shipped neck mesh misses by one ulp at
+ * y = -56.29 nm. What this is guarding against is an image that stopped
+ * tracking its source, which is a crack in the seam and shows up in
+ * nanometres; 1e-9 nm is six orders below anything physical and still catches
+ * a single missed sync.
+ */
 ::testing::AssertionResult images_are_in_place(const Mesh &mesh)
 {
+    const double tolerance = 1e-9;
     for (int v : mesh.periodicImageVertices)
     {
         const Vertex &image = mesh.vertices[v];
@@ -175,7 +186,7 @@ double force_magnitude(const Vertex &vertex)
         for (int axis = 0; axis < 3; axis++)
         {
             const double expected = source.coord.get(axis, 0) + image.mirrorOffset[axis];
-            if (image.coord.get(axis, 0) != expected)
+            if (std::abs(image.coord.get(axis, 0) - expected) > tolerance)
             {
                 return ::testing::AssertionFailure()
                        << "image " << v << " axis " << axis << " is at "
@@ -892,6 +903,160 @@ TEST(MixedBoundaryTest, TheShippedExampleMeshLoads)
     mesh.param.vol0 = 0.0;
     mesh.Compute_Energy_And_Force();
     EXPECT_NEAR(bending_energy(mesh), 0.0, 1e-9);
+}
+
+/**
+ * @brief The shipped bottleneck mesh: periodic in both directions, open at a
+ * neck in the middle.
+ *
+ * The case no global mode can express, and the reason the per-vertex mode
+ * exists -- so the file that demonstrates it is worth pinning. It is built by
+ * data/example/make_mixed_mesh.py, which reproduces the C++ generator's
+ * lattice exactly and then carves the hole.
+ */
+TEST(MixedBoundaryTest, TheShippedNeckMeshHasAPeriodicBorderAndAFreeRim)
+{
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Mixed;
+    param.lFace = 5.0;
+    param.usingRpi = false;
+    param.isEnergyHarmonicBondIncluded = false;
+    Mesh mesh(param);
+    ASSERT_TRUE(import_mesh_from_vertices_faces(mesh, "./data/example/mixed_neck_vertices.csv",
+                                                "./data/example/mixed_neck_faces.csv"));
+    EXPECT_EQ(mesh.vertices.size(), 711u);
+    EXPECT_EQ(mesh.faces.size(), 1302u);
+
+    int nFree = 0;
+    int nImages = 0;
+    int nRim = 0;
+    for (const Vertex &vertex : mesh.vertices)
+    {
+        EXPECT_NE(vertex.type, VertexType::Fixed) << "vertex " << vertex.index;
+        if (vertex.is_periodic_image())
+        {
+            nImages++;
+            // A lattice period is an in-plane translation; a seam that also
+            // stepped in z would not be a periodic boundary at all.
+            EXPECT_EQ(vertex.mirrorOffset[2], 0.0) << "vertex " << vertex.index;
+            continue;
+        }
+        nFree++;
+        // The rim of the neck: free vertices whose fan does not close. They
+        // are degrees of freedom, unlike the images, and unlike a ghost band.
+        if (!mesh.is_interior_vertex(vertex.index))
+        {
+            nRim++;
+            EXPECT_TRUE(mesh.is_independent_vertex(vertex.index)) << "vertex " << vertex.index;
+            EXPECT_FALSE(vertex.isGhost) << "vertex " << vertex.index;
+        }
+    }
+    EXPECT_EQ(nFree, 382);
+    EXPECT_EQ(nImages, 329);
+    EXPECT_EQ(nRim, 16) << "the rim of the neck";
+    EXPECT_TRUE(images_are_in_place(mesh));
+
+    // Every face that carries a patch is regular, and the ones around the rim
+    // carry none -- which is what an open edge means for a subdivision
+    // surface, and is not an error.
+    int nPatched = 0;
+    int nRimFaces = 0;
+    for (const Face &face : mesh.faces)
+    {
+        if (face.isGhost)
+        {
+            continue;
+        }
+        if (face.patchKind == PatchKind::Boundary)
+        {
+            nRimFaces++;
+        }
+        else
+        {
+            EXPECT_EQ(face.patchKind, PatchKind::Regular) << "face " << face.index;
+            nPatched++;
+        }
+    }
+    EXPECT_EQ(nPatched, 712);
+    EXPECT_EQ(nRimFaces, 38);
+
+    // It is a membrane: positive area, and the collar around the neck carries
+    // bending energy the flat far field does not.
+    mesh.update_previous_coord_for_vertex();
+    mesh.update_reference_coord_from_previous_coord();
+    mesh.calculate_element_area_volume();
+    mesh.sum_membrane_area_and_volume(mesh.param.area0, mesh.param.vol0);
+    mesh.param.vol0 = 0.0;
+    EXPECT_GT(mesh.param.area0, 1000.0);
+    mesh.Compute_Energy_And_Force();
+    EXPECT_GT(bending_energy(mesh), 1.0) << "the collar should be curved";
+    EXPECT_TRUE(std::isfinite(mesh.param.energy.energyTotal));
+}
+
+/**
+ * @brief Every shipped example parameter file parses into the run it claims.
+ *
+ * A typo in an example is a bad first impression that nothing else would
+ * catch: import_param_file() reports an unknown key on stdout and carries on
+ * with the default, so a misspelled boundaryTypeX would quietly give a
+ * periodic sheet instead of the one the comments describe.
+ */
+TEST(MixedBoundaryTest, TheShippedExampleParameterFilesSayWhatTheyMean)
+{
+    struct Expectation
+    {
+        const char *path;
+        BoundaryType axisX;
+        BoundaryType axisY;
+        bool loadsMeshFiles;
+    };
+    const std::vector<Expectation> examples = {
+        {"./data/example/mixed_periodic_x_fixed_y.params", BoundaryType::Periodic,
+         BoundaryType::Fixed, false},
+        {"./data/example/mixed_periodic_x_free_y.params", BoundaryType::Periodic,
+         BoundaryType::Free, false},
+        {"./data/example/mixed_neck.params", BoundaryType::Periodic, BoundaryType::Periodic, true},
+        {"./data/example/mixed_sheet_loaded.params", BoundaryType::Periodic,
+         BoundaryType::Periodic, true},
+    };
+
+    for (const Expectation &example : examples)
+    {
+        Param param;
+        // Seeded away from every expected value, so a file that was not read
+        // at all cannot pass.
+        param.boundaryCondition = BoundaryType::Fixed;
+        param.surfaceSolver = "dense";
+        ASSERT_TRUE(import_param_file(param, example.path)) << example.path;
+
+        EXPECT_EQ(param.boundaryCondition, BoundaryType::Mixed) << example.path;
+        // The dynamics refuses Mixed without it, so an example that omitted it
+        // would fail on the user's first run.
+        EXPECT_EQ(param.surfaceSolver, "iterative") << example.path;
+        EXPECT_DOUBLE_EQ(param.uVol, 0.0) << example.path << ": images enclose no volume";
+        EXPECT_FALSE(param.isEnergyHarmonicBondIncluded) << example.path;
+
+        if (example.loadsMeshFiles)
+        {
+            EXPECT_TRUE(mesh_comes_from_files(param)) << example.path;
+            ASSERT_FALSE(param.meshVerticesFile.empty()) << example.path;
+            ASSERT_FALSE(param.meshFacesFile.empty()) << example.path;
+            // The files the example names have to be there and to parse.
+            MeshFileData data;
+            ASSERT_NO_THROW(data = read_mesh_vertices_faces_files(param.meshVerticesFile,
+                                                                 param.meshFacesFile))
+                << example.path;
+            EXPECT_TRUE(data.has_boundary_types()) << example.path;
+            EXPECT_FALSE(data.faces.empty()) << example.path;
+        }
+        else
+        {
+            EXPECT_FALSE(mesh_comes_from_files(param)) << example.path;
+            EXPECT_EQ(param.boundaryConditionX, example.axisX) << example.path;
+            EXPECT_EQ(param.boundaryConditionY, example.axisY) << example.path;
+        }
+    }
 }
 
 /// A file with no type column loads under the global modes as it always has.

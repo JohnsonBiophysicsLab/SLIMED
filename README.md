@@ -457,6 +457,26 @@ surfaceSolver = iterative
 # meshFacesFile = data/example/mixed_sheet_faces.csv
 ```
 
+Four runnable examples live in `data/example/`. The programs read `./input.params` from the working directory, so copy one in and run from there; the two that name mesh files use paths relative to the working directory, so run those from the top of the source tree.
+
+| File | Membrane | Mesh from |
+| --- | --- | --- |
+| `mixed_periodic_x_fixed_y.params` | strip: wraps along x, clamped along y | generated |
+| `mixed_periodic_x_free_y.params` | ribbon: wraps along x, open along y | generated |
+| `mixed_neck.params` | patch wrapping both ways, open at a neck | `mixed_neck_*.csv` |
+| `mixed_sheet_loaded.params` | the strip at 60 nm, loaded from file | `mixed_sheet_*.csv` |
+
+```console
+cp data/example/mixed_neck.params input.params
+./build/bin/membrane_dynamics
+```
+
+To build your own mesh, `data/example/make_mixed_mesh.py` writes the file format and can carve a hole with a free rim, which the built-in generator cannot:
+
+```console
+python3 data/example/make_mixed_mesh.py --out mymesh --side 120 --pore-radius 12 --neck-height 8
+```
+
 
 ## For Developers
 

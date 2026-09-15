@@ -7,7 +7,7 @@ condition -- free, fixed, or a periodic image of another vertex -- so that one
 mesh can be periodic along one axis and clamped or open along another, and a
 mesh read from a file needs no grid at all. The three global modes (`Fixed`,
 `Periodic`, `Free`) are untouched; the shipped periodic workload is
-byte-identical before and after this change (section 7).
+byte-identical before and after this change (section 8).
 
 ## 1. Why
 
@@ -252,7 +252,79 @@ vertices are `free` with open fans. Around the circumference a tube is
 closed, so nothing there is periodic in the file's sense -- the triangles
 simply wrap.
 
-## 7. What did not change
+## 7. Worked examples
+
+Four runnable parameter files under `data/example/`, each a complete run. The
+programs read `./input.params` from the working directory and take no
+arguments, so copy one in and run from there; the two that name mesh files use
+paths relative to the working directory, so run those from the top of the
+source tree (or edit the paths).
+
+| File | Membrane | Mesh from |
+| --- | --- | --- |
+| `mixed_periodic_x_fixed_y.params` | strip: wraps along `x`, clamped along `y` | generated |
+| `mixed_periodic_x_free_y.params` | ribbon: wraps along `x`, open along `y` | generated |
+| `mixed_neck.params` | patch wrapping both ways, open at a neck | `mixed_neck_*.csv` |
+| `mixed_sheet_loaded.params` | the first strip, at 60 nm, loaded from file | `mixed_sheet_*.csv` |
+
+```bash
+cp data/example/mixed_neck.params input.params && ./build/bin/membrane_dynamics
+```
+
+`mixed_periodic_x_fixed_y.params` is the "periodic in x, fixed in y" case, and
+`mixed_neck.params` is the bottleneck: a membrane that wraps in the plane and
+is open at a neck, which is two boundary conditions on one mesh and the reason
+this mode exists. `mixed_sheet_loaded.params` loads the mesh a run configured
+like the first one wrote, so the pair is the shortest demonstration that the
+file format round-trips.
+
+### 7.1 Building your own mesh
+
+`data/example/make_mixed_mesh.py` writes meshes in this format. It reproduces
+`Mesh::set_vertices_faces_flat()`'s lattice exactly -- same vertex order, same
+coordinates, same clockwise winding, same periodic band -- and then optionally
+carves a hole, which is what the built-in generator cannot do:
+
+```bash
+python3 data/example/make_mixed_mesh.py --out data/example/mixed_neck \
+    --side 120 --pore-radius 12 --neck-height 8 --neck-width 25
+```
+
+`--boundary-x` and `--boundary-y` take `periodic`, `free` or `fixed`, so the
+generated-sheet configurations can be produced as files too; with
+`--pore-radius 0` and matching axis types the output is identical to what
+`export_mesh_to_vertices_faces()` writes for the same sheet, which is the
+check that the script and the C++ agree. The hole is carved on *physical*
+faces -- a face and every periodic copy of it go together -- so a seam cannot
+end up with membrane on one side and a hole on the other.
+
+### 7.2 A free boundary under the dynamics needs the tether
+
+Both free-boundary examples set `edgeSpringEnabled = true`, and it is the one
+setting there that is not optional.
+
+The reference-length regularization is not part of the Brownian drive:
+`DynamicModel::next_step()` assembles the nodal force from the bending and
+area terms alone and picks up `forceRegularization` only when the edge spring
+is on. That is harmless for a clamped or periodic edge, whose vertices are
+held or slaved. A free rim is neither, and the faces touching it carry no
+limit surface, so nothing bounds the distance from one rim vertex to the next.
+Measured on the ribbon, 1000 steps at `timeStep = 0.001`:
+
+| | max edge | mean force | E_regularization |
+| --- | --- | --- | --- |
+| without the tether | 16.1 nm | 87.8 pN | 37 984 pN·nm |
+| with the flat tether | 8.6 nm | 4.7 pN | 0 |
+
+The flat tether is exactly zero inside `[0.95, 1.75] * lFace`, so it does not
+change the membrane being sampled; it only forbids the runaway. With in-plane
+motion off a lattice edge is 5 nm across in the plane, so the upper wall caps
+the height difference between neighbours at about 7 nm, far outside anything
+worth sampling. This is a property of free boundaries in this model rather
+than of the per-vertex mode -- the mode is simply the first thing that makes a
+free rim reachable on a mesh that also wraps.
+
+## 8. What did not change
 
 - The global modes run the code they always ran. The shipped periodic
   workload -- `membrane_dynamics` on a 100 nm `Periodic` sheet for 300 steps
@@ -265,7 +337,7 @@ simply wrap.
   `Mesh::setup_from_vertices_faces()` are still there and still do what they
   did; the new five-argument overload is what the typed path uses.
 
-## 8. Limits
+## 9. Limits
 
 - **The seam is solid.** Images are frozen for the flip move, so a fluid run
   on a `Mixed` periodic sheet keeps a band four vertices wide solid at each

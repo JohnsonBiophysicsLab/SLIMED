@@ -1,0 +1,106 @@
+# Example: a membrane ribbon, periodic along x and open along y.
+#
+# The same strip as mixed_periodic_x_fixed_y.params with the two clamped edges
+# released. A free edge is not a ghost band: its vertices are ordinary degrees
+# of freedom that move under the forces of the faces one ring in, whose
+# control nets include them. What they do not have is a complete one-ring, so
+# the outermost ring of faces carries no limit surface and no energy -- which
+# is what an open edge means for a subdivision surface.
+#
+# Worth knowing before reading the output: an open, unclamped sheet has a
+# rigid-body translation along z that nothing restores, so the ribbon's mean
+# height random-walks. That is physics, not a defect; clamp one edge
+# (boundaryTypeY = Fixed) if you want it pinned.
+#
+#   mkdir -p ~/slimed_runs/ribbon && cp data/example/mixed_periodic_x_free_y.params \
+#       ~/slimed_runs/ribbon/input.params && cd ~/slimed_runs/ribbon
+#   ~/Workspace/SLIMED/build/bin/membrane_dynamics
+#
+# See docs/mixed_boundary_conditions.md.
+
+############################################
+## Boundary Conditions
+############################################
+
+boundaryType = Mixed
+boundaryTypeX = Periodic         # the ribbon wraps along x
+boundaryTypeY = Free             # and is open along y
+surfaceSolver = iterative        # required by the dynamics under Mixed
+
+############################################
+## Geometric Parameters
+############################################
+
+lFace = 5.0
+isFlat = true
+sideX = 120.0
+sideY = 80.0                     # a short ribbon: two open edges 80 nm apart
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4
+usMembraneStretching = 250.0
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17
+
+############################################
+## Dynamics
+############################################
+
+maxIterations = 1000
+timeStep = 0.001
+diffConst = 1.0
+meshpointOutput = true
+meshpointOutputInterval = 10
+xyzOutput = true
+fdtConsistentSurfaceUpdate = true
+inPlaneDynamicsEnabled = false
+
+############################################
+## Bounding the open edge
+############################################
+
+# A free edge under the dynamics needs this, and it is the one setting that is
+# not optional in these examples.
+#
+# The reference-length regularization is not part of the Brownian drive: the
+# step is driven by the bending and area forces alone, and picks up the
+# mesh-quality force only when edgeSpringEnabled is true. A clamped or
+# periodic edge does not care -- its vertices are held or slaved. A free rim
+# is neither, and the faces that touch it carry no limit surface, so nothing
+# at all bounds the distance between one rim vertex and the next: measured on
+# this ribbon without the tether, edges reached 16 nm on a 5 nm mesh in 1000
+# steps.
+#
+# The flat tether is exactly zero inside [min, max] * lFace and a quadratic
+# wall outside, so it changes nothing about the membrane the run is sampling
+# and simply forbids the runaway. With in-plane motion off, a lattice edge is
+# 5 nm across in the plane, so the upper wall at 8.75 nm caps the height
+# difference between neighbours at about 7 nm -- far beyond any configuration
+# worth sampling.
+edgeSpringEnabled = true
+edgeTetherShape = flat
+edgeSpringConstant = 83.4        # pN/nm
+edgeTetherMinRatio = 0.95        # wall below 0.95 * lFace
+edgeTetherMaxRatio = 1.75        # wall above 1.75 * lFace
+
+############################################
+## Off for this example
+############################################
+
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+edgeFlipEnabled = false
+
+############################################
+## Developer options
+############################################
+
+VERBOSE_MODE = false
