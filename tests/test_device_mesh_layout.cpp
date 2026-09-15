@@ -80,6 +80,71 @@ MeshFixture build_canonical(int valence)
     return fixture;
 }
 
+/**
+ * @brief Flip `nFlips` admissible interior edges of a freshly set-up mesh.
+ *
+ * Every flip leaves faces with extraordinary corners at both ends of the new
+ * edge, so this is what puts DevicePatchKind::Multi faces -- the prolongation
+ * path -- into a fixture. The same generator and seed
+ * MultiExtraordinaryPatchTest uses, so the two suites look at the same meshes.
+ */
+void flip_edges(Mesh &mesh, int nFlips)
+{
+    unsigned long long state = 987654321ULL;
+    int flipped = 0;
+    for (int attempt = 0; attempt < 4000 && flipped < nFlips; attempt++)
+    {
+        state = state * 6364136223846793005ULL + 1442695040888963407ULL;
+        const int iEdge = static_cast<int>((state >> 33) % mesh.edges.size());
+        if (!mesh.edge_flip_is_admissible(iEdge))
+        {
+            continue;
+        }
+        mesh.flip_edge(iEdge);
+        flipped++;
+    }
+    ASSERT_EQ(flipped, nFlips) << "the fixture needs " << nFlips << " flips";
+}
+
+/// How many faces the mesh classifies as multi-extraordinary and evaluable.
+int count_multi_faces(const Mesh &mesh)
+{
+    int count = 0;
+    for (const Face &face : mesh.faces)
+    {
+        count += (face.patchKind == PatchKind::MultiExtraordinary && face.patchEntry >= 0) ? 1 : 0;
+    }
+    return count;
+}
+
+/**
+ * @brief Switch on the fluid-mode mesh-quality terms, tuned so that each one
+ * is actually active on the bowl grid.
+ *
+ * The grid's edges are about one unit long and its triangles nearly
+ * equilateral, so a tether window of [0.95, 1.02] around a rest length of 1
+ * puts many edges against a wall, an altitude floor of 0.9 sits above the
+ * equilateral altitude of 0.866, and a one-degree crease wall is exceeded by
+ * the bowl's own curvature. Each term therefore contributes non-zero energy
+ * and force, which is what makes comparing them mean anything.
+ */
+void configure_fluid_terms(Param &param)
+{
+    param.lFace = 1.0;
+    param.edgeSpringEnabled = true;
+    param.edgeTetherShape = "flat";
+    param.edgeSpringRestLength = 1.0;
+    param.edgeTetherMinRatio = 0.95;
+    param.edgeTetherMaxRatio = 1.02;
+    param.edgeSpringConstant = 40.0;
+    param.triangleShapeEnabled = true;
+    param.triangleShapeMinAltitudeRatio = 0.9;
+    param.triangleShapeConstant = 30.0;
+    param.creaseWallEnabled = true;
+    param.creaseWallAngle = 1.0;
+    param.creaseWallConstant = 20.0;
+}
+
 /// Everything Compute_Energy_And_Force() writes that the backend also writes.
 struct ForceSnapshot
 {
@@ -167,14 +232,37 @@ enum class Backend
     Cuda,
 };
 
-/// Run both pipelines over one fixture and compare every result they share.
-void compare_pipelines(const MeshFixture &fixture, Backend backend = Backend::Host)
+/**
+ * @brief Run both pipelines over one fixture and compare every result they
+ * share.
+ *
+ * @param nFlips     Interior edges to flip after setup, which is what puts
+ *                   faces with several extraordinary corners into the mesh.
+ * @param fluidTerms Switch on the edge tether, the triangle-shape term and the
+ *                   crease wall. The backend pipeline does not evaluate those
+ *                   -- they are host sums over the edge table on both paths --
+ *                   so the comparison then covers the composition
+ *                   Compute_Energy_And_Force() makes: the device stage writes
+ *                   zeros into the regularization slots and
+ *                   energy_force_fluid_terms() fills them.
+ */
+void compare_pipelines(const MeshFixture &fixture, Backend backend = Backend::Host, int nFlips = 0,
+                       bool fluidTerms = false)
 {
     Param param;
     param.VERBOSE_MODE = false;
     param.boundaryCondition = BoundaryType::Fixed;
     Mesh mesh(param);
     ASSERT_NO_THROW(mesh.setup_from_vertices_faces(fixture.vertices, fixture.faces));
+    if (nFlips > 0)
+    {
+        flip_edges(mesh, nFlips);
+        ASSERT_GT(count_multi_faces(mesh), 0) << "the flips produced no multi-extraordinary face";
+    }
+    if (fluidTerms)
+    {
+        configure_fluid_terms(mesh.param);
+    }
     prime(mesh);
 
     ASSERT_NO_THROW(mesh.Compute_Energy_And_Force());
@@ -182,6 +270,7 @@ void compare_pipelines(const MeshFixture &fixture, Backend backend = Backend::Ho
 
     slimed::DeviceMeshLayout layout;
     ASSERT_NO_THROW(layout.build(mesh));
+    EXPECT_EQ(layout.nMultiFaces(), count_multi_faces(mesh));
     PatchRowsFlat rows;
     ASSERT_NO_THROW(rows.build(mesh.param.shapeFunctions, mesh.irregularRows,
                                mesh.param.gaussQuadratureCoeff));
@@ -197,6 +286,8 @@ void compare_pipelines(const MeshFixture &fixture, Backend backend = Backend::Ho
         ASSERT_NO_THROW(cudaBackend.upload_topology(layout, rows));
         ASSERT_NO_THROW(cudaBackend.evaluate(mesh, layout, rows));
     }
+    // What Compute_Energy_And_Force() does after the device returns.
+    ASSERT_NO_THROW(mesh.energy_force_fluid_terms());
     const ForceSnapshot actual = snapshot(mesh);
 
     expect_vectors_close(reference.faceArea, actual.faceArea, "element area");
@@ -222,6 +313,21 @@ void compare_pipelines(const MeshFixture &fixture, Backend backend = Backend::Ho
         largestForce = std::max(largestForce, std::abs(component));
     }
     EXPECT_GT(largestForce, 0.0) << "the fixture produced no curvature force to compare";
+    if (fluidTerms)
+    {
+        double largestRegular = 0.0;
+        double totalRegular = 0.0;
+        for (double component : reference.forceRegular)
+        {
+            largestRegular = std::max(largestRegular, std::abs(component));
+        }
+        for (double energy : reference.faceERegular)
+        {
+            totalRegular += energy;
+        }
+        EXPECT_GT(largestRegular, 0.0) << "the fluid terms produced no force to compare";
+        EXPECT_GT(totalRegular, 0.0) << "the fluid terms produced no energy to compare";
+    }
 }
 } // namespace
 
@@ -313,7 +419,7 @@ TEST(DeviceMeshLayoutTest, GatherMapIsTheTransposeOfTheOneRings)
     {
         const slimed::FacePatchDescriptor &descriptor = layout.descriptors()[face];
         const int width = static_cast<int>(mesh.faces[face].oneRingVertices.size());
-        if (descriptor.kind == slimed::PatchKind::None)
+        if (descriptor.kind == slimed::DevicePatchKind::None)
         {
             EXPECT_EQ(descriptor.nChildren, 0) << "face " << face;
             continue;
@@ -326,6 +432,161 @@ TEST(DeviceMeshLayoutTest, GatherMapIsTheTransposeOfTheOneRings)
                 << "face " << face << " slot " << j;
         }
     }
+}
+
+/**
+ * A grid with interior edges flipped, so it carries faces with two and three
+ * extraordinary corners -- what every fluid mesh is mostly made of. Those go
+ * through the prolongation path: a child control net per prolongation matrix,
+ * the existing regular or Stam kernel on each, and M^T back onto the parent.
+ * The CPU loop does the same thing; this pins the flattened version of it --
+ * the entry snapshot, the child slot arithmetic at the child's own valence,
+ * the scatter over an 18-wide one-ring -- against it.
+ */
+TEST(DeviceMeshLayoutTest, FlattenedPipelineMatchesProductionOnAFlippedGrid)
+{
+    compare_pipelines(build_grid(8, 8), Backend::Host, /*nFlips=*/12);
+}
+
+/**
+ * The same flipped grid with the fluid-mode mesh-quality terms on. The
+ * backend does not evaluate those; Compute_Energy_And_Force() runs them on the
+ * host after the device returns, the device having written zeros into the
+ * regularization slots. This checks that composition gives exactly what the
+ * CPU loop gives -- energy and force in the regularization slots included --
+ * which is the property a fluid GPU run depends on.
+ */
+TEST(DeviceMeshLayoutTest, FluidTermsComposeWithTheFlattenedPipeline)
+{
+    compare_pipelines(build_grid(8, 8), Backend::Host, /*nFlips=*/12, /*fluidTerms=*/true);
+}
+
+/**
+ * The descriptors of multi-extraordinary faces have to agree with the mesh's
+ * own prolongation table, entry for entry and child for child: an off-by-one
+ * in an offset returns a plausible matrix for the wrong triple rather than
+ * crashing, and the force comparison above would catch that only on the
+ * triples the fixture happens to contain.
+ */
+TEST(DeviceMeshLayoutTest, MultiExtraordinaryDescriptorsMirrorTheProlongationTable)
+{
+    const MeshFixture fixture = build_grid(8, 8);
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    Mesh mesh(param);
+    ASSERT_NO_THROW(mesh.setup_from_vertices_faces(fixture.vertices, fixture.faces));
+    flip_edges(mesh, 12);
+    ASSERT_GT(count_multi_faces(mesh), 0);
+
+    slimed::DeviceMeshLayout layout;
+    ASSERT_NO_THROW(layout.build(mesh));
+
+    const MultiPatchTable &table = mesh.multiPatchTable;
+    ASSERT_EQ(layout.nMultiEntries(), table.size());
+    ASSERT_EQ(layout.multiProlongationCount(), table.data_count());
+    for (std::size_t i = 0; i < table.data_count(); i++)
+    {
+        ASSERT_EQ(layout.multiProlongations()[i], table.data()[i]) << "prolongation double " << i;
+    }
+    for (int e = 0; e < table.size(); e++)
+    {
+        const MultiPatchTable::Entry &entry = table.entry(e);
+        const slimed::DeviceMultiPatchEntry &flat = layout.multiEntries()[e];
+        EXPECT_EQ(flat.nControl, entry.nControl) << "entry " << e;
+        for (int c = 0; c < slimed::kMultiPatchChildren; c++)
+        {
+            const MultiPatchTable::Child &child = entry.children[c];
+            EXPECT_EQ(flat.childValence[c], child.valence) << "entry " << e << " child " << c;
+            EXPECT_EQ(flat.childNControl[c], child.nControl) << "entry " << e << " child " << c;
+            EXPECT_EQ(static_cast<std::size_t>(flat.childOffset[c]), child.offset)
+                << "entry " << e << " child " << c;
+            const int expectedBlocks =
+                (child.valence == 6)
+                    ? 1
+                    : mesh.irregularRows.depth_for(child.valence) * kRegularChildrenPerStep;
+            EXPECT_EQ(flat.childNChildren[c], expectedBlocks) << "entry " << e << " child " << c;
+            // A child's matrix must fit in the buffer.
+            EXPECT_LE(child.offset + static_cast<std::size_t>(child.nControl) * entry.nControl,
+                      table.data_count());
+        }
+    }
+
+    int multiDescriptors = 0;
+    for (int face = 0; face < layout.nFaces(); face++)
+    {
+        const slimed::FacePatchDescriptor &descriptor = layout.descriptors()[face];
+        const Face &meshFace = mesh.faces[face];
+        if (meshFace.patchKind == PatchKind::MultiExtraordinary && meshFace.patchEntry >= 0)
+        {
+            multiDescriptors++;
+            EXPECT_EQ(descriptor.kind, slimed::DevicePatchKind::Multi) << "face " << face;
+            EXPECT_EQ(descriptor.multiEntry, meshFace.patchEntry) << "face " << face;
+            EXPECT_EQ(descriptor.nChildren, slimed::kMultiPatchChildren) << "face " << face;
+            EXPECT_EQ(descriptor.nControlPoints,
+                      static_cast<int>(meshFace.oneRingVertices.size()))
+                << "face " << face;
+            EXPECT_EQ(descriptor.nControlPoints, table.entry(meshFace.patchEntry).nControl)
+                << "face " << face;
+        }
+        else
+        {
+            EXPECT_NE(descriptor.kind, slimed::DevicePatchKind::Multi) << "face " << face;
+            EXPECT_EQ(descriptor.multiEntry, -1) << "face " << face;
+        }
+    }
+    EXPECT_EQ(multiDescriptors, layout.nMultiFaces());
+    EXPECT_EQ(multiDescriptors, count_multi_faces(mesh));
+}
+
+/**
+ * The layout a mesh owns is rebuilt when an edge flips, and the rebuilt one
+ * evaluates the flipped mesh. This is the sequence a fluid run performs on the
+ * device backend: a sweep accepts a flip, topologyVersion moves,
+ * ensure_device_layout() notices, and the next force evaluation runs over
+ * faces that did not exist before. Checked through the mesh's own
+ * ensure_device_layout() rather than a fresh layout, because that is the path
+ * a run takes.
+ */
+TEST(DeviceMeshLayoutTest, TheOwnedLayoutRebuildsAfterAFlipAndEvaluatesTheNewFaces)
+{
+    const MeshFixture fixture = build_grid(8, 8);
+    Param param;
+    param.VERBOSE_MODE = false;
+    param.boundaryCondition = BoundaryType::Fixed;
+    Mesh mesh(param);
+    ASSERT_NO_THROW(mesh.setup_from_vertices_faces(fixture.vertices, fixture.faces));
+    prime(mesh);
+    ASSERT_NO_THROW(mesh.Compute_Energy_And_Force());
+
+    mesh.ensure_device_layout();
+    const long long versionBefore = mesh.deviceLayoutTopologyVersion;
+    EXPECT_EQ(mesh.deviceLayout.nMultiFaces(), 0);
+    EXPECT_EQ(mesh.deviceLayout.nMultiEntries(), 0);
+
+    flip_edges(mesh, 1);
+    ASSERT_GT(count_multi_faces(mesh), 0);
+
+    mesh.ensure_device_layout();
+    EXPECT_NE(mesh.deviceLayoutTopologyVersion, versionBefore);
+    EXPECT_EQ(mesh.deviceLayout.nMultiFaces(), count_multi_faces(mesh));
+    EXPECT_GT(mesh.deviceLayout.nMultiEntries(), 0);
+
+    ASSERT_NO_THROW(mesh.Compute_Energy_And_Force());
+    const ForceSnapshot reference = snapshot(mesh);
+
+    mesh.ensure_patch_rows_flat();
+    slimed::HostForceBackend hostBackend;
+    ASSERT_NO_THROW(hostBackend.evaluate(mesh, mesh.deviceLayout, mesh.patchRowsFlat));
+    ASSERT_NO_THROW(mesh.energy_force_fluid_terms());
+    const ForceSnapshot actual = snapshot(mesh);
+
+    expect_vectors_close(reference.faceArea, actual.faceArea, "element area after a flip");
+    expect_vectors_close(reference.faceEBend, actual.faceEBend, "bending energy after a flip");
+    expect_vectors_close(reference.forceBend, actual.forceBend, "curvature force after a flip");
+    expect_vectors_close(reference.forceArea, actual.forceArea, "area force after a flip");
+    expect_vectors_close(reference.forceRegular, actual.forceRegular,
+                         "regularization force after a flip");
 }
 
 /**
@@ -368,5 +629,16 @@ TEST(CudaForceBackendTest, MatchesTheProductionForceEvaluation)
     {
         SCOPED_TRACE("valence " + std::to_string(valence));
         compare_pipelines(build_canonical(valence), Backend::Cuda);
+    }
+    // A fluid mesh: faces with several extraordinary corners, evaluated
+    // through the prolongation table the device now holds, and then with the
+    // fluid-mode terms composed on the host behind the device stage.
+    {
+        SCOPED_TRACE("flipped grid");
+        compare_pipelines(build_grid(8, 8), Backend::Cuda, /*nFlips=*/12);
+    }
+    {
+        SCOPED_TRACE("flipped grid with the fluid terms");
+        compare_pipelines(build_grid(8, 8), Backend::Cuda, /*nFlips=*/12, /*fluidTerms=*/true);
     }
 }

@@ -279,3 +279,24 @@ void output_trajectory_files(Mesh &mesh, const std::string &input_filename);
  * 
  */
 void dynamics_output_trajectory_files(DynamicMesh &mesh, const std::string &filename);
+
+/**
+ * @brief Write the connectivity beside a trajectory frame, if it has changed.
+ *
+ * A run with edge flips has no single face list. `<filename>face.csv`, written
+ * once at setup, describes the mesh the run *started* with, and every analysis
+ * that pairs it with a later coordinate frame -- the fluctuation spectrum
+ * included -- silently reads the wrong triangles. So each frame whose
+ * connectivity differs from the last one written gets its own
+ * `<filename>face_<iteration>.csv`, and a frame is paired with the most recent
+ * such file at or before its iteration.
+ *
+ * Nothing is written when the connectivity has not moved, which is every frame
+ * of a run with flips off: the setup-time `face.csv` still describes those
+ * runs completely and their output is unchanged.
+ *
+ * @param iteration The frame's iteration, which names the file.
+ * @return true if a file was written.
+ */
+bool dynamics_output_face_frame(DynamicMesh &mesh, const std::string &filename,
+                                long long iteration);

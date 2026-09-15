@@ -14,6 +14,8 @@
 #include "cuda/Device_mesh_layout.hpp"
 #include "cuda/Host_force_backend.hpp"
 #include "energy_force/Patch_rows_flat.hpp"
+#include "mesh/Irregular_patch_rows.hpp"
 #include "mesh/Mesh.hpp"
+#include "mesh/Multi_extraordinary_patch.hpp"
 #include "mesh/Subdivision_matrices.hpp"
 #include "Parameters.hpp"

@@ -134,15 +134,22 @@ void Mesh::compute_face_energies_and_forces()
         face.normVector.free();             // reinitialize empty normal vector
         face.normVector = mat_calloc(3, 1); // normal vector
 
-        // A width outside the patch table means no complete one-ring -- a
-        // ghost or boundary face, which has no limit surface. Leaving
-        // everything at its zero initializer is exactly what the previous
-        // two-armed dispatch did for these faces, and bailing here also keeps
-        // the copy below inside the stack buffers.
-        const bool isRegular = (nOneRingVertices == 12);
-        const bool isIrregular = (nOneRingVertices >= kMinIrregularValence + 6 &&
-                                  nOneRingVertices <= kMaxIrregularValence + 6);
-        if (isRegular || isIrregular)
+        // What kind of patch a face carries is read off the face now rather
+        // than inferred from the width of its one-ring. The inference
+        // (`valence = width - 6`) was fine while every face had at most one
+        // extraordinary corner; once edges flip it is ambiguous, because a
+        // 5/5/7 face and a valence-5 face both have an 11-point control net.
+        //
+        // A face with no patch at all -- a ghost, or one on the mesh
+        // boundary -- leaves everything at its zero initializer, which is what
+        // the previous dispatch did, and bailing here also keeps the copy
+        // below inside the stack buffers.
+        const bool isRegular = (face.patchKind == PatchKind::Regular);
+        const bool isIrregular = (face.patchKind == PatchKind::SingleExtraordinary);
+        const bool isMulti = (face.patchKind == PatchKind::MultiExtraordinary &&
+                              face.patchEntry >= 0);
+        if ((isRegular || isIrregular || isMulti) && nOneRingVertices > 0 &&
+            nOneRingVertices <= slimed::kMaxControlPoints)
         {
             for (int j = 0; j < nOneRingVertices; j++)
             {
@@ -159,20 +166,24 @@ void Mesh::compute_face_energies_and_forces()
             // in the control-point list, not in a branch: a regular face is 12
             // wide, an irregular one N+6, and the kernel reads that off its
             // arguments.
-            if (isRegular)
-            {
-                slimed::element_energy_force_patch_pod(regularRows, gaussCoeff, nSamples,
-                                                       coordOneRingVertices, nOneRingVertices,
-                                                       facePatchParams, eBend, meanCurv,
-                                                       normVector, fBend, fArea, fVol);
-            }
-            else
-            {
-                // An irregular patch is tiled by regular children at
-                // increasing depth. Each child is a 12-point patch in the
-                // parent's own control points, so the same kernel evaluates it
-                // -- only the rows differ.
-                const int valence = nOneRingVertices - 6;
+            // Evaluate one patch of a given valence over a given control net,
+            // accumulating its forces. A valence of 6 means the direct
+            // closed-form kernel; anything else means Stam's tiling by regular
+            // children at increasing depth, where each child is a 12-point
+            // patch expressed in the parent's own control points, so the same
+            // kernel evaluates it and only the rows differ.
+            auto evaluateOnePatch = [&](int valence, const double *coords, int nCtrl,
+                                        double &patchEBend, double &patchMeanCurv,
+                                        double patchNorm[3], double *outBend, double *outArea,
+                                        double *outVolume) {
+                if (valence == 6)
+                {
+                    slimed::element_energy_force_patch_pod(
+                        regularRows, gaussCoeff, nSamples, coords, nCtrl, facePatchParams,
+                        patchEBend, patchMeanCurv, patchNorm, outBend, outArea, outVolume);
+                    return;
+                }
+                patchEBend = 0.0;
                 for (int d = 0; d < irregularRows.depth_for(valence); d++)
                 {
                     for (int c = 0; c < kRegularChildrenPerStep; c++)
@@ -181,22 +192,86 @@ void Mesh::compute_face_energies_and_forces()
                         double childMeanCurv = 0.0;
                         double childNormVector[3] = {0.0, 0.0, 0.0};
                         slimed::element_energy_force_patch_pod(
-                            patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples,
-                            coordOneRingVertices, nOneRingVertices, facePatchParams, childEBend,
-                            childMeanCurv, childNormVector, fBend, fArea, fVol);
-                        eBend += childEBend;
+                            patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
+                            nCtrl, facePatchParams, childEBend, childMeanCurv, childNormVector,
+                            outBend, outArea, outVolume);
+                        patchEBend += childEBend;
                         // Mean curvature and the normal are reported per face,
                         // so take them from the child nearest the patch centre
                         // -- depth 0, the middle child -- rather than summing
                         // quantities that do not add.
                         if (d == 0 && c == 1)
                         {
-                            meanCurv = childMeanCurv;
-                            normVector[0] = childNormVector[0];
-                            normVector[1] = childNormVector[1];
-                            normVector[2] = childNormVector[2];
+                            patchMeanCurv = childMeanCurv;
+                            patchNorm[0] = childNormVector[0];
+                            patchNorm[1] = childNormVector[1];
+                            patchNorm[2] = childNormVector[2];
                         }
                     }
+                }
+            };
+
+            if (isRegular || isIrregular)
+            {
+                evaluateOnePatch(isRegular ? 6 : nOneRingVertices - 6, coordOneRingVertices,
+                                 nOneRingVertices, eBend, meanCurv, normVector, fBend, fArea,
+                                 fVol);
+            }
+            else
+            {
+                // A face with several extraordinary corners has no single
+                // corner to run Stam's reduction from. Subdividing its own
+                // control net once splits it into four children that each do
+                // -- three corner children and a regular centre -- and every
+                // one of their control points is a fixed linear combination of
+                // this face's, so the whole thing is a prolongation matrix per
+                // child and then the paths above, unchanged.
+                //
+                // The children tile the parent's parameter domain exactly
+                // once, and each child's rows are with respect to its own
+                // parameters, so the area element already carries the shrunken
+                // metric. There is no Jacobian to apply -- the same argument
+                // that says the depth-d children need no 4^-d weight.
+                const MultiPatchTable::Entry &entry = multiPatchTable.entry(face.patchEntry);
+                const double *const prolongations = multiPatchTable.data();
+                for (int c = 0; c < 4; c++)
+                {
+                    const MultiPatchTable::Child &child = entry.children[c];
+                    const double *const prolongation = prolongations + child.offset;
+
+                    double childCoords[slimed::kMaxControlPoints * 3];
+                    multi_patch_prolong(prolongation, coordOneRingVertices, entry.nControl,
+                                        child.nControl, childCoords);
+
+                    double childBend[slimed::kMaxControlPoints * 3] = {0.0};
+                    double childArea[slimed::kMaxControlPoints * 3] = {0.0};
+                    double childVolume[slimed::kMaxControlPoints * 3] = {0.0};
+                    double childEBend = 0.0;
+                    double childMeanCurv = 0.0;
+                    double childNormVector[3] = {0.0, 0.0, 0.0};
+
+                    evaluateOnePatch(child.valence, childCoords, child.nControl, childEBend,
+                                     childMeanCurv, childNormVector, childBend, childArea,
+                                     childVolume);
+
+                    eBend += childEBend;
+                    // The centre child is the one covering the middle of the
+                    // face, so it is the honest place to read a single
+                    // per-face curvature and normal from.
+                    if (c == 3)
+                    {
+                        meanCurv = childMeanCurv;
+                        normVector[0] = childNormVector[0];
+                        normVector[1] = childNormVector[1];
+                        normVector[2] = childNormVector[2];
+                    }
+
+                    multi_patch_scatter(prolongation, childBend, entry.nControl, child.nControl,
+                                        fBend);
+                    multi_patch_scatter(prolongation, childArea, entry.nControl, child.nControl,
+                                        fArea);
+                    multi_patch_scatter(prolongation, childVolume, entry.nControl,
+                                        child.nControl, fVol);
                 }
             }
 
@@ -224,7 +299,8 @@ void Mesh::compute_face_energies_and_forces()
         // kMaxControlPoints contributed nothing before and contributes nothing
         // now, but reading past the stack buffers to discover that would be a
         // buffer overrun rather than a no-op.
-        const int nScatteredVertices = (isRegular || isIrregular) ? nOneRingVertices : 0;
+        const int nScatteredVertices =
+            (isRegular || isIrregular || isMulti) ? nOneRingVertices : 0;
         for (int j = 0; j < nScatteredVertices; j++)
         {
             int iVertex = face.oneRingVertices[j];
@@ -262,8 +338,35 @@ void Mesh::compute_face_energies_and_forces()
     }
 
     // Step 3.
-    energy_force_regularization(); // regularization Force and Energy
+    // The mesh-quality term. The two are alternatives, not additions: the
+    // reference-length regularization is a solid's memory of where it started,
+    // and a fluid membrane has none -- see energy_force_edge_spring(). The
+    // device backend evaluates this one in its regularization stage (writing
+    // zeros when the spring is on) and then calls energy_force_fluid_terms()
+    // exactly as this does, so both paths end in the same slots.
+    if (!param.edgeSpringEnabled)
+    {
+        energy_force_regularization();
+    }
+    energy_force_fluid_terms();
+}
 
+void Mesh::energy_force_fluid_terms()
+{
+    if (param.edgeSpringEnabled)
+    {
+        energy_force_edge_spring();
+    }
+    // The second half of the fluid term, added on top of whichever edge-based
+    // term wrote the slot. See Param::triangleShapeEnabled.
+    if (param.triangleShapeEnabled)
+    {
+        energy_force_triangle_shape();
+    }
+    if (param.creaseWallEnabled)
+    {
+        energy_force_crease_wall();
+    }
 }
 
 void Mesh::ensure_device_layout()
@@ -272,10 +375,25 @@ void Mesh::ensure_device_layout()
     // pre-refinement replaces the whole face and vertex list, and a layout
     // built before it would index vertices that no longer exist -- a silent
     // out-of-bounds read rather than a failure.
+    //
+    // Counts are not enough on their own. An edge flip rewrites the
+    // connectivity while leaving both counts exactly as they were, so the
+    // layout -- which is entirely connectivity-derived, down to the CSR of
+    // every one-ring -- would have gone on being used against a mesh it no
+    // longer described, with nothing to indicate it. topologyVersion is
+    // bumped by every accepted flip and is what actually answers the question.
     if (deviceLayout.empty() || deviceLayout.nFaces() != static_cast<int>(faces.size()) ||
-        deviceLayout.nVertices() != static_cast<int>(vertices.size()))
+        deviceLayout.nVertices() != static_cast<int>(vertices.size()) ||
+        deviceLayoutTopologyVersion != topologyVersion)
     {
         deviceLayout.build(*this);
+        deviceLayoutTopologyVersion = topologyVersion;
+        if (cudaBackend)
+        {
+            // The device holds its own copy of the topology and uploads it
+            // once; tell it to upload again.
+            cudaBackend->invalidate_topology();
+        }
     }
 }
 
@@ -332,10 +450,18 @@ void Mesh::Compute_Energy_And_Force()
         ensure_patch_rows_flat();
         ensure_device_layout();
         // Steps 1 to 3 below, on the device: element area and volume and the
-        // totals they sum to, the patch energies and forces, and the
-        // regularization term. Same kernel bodies, same results -- see
+        // totals they sum to, the patch energies and forces -- faces with
+        // several extraordinary corners included, through the same
+        // prolongations the CPU loop uses -- and the reference-length
+        // regularization. Same kernel bodies, same results -- see
         // CudaForceBackendTest.
         cudaBackend->evaluate(*this, deviceLayout, patchRowsFlat);
+        // The fluid-mode mesh-quality terms are sums over the edge table with
+        // closed-form gradients: cheap, and not what the device is for. They
+        // run on the host over the coordinates the device just read, exactly
+        // as they do after the CPU loop. With the spring on, the device wrote
+        // zeros into the regularization slots this overwrites.
+        energy_force_fluid_terms();
     }
     else
     {

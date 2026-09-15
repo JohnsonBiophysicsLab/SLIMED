@@ -33,8 +33,10 @@
 #include <omp.h>
 #include <algorithm>
 // model setup
-//#include "Edge.hpp"
+#include "mesh/Edge.hpp"
 #include "mesh/Face.hpp"
+#include "mesh/Multi_extraordinary_patch.hpp"
+#include "mesh/Patch_kind.hpp"
 #include "cuda/Cuda_force_backend.hpp"
 #include "cuda/Device_mesh_layout.hpp"
 #include "energy_force/Patch_rows_flat.hpp"
@@ -50,6 +52,89 @@
 
 
 using namespace std;
+
+/**
+ * @brief The energy and geometry carried by a set of faces.
+ *
+ * The pieces of the Hamiltonian that live on faces, summed over a subset of
+ * them. Area and volume are geometry rather than energy: the constraints they
+ * feed are quadratic in the mesh-wide totals, so a local move contributes
+ * through its change in the total, not through a per-face term.
+ *
+ * @see docs/edge_flip_plan.md section 3.4
+ */
+struct FaceSubsetEnergy
+{
+    double bending = 0.0;        ///< Sum of Face::energy.energyCurvature.
+    double regularization = 0.0; ///< Sum of Face::energy.energyRegularization.
+    double area = 0.0;           ///< Sum of Face::elementArea, ghosts excluded.
+    double volume = 0.0;         ///< Sum of Face::elementVolume, ghosts excluded.
+
+    /// The part of the total energy that is a sum over these faces.
+    double local_energy() const { return bending + regularization; }
+};
+
+/**
+ * @brief What flipping one edge would do to the total energy.
+ *
+ * Broken out by term because the two global constraints do not behave like the
+ * local ones: they are quadratic in the mesh-wide area and volume, so their
+ * contribution depends on how far the membrane already sits from its reference
+ * as well as on how much this flip moves it.
+ */
+struct EdgeFlipDelta
+{
+    double energy = 0.0;           ///< The total, and the only number Metropolis needs.
+    double bending = 0.0;          ///< Change in summed bending energy.
+    double regularization = 0.0;   ///< Change in summed regularization energy.
+    double areaConstraint = 0.0;   ///< Change in the global area-constraint energy.
+    double volumeConstraint = 0.0; ///< Change in the global volume-constraint energy.
+    double area = 0.0;             ///< Change in total membrane area.
+    double volume = 0.0;           ///< Change in total enclosed volume.
+};
+
+/**
+ * @brief One attempted flip, for the diagnostic log.
+ *
+ * Every dynamically triangulated surface paper reports an acceptance rate, and
+ * it is the first number to look at when a fluid run misbehaves: too low and
+ * the membrane is a solid with extra steps, too high and the move is not
+ * sampling anything the energy cares about.
+ */
+struct EdgeFlipRecord
+{
+    long long iteration = 0;
+    int edge = -1;
+    int vertex[4] = {-1, -1, -1, -1}; ///< The two endpoints, then the two targets.
+    double deltaEnergy = 0.0;
+    bool accepted = false;
+};
+
+/// What one Metropolis flip sweep did.
+struct EdgeFlipSweepStats
+{
+    int drawn = 0;         ///< Attempts the Poisson draw asked for.
+    int attempted = 0;     ///< Of those, edges that passed the admission test.
+    int accepted = 0;      ///< Of those, flips Metropolis kept.
+    double deltaEnergy = 0.0; ///< Summed over accepted flips.
+
+    /// Accepted over attempted -- the flip rate the DTS literature reports.
+    double acceptance() const
+    {
+        return (attempted > 0) ? static_cast<double>(accepted) / attempted : 0.0;
+    }
+};
+
+/**
+ * @brief Append a flip log to a CSV, writing the header if the file is new.
+ *
+ * One line per attempt, accepted or not. The acceptance rate is the first
+ * number to look at when a fluid run misbehaves, and the energy differences
+ * say whether the move is sampling anything the Hamiltonian cares about or
+ * just shuffling degenerate configurations.
+ */
+void write_edge_flip_log_csv(const std::vector<EdgeFlipRecord> &records,
+                             const std::string &path);
 
 /**
  * @brief A class representing a triangular mesh that defines a
@@ -133,6 +218,31 @@ public:
     IrregularPatchRowTable irregularRows;
 
     /**
+     * @brief Prolongation matrices for faces with several extraordinary corners.
+     *
+     * Keyed on the valence triple alone, so a fluid membrane with thousands of
+     * such faces holds a few dozen entries. Built lazily -- a mesh whose
+     * extraordinary vertices are isolated never touches it -- and, like
+     * irregularRows, depends only on topology, never on coordinates.
+     *
+     * @see include/mesh/Multi_extraordinary_patch.hpp
+     */
+    MultiPatchTable multiPatchTable;
+
+    /**
+     * @brief Resolve Face::patchEntry for every multi-extraordinary face.
+     *
+     * Separate from build_one_ring_for_face() because that one runs inside an
+     * OpenMP loop and this one mutates a shared table. Cheap and idempotent:
+     * it only looks at faces whose entry is still unresolved.
+     *
+     * @param onlyFaces When given, restrict the pass to these faces -- what a
+     *                  flip needs, since it disturbs about eighteen of them
+     *                  rather than all of them.
+     */
+    void ensure_multi_patch_entries(const std::vector<int> *onlyFaces = nullptr);
+
+    /**
      * @brief The same rows as irregularRows and param.shapeFunctions, repacked
      * flat for the force kernel.
      *
@@ -174,6 +284,9 @@ public:
      */
     void ensure_device_layout();
 
+    /// The connectivity version deviceLayout was built for. See topologyVersion.
+    long long deviceLayoutTopologyVersion = -1;
+
     /**
      * @brief Which backend Compute_Energy_And_Force() delegates its per-face
      * work to, chosen once from param.forceBackend.
@@ -200,6 +313,20 @@ public:
     /// The device backend stands in for exactly this much.
     void compute_face_energies_and_forces();
 
+    /**
+     * @brief The fluid-mode mesh-quality terms: the edge tether, the
+     * triangle-shape term and the crease wall, each behind its own flag.
+     *
+     * The tail of step 3 of the force evaluation, split out so that the CPU
+     * loop and the device backend run the same thing after their per-face
+     * work: these are sums over the edge table with closed-form gradients,
+     * and they stay on the host on both paths. When the spring is on the
+     * device's regularization stage writes zeros, which energy_force_edge_spring()
+     * then overwrites -- the same replacement the CPU loop makes by not
+     * calling energy_force_regularization() at all.
+     */
+    void energy_force_fluid_terms();
+
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
     std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold
@@ -211,8 +338,353 @@ public:
     std::vector<GagInteraction> gagInteractions; ///< Gag pair interactions defined on rigid subunits
     Matrix gagInitialAlignmentRotation = Matrix(3, 3, true); ///< Initial lattice-to-membrane alignment rotation
 
+    // ---------------------------------------------------------------------
+    // Edge table and connectivity versioning -- see docs/edge_flip_plan.md
+    // ---------------------------------------------------------------------
+
+    /**
+     * @brief Every undirected edge of the control mesh.
+     *
+     * Built once by build_edge_table() and thereafter mutated in place by
+     * flip_edge(). Empty until build_edge_table() is called, which the setup
+     * paths do; a mesh that never flips can ignore it entirely.
+     */
+    std::vector<MeshEdge> edges;
+
+    /// undirected_edge_key(a, b) -> index into edges. Kept in step by flip_edge().
+    std::unordered_map<std::uint64_t, int> edgeIndex;
+
+    /**
+     * @brief Bumped by every accepted connectivity change.
+     *
+     * Everything derived from connectivity -- the device layout, the CUDA
+     * topology upload, the limit-surface conversion matrices -- records the
+     * version it was built for and rebuilds when it differs. Before this, the
+     * only staleness check in the tree was on the face and vertex *counts*
+     * (Mesh::ensure_device_layout()), and a flip changes neither, so a flipped
+     * mesh would have been evaluated against a stale layout with no
+     * indication.
+     */
+    long long topologyVersion = 0;
+
+    /**
+     * @brief Vertices that must not take part in a flip, one entry per vertex.
+     *
+     * Empty means nothing is frozen. DynamicMesh fills it from
+     * isSlavedPeriodic, because a periodic duplicate is not an independent
+     * coordinate and flipping around one would desynchronise it from the
+     * partner that overwrites it every step. Ghost vertices are excluded
+     * separately and do not need an entry here.
+     */
+    std::vector<char> flipFrozenVertex;
+
+    /**
+     * @brief Build `edges` and `edgeIndex` from the current face list.
+     *
+     * O(F). Safe to call again; it rebuilds from scratch. Requires
+     * Face::adjacentVertices to be populated and consistently wound, which is
+     * what sort_vertices_on_faces() guarantees.
+     */
+    void build_edge_table();
+
+    /// Index into `edges` of the edge joining @p a and @p b, or -1.
+    int edge_between(int a, int b) const;
+
+    /**
+     * @brief Recompute MeshEdge::flippable for one edge from the current
+     * connectivity and the frozen-vertex list.
+     */
+    void refresh_edge_flippability(int iEdge);
+
+    /**
+     * @brief Whether flipping @p iEdge right now would leave a mesh the
+     * evaluator can still describe.
+     *
+     * The dynamic half of the admission test: valences after the flip within
+     * the row-table range, and the two opposite corners not already joined
+     * (which would make the flip create a duplicate edge and pinch the
+     * surface). Checked per attempt rather than cached, because an accepted
+     * flip elsewhere in the same sweep can change the answer.
+     *
+     * @param iEdge Edge to test.
+     * @param why   Optional; filled with the reason when the answer is false.
+     */
+    bool edge_flip_is_admissible(int iEdge, std::string *why = nullptr) const;
+
+    /**
+     * @brief The faces whose energy a flip of @p iEdge would change.
+     *
+     * The energy of a face is a functional of its control net -- the union of
+     * its three corners' one-rings -- so a flip changes the energy of every
+     * face incident to any of the four vertices it touches, roughly eighteen
+     * on a near-regular mesh, not just the two it retriangulates. This is the
+     * same "flip patch" TriMem locks for a parallel flip.
+     *
+     * Returned sorted and deduplicated.
+     */
+    std::vector<int> flip_patch_faces(int iEdge) const;
+
+    /**
+     * @brief Flip @p iEdge: retriangulate its two incident faces across the
+     * other diagonal of the quadrilateral they form.
+     *
+     * Replaces the edge (a, b) with (c0, c1), where c0 and c1 are the two
+     * opposite corners, and rewrites every adjacency the change touches: the
+     * two faces' corners, the four vertices' adjacentVertices and
+     * adjacentFaces, the five affected edge records, Face::adjacentFaces on
+     * the faces around the quadrilateral, and the one-rings of every face in
+     * the flip patch. Bumps topologyVersion.
+     *
+     * Winding is preserved without any geometric test: both new triangles are
+     * wound along the same boundary cycle of the quadrilateral that the two
+     * old ones were.
+     *
+     * Flipping the same edge index twice restores the connectivity exactly --
+     * every triangle, every adjacency and every edge record -- with one
+     * caveat worth stating because it is easy to assume away: the two incident
+     * face *indices* come back holding each other's triangle. That is not a
+     * defect in this implementation, it is intrinsic. The quadrilateral offers
+     * no canonical pairing between "the side of target0" before the flip and
+     * either side after it, so every consistent rule composes to the exchange;
+     * OpenMesh's flip behaves the same way.
+     *
+     * It is unobservable here because the only per-face state that survives a
+     * step without being recomputed from connectivity is the spontaneous
+     * curvature, and edge_flip_is_admissible() refuses an edge whose two faces
+     * disagree about it. So a rejected Metropolis trial does restore the mesh.
+     *
+     * @param iEdge Edge to flip. Must be interior; call
+     *              edge_flip_is_admissible() first.
+     * @throw std::invalid_argument if the edge is out of range or on a boundary.
+     */
+    void flip_edge(int iEdge);
+
+    /**
+     * @brief The regularization energy of one face, without its force.
+     *
+     * energy_force_regularization() computes this for every face while
+     * assembling the force. A Metropolis trial needs the energy of eighteen
+     * faces and none of the force, twice per attempt, so it needs the term on
+     * its own. LocalPatchEnergyTest pins the two against each other face by
+     * face, which is what keeps the duplication honest.
+     */
+    double face_regularization_energy(int iFace) const;
+
+    /**
+     * @brief The tether energy of a single edge at a given length.
+     *
+     * One definition of the term's shape, so the whole-mesh force pass and the
+     * flip trial cannot disagree about it. See Param::edgeTetherShape.
+     */
+    double edge_tether_energy(double length) const;
+
+    /**
+     * @brief Whether an edge is part of the membrane rather than of the copies
+     * around it.
+     *
+     * The periodic sheet is surrounded by ghost rings and a ring of
+     * duplicates whose *positions* are copied from the far side every step
+     * but whose *connectivity* is the lattice they were built with -- a flip
+     * is refused wherever it would touch one. Once the interior has mixed,
+     * an edge joining two such vertices connects positions that stopped being
+     * neighbours long ago: measured on the 100 nm sheet, those edges reached
+     * 17 nm and carried 93-98% of the reported tether energy while the
+     * interior's stayed flat. Worse than the bookkeeping, the tether force on
+     * a duplicate is spread into the interior by the M^-T map before the
+     * duplicate is overwritten, and that injection is what folded a face at
+     * the seam and diverged the run.
+     *
+     * An edge with at least one free endpoint is the membrane's; one with
+     * both endpoints ghost or duplicate is a copy, and a stale one. On a mesh
+     * without ghosts or duplicates -- a closed surface, or a plain Mesh --
+     * every edge qualifies.
+     */
+    bool edge_carries_tether(const MeshEdge &edge) const;
+
+    /**
+     * @brief The triangle-shape term of one face, without its force.
+     *
+     * The three altitude walls of Param::triangleShapeEnabled, for one face:
+     * the same expression energy_force_triangle_shape() differentiates, so
+     * the flip trial and the force pass cannot disagree about it. Zero for a
+     * ghost face and for any face all of whose altitudes clear the floor.
+     */
+    double face_shape_energy(int iFace) const;
+
+    /**
+     * @brief A face's share of the crease-wall energy of its three edges.
+     *
+     * Half of each interior edge's energy, as for the tether, so that the sum
+     * over faces is the sum over edges and the flip trial differences the
+     * same term the force pass computes. See Param::creaseWallEnabled.
+     */
+    double face_crease_energy(int iFace) const;
+
+    /**
+     * @brief A face's share of the tether energy of its three edges.
+     *
+     * The mesh-quality term is a sum over edges, but every energy in this tree
+     * is accumulated per face, so an edge's energy is split between the two
+     * faces it separates -- the same convention energy_force_edge_spring()
+     * uses, so summing this over every face gives the same total.
+     *
+     * This is what a flip trial must difference when the tether is in force.
+     * Using face_regularization_energy() there instead -- which measures each
+     * face against its own edges in coordRef -- gives the trial a different
+     * Hamiltonian from the one the dynamics integrates, and the Metropolis
+     * chain then samples neither. Measured before this existed: every accepted
+     * flip reported about -750 pN.nm while the mesh's total energy rose.
+     */
+    double face_tether_energy(int iFace) const;
+
+    /**
+     * @brief Energy and geometry of a set of faces, with no side effects.
+     *
+     * Evaluates exactly what the whole-mesh passes evaluate, over a subset:
+     * the same rows, the same quadrature, the same ghost-face rule. Nothing on
+     * the mesh is written, so it can be called on a speculative configuration
+     * and again on the real one.
+     *
+     * Not const only because the flat row tables are built lazily; it writes
+     * nothing else.
+     */
+    FaceSubsetEnergy evaluate_face_subset(const std::vector<int> &faceList);
+
+    /**
+     * @brief What flipping @p iEdge would do to the total energy.
+     *
+     * Flips the edge, measures the neighbourhood again, and flips back, so the
+     * mesh is left as it was found -- up to the exchange of the two incident
+     * face labels that flip_edge() documents, which nothing observable depends
+     * on.
+     *
+     * The energy of a face is a functional of its control net, so only the
+     * faces incident to the four vertices the flip touches can change: about
+     * eighteen of them, and the rest cancel exactly. The two global
+     * constraints are quadratic in the mesh-wide totals and so cannot be
+     * summed per face, but their change is still exact from the local change
+     * in area and volume:
+     *
+     *     dE_A = (uSurf / 2 area0) * dA * (dA + 2 (A - area0))
+     *
+     * and likewise for the volume. The scaffolding term is untouched because a
+     * flip moves no vertex.
+     *
+     * @param delta Filled with the change, broken out by term.
+     * @param why   Optional; filled when the flip is inadmissible.
+     * @return Whether the flip is admissible. The mesh is untouched if not.
+     */
+    bool evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why = nullptr);
+
+    /**
+     * @brief One Metropolis sweep of edge flips.
+     *
+     * The move that makes the membrane a fluid. The number of attempts is
+     * drawn from a Poisson distribution with mean
+     *
+     *     lambda = edgeFlipAttemptRate * timeStep * edgeFlipInterval * N_flippable
+     *
+     * so the physical attempt rate per edge is what the parameter says and does
+     * not move when the time step does. Drawing the count rather than fixing it
+     * is what makes that true: a fixed count per step would double the rate
+     * when the step halved.
+     *
+     * Each attempt takes a uniformly chosen edge and accepts with
+     * `min(1, exp(-dE / kT))`. A uniform choice makes the proposal symmetric --
+     * the reverse flip is proposed from the new state with the same
+     * probability, since a flip is an involution and the edge count is
+     * conserved -- so there is no proposal ratio to correct for.
+     *
+     * Flips are evaluated one at a time rather than in a batch. Accepting
+     * several at once multiplies their acceptance probabilities, which is not
+     * the same chain; TriMem makes the same point and keeps the acceptance
+     * step serial for it.
+     *
+     * Coordinates are not touched. The running totals param.area and param.vol
+     * are updated after each accepted flip, because the next attempt's
+     * constraint difference is measured against them. The caller is
+     * responsible for recomputing forces afterwards if any flip was accepted --
+     * the stored per-face energies and forces describe the old connectivity.
+     *
+     * @param iteration Mixed into the RNG key, so a sweep is reproducible from
+     *                  the seed and the step number alone.
+     * @param log       Optional; appended with one record per attempt.
+     */
+    EdgeFlipSweepStats edge_flip_sweep(long long iteration,
+                                       std::vector<EdgeFlipRecord> *log = nullptr);
+
+    /**
+     * @brief Replace the face corner lists and rebuild everything derived.
+     *
+     * A restart checkpoint of a fluid run carries the connectivity the run had
+     * reached, which is not the connectivity `setup_flat()` builds. Reloading
+     * the coordinates onto the setup triangulation would give a mesh whose
+     * every energy is wrong with nothing to indicate it, so the checkpoint
+     * carries the faces and this puts them back.
+     *
+     * Only the corner lists move. Ghost flags, insertion patches and
+     * spontaneous curvatures are per-face or per-vertex attributes of a grid
+     * position rather than of an adjacency, and a flip never touched them.
+     *
+     * The mesh is left untouched if the restore would not produce a
+     * two-manifold, so a corrupt checkpoint fails rather than half-loads.
+     *
+     * @param faceCorners One triple per face, in face-index order.
+     * @param why Optional; filled with the reason on refusal.
+     * @return false if the corners were rejected, in which case nothing moved.
+     */
+    bool restore_face_connectivity(const std::vector<std::array<int, 3>> &faceCorners,
+                                   std::string *why = nullptr);
+
+    /**
+     * @brief Check that the mesh is still a consistently wound two-manifold.
+     *
+     * Every edge in at most two faces, every interior vertex fan closed, every
+     * shared edge traversed in opposite directions by its two faces, and the
+     * edge table in step with the face list. A test helper and a debugging
+     * aid, not something the hot path calls.
+     *
+     * @param why Optional; filled with the first violation found.
+     */
+    bool validate_manifold_topology(std::string *why = nullptr) const;
+
+    /**
+     * @brief Classify one face's subdivision patch without side effects.
+     *
+     * The predicate the flip sweep needs: setup uses it and throws on the
+     * kinds it cannot evaluate, while a Metropolis trial uses it to reject a
+     * move instead.
+     */
+    PatchClass classify_face(int iFace) const;
+
+    /**
+     * @brief Build Face::oneRingVertices for one face from the live adjacency.
+     *
+     * The per-face body of set_one_ring_vertices_sorted(), extracted so that a
+     * flip can rebuild just the faces it disturbed. Clears the one-ring first,
+     * so a face that stops being evaluable does not keep a stale patch.
+     *
+     * @param iFace Face to rebuild.
+     * @param why   Optional; filled with the reason when the answer is false.
+     * @return Whether the face now carries an evaluable patch.
+     */
+    bool build_one_ring_for_face(int iFace, std::string *why = nullptr);
+
+    /**
+     * @brief Build the control net of a face with several extraordinary corners.
+     *
+     * Lists the face's one-ring in the internal numbering
+     * GenericFacePatch documents -- three corners, three edge-opposite
+     * vertices, then each corner's private fan -- which is the column order
+     * the prolongation matrices are written in.
+     *
+     * Rejects rather than throws when the real mesh identifies two control
+     * points the generic patch keeps apart, which happens on a closed surface
+     * too small for the face's own one-ring to be embedded.
+     */
+    bool build_multi_extraordinary_one_ring(int iFace, std::string *why = nullptr);
+
     // New members... for halfedge mesh
-    //std::vector<Edge> edges; ///< Vector to store all edges in the mesh
     //std::vector<Halfedge> halfedges; ///< Vector to store all halfedges in the mesh
 
 
@@ -302,6 +774,15 @@ public:
      * shapefunction calculation.
      *
      */
+    /**
+     * @brief Fill Vertex::adjacentFaces from the face list, in face order.
+     *
+     * The general form, valid for any triangulation. The sorted variant below
+     * reorders these into a fan using the generated grid's face numbering,
+     * which is only meaningful while the mesh still is that grid.
+     */
+    void set_adjacent_faces_of_vertices_unsorted();
+
     void set_adjacent_faces_of_vertices_sorted();
 
     /**
@@ -364,7 +845,18 @@ public:
      * @param node3
      * @return int vertex index
      */
-    int find_opposite_node_index(const int &node1, const int &node2, const int &node3);
+    /**
+     * @brief The corner across the edge (@p node1, @p node2) from @p node3.
+     *
+     * Reads the edge table, so it needs build_edge_table() to have run. An
+     * edge of a two-manifold has exactly two incident faces and so exactly two
+     * candidates; inferring them from the two vertices' shared neighbours
+     * instead is only correct on a near-regular mesh, which is not what a
+     * fluid membrane is.
+     *
+     * @return The corner, or -1 if there is no such edge or nothing across it.
+     */
+    int find_opposite_node_index(const int &node1, const int &node2, const int &node3) const;
 
     /**
      * @brief find out the one-ring vertices aound face_i. It should be 12 for the flat surface because we set it up only with regular patch.
@@ -662,6 +1154,40 @@ public:
      *
      */
     void energy_force_regularization();
+
+    /**
+     * @brief The fluid-mode mesh-quality term: a spring on every edge.
+     *
+     * E = (k / 2) * sum over edges of (l - l0)^2, with its force written into
+     * the same slots energy_force_regularization() uses. The two are
+     * alternatives: param.edgeSpringEnabled picks between them.
+     *
+     * Why a replacement rather than an addition. The regularization term
+     * measures a face's edges against the same face's edges in coordRef, which
+     * is a solid's memory of its own reference configuration. A fluid membrane
+     * has no such memory, and an edge a flip has just created has no reference
+     * length at all -- coordRef would hand it whatever the two endpoints
+     * happened to be, which is not a rest length, it is an accident.
+     *
+     * Each edge's energy is split between its incident faces so that the sum
+     * over faces is still the total.
+     */
+    void energy_force_edge_spring();
+
+    /**
+     * @brief The triangle-shape term: energy into the regularization slot,
+     * force added to forceRegularization.
+     *
+     * Adds rather than sets, so it runs after whichever edge-based term wrote
+     * the slot. See Param::triangleShapeEnabled.
+     */
+    void energy_force_triangle_shape();
+
+    /**
+     * @brief The crease wall: energy into the regularization slot, force
+     * added to forceRegularization. See Param::creaseWallEnabled.
+     */
+    void energy_force_crease_wall();
 
     /**
      * @brief Manages forces depending on different boundary conditions.

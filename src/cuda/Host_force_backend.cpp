@@ -46,6 +46,9 @@ ForceKernelArgs HostForceBackend::prepare(const DeviceMeshLayout &layout,
     args.vertexCorners = layout.vertexCorners();
     args.nFaces = layout.nFaces();
     args.nVertices = layout.nVertices();
+    args.multiEntries = layout.multiEntries();
+    args.multiProlongations = layout.multiProlongations();
+    args.nMultiEntries = layout.nMultiEntries();
 
     args.regularRows = rows.regular();
     args.gaussCoeff = rows.gaussCoeff();
@@ -128,6 +131,10 @@ void HostForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
     args.gamaShape = param.gamaShape;
     args.gamaArea = param.gamaArea;
     args.usingRpi = param.usingRpi;
+    // In fluid mode the edge tether replaces the reference-length term and
+    // runs on the host afterwards (Mesh::energy_force_fluid_terms()); the
+    // regularization stage then writes zeros. Same choice the CPU loop makes.
+    args.regularizationEnabled = !param.edgeSpringEnabled;
 
 #pragma omp parallel for
     for (int face = 0; face < args.nFaces; face++)

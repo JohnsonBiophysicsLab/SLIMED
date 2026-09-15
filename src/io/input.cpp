@@ -277,6 +277,126 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("inPlaneDynamicsEnabled") == 0)
+	{
+		param.inPlaneDynamicsEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "inPlaneDynamicsEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeSpringEnabled") == 0)
+	{
+		param.edgeSpringEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "edgeSpringEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeSpringConstant") == 0)
+	{
+		param.edgeSpringConstant = std::stod(variableValueStr);
+		std::cout << "edgeSpringConstant set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeSpringRestLength") == 0)
+	{
+		param.edgeSpringRestLength = std::stod(variableValueStr);
+		std::cout << "edgeSpringRestLength set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("irregularPatchDepthScale") == 0)
+	{
+		param.irregularPatchDepthScale = std::stod(variableValueStr);
+		std::cout << "irregularPatchDepthScale set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeTetherShape") == 0)
+	{
+		param.edgeTetherShape = variableValueStr;
+		std::cout << "edgeTetherShape set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeTetherMinRatio") == 0)
+	{
+		param.edgeTetherMinRatio = std::stod(variableValueStr);
+		std::cout << "edgeTetherMinRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeTetherMaxRatio") == 0)
+	{
+		param.edgeTetherMaxRatio = std::stod(variableValueStr);
+		std::cout << "edgeTetherMaxRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("triangleShapeEnabled") == 0)
+	{
+		param.triangleShapeEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "triangleShapeEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("triangleShapeMinAltitudeRatio") == 0)
+	{
+		param.triangleShapeMinAltitudeRatio = std::stod(variableValueStr);
+		std::cout << "triangleShapeMinAltitudeRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("triangleShapeConstant") == 0)
+	{
+		param.triangleShapeConstant = std::stod(variableValueStr);
+		std::cout << "triangleShapeConstant set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("creaseWallEnabled") == 0)
+	{
+		param.creaseWallEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "creaseWallEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("creaseWallAngle") == 0)
+	{
+		param.creaseWallAngle = std::stod(variableValueStr);
+		std::cout << "creaseWallAngle set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("creaseWallConstant") == 0)
+	{
+		param.creaseWallConstant = std::stod(variableValueStr);
+		std::cout << "creaseWallConstant set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("surfaceSolver") == 0)
+	{
+		param.surfaceSolver = variableValueStr;
+		std::cout << "surfaceSolver set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeFlipEnabled") == 0)
+	{
+		param.edgeFlipEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "edgeFlipEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeFlipAttemptRate") == 0)
+	{
+		param.edgeFlipAttemptRate = std::stod(variableValueStr);
+		std::cout << "edgeFlipAttemptRate set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeFlipInterval") == 0)
+	{
+		param.edgeFlipInterval = std::stoi(variableValueStr);
+		std::cout << "edgeFlipInterval set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeFlipMinValence") == 0)
+	{
+		param.edgeFlipMinValence = std::stoi(variableValueStr);
+		std::cout << "edgeFlipMinValence set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("edgeFlipMaxValence") == 0)
+	{
+		param.edgeFlipMaxValence = std::stoi(variableValueStr);
+		std::cout << "edgeFlipMaxValence set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("randomSeed") == 0)
 	{
 		param.randomSeed = static_cast<unsigned int>(std::stoul(variableValueStr));

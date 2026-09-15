@@ -29,6 +29,7 @@
 #include "energy_force/Energy.hpp"
 #include "energy_force/Force.hpp"
 #include "model/Model.hpp"
+#include "dynamics/Surface_solver.hpp"
 
 // matrix math
 #include "linalg/Linear_algebra.hpp"
@@ -82,6 +83,38 @@ public:
     void assign_mesh2surface();
 
     /**
+     * @brief The sparse, valence-aware form of the same mask.
+     *
+     * Used when param.surfaceSolver is "iterative". Rebuilt whenever the
+     * connectivity changes, which the dense inverse cannot be.
+     */
+    slimed::SurfaceSolver surfaceSolver;
+
+    /// Build surfaceSolver if it is missing or built for an older topology.
+    void ensure_surface_solver();
+
+    /**
+     * @name Converting between the control net and the limit surface
+     *
+     * Three operations the dynamics needs every step, behind one dispatch so
+     * that the driver does not care which representation is in use.
+     *
+     * "dense" reproduces exactly what this tree has always done, including its
+     * standing approximation of using M^-1 where M^-T belongs -- the two agree
+     * wherever the mask is symmetric, which is every interior valence-6 row.
+     * "iterative" is the corrected version: valence-aware, and the force map is
+     * the actual transpose.
+     * @{
+     */
+    /// matSurface = M * matMesh.
+    void apply_mesh_to_surface();
+    /// Solve M * matMesh = matSurface.
+    void apply_surface_to_mesh();
+    /// Carry a nodal force onto the surface coordinates the step displaces.
+    void apply_nodal_force_to_surface(const Matrix &nodalForce, Matrix &surfaceForce);
+    /** @} */
+
+    /**
      * @brief Updates the vertices matrix using the values from the vertices vector.
      *
      */
@@ -106,6 +139,16 @@ public:
      * @brief Fill isSlavedPeriodic from the periodic partner map.
      */
     void mark_slaved_periodic_vertices();
+
+    /**
+     * @brief Say at startup whether the flip move can actually move.
+     *
+     * A run with flips on and a tether too stiff to flip over reports its
+     * attempts, accepts none, and looks exactly like a run whose attempt rate
+     * is too low. The barrier is known in closed form before the first step,
+     * so there is no reason to let the run find out by producing nothing.
+     */
+    void report_edge_flip_feasibility();
 
 protected:
     /**

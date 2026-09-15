@@ -1,5 +1,10 @@
 #include "Run_simulation.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+
 void run_dynamics_flat(std::string param_filename) {
 
     Param inputParam;
@@ -85,23 +90,43 @@ void run_dynamics_flat(std::string param_filename) {
 
     ///////////////////////////////////////
     mesh.update_vertices_mat_with_vector(); //Update matMesh
-    mesh.matSurface = mesh.mesh2surface * mesh.matMesh; //Update matSurface
+    mesh.apply_mesh_to_surface(); //Update matSurface -- dense or sparse, per surfaceSolver
 
     if (mesh.param.meshpointOutput) {
         dynamics_create_trajectory_files(mesh, param_filename);
+        if (mesh.param.edgeFlipEnabled) {
+            // The baseline a later frame is compared against. Only for a run
+            // whose connectivity can move: with flips off this file would be a
+            // byte-for-byte copy of the face.csv written above, and a run that
+            // was reproducing an earlier one would find an output it did not
+            // have before.
+            dynamics_output_face_frame(mesh, param_filename, 0);
+        }
     }
-    
+
+    // One line per flip attempt, accepted or not. Held for the whole run and
+    // appended in blocks rather than per sweep: a sweep writes a handful of
+    // lines and the open/close would cost more than the sweep.
+    std::vector<EdgeFlipRecord> edgeFlipLog;
+    EdgeFlipSweepStats edgeFlipTotals;
+    const std::string edgeFlipLogPath = param_filename + "EdgeFlips.csv";
+    if (mesh.param.edgeFlipEnabled) {
+        // Appending, so a stale log from a previous run of the same name would
+        // be read back as part of this one.
+        std::remove(edgeFlipLogPath.c_str());
+    }
+
 
     for (model.iteration = 0; model.iteration < mesh.param.maxIterations; model.iteration ++) {
 
         //1.control mesh to limit surface
-        mesh.matSurface = mesh.mesh2surface * mesh.matMesh;
+        mesh.apply_mesh_to_surface();
 
         //2.next time step - calculate displacement on limit surface
         model.next_step(); 
 
         //3.limit surface to control mesh: verticesOnMesh = surface2mesh * verticesProjSurface
-        mesh.matMesh = mesh.surface2mesh * mesh.matSurface;
+        mesh.apply_surface_to_mesh();
 
         //4. postprocessing based on boundary condition
         switch (mesh.param.boundaryCondition) {
@@ -122,14 +147,73 @@ void run_dynamics_flat(std::string param_filename) {
             // 10^6-10^7 iterations an equilibrium spectrum needs, one line per
             // step per vertex runs to tens of gigabytes.
             dynamics_output_trajectory_files(mesh, param_filename);
+            if (mesh.param.edgeFlipEnabled) {
+                // Beside the frame, and only when the connectivity moved since
+                // the last one: a coordinate frame of a fluid run is
+                // meaningless without the triangles it belongs to.
+                dynamics_output_face_frame(mesh, param_filename, model.iteration + 1);
+            }
         }
 
         // Record the Energy and nodal Force
         record.add(mesh.param.area, mesh.param.energy, mesh.calculate_mean_force());
 
         mesh.Compute_Energy_And_Force();
+
+        // The flip sweep runs between force evaluations, on a mesh whose
+        // energies and forces are current, and at fixed coordinates. It needs
+        // the current per-face energies because the trial energy is a local
+        // difference against them, and it invalidates them by construction, so
+        // an accepted flip is followed by a second evaluation before the next
+        // Brownian step reads a force.
+        if (mesh.param.edgeFlipEnabled &&
+            (model.iteration + 1) % std::max(1, mesh.param.edgeFlipInterval) == 0) {
+            const EdgeFlipSweepStats stats = mesh.edge_flip_sweep(model.iteration, &edgeFlipLog);
+            edgeFlipTotals.drawn += stats.drawn;
+            edgeFlipTotals.attempted += stats.attempted;
+            edgeFlipTotals.accepted += stats.accepted;
+            edgeFlipTotals.deltaEnergy += stats.deltaEnergy;
+            if (stats.accepted > 0) {
+                // Every cache keyed on the connectivity -- the one-rings, the
+                // device layout, the sparse limit mask -- notices the version
+                // bump on its own. What does not is the stored energy and
+                // force, which still describe the old triangulation.
+                mesh.Compute_Energy_And_Force();
+            }
+            if (edgeFlipLog.size() >= 4096) {
+                write_edge_flip_log_csv(edgeFlipLog, edgeFlipLogPath);
+                edgeFlipLog.clear();
+            }
+        }
+
+        // A run that has gone non-finite has nothing left to say, and it says
+        // it for as long as it is given: the 3000-step fluid run that found
+        // this wrote NaN into every row after step 1535 and took four minutes
+        // doing it. Stop at the first one, keeping what was collected.
+        if (!std::isfinite(mesh.param.energy.energyTotal)) {
+            std::cerr << "[run_dynamics_flat] The total energy is "
+                      << mesh.param.energy.energyTotal << " at iteration " << model.iteration
+                      << "; the run has diverged and is stopping. Everything up to here has "
+                         "been written. A membrane that blows up this way is usually held "
+                         "together too weakly for the moves it is being asked to make -- check "
+                         "edgeSpringConstant against the startup barrier report."
+                      << std::endl;
+            model.iteration++;
+            break;
+        }
+
         cout<<"=========ITERATION:" << model.iteration << "==========================" << endl;
 
+    }
+
+    if (mesh.param.edgeFlipEnabled) {
+        write_edge_flip_log_csv(edgeFlipLog, edgeFlipLogPath);
+        edgeFlipLog.clear();
+        std::cout << "[run_dynamics_flat] Edge flips: " << edgeFlipTotals.accepted
+                  << " accepted of " << edgeFlipTotals.attempted << " admissible attempts ("
+                  << edgeFlipTotals.drawn << " drawn), acceptance "
+                  << edgeFlipTotals.acceptance() << ", total dE " << edgeFlipTotals.deltaEnergy
+                  << " pN.nm." << std::endl;
     }
 
     // Output Energy and meanforce

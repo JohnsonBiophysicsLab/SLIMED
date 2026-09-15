@@ -20,7 +20,12 @@ wall time went, so it is the only part worth moving.
 Everything else — the NCG optimiser, the line search that drives it, mesh
 setup, I/O, the area and volume totals — stays on the host. In particular the
 optimiser is unchanged, which is why `forceBackend` can be switched without
-touching the model.
+touching the model. So do the fluid-mode mesh-quality terms of
+`edge_flip_plan.md` — the edge tether, the triangle-shape term and the crease
+wall: sums over the edge table with closed-form gradients, which
+`Mesh::energy_force_fluid_terms()` evaluates on the host after the device
+returns, on both backends alike
+([section 11](#11-fluid-membranes-edge-flips-on-the-device)).
 
 Selection is at runtime, in `input.params`:
 
@@ -71,11 +76,19 @@ twice**. There is no host copy of the kernel and a device copy to keep in sync.
 
 and every arithmetic routine is `SLIMED_HD inline`, written over fixed-size
 stack arrays (`double[3]`, `double[kShapeRows][3]`) with no allocation, no STL
-and no library call. `kMaxControlPoints = 14` and `kShapeRows = 7` bound every
-buffer, so a patch evaluation touches only registers and local memory.
+and no library call. `kMaxControlPoints = 18` and `kShapeRows = 7` bound every
+buffer, so a patch evaluation touches only registers and local memory. (The
+bound was 14 — valence 8 plus 6 — until faces with several extraordinary
+corners arrived; their control net is `N0 + N1 + N2 - 6`, 18 at the widest.)
+The same header carries `multi_patch_prolong_pod()` and
+`multi_patch_scatter_pod()`, the two linear maps that path needs, so the host
+loop and the device run one body for them too.
 
-`Force_kernels.hpp` raises this to the stage level. Each stage is a function
-taking **one index**:
+`Force_kernels.hpp` raises this to the stage level. Two helpers,
+`evaluate_patch()` and `integrate_patch()`, say what "one patch of this
+valence over this many blocks" is — a regular patch is one block, an irregular
+one is Stam's tiling — and each stage is then a function taking **one
+index**:
 
 ```cpp
 SLIMED_HD inline void area_volume_for_face   (const ForceKernelArgs&, int face);
@@ -102,9 +115,13 @@ cross to a device.
 explicit index maps, and separates two lifetimes:
 
 - **Topology** — one-ring lists as CSR, a per-face `FacePatchDescriptor`
-  (`kind`, `nControlPoints`, `oneRingOffset`, `nChildren`), valences, ghost and
-  boundary flags, corner lists, and the vertex gather maps. Fixed while
-  connectivity is, so it is uploaded **once**.
+  (`kind`, `nControlPoints`, `oneRingOffset`, `nChildren`, `multiEntry`),
+  valences, ghost and boundary flags, corner lists, the vertex gather maps,
+  and a snapshot of the mesh's `MultiPatchTable` (one `DeviceMultiPatchEntry`
+  per valence triple plus the prolongation buffer). Fixed while connectivity
+  is, so it is uploaded **once per connectivity**: an edge flip changes it
+  without changing any count, and `Mesh::topologyVersion` is what makes
+  `Mesh::ensure_device_layout()` rebuild and re-upload it.
 - **Coordinates** — the only thing a line-search trial changes, and so the only
   thing re-uploaded per evaluation.
 
@@ -144,8 +161,11 @@ unchanged; only the driver knows which.
 ## 4. Execution
 
 `kBlockSize = 128`, chosen for register pressure: a patch body holds a dozen
-3-vectors plus up to a 14x3 control net, so a larger block trades occupancy for
-spills. Grid is `(n + 127) / 128`.
+3-vectors plus up to an 18x3 control net, so a larger block trades occupancy
+for spills. Grid is `(n + 127) / 128`. A face with several extraordinary
+corners adds a child control net and three child force buffers of the same
+size — about 3.5 kB of local memory per thread on top — so a fluid mesh may
+want a smaller block; that has not been measured.
 
 One evaluation is four launches with a host round trip in the middle:
 
@@ -154,8 +174,9 @@ One evaluation is four launches with a host round trip in the middle:
 | 1 | `area_volume_kernel` | one per face | `faceArea`, `faceVolume` |
 | — | *host*: download both, sum in face order, set `param.area` / `param.vol` | | |
 | 2 | `patch_force_kernel` | one per face | face energy, curvature, normal, and the face's own force **slots** |
-| 3 | `regularization_kernel` | one per face | `faceERegular`, `faceDeformCase`, three corner slots |
+| 3 | `regularization_kernel` | one per face | `faceERegular`, `faceDeformCase`, three corner slots — zeros when `ForceKernelArgs::regularizationEnabled` is false, i.e. in fluid mode |
 | 4 | `gather_kernel` | one per vertex | the four per-vertex force vectors |
+| — | *host*: `Mesh::energy_force_fluid_terms()` — the tether, triangle-shape and crease-wall terms, each behind its flag, over the edge table | | |
 
 The host round trip after stage 1 is required, not incidental: the area and
 volume **constraint** forces computed in stage 2 need the global totals, which
@@ -402,7 +423,9 @@ Device memory is dominated by the per-slot force scratch: three buffers of
 `nFaces * 9`. At 10^5 faces that scratch is about 94 MB, and the whole device
 layout — topology, shape-function rows, coordinates and outputs — comes to
 roughly 120 MB. Comfortable on a 6 GB card, but it scales linearly and is the
-first thing to check on a very large mesh.
+first thing to check on a very large mesh. A fluid mesh is wider — its faces
+carry up to 18 control points rather than 12 — and adds the prolongation
+table, which is under 100 kB for every valence triple in `[4, 8]³`.
 `CudaForceBackend::device_memory_bytes()` reports the exact total.
 
 ### 8.5 Build and toolchain
@@ -426,9 +449,10 @@ ctest --test-dir build -R CudaForceBackend --output-on-failure
 ```
 
 `CudaForceBackendTest.MatchesTheProductionForceEvaluation` runs the GPU and the
-production CPU path over the same meshes — a grid, and the canonical patch for
-every valence 4 through 8 — and compares every element area and volume, every
-face energy, curvature and normal, and every vertex force.
+production CPU path over the same meshes — a grid, the canonical patch for
+every valence 4 through 8, and a grid with twelve edges flipped, with and
+without the fluid-mode terms — and compares every element area and volume,
+every face energy, curvature and normal, and every vertex force.
 
 **It skips rather than fails when no device is usable, and ctest reports a skip
 as `Passed`.** A green line proves nothing on its own. Confirm it actually ran:
@@ -476,3 +500,49 @@ Smaller, independent wins:
   bandwidth.
 - Relax the equivalence-test tolerance and add a production-scale fixture
   ([section 9](#9-verifying-a-new-machine)).
+
+## 11. Fluid membranes: edge flips on the device
+
+A Monte Carlo edge flip (`edge_flip_plan.md`) leaves extraordinary corners at
+both ends of the new edge, so a fluid mesh is mostly faces with two or three
+of them. The CPU evaluates such a face as the four children of one Loop
+subdivision of its own control net — a prolongation matrix per child, then
+the regular or Stam kernel on the child, then `M^T` back onto the parent
+(`Multi_extraordinary_patch.hpp`). The device does the same:
+
+- `DeviceMeshLayout::build()` classifies the face `DevicePatchKind::Multi`,
+  records its `Face::patchEntry` in the descriptor, and snapshots the mesh's
+  `MultiPatchTable` into `DeviceMultiPatchEntry[]` plus one prolongation
+  buffer. Both are uploaded with the topology. The build throws if a face
+  names an entry the snapshot does not hold or a width the entry does not
+  match, because a wrong offset returns a plausible matrix for the wrong
+  triple rather than crashing.
+- `patch_force_for_face()` and `area_volume_for_face()` take the multi branch:
+  prolong, `evaluate_patch()` / `integrate_patch()` at the child's own valence
+  and block count, scatter. Operation for operation the CPU loop, so the
+  equivalence test holds at `1e-13` on a flipped grid, as it does elsewhere.
+- **Connectivity changes are handled by the existing invalidation.** An
+  accepted flip bumps `Mesh::topologyVersion`; `ensure_device_layout()`
+  rebuilds the layout and calls `CudaForceBackend::invalidate_topology()`, so
+  the next `evaluate()` re-uploads the topology and the table. A step with no
+  accepted flip uploads coordinates only, as before. The rebuild is host
+  `O(N)` and the upload is roughly 60 bytes per face; an incremental update is
+  the obvious later optimisation, not a correctness requirement.
+- **The fluid-mode mesh-quality terms stay on the host.** With
+  `edgeSpringEnabled` the reference-length regularization is not part of the
+  Hamiltonian; the device's regularization stage writes zeros
+  (`ForceKernelArgs::regularizationEnabled = false`) and
+  `Compute_Energy_And_Force()` then runs `Mesh::energy_force_fluid_terms()` —
+  the tether, the triangle-shape term and the crease wall, each behind its
+  flag — over the edge table, exactly as the CPU path does after its own face
+  loop. They are `O(edges)` with closed-form gradients; the face work is where
+  the time goes, and that is on the device.
+
+`DynamicMesh::setup_flat()` no longer refuses `edgeFlipEnabled` with
+`forceBackend = gpu`; `resolve_force_backend()` still fails a `gpu` run loudly
+when no device is usable. **This path has been verified host-side only** —
+`DeviceMeshLayoutTest` on the flipped fixtures, and the `.cu` compiled and run
+against a stand-in runtime with each launch expanded to a serial loop — so on
+a GPU build run [section 9](#9-verifying-a-new-machine)'s test first; it now
+covers the flipped fixtures. Block size on a fluid mesh
+([section 4](#4-execution)) is the first thing worth measuring there.

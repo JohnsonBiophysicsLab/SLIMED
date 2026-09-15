@@ -2,40 +2,14 @@
 
 #include <cstdint>
 
-namespace
-{
-/// SplitMix64 -- one avalanche round on a 64-bit counter.
-inline std::uint64_t splitmix64(std::uint64_t x)
-{
-    x += 0x9E3779B97F4A7C15ULL;
-    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
-    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
-    return x ^ (x >> 31);
-}
+#include "Counter_rng.hpp"
 
-/// A uniform on (0, 1) -- never exactly 0, so the log() below stays finite.
-inline double uniform_open01(std::uint64_t bits)
-{
-    return (static_cast<double>(bits >> 11) + 0.5) * (1.0 / 9007199254740992.0);
-}
+// The counter-based generator these used to define lives in Counter_rng.hpp
+// now: the Metropolis flip sweep needs the same primitives, and two copies of
+// a generator is two chances for a run to stop being reproducible.
+using slimed::splitmix64;
+using slimed::standard_normal;
 
-/// One standard normal, keyed by (run, iteration, vertex, axis).
-///
-/// Counter-based rather than sequential: what a vertex draws depends only on
-/// where it sits in the run, never on the order the OpenMP team happens to
-/// reach it. The previous code called a shared std::normal_distribution on a
-/// shared std::mt19937 from inside `#pragma omp parallel for`, which is a
-/// data race on the generator state: the noise was neither reproducible nor
-/// guaranteed to still be Gaussian, and an equilibrium fluctuation spectrum
-/// is only ever as good as the noise that drives it.
-inline double standard_normal(std::uint64_t stepKey, std::uint64_t vertex, std::uint64_t axis)
-{
-    const std::uint64_t key = splitmix64(stepKey + splitmix64(vertex * 4ULL + axis));
-    const double u1 = uniform_open01(splitmix64(key));
-    const double u2 = uniform_open01(splitmix64(key ^ 0xD1B54A32D192ED03ULL));
-    return std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * M_PI * u2);
-}
-} // namespace
 
 /**
  * @brief Constructs a new Model object.
@@ -142,12 +116,24 @@ void DynamicModel::next_step()
         {
             for (int j = 0; j < 3; j++)
             {
+                // The mesh-quality term joins the drive only in fluid mode.
+                // The reference-length regularization is deliberately left out
+                // of it: it is a solid's restoring force toward a
+                // configuration a fluid membrane has no reason to return to,
+                // and with the in-plane displacement zeroed it had nothing to
+                // act on anyway. The edge spring is a real part of the
+                // Hamiltonian the flip sweep samples, so leaving it out of the
+                // dynamics would make the two disagree about the energy.
                 double f = mesh.vertices[i].force.forceCurvature(j, 0) +
                            mesh.vertices[i].force.forceArea(j, 0);
+                if (mesh.param.edgeSpringEnabled)
+                {
+                    f += mesh.vertices[i].force.forceRegularization(j, 0);
+                }
                 nodalForce.set(i, j, std::isnan(f) ? 0.0 : f);
             }
         }
-        driveForce = mesh.surface2mesh * nodalForce;
+        mesh.apply_nodal_force_to_surface(nodalForce, driveForce);
     }
 
     // One key per (run, step); standard_normal() mixes the vertex and axis in.
@@ -191,6 +177,10 @@ void DynamicModel::next_step()
                                 ? driveForce(i, j)
                                 : mesh.vertices[i].force.forceCurvature(j, 0) +
                                       mesh.vertices[i].force.forceArea(j, 0); // Get force term
+                if (!mesh.param.fdtConsistentSurfaceUpdate && mesh.param.edgeSpringEnabled)
+                {
+                    forceterm += mesh.vertices[i].force.forceRegularization(j, 0);
+                }
                 //std::cout << "Force @ " << i << " , "<< j << " = "  << forceterm << std::endl;
                 if (std::isnan(forceterm))
                 {
@@ -198,9 +188,19 @@ void DynamicModel::next_step()
                 }
                 randomterm = standard_normal(stepKey, static_cast<std::uint64_t>(i),
                                              static_cast<std::uint64_t>(j)); // Get random term
-                // x, y direction are trivial for now
-                // ! need to calculate the normal vector for the surface in the future
-                if (j < 2) {
+                // In-plane motion is switched off by default, which is what
+                // this model has always done. It is defensible for a sheet
+                // whose triangulation cannot rearrange: the in-plane degrees
+                // of freedom have nowhere useful to go, and the analysis in
+                // docs/fluctuation_spectrum.md relies on every vertex staying
+                // on its ideal lattice site so the height field can be
+                // transformed without resampling.
+                //
+                // It is not defensible for a fluid membrane. In-plane motion
+                // is half of what fluidity means, and a flip that rearranges
+                // the connectivity while the vertices are pinned laterally is
+                // only doing half the job.
+                if (j < 2 && !mesh.param.inPlaneDynamicsEnabled) {
                     randomterm *= 0.0;
                     forceterm *= 0.0;
                 }

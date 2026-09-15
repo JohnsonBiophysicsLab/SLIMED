@@ -1,0 +1,21 @@
+config	binary	threads	seconds	steps_per_s	flips
+dense_noflip	serial	1	2.68	112.0	
+dense_noflip	omp	1	1.14	263.8	
+dense_noflip	omp	2	0.83	361.3	
+dense_noflip	omp	4	0.78	385.7	
+dense_noflip	omp	8	0.87	344.0	
+iter_noflip	serial	1	2.94	102.2	
+iter_noflip	omp	1	0.56	535.5	
+iter_noflip	omp	2	0.46	646.7	
+iter_noflip	omp	4	0.42	710.8	
+iter_noflip	omp	8	0.50	594.6	
+fluid_depth1.0	serial	1	17.98	16.7	23 accepted of 52 admissible attempts (71 drawn)
+fluid_depth1.0	omp	1	2.39	125.5	23 accepted of 52 admissible attempts (71 drawn)
+fluid_depth1.0	omp	2	1.49	201.9	23 accepted of 52 admissible attempts (71 drawn)
+fluid_depth1.0	omp	4	1.25	239.9	23 accepted of 52 admissible attempts (71 drawn)
+fluid_depth1.0	omp	8	1.01	296.4	23 accepted of 52 admissible attempts (71 drawn)
+fluid_depth0.5	serial	1	11.99	25.0	25 accepted of 51 admissible attempts (71 drawn)
+fluid_depth0.5	omp	1	1.68	178.5	25 accepted of 51 admissible attempts (71 drawn)
+fluid_depth0.5	omp	2	1.10	272.9	25 accepted of 51 admissible attempts (71 drawn)
+fluid_depth0.5	omp	4	0.94	317.8	25 accepted of 51 admissible attempts (71 drawn)
+fluid_depth0.5	omp	8	0.82	365.3	25 accepted of 51 admissible attempts (71 drawn)

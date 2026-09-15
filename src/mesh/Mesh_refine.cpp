@@ -93,9 +93,26 @@ void Mesh::refine_loop_once()
                 neighbours[b].push_back(a);
         }
     }
-    // Each face counted each of its corners once per edge walk, i.e. twice.
-    for (int v = 0; v < nOldVertices; v++)
-        incidentFaces[v] /= 2;
+    // The walk above visits each corner of each face exactly once -- k runs
+    // over the three corners and increments only `a` -- so incidentFaces
+    // already holds the number of faces at each vertex.
+    //
+    // It used to be halved here, on the belief that each corner was counted
+    // twice. It is not, and the consequence was total: is_interior() became
+    // `nFaces / 2 == valence`, which is false for every interior vertex, where
+    // the two are equal. So every vertex took the boundary branch, found no
+    // boundary neighbours, fell through to "pin it", and kept its old
+    // position. The Loop even-point rule never ran.
+    //
+    // That is not a small error. A refinement that moves the new edge points
+    // but leaves the old vertices where they were does not represent the same
+    // limit surface -- it changes the geometry rather than only the
+    // discretization, which is the one thing refinement must not do. The
+    // topology tests passed throughout, because the counts and the
+    // extraordinary-vertex isolation were right; nothing checked the
+    // positions. MultiExtraordinaryPatchTest.MatchesAGlobalLoopRefinementFaceForFace
+    // is what found it, by asking the coarse and refined meshes for the same
+    // integral.
 
     auto is_interior = [&](int v) {
         return incidentFaces[v] == static_cast<int>(neighbours[v].size());

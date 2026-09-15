@@ -39,13 +39,24 @@ int recommended_irregular_depth(int valence)
     }
 }
 
+int scaled_irregular_depth(int recommendedDepth, double depthScale)
+{
+    if (!(depthScale > 0.0) || depthScale == 1.0)
+    {
+        return recommendedDepth;
+    }
+    const long scaled = std::lround(static_cast<double>(recommendedDepth) * depthScale);
+    return static_cast<int>(std::max<long>(1, scaled));
+}
+
 int IrregularPatchRowTable::depth_for(int valence) const
 {
     if (policy_ == DepthPolicy::Uniform)
     {
         return depth_;
     }
-    return std::min(depth_, recommended_irregular_depth(valence));
+    return std::min(depth_,
+                    scaled_irregular_depth(recommended_irregular_depth(valence), depthScale_));
 }
 
 int IrregularPatchRowTable::child_index(int valence, int depth, int child) const
@@ -62,8 +73,31 @@ int IrregularPatchRowTable::child_index(int valence, int depth, int child) const
 }
 
 void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFunctions, int depth,
-                                   DepthPolicy policy)
+                                   DepthPolicy policy, double depthScale)
 {
+    if (!(depthScale > 0.0))
+    {
+        throw std::invalid_argument(
+            "[IrregularPatchRowTable] irregularPatchDepthScale must be positive, got " +
+            std::to_string(depthScale));
+    }
+
+    // Under PerValence the built depth is only ever consumed up to the scaled
+    // recommendation, so build exactly that much: a scale below 1 then costs
+    // less to build as well as to evaluate, and a scale above 1 has the extra
+    // levels to hand out instead of silently clamping back to the default.
+    // Uniform is left alone -- see the header.
+    if (policy == DepthPolicy::PerValence && depthScale != 1.0)
+    {
+        int needed = 1;
+        for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
+        {
+            needed = std::max(
+                needed, scaled_irregular_depth(recommended_irregular_depth(valence), depthScale));
+        }
+        depth = needed;
+    }
+
     if (depth <= 0)
     {
         throw std::invalid_argument("[IrregularPatchRowTable] depth must be positive, got " +
@@ -138,6 +172,7 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
     depth_ = depth;
     nSamples_ = nSamples;
     policy_ = policy;
+    depthScale_ = depthScale;
     rows_ = std::move(built);
 }
 

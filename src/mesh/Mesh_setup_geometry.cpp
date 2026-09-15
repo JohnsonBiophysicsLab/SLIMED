@@ -4,12 +4,11 @@
 #include <cstdint>
 
 
-void Mesh::set_adjacent_faces_of_vertices_sorted()
+void Mesh::set_adjacent_faces_of_vertices_unsorted()
 {
-    // 1. Get adjacent faces unsorted
     // Initialize vector of empty vectors for adjacent faces
     vector<vector<int>> adjFaces(vertices.size());
-    
+
     // Populate adjacent faces for each vertex
     for (int j = 0; j < faces.size(); j++)
     {
@@ -19,12 +18,18 @@ void Mesh::set_adjacent_faces_of_vertices_sorted()
             adjFaces[i].push_back(j);
         }
     }
-    
+
     // Transfer adjacent faces from temp vector to each vertex
     for (int i = 0; i < vertices.size(); i++)
     {
         vertices[i].adjacentFaces = std::move(adjFaces[i]);
     }
+}
+
+void Mesh::set_adjacent_faces_of_vertices_sorted()
+{
+    // 1. Get adjacent faces unsorted
+    set_adjacent_faces_of_vertices_unsorted();
 
     if (param.VERBOSE_MODE)
     {
@@ -33,6 +38,18 @@ void Mesh::set_adjacent_faces_of_vertices_sorted()
 
     // 2. Sort faces so that adjacentFaces that are adjacent to each
     // other are of +/- 1 index.
+    //
+    // Note what this is: the six faces around a vertex read straight off the
+    // generated grid's face numbering, with anything not among them dropped.
+    // It is therefore only valid for a mesh that still *is* that grid. After
+    // an edge flip a vertex can have seven adjacent faces, and the seventh has
+    // no grid index -- so it would be erased here, leaving the vertex claiming
+    // fewer faces than name it. flip_edge() maintains adjacentFaces as a set
+    // rather than a fan for that reason, and anything rebuilding the adjacency
+    // of a mesh that has flipped must call the unsorted pass directly.
+    //
+    // nFaceX and nFaceY default to -1, so on an imported mesh these loops do
+    // not run at all and the unsorted lists stand.
     for (int j = 0; j < param.nFaceY + 1; j++) // iterate along y-axis
     {
         for (int i = 0; i < param.nFaceX + 1; i++) // iterate along x-axis
@@ -124,19 +141,9 @@ bool Mesh::faces_share_edge(const Face& face1, const Face& face2, std::vector<in
     return commonElements.size() >= 2;
 }
 
-namespace
-{
-/// Pack an edge into one key with its endpoints in ascending order, so the two
-/// faces meeting on an edge land in the same bucket however each of them winds
-/// it. Mirrors directed_edge_key() in Mesh_setup_boundary_condition.cpp, which
-/// deliberately does not sort because it is counting orientations.
-inline std::uint64_t undirected_edge_key(int nodeA, int nodeB)
-{
-    const std::uint32_t low = static_cast<std::uint32_t>(nodeA < nodeB ? nodeA : nodeB);
-    const std::uint32_t high = static_cast<std::uint32_t>(nodeA < nodeB ? nodeB : nodeA);
-    return (static_cast<std::uint64_t>(low) << 32) | high;
-}
-} // namespace
+// undirected_edge_key() used to live here, in an anonymous namespace. It is in
+// include/mesh/Edge.hpp now: the edge table, this face-adjacency pass and the
+// flip move all key on the same edges and must not drift apart.
 
 /**
  * @brief Set adjacentFaces properties of faces based on the current
@@ -253,29 +260,46 @@ void Mesh::set_adjacent_vertices_of_vertices_sorted()
     }
 }
 
-int Mesh::find_opposite_node_index(const int &node1, const int &node2, const int &node3)
+int Mesh::find_opposite_node_index(const int &node1, const int &node2, const int &node3) const
 {
-    int node = -1;
-    for (int i = 0; i < vertices[node1].adjacentVertices.size(); i++)
+    // The corner across the edge (node1, node2) from node3.
+    //
+    // This used to intersect the two vertices' neighbour lists and take a
+    // common neighbour that was not node3. That is the right answer only when
+    // the two share exactly two neighbours, which on a near-regular mesh they
+    // do -- the two corners opposite their shared edge. It is not true in
+    // general. Two adjacent vertices of an irregular triangulation can easily
+    // share a third neighbour that forms no face with the edge between them,
+    // and then the intersection was ambiguous and the loop returned whichever
+    // one it happened to see last.
+    //
+    // Nothing noticed while connectivity was fixed at setup, because the
+    // meshes this tree builds are near-regular. Edge flips make the mesh
+    // irregular by construction, and the ambiguity turned into fans that did
+    // not close and faces left with no patch at all -- carrying, silently,
+    // zero energy and zero force.
+    //
+    // The edge table answers the question exactly instead of inferring it: an
+    // edge of a two-manifold has exactly two incident faces, and their third
+    // corners are the only two candidates there have ever been.
+    const int iEdge = edge_between(node1, node2);
+    if (iEdge < 0)
     {
-        int nodetmp1 = vertices[node1].adjacentVertices[i];
-        for (int j = 0; j < vertices[node2].adjacentVertices.size(); j++)
+        return -1;
+    }
+    const MeshEdge &edge = edges[iEdge];
+    for (int k = 0; k < 2; k++)
+    {
+        if (edge.face[k] >= 0 && edge.opposite[k] != node3)
         {
-            int nodetmp2 = vertices[node2].adjacentVertices[j];
-            if (nodetmp1 == nodetmp2 && nodetmp1 != node3)
-            {
-                node = nodetmp1;
-            }
+            return edge.opposite[k];
         }
     }
-    if (node == -1)
-    {
-        if (param.VERBOSE_MODE) {
-
-        }
-        cout << "No efficent oneRingVerticesIndex is found! Node1 = " << node1 << ", Node2 = " << node2 << ", Node3 = " << node3 << endl;
-    }
-    return node;
+    // A boundary edge carries one face, and if that face is the one node3
+    // corners then there is nothing across it. That is how the walk reports a
+    // face on the mesh boundary, which is a property of the mesh rather than a
+    // fault; build_one_ring_for_face() turns it into a named rejection.
+    return -1;
 }
 
 /**
@@ -353,12 +377,387 @@ void Mesh::sort_vertices_on_faces()
 }
 
 // To find out the one-ring vertices around face_i. A regular patch has 12; an
-// irregular patch, with exactly one valence-5 corner, has 11. Anything else is
-// rejected rather than silently left empty -- an empty one-ring matches neither
-// arm of the dispatch in Compute_Energy_And_Force(), which would store the face
-// with zero energy and zero force.
+// irregular patch, with exactly one extraordinary corner of valence N, has
+// N+6. Anything else is rejected rather than silently left empty -- an empty
+// one-ring matches neither arm of the dispatch in Compute_Energy_And_Force(),
+// which would store the face with zero energy and zero force.
+//
+// The per-face work is split into classify_face(), which decides what kind of
+// patch a face carries and has no side effects, and build_one_ring_for_face(),
+// which builds one face's control net. An edge flip needs to ask the same
+// question of a single face speculatively, and needs to rebuild the one-rings
+// of the eighteen or so faces it disturbs -- neither of which it can do
+// through a whole-mesh pass that throws. See docs/edge_flip_plan.md section
+// 3.3.
+PatchClass Mesh::classify_face(int iFace) const
+{
+    PatchClass result;
+    const Face &face = faces[iFace];
+
+    // Ghost faces lack the neighbouring triangles for a complete one-ring, and
+    // take no part in any physical calculation.
+    if (face.isGhost)
+    {
+        result.kind = PatchKind::Ghost;
+        return result;
+    }
+
+    if (face.adjacentVertices.size() != 3)
+    {
+        result.kind = PatchKind::Inadmissible;
+        result.why = "face " + std::to_string(iFace) + " does not have exactly three corners";
+        return result;
+    }
+
+    // A face touching the mesh boundary has no complete one-ring and so no
+    // limit surface -- that is a property of the mesh, not an error, and it is
+    // what the original comment on this function meant by "the boundary faces
+    // do not have complete one-ring". Leaving oneRingVertices empty here is
+    // deliberate. The defect was that *every* unmatched face took this path,
+    // including genuine extraordinary interior vertices.
+    for (int k = 0; k < 3; k++)
+    {
+        if (!is_interior_vertex(face.adjacentVertices[k]))
+        {
+            result.kind = PatchKind::Boundary;
+            return result;
+        }
+    }
+
+    // Valence is the size of the one-ring. Selection below tests the same
+    // quantity the classification does; the two used to disagree
+    // (adjacentVertices when classifying, adjacentFaces when selecting), and
+    // on any vertex where they differ d4/d7/d8 were left uninitialized and
+    // read anyway.
+    for (int k = 0; k < 3; k++)
+    {
+        result.valence[k] =
+            static_cast<int>(vertices[face.adjacentVertices[k]].adjacentVertices.size());
+    }
+
+    // The old predicate required all three corners at valence 5 while the body
+    // built a 5/6/6 patch. Those are different topology classes, and only the
+    // second matches the subdivision matrices.
+    const std::string rejection =
+        "face " + std::to_string(iFace) + " has valences (" + std::to_string(result.valence[0]) +
+        ", " + std::to_string(result.valence[1]) + ", " + std::to_string(result.valence[2]) +
+        "); a patch needs exactly one corner in [" + std::to_string(kMinIrregularValence) + ", " +
+        std::to_string(kMaxIrregularValence) + "] with the other two at 6";
+
+    int nExtraordinary = 0;
+    int anchor = -1;
+    for (int k = 0; k < 3; k++)
+    {
+        if (result.valence[k] < kMinIrregularValence || result.valence[k] > kMaxIrregularValence)
+        {
+            result.kind = PatchKind::Inadmissible;
+            result.why = rejection;
+            return result;
+        }
+        if (result.valence[k] != 6)
+        {
+            nExtraordinary++;
+            if (anchor < 0)
+            {
+                anchor = k;
+            }
+        }
+    }
+
+    if (nExtraordinary == 0)
+    {
+        result.kind = PatchKind::Regular;
+        result.anchor = 0;
+        return result;
+    }
+    if (nExtraordinary == 1)
+    {
+        result.kind = PatchKind::SingleExtraordinary;
+        result.anchor = anchor;
+        return result;
+    }
+
+    // More than one extraordinary corner, every valence still in range. The
+    // face is a perfectly ordinary piece of surface; it was Stam's reduction
+    // as tabulated that could not evaluate it, because that peels three
+    // regular children off a *single* extraordinary corner. It is evaluated
+    // now by subdividing the face's own control net once, which splits it into
+    // four children each carrying at most one extraordinary corner -- see
+    // include/mesh/Multi_extraordinary_patch.hpp. The anchor stays at corner 0:
+    // there is no extraordinary corner to single out, and the control net is
+    // ordered by the face's own winding.
+    //
+    // `rejection` goes unused on this path now. It is still the message for a
+    // valence out of range above, and the tests pin its wording.
+    (void)rejection;
+    result.kind = PatchKind::MultiExtraordinary;
+    result.anchor = 0;
+    return result;
+}
+
+bool Mesh::build_one_ring_for_face(int iFace, std::string *why)
+{
+    if (why != nullptr)
+    {
+        why->clear();
+    }
+
+    Face &face = faces[iFace];
+    // Clear first: a face that has stopped being evaluable -- which is what a
+    // flip can do to its neighbours -- must not keep a one-ring that no longer
+    // describes it.
+    face.oneRingVertices.clear();
+    face.patchKind = PatchKind::Boundary;
+    face.patchEntry = -1;
+
+    const PatchClass patch = classify_face(iFace);
+    face.patchKind = patch.kind;
+    for (int k = 0; k < 3; k++)
+    {
+        face.patchValence[k] = patch.valence[k];
+    }
+    if (!patch.has_evaluable_patch())
+    {
+        if (why != nullptr)
+        {
+            *why = patch.why;
+        }
+        return false;
+    }
+
+    if (patch.kind == PatchKind::MultiExtraordinary)
+    {
+        const bool built = build_multi_extraordinary_one_ring(iFace, why);
+        if (!built)
+        {
+            face.oneRingVertices.clear();
+            face.patchKind = PatchKind::Inadmissible;
+        }
+        return built;
+    }
+
+    // d4 anchors the patch -- the extraordinary corner when there is one.
+    // Rotating (node0, node1, node2) preserves the face winding, which
+    // sort_vertices_on_faces() has already made consistent across the mesh, so
+    // no per-face winding decision is taken here.
+    //
+    // The previous code decided winding with
+    //     dot(centre, (c7 - c4) x (c8 - c4)) < 0
+    // which asks whether the normal points away from the coordinate ORIGIN.
+    // That is only meaningful for a surface star-shaped about the origin. It
+    // is identically zero on a flat sheet in the z = 0 plane, arbitrary on a
+    // membrane translated off the origin, and actively wrong on a closed
+    // surface not enclosing it -- on a torus it flips exactly the inner half
+    // of the faces.
+    const int d4 = face.adjacentVertices[patch.anchor];
+    const int d7 = face.adjacentVertices[(patch.anchor + 1) % 3];
+    const int d8 = face.adjacentVertices[(patch.anchor + 2) % 3];
+    const int valence = patch.valence[patch.anchor];
+
+    // Walk d4's fan. fan[0] = d7, fan[1] = d8, and each step takes the
+    // neighbour shared with the previous one that is not the one before
+    // it -- the same opposite-node rule, applied around the corner. This
+    // is what generalises the ring beyond valence 5: the old code
+    // enumerated a fixed d1..d12 and could only ever produce 11 or 12
+    // points.
+    std::vector<int> ringInternal(valence + 6, -1);
+    ringInternal[0] = d4;
+    ringInternal[1] = d7;
+    ringInternal[2] = d8;
+    for (int k = 2; k < valence; k++)
+    {
+        ringInternal[1 + k] = find_opposite_node_index(d4, ringInternal[k], ringInternal[k - 1]);
+    }
+
+    const int d3 = ringInternal[valence];      // the fan closes here
+    const int d5 = (valence >= 3) ? ringInternal[3] : -1;
+    const int d11 = find_opposite_node_index(d7, d8, d4);
+    ringInternal[valence + 1] = find_opposite_node_index(d3, d7, d4);   // d6
+    ringInternal[valence + 2] = find_opposite_node_index(d8, d5, d4);   // d9
+    ringInternal[valence + 3] = find_opposite_node_index(d7, d11, d8);  // d10
+    ringInternal[valence + 4] = d11;
+    ringInternal[valence + 5] = find_opposite_node_index(d8, d11, d7);  // d12
+
+    // The fan must close back on d7, or the corner is not the simple
+    // isolated fan the reduction assumes.
+    if (d3 < 0 || find_opposite_node_index(d4, d3, ringInternal[valence - 1]) != d7)
+    {
+        if (why != nullptr)
+        {
+            *why = "face " + std::to_string(iFace) +
+                   " has a corner whose fan does not close at valence " + std::to_string(valence);
+        }
+        return false;
+    }
+
+    // Reorder into the canonical one-ring order -- the column order of the
+    // rows in IrregularPatchRowTable, shared from one place so the two
+    // cannot drift apart.
+    const std::vector<int> columnOf = canonical_control_order(valence);
+    std::vector<int> oneRing(valence + 6, -1);
+    for (int internal = 0; internal < valence + 6; internal++)
+    {
+        oneRing[columnOf[internal]] = ringInternal[internal];
+    }
+
+    // At valence 6 the patch is regular and carries the full d1..d12 ring;
+    // the fan walk above produces the same 12 points.
+    // find_opposite_node_index() returns -1 when the walk fails, which used
+    // to be printed and then used as a vertex index.
+    if (std::find(oneRing.begin(), oneRing.end(), -1) != oneRing.end())
+    {
+        if (why != nullptr)
+        {
+            *why = "face " + std::to_string(iFace) +
+                   " has an incomplete one-ring: the two-ring walk failed at valences (" +
+                   std::to_string(patch.valence[0]) + ", " + std::to_string(patch.valence[1]) +
+                   ", " + std::to_string(patch.valence[2]) + ")";
+        }
+        return false;
+    }
+
+    face.oneRingVertices = std::move(oneRing);
+    return true;
+}
+
+bool Mesh::build_multi_extraordinary_one_ring(int iFace, std::string *why)
+{
+    Face &face = faces[iFace];
+    const int corner[3] = {face.adjacentVertices[0], face.adjacentVertices[1],
+                           face.adjacentVertices[2]};
+    const int valence[3] = {face.patchValence[0], face.patchValence[1], face.patchValence[2]};
+
+    auto reject = [&](const std::string &reason) {
+        if (why != nullptr)
+        {
+            *why = "face " + std::to_string(iFace) + " has valences (" +
+                   std::to_string(valence[0]) + ", " + std::to_string(valence[1]) + ", " +
+                   std::to_string(valence[2]) + "); " + reason;
+        }
+        return false;
+    };
+
+    // Walk each corner's fan in winding order, starting at the next corner.
+    // The first two entries come from the face itself; every one after that is
+    // the neighbour shared with the previous entry that is not the one before
+    // it -- the same opposite-node rule the single-extraordinary path uses,
+    // and the same order build_generic_face_patch() lays its fans out in.
+    std::vector<std::vector<int>> fan(3);
+    for (int a = 0; a < 3; a++)
+    {
+        const int next = (a + 1) % 3;
+        const int prev = (a + 2) % 3;
+        fan[a].assign(valence[a], -1);
+        fan[a][0] = corner[next];
+        fan[a][1] = corner[prev];
+        for (int k = 1; k + 1 < valence[a]; k++)
+        {
+            fan[a][k + 1] = find_opposite_node_index(corner[a], fan[a][k], fan[a][k - 1]);
+            if (fan[a][k + 1] < 0)
+            {
+                return reject("the fan around corner " + std::to_string(a) + " does not close");
+            }
+        }
+        // The fan must come back to where it started, or the corner is not the
+        // simple closed fan the patch construction assumes.
+        if (find_opposite_node_index(corner[a], fan[a][valence[a] - 1],
+                                     fan[a][valence[a] - 2]) != corner[next])
+        {
+            return reject("the fan around corner " + std::to_string(a) + " does not close");
+        }
+    }
+
+    // The three vertices opposite the face's edges are shared between two
+    // fans, and the two fans must agree about them. Disagreement means the
+    // neighbourhood is not the generic one the prolongation matrices describe.
+    const int oppositeEdge[3] = {fan[0].back(), fan[1].back(), fan[2].back()};
+    for (int a = 0; a < 3; a++)
+    {
+        const int next = (a + 1) % 3;
+        if (fan[next][2] != oppositeEdge[a])
+        {
+            return reject("corners " + std::to_string(a) + " and " + std::to_string(next) +
+                          " disagree about the vertex opposite their shared edge");
+        }
+    }
+
+    // The control net, in the numbering GenericFacePatch documents.
+    std::vector<int> control;
+    control.reserve(valence[0] + valence[1] + valence[2] - 6);
+    for (int a = 0; a < 3; a++)
+    {
+        control.push_back(corner[a]);
+    }
+    for (int a = 0; a < 3; a++)
+    {
+        control.push_back(oppositeEdge[a]);
+    }
+    for (int a = 0; a < 3; a++)
+    {
+        for (int k = 3; k + 1 < valence[a]; k++)
+        {
+            control.push_back(fan[a][k]);
+        }
+    }
+
+    const int expected = valence[0] + valence[1] + valence[2] - 6;
+    if (static_cast<int>(control.size()) != expected)
+    {
+        return reject("its control net came out " + std::to_string(control.size()) +
+                      " wide, expected " + std::to_string(expected));
+    }
+
+    // Distinctness is the condition that the face's one-ring is actually
+    // embedded. It fails on a closed surface too small to hold it -- an
+    // octahedron's faces, for instance, wrap around and meet themselves. That
+    // is a property of the mesh, so it is a rejection rather than a fault.
+    std::vector<int> sorted = control;
+    std::sort(sorted.begin(), sorted.end());
+    if (std::unique(sorted.begin(), sorted.end()) != sorted.end())
+    {
+        return reject("its one-ring visits the same vertex twice, so the face's neighbourhood "
+                      "is not embedded; the surface is too small to carry this patch");
+    }
+
+    face.oneRingVertices = std::move(control);
+    return true;
+}
+
+void Mesh::ensure_multi_patch_entries(const std::vector<int> *onlyFaces)
+{
+    const int nFaces = static_cast<int>(faces.size());
+    const int count = (onlyFaces != nullptr) ? static_cast<int>(onlyFaces->size()) : nFaces;
+    for (int i = 0; i < count; i++)
+    {
+        const int iFace = (onlyFaces != nullptr) ? (*onlyFaces)[i] : i;
+        if (iFace < 0 || iFace >= nFaces)
+        {
+            continue;
+        }
+        Face &face = faces[iFace];
+        if (face.patchKind != PatchKind::MultiExtraordinary || face.patchEntry >= 0)
+        {
+            continue;
+        }
+        face.patchEntry = multiPatchTable.ensure(face.patchValence[0], face.patchValence[1],
+                                                 face.patchValence[2]);
+    }
+}
+
 void Mesh::set_one_ring_vertices_sorted()
 {
+    // The one-ring walk resolves "the corner across this edge" through the
+    // edge table. Checked here rather than inside the parallel loop, where a
+    // throw cannot escape: without the table every face would be rejected for
+    // an incomplete fan, which is a confusing way to report a missing setup
+    // step.
+    if (edges.empty() && !faces.empty())
+    {
+        throw std::runtime_error(
+            "[Mesh::set_one_ring_vertices_sorted] the edge table is empty. Call "
+            "build_edge_table() first; the one-ring walk reads it.");
+    }
+
     const int nFaces = static_cast<int>(faces.size());
 
     // Per-face rejection reason, filled in the parallel pass and reported
@@ -369,164 +768,14 @@ void Mesh::set_one_ring_vertices_sorted()
 #pragma omp parallel for
     for (int iFace = 0; iFace < nFaces; iFace++)
     {
-        Face &face = faces[iFace];
-
-        // Ghost faces lack the neighbouring triangles for a complete one-ring,
-        // and take no part in any physical calculation.
-        if (face.isGhost)
-        {
-            continue;
-        }
-
-        const int node0 = face.adjacentVertices[0];
-        const int node1 = face.adjacentVertices[1];
-        const int node2 = face.adjacentVertices[2];
-
-        // A face touching the mesh boundary has no complete one-ring and so no
-        // limit surface -- that is a property of the mesh, not an error, and it
-        // is what the original comment on this function meant by "the boundary
-        // faces do not have complete one-ring". Leaving oneRingVertices empty
-        // here is deliberate. The defect was that *every* unmatched face took
-        // this path, including genuine extraordinary interior vertices.
-        if (!is_interior_vertex(node0) || !is_interior_vertex(node1) ||
-            !is_interior_vertex(node2))
-        {
-            continue;
-        }
-
-        // Valence is the size of the one-ring. Selection below tests the same
-        // quantity the classification does; the two used to disagree
-        // (adjacentVertices when classifying, adjacentFaces when selecting), and
-        // on any vertex where they differ d4/d7/d8 were left uninitialized and
-        // read anyway.
-        const int valence0 = static_cast<int>(vertices[node0].adjacentVertices.size());
-        const int valence1 = static_cast<int>(vertices[node1].adjacentVertices.size());
-        const int valence2 = static_cast<int>(vertices[node2].adjacentVertices.size());
-
-        // d4 anchors the patch -- the extraordinary corner when there is one.
-        // Rotating (node0, node1, node2) preserves the face winding, which
-        // sort_vertices_on_faces() has already made consistent across the mesh,
-        // so no per-face winding decision is taken here.
-        //
-        // The previous code decided winding with
-        //     dot(centre, (c7 - c4) x (c8 - c4)) < 0
-        // which asks whether the normal points away from the coordinate ORIGIN.
-        // That is only meaningful for a surface star-shaped about the origin. It
-        // is identically zero on a flat sheet in the z = 0 plane, arbitrary on a
-        // membrane translated off the origin, and actively wrong on a closed
-        // surface not enclosing it -- on a torus it flips exactly the inner half
-        // of the faces.
-        int d4 = -1;
-        int d7 = -1;
-        int d8 = -1;
-        int valence = 0;
-
-        auto isSupportedExtraordinary = [](int v) {
-            return v >= kMinIrregularValence && v <= kMaxIrregularValence && v != 6;
-        };
-
-        if (valence0 == 6 && valence1 == 6 && valence2 == 6)
-        {
-            d4 = node0;
-            d7 = node1;
-            d8 = node2;
-            valence = 6;
-        }
-        else if (isSupportedExtraordinary(valence0) && valence1 == 6 && valence2 == 6)
-        {
-            d4 = node0;
-            d7 = node1;
-            d8 = node2;
-            valence = valence0;
-        }
-        else if (isSupportedExtraordinary(valence1) && valence2 == 6 && valence0 == 6)
-        {
-            d4 = node1;
-            d7 = node2;
-            d8 = node0;
-            valence = valence1;
-        }
-        else if (isSupportedExtraordinary(valence2) && valence0 == 6 && valence1 == 6)
-        {
-            d4 = node2;
-            d7 = node0;
-            d8 = node1;
-            valence = valence2;
-        }
-        else
-        {
-            // The old predicate required all three corners at valence 5 while
-            // the body built a 5/6/6 patch. Those are different topology
-            // classes, and only the second matches the subdivision matrices.
-            rejection[iFace] = "face " + std::to_string(iFace) + " has valences (" +
-                               std::to_string(valence0) + ", " + std::to_string(valence1) +
-                               ", " + std::to_string(valence2) +
-                               "); a patch needs exactly one corner in [" +
-                               std::to_string(kMinIrregularValence) + ", " +
-                               std::to_string(kMaxIrregularValence) +
-                               "] with the other two at 6";
-            continue;
-        }
-
-        // Walk d4's fan. fan[0] = d7, fan[1] = d8, and each step takes the
-        // neighbour shared with the previous one that is not the one before
-        // it -- the same opposite-node rule, applied around the corner. This
-        // is what generalises the ring beyond valence 5: the old code
-        // enumerated a fixed d1..d12 and could only ever produce 11 or 12
-        // points.
-        std::vector<int> ringInternal(valence + 6, -1);
-        ringInternal[0] = d4;
-        ringInternal[1] = d7;
-        ringInternal[2] = d8;
-        for (int k = 2; k < valence; k++)
-        {
-            ringInternal[1 + k] = find_opposite_node_index(d4, ringInternal[k], ringInternal[k - 1]);
-        }
-
-        const int d3 = ringInternal[valence];      // the fan closes here
-        const int d5 = (valence >= 3) ? ringInternal[3] : -1;
-        const int d11 = find_opposite_node_index(d7, d8, d4);
-        ringInternal[valence + 1] = find_opposite_node_index(d3, d7, d4);   // d6
-        ringInternal[valence + 2] = find_opposite_node_index(d8, d5, d4);   // d9
-        ringInternal[valence + 3] = find_opposite_node_index(d7, d11, d8);  // d10
-        ringInternal[valence + 4] = d11;
-        ringInternal[valence + 5] = find_opposite_node_index(d8, d11, d7);  // d12
-
-        // The fan must close back on d7, or the corner is not the simple
-        // isolated fan the reduction assumes.
-        if (d3 < 0 || find_opposite_node_index(d4, d3, ringInternal[valence - 1]) != d7)
-        {
-            rejection[iFace] = "face " + std::to_string(iFace) +
-                               " has a corner whose fan does not close at valence " +
-                               std::to_string(valence);
-            continue;
-        }
-
-        // Reorder into the canonical one-ring order -- the column order of the
-        // rows in IrregularPatchRowTable, shared from one place so the two
-        // cannot drift apart.
-        const std::vector<int> columnOf = canonical_control_order(valence);
-        std::vector<int> oneRing(valence + 6, -1);
-        for (int internal = 0; internal < valence + 6; internal++)
-        {
-            oneRing[columnOf[internal]] = ringInternal[internal];
-        }
-
-        // At valence 6 the patch is regular and carries the full d1..d12 ring;
-        // the fan walk above produces the same 12 points.
-        // find_opposite_node_index() returns -1 when the walk fails, which used
-        // to be printed and then used as a vertex index.
-        if (std::find(oneRing.begin(), oneRing.end(), -1) != oneRing.end())
-        {
-            rejection[iFace] = "face " + std::to_string(iFace) +
-                               " has an incomplete one-ring: the two-ring walk failed at"
-                               " valences (" + std::to_string(valence0) + ", " +
-                               std::to_string(valence1) + ", " + std::to_string(valence2) + ")";
-            continue;
-        }
-
-        face.oneRingVertices = std::move(oneRing);
+        // A ghost face, or one on the mesh boundary, comes back false with an
+        // empty reason -- not carrying a patch is the correct outcome for
+        // both, and only a non-empty reason is a rejection.
+        build_one_ring_for_face(iFace, &rejection[iFace]);
     }
+
+    // Serial, because it mutates a table the parallel pass above shares.
+    ensure_multi_patch_entries();
 
     report_valence_histogram();
 
