@@ -143,16 +143,145 @@ std::vector<std::vector<T>> read_data_from_csv(const std::string& filepath, char
 }
 
 /**
+ * @brief The mesh files: a vertex file and a faces file.
+ *
+ * Both are comma-separated (a line with no comma is split on whitespace),
+ * blank lines and lines starting with '#' are skipped, and a trailing empty
+ * field is ignored.
+ *
+ * The vertex file is one vertex per line, indexed from zero in file order:
+ *
+ *     x, y, z                     an ordinary (free) vertex
+ *     x, y, z, type               type: free | fixed | periodic | ghost
+ *     x, y, z, periodic, mirror   a periodic image of vertex `mirror`
+ *
+ * The type column may also carry the integer values of VertexType, which is
+ * what the legacy Mesh::write_vertices_csv_with_type() writes. A periodic
+ * vertex must name the vertex it mirrors; a chain of mirrors is flattened at
+ * setup. The offset between an image and its source is read off their
+ * coordinates, so the file's positions have to be right.
+ *
+ * The faces file is one triangle per line, three vertex indices wound
+ * consistently, with an optional fourth column saying whether the face is a
+ * copy of another physical face (0 or "real", 1 or "copy"):
+ *
+ *     v0, v1, v2
+ *     v0, v1, v2, copy
+ *
+ * Without that column the copies are derived from the mirror map
+ * (Mesh::mark_periodic_copy_faces()). export_mesh_to_vertices_faces() writes
+ * both files in this format with every column, so a mesh SLIMED wrote loads
+ * back exactly.
+ *
+ * A file with any type other than free needs boundaryType = Mixed; the
+ * global modes decide the boundary from grid position and refuse the file
+ * rather than ignore it.
+ * 
+ * @see docs/mixed_boundary_conditions.md
+ */
+struct MeshFileData
+{
+    std::vector<std::vector<double>> vertices; ///< x, y, z per vertex
+    std::vector<std::vector<int>> faces;       ///< three corner indices per face
+    std::vector<VertexType> types;             ///< one per vertex; empty when the file has no type column
+    std::vector<int> mirrors;                  ///< one per vertex, -1 unless a periodic image; empty with types
+    std::vector<char> faceIsCopy;              ///< one per face; empty when the faces file has no flag column
+
+    /// Whether any vertex asks for something other than free.
+    bool has_boundary_types() const
+    {
+        for (VertexType type : types)
+        {
+            if (type != VertexType::Free)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+/**
+ * @brief Read a vertex file and a faces file, without touching a mesh.
+ *
+ * @throw std::invalid_argument naming the file and line on anything it cannot
+ *        read: a missing coordinate, an unknown type, a periodic vertex with
+ *        no mirror, a corner index outside the vertex file.
+ */
+MeshFileData read_mesh_vertices_faces_files(const std::string &verticesFilepath,
+                                            const std::string &facesFilepath);
+
+/**
  * @brief Import a mesh from separate files containing vertices and faces.
  *
- * This function reads vertices and faces from specified files and constructs a mesh.
- * 
- * @param mesh The Mesh object to write vertices and faces data.
+ * Reads both files (read_mesh_vertices_faces_files()) and sets the mesh up
+ * from them, boundary types included. A template so that a DynamicMesh gets
+ * its own setup -- the one that also builds the coordinate matrices -- rather
+ * than Mesh's.
+ *
+ * @param mesh The Mesh (or DynamicMesh) to set up.
  * @param verticesFilepath The file path of the vertices file.
  * @param facesFilepath The file path of the faces file.
- * @return True if the mesh is successfully imported, false otherwise.
+ * @return True if the mesh is successfully imported. Failure throws.
  */
-bool import_mesh_from_vertices_faces(Mesh& mesh, std::string verticesFilepath, std::string facesFilepath);
+template <class MeshT>
+bool import_mesh_from_vertices_faces(MeshT &mesh, std::string verticesFilepath,
+                                     std::string facesFilepath)
+{
+    const MeshFileData data = read_mesh_vertices_faces_files(verticesFilepath, facesFilepath);
+    mesh.setup_from_vertices_faces(data.vertices, data.faces, data.types, data.mirrors,
+                                   data.faceIsCopy);
+    return true;
+}
+
+/**
+ * @brief Write a mesh as a vertex file and a faces file that
+ * import_mesh_from_vertices_faces() reads back exactly.
+ *
+ * Every column is written: coordinates to full precision, the type of every
+ * vertex, the mirror of every periodic image, and the copy flag of every
+ * face. Meant for a mesh built under BoundaryType::Mixed; under a global
+ * mode the ghost band is written as ghost scaffolding, without the periodic
+ * identification the grid carried.
+ *
+ * @throw std::runtime_error if either file cannot be opened.
+ */
+void export_mesh_to_vertices_faces(const Mesh &mesh, const std::string &verticesFilepath,
+                                   const std::string &facesFilepath);
+
+/// Whether the parameters ask for the mesh to be loaded from files.
+inline bool mesh_comes_from_files(const Param &param)
+{
+    return !param.meshVerticesFile.empty() || !param.meshFacesFile.empty();
+}
+
+/**
+ * @brief Build the run's mesh the way the parameters say: from the mesh
+ * files when meshVerticesFile and meshFacesFile are set, otherwise the
+ * generated flat sheet.
+ *
+ * @throw std::runtime_error if only one of the two files is set.
+ */
+template <class MeshT>
+void setup_mesh_from_parameters(MeshT &mesh)
+{
+    const Param &param = mesh.param;
+    if (!mesh_comes_from_files(param))
+    {
+        mesh.setup_flat();
+        return;
+    }
+    if (param.meshVerticesFile.empty() || param.meshFacesFile.empty())
+    {
+        throw std::runtime_error(
+            "[setup_mesh_from_parameters] meshVerticesFile and meshFacesFile must be set "
+            "together; got meshVerticesFile = '" +
+            param.meshVerticesFile + "' and meshFacesFile = '" + param.meshFacesFile + "'");
+    }
+    std::cout << "[setup_mesh_from_parameters] Loading the mesh from " << param.meshVerticesFile
+              << " and " << param.meshFacesFile << std::endl;
+    import_mesh_from_vertices_faces(mesh, param.meshVerticesFile, param.meshFacesFile);
+}
 
 /**
  * @brief Import scaffolding mesh from a file

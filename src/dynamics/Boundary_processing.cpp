@@ -106,3 +106,37 @@ void DynamicMesh::postprocess_ghost_periodic()
         }
     }
 }
+
+void DynamicMesh::postprocess_boundary()
+{
+    switch (param.boundaryCondition)
+    {
+    case BoundaryType::Periodic:
+        postprocess_ghost_periodic();
+        break;
+    case BoundaryType::Mixed:
+        postprocess_periodic_images();
+        break;
+    case BoundaryType::Fixed:
+    case BoundaryType::Free:
+        break;
+    }
+}
+
+// Per-vertex boundary: an image row of the control net is its source's row
+// plus the image's offset, always. The iterative solver writes the rows that
+// way itself (SurfaceSolver::surface_to_mesh()); this re-asserts it for any
+// caller that filled matMesh some other way, and keeps the vertex copies the
+// driver takes from matMesh exact.
+void DynamicMesh::postprocess_periodic_images()
+{
+    for (int v : periodicImageVertices)
+    {
+        const Vertex &image = vertices[v];
+        const int source = image.reflectiveVertexIndex;
+        for (int axis = 0; axis < 3; axis++)
+        {
+            matMesh.set(v, axis, matMesh(source, axis) + image.mirrorOffset[axis]);
+        }
+    }
+}

@@ -448,6 +448,9 @@ void CudaForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
     // evaluated on the host over the edge table once this returns
     // (Mesh::energy_force_fluid_terms()); the stage writes zeros instead.
     args.regularizationEnabled = !param.edgeSpringEnabled;
+    // Under the per-vertex boundary a ghost face is a periodic copy that the
+    // CPU loop leaves out of this term; see energy_force_regularization().
+    args.regularizationSkipsGhostFaces = (param.boundaryCondition == BoundaryType::Mixed);
 
     patch_force_kernel<<<grid_for(args.nFaces), kBlockSize>>>(args);
     check_launch("patch_force_kernel");

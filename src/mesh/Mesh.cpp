@@ -73,19 +73,52 @@ Mesh::Mesh(const std::vector<Vertex> &srcVertices,
 
 }
 
-void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& verticesData, 
+void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& verticesData,
                                    const std::vector<std::vector<int>>& facesData)
+{
+    setup_from_vertices_faces(verticesData, facesData, std::vector<VertexType>(),
+                              std::vector<int>(), std::vector<char>());
+}
+
+void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& verticesData,
+                                   const std::vector<std::vector<int>>& facesData,
+                                   const std::vector<VertexType>& vertexTypes,
+                                   const std::vector<int>& mirrorVertices,
+                                   const std::vector<char>& faceIsCopy)
 {
     if (param.VERBOSE_MODE)
     {
         std::cout << "[Mesh::setup_from_vertices_faces] Setting up membrane from vertices and faces data." << std::endl;
     }
 
-    // identify if the data contains type and reflective point information
-	bool simpleVerticesData = true;
-	if (verticesData[0].size() > 3){
-		simpleVerticesData = false;
-	}
+    if (!vertexTypes.empty() && vertexTypes.size() != verticesData.size())
+    {
+        throw std::invalid_argument("[Mesh::setup_from_vertices_faces] " +
+                                    std::to_string(vertexTypes.size()) + " vertex types for " +
+                                    std::to_string(verticesData.size()) + " vertices");
+    }
+    if (!mirrorVertices.empty() && mirrorVertices.size() != verticesData.size())
+    {
+        throw std::invalid_argument("[Mesh::setup_from_vertices_faces] " +
+                                    std::to_string(mirrorVertices.size()) + " mirror indices for " +
+                                    std::to_string(verticesData.size()) + " vertices");
+    }
+    // The global modes decide the boundary from grid position and would
+    // silently ignore a type that asked for anything else; refuse instead.
+    if (param.boundaryCondition != BoundaryType::Mixed)
+    {
+        for (std::size_t i = 0; i < vertexTypes.size(); i++)
+        {
+            if (vertexTypes[i] != VertexType::Free)
+            {
+                throw std::runtime_error(
+                    "[Mesh::setup_from_vertices_faces] vertex " + std::to_string(i) + " is typed " +
+                    vertex_type_name(vertexTypes[i]) + ", which only boundaryType = Mixed honours; "
+                    "the boundary condition is " + boundary_type_name(param.boundaryCondition) +
+                    ". Set boundaryType = Mixed to use the types in the vertex file.");
+            }
+        }
+    }
 
     // step 1. Initialize vertices and faces
     int nVertices = verticesData.size();                       // number of vertices
@@ -107,6 +140,12 @@ void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& ver
         vertices[iVertex].coord.set(0, 0, verticesData[iVertex][0]); //set vertex coord
         vertices[iVertex].coord.set(1, 0, verticesData[iVertex][1]);
         vertices[iVertex].coord.set(2, 0, verticesData[iVertex][2]);
+        if (!vertexTypes.empty())
+        {
+            vertices[iVertex].type = vertexTypes[iVertex];
+            vertices[iVertex].reflectiveVertexIndex =
+                mirrorVertices.empty() ? -1 : mirrorVertices[iVertex];
+        }
     }
 
 #pragma omp parallel for
@@ -129,6 +168,25 @@ void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& ver
     // from the refined mesh.
     if (param.isPreRefinementEnabled)
     {
+        // Refinement puts a new vertex on every edge and would have to give
+        // each one on an image edge an image of its own, with the offset of
+        // that edge. That mapping is not built, so a typed mesh is refused
+        // rather than refined into one whose seam is silently wrong. Refine
+        // the mesh before typing it instead.
+        if (param.boundaryCondition == BoundaryType::Mixed)
+        {
+            for (const Vertex &vertex : vertices)
+            {
+                if (vertex.type != VertexType::Free)
+                {
+                    throw std::runtime_error(
+                        "[Mesh::setup_from_vertices_faces] preRefineMesh = true is not supported "
+                        "with per-vertex boundary types (vertex " +
+                        std::to_string(vertex.index) + " is " + vertex_type_name(vertex.type) +
+                        "). Refine the mesh before assigning types.");
+                }
+            }
+        }
         refine_loop_once();
     }
 
@@ -141,7 +199,17 @@ void Mesh::setup_from_vertices_faces(const std::vector<std::vector<double>>& ver
     // flip move maintains it, so it has to start out correct. Purely additive:
     // nothing else reads it.
     set_adjacent_faces_of_faces();
-    determine_ghost_vertices_faces();
+    if (param.boundaryCondition == BoundaryType::Mixed)
+    {
+        // The vertices say what they are; the ghost flags and the frozen set
+        // follow. A file without a face-flag column leaves the copies to be
+        // derived from the mirror map.
+        apply_vertex_boundary_types(faceIsCopy.empty() ? nullptr : &faceIsCopy);
+    }
+    else
+    {
+        determine_ghost_vertices_faces();
+    }
     // After the ghost flags, because an edge's flippability depends on them.
     //
     // Note that this path deliberately still does not call

@@ -1,0 +1,86 @@
+# Example: the smallest custom-mesh run -- load a mesh SLIMED wrote.
+#
+# data/example/mixed_sheet_vertices.csv and mixed_sheet_faces.csv are a 60 nm
+# sheet, periodic along x and clamped along y, written by a run configured
+# exactly like mixed_periodic_x_fixed_y.params (at sideX = sideY = 60). So
+# this run and that one are the same membrane, one loaded and one generated,
+# which makes this the shortest check that the file format round-trips.
+#
+# Everything the boundary condition needs is in the vertex file: 78 free, 12
+# fixed and 105 periodic vertices, each image naming the vertex it mirrors.
+# The faces file carries the copy flag that says which of two faces astride a
+# seam is charged for its energy; drop that column and the copies are worked
+# out from the mirror map instead.
+#
+#   cp data/example/mixed_sheet_loaded.params input.params
+#   ./build/bin/membrane_dynamics          # or ./build/bin/continuum_membrane
+#
+# Run it from the top of the source tree: the mesh paths below are relative to
+# the working directory.
+#
+# See docs/mixed_boundary_conditions.md.
+
+############################################
+## Boundary Conditions
+############################################
+
+boundaryType = Mixed
+surfaceSolver = iterative        # required by the dynamics under Mixed
+
+############################################
+## The mesh, from files rather than generated
+############################################
+
+meshVerticesFile = data/example/mixed_sheet_vertices.csv
+meshFacesFile = data/example/mixed_sheet_faces.csv
+
+lFace = 5.0                      # the edge length the loaded mesh was built at
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4
+usMembraneStretching = 250.0
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17
+
+############################################
+## Dynamics
+############################################
+
+maxIterations = 500
+timeStep = 0.001
+diffConst = 1.0
+meshpointOutput = true
+meshpointOutputInterval = 10
+xyzOutput = true
+fdtConsistentSurfaceUpdate = true
+inPlaneDynamicsEnabled = false
+
+############################################
+## Minimization, for continuum_membrane
+############################################
+
+setRelaxAreaToDefault = true     # target area = the loaded mesh's area
+deltaEnergyConverge = 1e-5
+deltaForceScaleConverge = 1e-4
+
+############################################
+## Off for this example
+############################################
+
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+edgeFlipEnabled = false
+
+############################################
+## Developer options
+############################################
+
+VERBOSE_MODE = false

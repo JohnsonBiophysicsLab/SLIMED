@@ -204,6 +204,22 @@ void Model::enforce_boundary_conditions_after_coordinate_update()
         }
         break;
 
+    // Per-vertex boundary: clamped vertices go back where they were, and every
+    // periodic image is put at its source's new position plus its offset. The
+    // images carried no force into the step -- it was folded onto their
+    // sources -- so this is the only thing that ever moves them.
+    case BoundaryType::Mixed:
+        for (Vertex &vertex : mesh.vertices)
+        {
+            if ((vertex.is_fixed() || vertex.type == VertexType::Ghost) &&
+                vertex.coordPrev.nrow() == 3)
+            {
+                vertex.update_coord_with_prev_coord();
+            }
+        }
+        mesh.sync_periodic_images();
+        break;
+
     // Free boundary condition
     case BoundaryType::Free:
 
@@ -334,9 +350,10 @@ bool Model::simulated_annealing_next_step(bool forceAttempt)
     mobileVertexIndices.reserve(mesh.vertices.size());
     for (int i = 0; i < mesh.vertices.size(); i++)
     {
-        const Vertex& vertex = mesh.vertices[i];
-        if (!vertex.isGhost && vertex.type != VertexType::Ghost &&
-            vertex.type != VertexType::FixedBoundary)
+        // Ghosts, clamped vertices and periodic images are not coordinates
+        // of the model; a trial move on one would be undone by the boundary
+        // enforcement below and count as a rejection for nothing.
+        if (mesh.is_independent_vertex(i))
         {
             mobileVertexIndices.push_back(i);
         }

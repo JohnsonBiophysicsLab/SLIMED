@@ -678,6 +678,10 @@ analysis already restricts itself to the interior tile, and the untracked
 moving-vertex membrane needs. A properly periodic fluid sheet — ghosts as
 wrapped images of real vertices, flips mirrored onto their images — is a
 boundary-condition refactor independent of this plan and is listed under §6.
+The first half of that refactor has since landed as `boundaryType = Mixed`
+(`docs/mixed_boundary_conditions.md`): the ghosts are wrapped images whose
+forces fold onto their sources and the limit-surface solver wraps with them.
+The flips are still not mirrored, so the band stays solid there too.
 
 **Closed surfaces** have no boundary and no ghosts; every edge is a candidate.
 The icosphere workload that `irregular_patch_results.md` §8 already asks for is

@@ -1,4 +1,5 @@
 #include "Parameters.hpp"
+#include <cctype>
 
 std::ostream& operator<<(std::ostream& os, const Param& param)
 {
@@ -37,6 +38,11 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
         os << sf << std::endl;
     }
     os << "boundaryCondition: " << (int)(param.boundaryCondition) << std::endl;
+    os << "boundaryConditionX: " << boundary_type_name(param.boundaryConditionX) << std::endl;
+    os << "boundaryConditionY: " << boundary_type_name(param.boundaryConditionY) << std::endl;
+    os << "fixedBoundaryRings: " << param.fixedBoundaryRings << std::endl;
+    os << "meshVerticesFile: " << param.meshVerticesFile << std::endl;
+    os << "meshFacesFile: " << param.meshFacesFile << std::endl;
     os << "usingNCG: " << param.usingNCG << std::endl;
     os << "isNCGstuck: " << param.isNCGstuck << std::endl;
     os << "gamaShape: " << param.gamaShape << std::endl;
@@ -99,4 +105,55 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "energy: " << param.energy << std::endl;
     os << "energyPrev: " << param.energyPrev << std::endl;
     return os;
+}
+
+const char *boundary_type_name(BoundaryType type)
+{
+    switch (type)
+    {
+    case BoundaryType::Fixed:
+        return "Fixed";
+    case BoundaryType::Periodic:
+        return "Periodic";
+    case BoundaryType::Free:
+        return "Free";
+    case BoundaryType::Mixed:
+        return "Mixed";
+    }
+    return "unknown";
+}
+
+bool parse_boundary_type(const std::string &text, BoundaryType &type)
+{
+    std::string lowered;
+    lowered.reserve(text.size());
+    for (char c : text)
+    {
+        if (c == ' ' || c == '\t' || c == '\r')
+        {
+            continue;
+        }
+        lowered.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+    }
+    if (lowered == "fixed")
+    {
+        type = BoundaryType::Fixed;
+        return true;
+    }
+    if (lowered == "periodic")
+    {
+        type = BoundaryType::Periodic;
+        return true;
+    }
+    if (lowered == "free")
+    {
+        type = BoundaryType::Free;
+        return true;
+    }
+    if (lowered == "mixed" || lowered == "pervertex")
+    {
+        type = BoundaryType::Mixed;
+        return true;
+    }
+    return false;
 }

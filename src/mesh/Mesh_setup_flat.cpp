@@ -12,7 +12,18 @@ void Mesh::setup_flat()
     set_adjacent_vertices_of_vertices_sorted();
     set_adjacent_faces_of_faces();
     sort_vertices_on_faces();
-    determine_ghost_vertices_faces();
+    if (param.boundaryCondition == BoundaryType::Mixed)
+    {
+        // The same band the global mode lays out, expressed as per-vertex
+        // types -- and so, from here on, treated exactly like an imported mesh.
+        std::vector<char> faceIsCopy;
+        set_boundary_types_flat_mixed(faceIsCopy);
+        apply_vertex_boundary_types(&faceIsCopy);
+    }
+    else
+    {
+        determine_ghost_vertices_faces();
+    }
     // After the ghost flags, because an edge's flippability depends on them.
     build_edge_table();
     set_one_ring_vertices_sorted();
@@ -147,3 +158,98 @@ void Mesh::set_vertices_faces_flat()
     }
 }
 
+
+void Mesh::set_boundary_types_flat_mixed(std::vector<char> &faceIsCopy)
+{
+    const int nFaceX = param.nFaceX;
+    const int nFaceY = param.nFaceY;
+    const BoundaryType axisType[2] = {param.boundaryConditionX, param.boundaryConditionY};
+    const int nFaceAlong[2] = {nFaceX, nFaceY};
+    const char *axisKey[2] = {"boundaryTypeX", "boundaryTypeY"};
+
+    for (int axis = 0; axis < 2; axis++)
+    {
+        if (axisType[axis] != BoundaryType::Periodic && axisType[axis] != BoundaryType::Free &&
+            axisType[axis] != BoundaryType::Fixed)
+        {
+            throw std::runtime_error(std::string("[Mesh::set_boundary_types_flat_mixed] ") +
+                                     axisKey[axis] +
+                                     " must be Periodic, Free or Fixed under boundaryType = Mixed");
+        }
+        // Three image rings and a duplicate ring on each side, and a period
+        // of at least four -- the one-ring of a face spans four rows, and a
+        // period shorter than that would put a vertex and its own image in
+        // the same control net.
+        if (axisType[axis] == BoundaryType::Periodic && nFaceAlong[axis] < 10)
+        {
+            throw std::runtime_error(
+                std::string("[Mesh::set_boundary_types_flat_mixed] a periodic axis needs at "
+                            "least 10 faces (three image rings and a duplicate ring on each "
+                            "side, and a period of at least four); ") +
+                axisKey[axis] + " has " + std::to_string(nFaceAlong[axis]) +
+                ". Enlarge the side or reduce lFace.");
+        }
+    }
+
+    const bool periodic[2] = {axisType[0] == BoundaryType::Periodic,
+                              axisType[1] == BoundaryType::Periodic};
+    const int period[2] = {nFaceX - 6, nFaceY - 6};
+    const int fixedRings = std::max(1, param.fixedBoundaryRings);
+
+    // The sources occupy indices 3 .. nFace - 4 along a periodic axis; every
+    // other index wraps onto them. The band this produces -- rings 0, 1, 2
+    // and nFace - 2 .. nFace as pure images, rings 3 and nFace - 3 as the
+    // duplicate pair -- is exactly the layout the global Periodic mode uses,
+    // so its outputs line up index for index with that mode's.
+    const auto wrap = [](int index, int periodLength) {
+        return 3 + (((index - 3) % periodLength) + periodLength) % periodLength;
+    };
+
+    for (int j = 0; j <= nFaceY; j++)
+    {
+        for (int i = 0; i <= nFaceX; i++)
+        {
+            Vertex &vertex = vertices[(nFaceX + 1) * j + i];
+            vertex.type = VertexType::Free;
+            vertex.reflectiveVertexIndex = -1;
+            vertex.mirrorOffset = {{0.0, 0.0, 0.0}};
+            vertex.isGhost = false;
+
+            const int sourceI = periodic[0] ? wrap(i, period[0]) : i;
+            const int sourceJ = periodic[1] ? wrap(j, period[1]) : j;
+            if (sourceI != i || sourceJ != j)
+            {
+                vertex.type = VertexType::Periodic;
+                vertex.reflectiveVertexIndex = (nFaceX + 1) * sourceJ + sourceI;
+                continue;
+            }
+
+            // Only a source can be clamped; an image of a clamped source is
+            // held still through it.
+            const bool clampedX = (axisType[0] == BoundaryType::Fixed) &&
+                                  (i < fixedRings || i > nFaceX - fixedRings);
+            const bool clampedY = (axisType[1] == BoundaryType::Fixed) &&
+                                  (j < fixedRings || j > nFaceY - fixedRings);
+            if (clampedX || clampedY)
+            {
+                vertex.type = VertexType::Fixed;
+            }
+        }
+    }
+
+    // The faces of the image band duplicate physical faces and carry no
+    // energy: cells 0, 1, 2 and nFace - 3, nFace - 2, nFace - 1 along a
+    // periodic axis, leaving cells 3 .. nFace - 4 -- one period -- real.
+    faceIsCopy.assign(faces.size(), 0);
+    for (int j = 0; j < nFaceY; j++)
+    {
+        for (int i = 0; i < nFaceX; i++)
+        {
+            const bool copy = (periodic[0] && (i < 3 || i > nFaceX - 4)) ||
+                              (periodic[1] && (j < 3 || j > nFaceY - 4));
+            const int faceIndex = 2 * nFaceX * j + 2 * i;
+            faceIsCopy[faceIndex] = copy ? 1 : 0;
+            faceIsCopy[faceIndex + 1] = copy ? 1 : 0;
+        }
+    }
+}

@@ -378,6 +378,112 @@ public:
      */
     std::vector<char> flipFrozenVertex;
 
+    // ---------------------------------------------------------------------
+    // Per-vertex boundary condition (BoundaryType::Mixed)
+    // -- see docs/mixed_boundary_conditions.md
+    // ---------------------------------------------------------------------
+
+    /**
+     * @brief Every vertex typed Periodic, in index order.
+     *
+     * Filled by apply_vertex_boundary_types() once the mirror chains are
+     * flattened, so each entry's reflectiveVertexIndex names a source. Empty
+     * under the global boundary modes and on a mesh with no images, which is
+     * what makes sync_periodic_images() and fold_forces_onto_periodic_sources()
+     * no-ops there.
+     */
+    std::vector<int> periodicImageVertices;
+
+    /// Whether the mesh carries any periodic image.
+    bool has_periodic_images() const { return !periodicImageVertices.empty(); }
+
+    /**
+     * @brief Give the generated flat sheet its per-vertex types from
+     * param.boundaryConditionX and param.boundaryConditionY.
+     *
+     * A periodic axis gets the band the global Periodic mode lays out --
+     * three rings of images and one ring of duplicates on each side -- as
+     * Periodic vertices mirroring the vertex one period away, so every real
+     * face has a complete one-ring. A fixed axis clamps the outermost
+     * param.fixedBoundaryRings rings. A free axis leaves the edge open.
+     *
+     * @param faceIsCopy Filled with one flag per face: the faces of the image
+     *                   band, which duplicate a physical face and carry no
+     *                   energy. The same layout the global mode calls ghost.
+     * @throw std::runtime_error if an axis type is not one of the three, or a
+     *        periodic axis is too short to hold its band and a period.
+     */
+    void set_boundary_types_flat_mixed(std::vector<char> &faceIsCopy);
+
+    /**
+     * @brief Turn the vertices' types into the boundary treatment.
+     *
+     * Flattens every mirror chain to its source and records each image's
+     * offset (resolve_periodic_images()); decides which faces carry energy
+     * (mark_periodic_copy_faces()); marks as ghost the images that touch no
+     * energy-carrying face; and freezes every image for the flip move.
+     * Requires Vertex::adjacentFaces to be populated.
+     *
+     * @param faceIsCopy One flag per face saying which faces are copies, or
+     *                   nullptr to derive them from the mirror map.
+     */
+    void apply_vertex_boundary_types(const std::vector<char> *faceIsCopy);
+
+    /**
+     * @brief Resolve every Periodic vertex to its source and fix its offset.
+     *
+     * An image of an image is flattened to the source at the end of the
+     * chain. The offset is coord - coord(source) as the vertices stand now,
+     * so call this on the initial geometry.
+     *
+     * @throw std::invalid_argument on a mirror index out of range, a vertex
+     *        mirroring itself, or a chain that never reaches a source.
+     */
+    void resolve_periodic_images();
+
+    /**
+     * @brief Decide which faces are copies of a physical face (Face::isGhost).
+     *
+     * Two faces are copies of the same physical face when their corners map
+     * to the same three sources. Exactly one of them keeps the energy. With
+     * explicit flags that is the caller's choice; otherwise the face with the
+     * most source corners is kept, and the lowest index among equals. A face
+     * with a corner typed Ghost is scaffolding and never carries energy.
+     */
+    void mark_periodic_copy_faces(const std::vector<char> *faceIsCopy);
+
+    /**
+     * @brief Put every periodic image at its source's position plus its offset.
+     *
+     * The one place an image's coordinate is ever written after setup: the
+     * minimizer calls it after every coordinate update, and the surface
+     * solver applies the same rule to its own rows.
+     */
+    void sync_periodic_images();
+
+    /**
+     * @brief Add the force accumulated on every image to its source, and zero
+     * the image.
+     *
+     * The energy is a function of the sources alone, with each image at a
+     * fixed offset from its source, so by the chain rule the gradient with
+     * respect to a source is its own accumulated force plus that of every
+     * image. This is what makes the periodic seam exact: the global Periodic
+     * mode discards the image forces instead.
+     */
+    void fold_forces_onto_periodic_sources();
+
+    /**
+     * @brief Whether a vertex is a coordinate the model integrates or minimizes.
+     *
+     * False for ghosts, clamped vertices and periodic images; true for
+     * everything else, a free vertex on an open edge included.
+     */
+    bool is_independent_vertex(int iVertex) const;
+
+    /// One line: how many vertices of each type, how many faces carry energy.
+    void report_vertex_boundary_summary() const;
+
     /**
      * @brief Build `edges` and `edgeIndex` from the current face list.
      *
@@ -745,6 +851,26 @@ public:
      */
     void setup_from_vertices_faces(const std::vector<std::vector<double>>& verticesData, 
                                    const std::vector<std::vector<int>>& facesData);
+
+    /**
+     * @brief The same, with the boundary condition of each vertex.
+     *
+     * Under BoundaryType::Mixed the types drive the whole boundary treatment
+     * (apply_vertex_boundary_types()). Under a global mode the types must all
+     * be Free -- the global modes decide the boundary from grid position and
+     * would silently ignore anything else, so anything else is refused.
+     *
+     * @param vertexTypes    One per vertex, or empty for all Free.
+     * @param mirrorVertices One per vertex: the source a Periodic vertex
+     *                       mirrors, -1 for the rest. Empty means no mirrors.
+     * @param faceIsCopy     One per face, or empty to derive which faces are
+     *                       copies from the mirror map.
+     */
+    void setup_from_vertices_faces(const std::vector<std::vector<double>>& verticesData,
+                                   const std::vector<std::vector<int>>& facesData,
+                                   const std::vector<VertexType>& vertexTypes,
+                                   const std::vector<int>& mirrorVertices,
+                                   const std::vector<char>& faceIsCopy);
 
     /**
      * @brief Divide x,y axis to nx*dx (number of faces times length of

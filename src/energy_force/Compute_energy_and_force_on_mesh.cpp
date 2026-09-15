@@ -928,6 +928,7 @@ void Mesh::element_energy_force_patch_reference(const std::vector<Matrix> &sampl
 void Mesh::energy_force_regularization()
 {
     double kCurv = param.kCurv;
+    const bool skipCopyFaces = (param.boundaryCondition == BoundaryType::Mixed);
 
     // shape deformation meausures the shape degression of element triangles from an equilateral triangle
     int shapeDeformCount = 0;
@@ -956,6 +957,17 @@ void Mesh::energy_force_regularization()
 #endif
         std::vector<double> &localRegComponents = fRegComponents[threadIndex];
         double eReg = 0.0; ///< Regularization energy
+
+        // Under the per-vertex boundary a copy face is the same physical
+        // triangle as the face it duplicates, and its corners are images or
+        // sources of that face's corners. Charging it here would count the
+        // seam faces twice and push the double count onto the sources through
+        // the force folding. The global modes keep their ghost faces in this
+        // term, as they always have.
+        if (skipCopyFaces && face.isGhost)
+        {
+            continue;
+        }
 
         // Indices of three vertices of this face (element triangle)
         int iVertex0 = face.adjacentVertices[0];
@@ -1141,6 +1153,25 @@ void Mesh::manage_force_for_boundary_ghost_vertex()
         for (Vertex &vertex : vertices)
         {
             if (vertex.isGhost || vertex.isBoundary)
+            {
+                vertex.force = zeroForce;
+            }
+        }
+        break;
+    }
+
+    // Per-vertex boundary. An image is not a coordinate, so the force it
+    // accumulated belongs to its source: that sum is the exact gradient of
+    // the periodic energy with respect to the source, which is what the
+    // global Periodic mode gives up when it zeroes its ghosts. Clamped and
+    // ghost vertices carry none.
+    case BoundaryType::Mixed:
+    {
+        fold_forces_onto_periodic_sources();
+        Force zeroForce;
+        for (Vertex &vertex : vertices)
+        {
+            if (vertex.is_fixed() || vertex.type == VertexType::Ghost || vertex.isGhost)
             {
                 vertex.force = zeroForce;
             }

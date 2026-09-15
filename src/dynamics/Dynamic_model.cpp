@@ -156,10 +156,15 @@ void DynamicModel::next_step()
         // was driven by nVertX*nVertY random numbers per step when only
         // (nFaceX-6)*(nFaceY-6) of its coordinates are free, and every mode
         // came out too warm by roughly that ratio.
-        const bool isSlaved = !mesh.param.integratePeriodicDuplicates &&
+        //
+        // Under the per-vertex boundary the slaved set is the periodic
+        // images, and the legacy flag does not reach them: an image is never
+        // a coordinate there. A clamped vertex is not one either.
+        const bool mixed = (mesh.param.boundaryCondition == BoundaryType::Mixed);
+        const bool isSlaved = (mixed || !mesh.param.integratePeriodicDuplicates) &&
                               !mesh.isSlavedPeriodic.empty() &&
                               mesh.isSlavedPeriodic[i] != 0;
-        if (mesh.vertices[i].isGhost || isSlaved)
+        if (mesh.vertices[i].isGhost || isSlaved || mesh.vertices[i].is_fixed())
         {
             double disp = 0.0; // No displacement for boundary or ghost vertices
         }

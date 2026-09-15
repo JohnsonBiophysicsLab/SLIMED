@@ -742,3 +742,53 @@ int main() {
     return 0;
 }
 */
+
+void export_mesh_to_vertices_faces(const Mesh &mesh, const std::string &verticesFilepath,
+                                   const std::string &facesFilepath)
+{
+    std::ofstream vertexFile(verticesFilepath);
+    if (!vertexFile.is_open())
+    {
+        throw std::runtime_error("[export_mesh_to_vertices_faces] Could not open " +
+                                 verticesFilepath + " for writing.");
+    }
+    // Full precision, so that an image's offset from its source -- read off
+    // the coordinates on import -- comes back bit for bit.
+    vertexFile << "# SLIMED mesh vertices: x, y, z, type, mirror\n";
+    vertexFile << std::setprecision(17);
+    for (const Vertex &vertex : mesh.vertices)
+    {
+        vertexFile << vertex.coord(0, 0) << ',' << vertex.coord(1, 0) << ',' << vertex.coord(2, 0)
+                   << ',' << vertex_type_name(vertex.type) << ','
+                   << (vertex.is_periodic_image() ? vertex.reflectiveVertexIndex : -1) << '\n';
+    }
+    vertexFile.close();
+    if (!vertexFile)
+    {
+        throw std::runtime_error("[export_mesh_to_vertices_faces] Failed while writing " +
+                                 verticesFilepath + ".");
+    }
+
+    std::ofstream faceFile(facesFilepath);
+    if (!faceFile.is_open())
+    {
+        throw std::runtime_error("[export_mesh_to_vertices_faces] Could not open " +
+                                 facesFilepath + " for writing.");
+    }
+    faceFile << "# SLIMED mesh faces: v0, v1, v2, copy\n";
+    for (const Face &face : mesh.faces)
+    {
+        faceFile << face.adjacentVertices[0] << ',' << face.adjacentVertices[1] << ','
+                 << face.adjacentVertices[2] << ',' << (face.isGhost ? 1 : 0) << '\n';
+    }
+    faceFile.close();
+    if (!faceFile)
+    {
+        throw std::runtime_error("[export_mesh_to_vertices_faces] Failed while writing " +
+                                 facesFilepath + ".");
+    }
+
+    std::cout << "[export_mesh_to_vertices_faces] Wrote " << mesh.vertices.size()
+              << " vertices to " << verticesFilepath << " and " << mesh.faces.size()
+              << " faces to " << facesFilepath << std::endl;
+}

@@ -46,6 +46,14 @@ double Mesh::face_regularization_energy(int iFace) const
     const Face &face = faces[iFace];
     const double kCurv = param.kCurv;
 
+    // The same rule energy_force_regularization() applies: under the
+    // per-vertex boundary a copy face duplicates a physical one and is not
+    // charged, so the flip trial and the force pass agree about the total.
+    if (param.boundaryCondition == BoundaryType::Mixed && face.isGhost)
+    {
+        return 0.0;
+    }
+
     const int iVertex0 = face.adjacentVertices[0];
     const int iVertex1 = face.adjacentVertices[1];
     const int iVertex2 = face.adjacentVertices[2];

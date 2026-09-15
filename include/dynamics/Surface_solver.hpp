@@ -55,7 +55,24 @@
  * That elimination is also what removes the asymmetry the dense path could
  * only report: there is no asymmetric matrix left to approximate around.
  *
- * @see docs/edge_flip_plan.md section 3.7
+ * ### Periodic images
+ *
+ * Under BoundaryType::Mixed a periodic image is not a coordinate either, but
+ * it is not a constant: it is its source plus a fixed offset,
+ * `C_img = C_src + t` and `S_img = S_src + t`. So it gets no row of its own,
+ * and wherever a free row's mask reaches an image the source's unknown is
+ * substituted and the offset moves to the right-hand side. The matrix that
+ * is left is `K` on the *wrapped* adjacency -- the adjacency of the periodic
+ * sheet rather than of its finite tile -- which is symmetric exactly when the
+ * image structure is consistent, and build() checks that it is. The force map
+ * is then the transpose of the same map, as it should be, provided the
+ * nodal force handed in has already been folded onto the sources
+ * (Mesh::fold_forces_onto_periodic_sources()).
+ *
+ * This is the treatment the global Periodic mode approximates by giving the
+ * duplicates rows of their own and overwriting them after the solve.
+ *
+ * @see docs/edge_flip_plan.md section 3.7, docs/mixed_boundary_conditions.md
  */
 
 #pragma once
@@ -142,18 +159,34 @@ private:
                    const std::vector<double> *initialGuess) const;
 
     int nVertices_ = 0;
-    /// Per vertex: its valence, or 0 when pinned.
+    /// Per vertex: its valence, or 0 when pinned or an image.
     std::vector<int> valence_;
     std::vector<char> pinned_;
     /// Compact index of each free vertex, or -1.
     std::vector<int> compactOfVertex_;
     std::vector<int> freeOfCompact_;
-    /// CSR of the free-free adjacency, in compact indices.
+    /// CSR of the free-free adjacency, in compact indices. Under the
+    /// per-vertex boundary a neighbour that is an image is entered as its
+    /// source, so a column can repeat within a row.
     std::vector<int> rowStart_;
     std::vector<int> column_;
     /// Neighbours of each free vertex that are pinned, in vertex indices.
     std::vector<int> pinnedRowStart_;
     std::vector<int> pinnedColumn_;
+
+    /// Whether the mesh was built under BoundaryType::Mixed, which is the
+    /// only time the members below are populated and the offset terms are
+    /// added. Kept as a flag so the other modes' arithmetic is untouched.
+    bool perVertexBoundary_ = false;
+    /// Per vertex: the source it is a periodic image of, or -1.
+    std::vector<int> imageRoot_;
+    /// Per vertex, three per: coord - coord(source) for an image, zero otherwise.
+    std::vector<double> imageOffset_;
+    /// The image vertices, in index order.
+    std::vector<int> imageVertices_;
+    /// Per free vertex (compact), three per: the sum of the offsets of its
+    /// neighbours that are images. The constant a wrapped mask row carries.
+    std::vector<double> neighbourOffsetSum_;
 
     mutable double lastResidual_ = 0.0;
 };

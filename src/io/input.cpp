@@ -1,4 +1,5 @@
 #include "io/io.hpp"
+#include <cctype>
 
 using namespace std;
 
@@ -80,12 +81,63 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		{
 			param.boundaryCondition = BoundaryType::Free;
 		}
+		else if (variableValueStr.compare("Mixed") == 0 ||
+				 variableValueStr.compare("mixed") == 0)
+		{
+			param.boundaryCondition = BoundaryType::Mixed;
+		}
 		else
 		{
 			param.boundaryCondition = BoundaryType::Fixed;
 		}
 		std::cout << "BOUNDARY_TYPE set to : " << variableValueStr
 				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("boundaryTypeX") == 0 ||
+			 variableNameStr.compare("boundaryTypeY") == 0)
+	{
+		// The per-axis boundary of the generated sheet under boundaryType =
+		// Mixed. Validated here, like forceBackend: a typo should stop the run
+		// before it builds a sheet with the wrong edges.
+		BoundaryType axisType = BoundaryType::Periodic;
+		if (!parse_boundary_type(variableValueStr, axisType) || axisType == BoundaryType::Mixed)
+		{
+			throw std::runtime_error("[read_param_file] " + variableNameStr +
+									 " must be Periodic, Free or Fixed; got '" +
+									 variableValueStr + "'");
+		}
+		if (variableNameStr.back() == 'X')
+		{
+			param.boundaryConditionX = axisType;
+		}
+		else
+		{
+			param.boundaryConditionY = axisType;
+		}
+		std::cout << variableNameStr << " set to: " << boundary_type_name(axisType) << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("fixedBoundaryRings") == 0)
+	{
+		param.fixedBoundaryRings = std::stoi(variableValueStr);
+		if (param.fixedBoundaryRings < 1)
+		{
+			param.fixedBoundaryRings = 1;
+		}
+		std::cout << "fixedBoundaryRings set to: " << param.fixedBoundaryRings << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("meshVerticesFile") == 0)
+	{
+		param.meshVerticesFile = variableValueStr;
+		std::cout << "meshVerticesFile set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("meshFacesFile") == 0)
+	{
+		param.meshFacesFile = variableValueStr;
+		std::cout << "meshFacesFile set to: " << variableValueStr << std::endl;
 		return true;
 	}
 	else if (variableNameStr.compare("maxIterations") == 0)
@@ -698,24 +750,254 @@ bool import_param_file(Param &param, std::string filepath)
 }
 
 /**
- * @brief Import a mesh from separate files containing vertices and faces.
+ * @brief Read a vertex file and a faces file into MeshFileData.
  *
- * This function reads vertices and faces from specified files and constructs a mesh.
+ * The parsing half of import_mesh_from_vertices_faces(); see io.hpp for the
+ * file format. Coordinates, an optional type and mirror per vertex, three
+ * corners and an optional copy flag per face.
  * 
  * @param mesh The Mesh object to write vertices and faces data.
  * @param verticesFilepath The file path of the vertices file.
  * @param facesFilepath The file path of the faces file.
  * @return True if the mesh is successfully imported, false otherwise.
  */
-bool import_mesh_from_vertices_faces(Mesh& mesh, std::string verticesFilepath, std::string facesFilepath){
-	char SEPARATOR = ',';
-	std::vector<std::vector<int>> facesData = read_data_from_csv<int>(facesFilepath, SEPARATOR);
-	std::vector<std::vector<double>> verticesData = read_data_from_csv<double>(verticesFilepath, SEPARATOR);
+namespace
+{
+/// Strip spaces, tabs and carriage returns from both ends.
+std::string trim_field(const std::string &raw)
+{
+	const std::string blank = " \t\r";
+	const std::size_t first = raw.find_first_not_of(blank);
+	if (first == std::string::npos)
+	{
+		return "";
+	}
+	const std::size_t last = raw.find_last_not_of(blank);
+	return raw.substr(first, last - first + 1);
+}
 
-	// set up and link geometric compnents of the mesh
-	mesh.setup_from_vertices_faces(verticesData, facesData);
+/**
+ * The rows of a mesh file: fields split on commas (or on whitespace when a
+ * line has no comma), trimmed, with blank lines and '#' comment lines skipped
+ * and a trailing empty field dropped -- the legacy vertex-type writer ends
+ * every line with a comma. @p lineNumbers gets the file line of each row, for
+ * error messages.
+ */
+std::vector<std::vector<std::string>> read_mesh_file_rows(const std::string &filepath,
+														  std::vector<int> &lineNumbers)
+{
+	std::ifstream file(filepath);
+	if (!file.is_open())
+	{
+		throw std::invalid_argument("[read_mesh_vertices_faces_files] Unable to open " + filepath);
+	}
+	std::vector<std::vector<std::string>> rows;
+	std::string line;
+	int lineNumber = 0;
+	while (std::getline(file, line))
+	{
+		lineNumber++;
+		const std::string stripped = trim_field(line);
+		if (stripped.empty() || stripped[0] == '#')
+		{
+			continue;
+		}
+		std::vector<std::string> fields;
+		std::istringstream stream(stripped);
+		std::string field;
+		if (stripped.find(',') == std::string::npos)
+		{
+			while (stream >> field)
+			{
+				fields.push_back(field);
+			}
+		}
+		else
+		{
+			while (std::getline(stream, field, ','))
+			{
+				fields.push_back(trim_field(field));
+			}
+		}
+		while (!fields.empty() && fields.back().empty())
+		{
+			fields.pop_back();
+		}
+		rows.push_back(fields);
+		lineNumbers.push_back(lineNumber);
+	}
+	return rows;
+}
 
-	return true;
+std::string mesh_file_where(const std::string &filepath, int lineNumber)
+{
+	return filepath + ":" + std::to_string(lineNumber);
+}
+
+double parse_mesh_double(const std::string &text, const std::string &filepath, int lineNumber,
+						 const char *what)
+{
+	try
+	{
+		std::size_t consumed = 0;
+		const double value = std::stod(text, &consumed);
+		if (consumed == text.size())
+		{
+			return value;
+		}
+	}
+	catch (const std::exception &)
+	{
+	}
+	throw std::invalid_argument("[read_mesh_vertices_faces_files] " +
+								mesh_file_where(filepath, lineNumber) + ": cannot read " + what +
+								" from '" + text + "'");
+}
+
+int parse_mesh_int(const std::string &text, const std::string &filepath, int lineNumber,
+				   const char *what)
+{
+	try
+	{
+		std::size_t consumed = 0;
+		const long value = std::stol(text, &consumed);
+		if (consumed == text.size())
+		{
+			return static_cast<int>(value);
+		}
+	}
+	catch (const std::exception &)
+	{
+	}
+	throw std::invalid_argument("[read_mesh_vertices_faces_files] " +
+								mesh_file_where(filepath, lineNumber) + ": cannot read " + what +
+								" from '" + text + "'");
+}
+} // namespace
+
+MeshFileData read_mesh_vertices_faces_files(const std::string &verticesFilepath,
+											const std::string &facesFilepath)
+{
+	MeshFileData data;
+
+	// Vertices: x, y, z and optionally a type and a mirror.
+	std::vector<int> lineNumbers;
+	const std::vector<std::vector<std::string>> vertexRows =
+		read_mesh_file_rows(verticesFilepath, lineNumbers);
+	const int nVertices = static_cast<int>(vertexRows.size());
+	std::vector<VertexType> types(nVertices, VertexType::Free);
+	std::vector<int> mirrors(nVertices, -1);
+	bool anyType = false;
+	data.vertices.reserve(nVertices);
+	for (int row = 0; row < nVertices; row++)
+	{
+		const std::vector<std::string> &fields = vertexRows[row];
+		const int lineNumber = lineNumbers[row];
+		if (fields.size() < 3)
+		{
+			throw std::invalid_argument("[read_mesh_vertices_faces_files] " +
+										mesh_file_where(verticesFilepath, lineNumber) +
+										": a vertex needs x, y and z; got " +
+										std::to_string(fields.size()) + " field(s)");
+		}
+		data.vertices.push_back({parse_mesh_double(fields[0], verticesFilepath, lineNumber, "x"),
+								 parse_mesh_double(fields[1], verticesFilepath, lineNumber, "y"),
+								 parse_mesh_double(fields[2], verticesFilepath, lineNumber, "z")});
+		if (fields.size() >= 4)
+		{
+			anyType = true;
+			if (!parse_vertex_type(fields[3], types[row]))
+			{
+				throw std::invalid_argument(
+					"[read_mesh_vertices_faces_files] " + mesh_file_where(verticesFilepath, lineNumber) +
+					": unknown vertex type '" + fields[3] +
+					"'; expected free, fixed, periodic or ghost");
+			}
+			if (fields.size() >= 5)
+			{
+				mirrors[row] = parse_mesh_int(fields[4], verticesFilepath, lineNumber, "the mirror index");
+			}
+			if (types[row] == VertexType::Periodic && mirrors[row] < 0)
+			{
+				throw std::invalid_argument(
+					"[read_mesh_vertices_faces_files] " + mesh_file_where(verticesFilepath, lineNumber) +
+					": a periodic vertex needs the index of the vertex it mirrors in the fifth column");
+			}
+		}
+	}
+	if (anyType)
+	{
+		data.types = types;
+		data.mirrors = mirrors;
+	}
+
+	// Faces: three corners and optionally a copy flag.
+	lineNumbers.clear();
+	const std::vector<std::vector<std::string>> faceRows =
+		read_mesh_file_rows(facesFilepath, lineNumbers);
+	const int nFaces = static_cast<int>(faceRows.size());
+	std::vector<char> flags(nFaces, 0);
+	bool anyFlag = false;
+	data.faces.reserve(nFaces);
+	for (int row = 0; row < nFaces; row++)
+	{
+		const std::vector<std::string> &fields = faceRows[row];
+		const int lineNumber = lineNumbers[row];
+		if (fields.size() < 3)
+		{
+			throw std::invalid_argument("[read_mesh_vertices_faces_files] " +
+										mesh_file_where(facesFilepath, lineNumber) +
+										": a face needs three vertex indices; got " +
+										std::to_string(fields.size()) + " field(s)");
+		}
+		std::vector<int> corners(3);
+		for (int k = 0; k < 3; k++)
+		{
+			corners[k] = parse_mesh_int(fields[k], facesFilepath, lineNumber, "a vertex index");
+			if (corners[k] < 0 || corners[k] >= nVertices)
+			{
+				throw std::invalid_argument(
+					"[read_mesh_vertices_faces_files] " + mesh_file_where(facesFilepath, lineNumber) +
+					": vertex index " + std::to_string(corners[k]) + " is outside the " +
+					std::to_string(nVertices) + " vertices of " + verticesFilepath);
+			}
+		}
+		data.faces.push_back(corners);
+		if (fields.size() >= 4)
+		{
+			anyFlag = true;
+			std::string flag;
+			for (char c : fields[3])
+			{
+				flag.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+			}
+			if (flag == "0" || flag == "real" || flag == "false")
+			{
+				flags[row] = 0;
+			}
+			else if (flag == "1" || flag == "copy" || flag == "ghost" || flag == "image" ||
+					 flag == "true")
+			{
+				flags[row] = 1;
+			}
+			else
+			{
+				throw std::invalid_argument(
+					"[read_mesh_vertices_faces_files] " + mesh_file_where(facesFilepath, lineNumber) +
+					": unknown face flag '" + fields[3] + "'; expected 0/real or 1/copy");
+			}
+		}
+	}
+	if (anyFlag)
+	{
+		data.faceIsCopy = flags;
+	}
+
+	std::cout << "[read_mesh_vertices_faces_files] Read " << nVertices << " vertices from "
+			  << verticesFilepath << (anyType ? " (with boundary types)" : "") << " and " << nFaces
+			  << " faces from " << facesFilepath << (anyFlag ? " (with copy flags)" : "")
+			  << std::endl;
+	return data;
 }
 
 /*
