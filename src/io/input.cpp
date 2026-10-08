@@ -413,6 +413,42 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "creaseWallConstant set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("meshWallType") == 0)
+	{
+		param.meshWallType = variableValueStr;
+		std::cout << "meshWallType set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("vertexMoveEnabled") == 0)
+	{
+		param.vertexMoveEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "vertexMoveEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("vertexMoveStepRatio") == 0)
+	{
+		param.vertexMoveStepRatio = std::stod(variableValueStr);
+		std::cout << "vertexMoveStepRatio set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("vertexMoveAttemptsPerVertex") == 0)
+	{
+		param.vertexMoveAttemptsPerVertex = std::stod(variableValueStr);
+		std::cout << "vertexMoveAttemptsPerVertex set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("vertexMoveInterval") == 0)
+	{
+		param.vertexMoveInterval = std::stoi(variableValueStr);
+		std::cout << "vertexMoveInterval set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("brownianStepEnabled") == 0)
+	{
+		param.brownianStepEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "brownianStepEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("surfaceSolver") == 0)
 	{
 		param.surfaceSolver = variableValueStr;
@@ -650,6 +686,260 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		param.propagateScaffoldingNstep = std::stoi(variableValueStr);
 		std::cout << "propagateScaffoldingNstep set to: " << variableValueStr
 				  << std::endl;
+		return true;
+	}
+	// External force on a region of the membrane; see docs/external_force.md.
+	else if (variableNameStr.compare("externalForceEnabled") == 0)
+	{
+		param.externalForceEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "externalForceEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceX") == 0)
+	{
+		param.externalForceX = std::stod(variableValueStr);
+		std::cout << "externalForceX set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceY") == 0)
+	{
+		param.externalForceY = std::stod(variableValueStr);
+		std::cout << "externalForceY set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceZ") == 0)
+	{
+		param.externalForceZ = std::stod(variableValueStr);
+		std::cout << "externalForceZ set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceShape") == 0)
+	{
+		param.externalForceShape = variableValueStr;
+		std::cout << "externalForceShape set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceCenterX") == 0)
+	{
+		param.externalForceCenterX = std::stod(variableValueStr);
+		std::cout << "externalForceCenterX set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceCenterY") == 0)
+	{
+		param.externalForceCenterY = std::stod(variableValueStr);
+		std::cout << "externalForceCenterY set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceRadius") == 0)
+	{
+		param.externalForceRadius = std::stod(variableValueStr);
+		std::cout << "externalForceRadius set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceHalfWidthX") == 0)
+	{
+		param.externalForceHalfWidthX = std::stod(variableValueStr);
+		std::cout << "externalForceHalfWidthX set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceHalfWidthY") == 0)
+	{
+		param.externalForceHalfWidthY = std::stod(variableValueStr);
+		std::cout << "externalForceHalfWidthY set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceStartIteration") == 0)
+	{
+		param.externalForceStartIteration = std::stoi(variableValueStr);
+		std::cout << "externalForceStartIteration set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("externalForceStopIteration") == 0)
+	{
+		param.externalForceStopIteration = std::stoi(variableValueStr);
+		std::cout << "externalForceStopIteration set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	// A rigid bead pushed through the membrane; see docs/bead_push_benchmark.md.
+	else if (variableNameStr.compare("beadEnabled") == 0)
+	{
+		param.beadEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "beadEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadRadius") == 0)
+	{
+		param.beadRadius = std::stod(variableValueStr);
+		std::cout << "beadRadius set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadStiffness") == 0)
+	{
+		param.beadStiffness = std::stod(variableValueStr);
+		std::cout << "beadStiffness set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadCenterX") == 0)
+	{
+		param.beadCenterX = std::stod(variableValueStr);
+		std::cout << "beadCenterX set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadCenterY") == 0)
+	{
+		param.beadCenterY = std::stod(variableValueStr);
+		std::cout << "beadCenterY set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadCenterZ") == 0)
+	{
+		param.beadCenterZ = std::stod(variableValueStr);
+		std::cout << "beadCenterZ set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadVelocityX") == 0)
+	{
+		param.beadVelocityX = std::stod(variableValueStr);
+		std::cout << "beadVelocityX set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadVelocityY") == 0)
+	{
+		param.beadVelocityY = std::stod(variableValueStr);
+		std::cout << "beadVelocityY set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadVelocityZ") == 0)
+	{
+		param.beadVelocityZ = std::stod(variableValueStr);
+		std::cout << "beadVelocityZ set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadStartIteration") == 0)
+	{
+		param.beadStartIteration = std::stoi(variableValueStr);
+		std::cout << "beadStartIteration set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadStopIteration") == 0)
+	{
+		param.beadStopIteration = std::stoi(variableValueStr);
+		std::cout << "beadStopIteration set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadAdhesionEnergy") == 0)
+	{
+		param.beadAdhesionEnergy = std::stod(variableValueStr);
+		std::cout << "beadAdhesionEnergy set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadAdhesionRange") == 0)
+	{
+		param.beadAdhesionRange = std::stod(variableValueStr);
+		std::cout << "beadAdhesionRange set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxEnabled") == 0)
+	{
+		param.elasticBoxEnabled = (variableValueStr.compare("true") == 0);
+		std::cout << "elasticBoxEnabled set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxTension") == 0)
+	{
+		param.elasticBoxTension = std::stod(variableValueStr);
+		std::cout << "elasticBoxTension set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxMobility") == 0)
+	{
+		param.elasticBoxMobility = std::stod(variableValueStr);
+		std::cout << "elasticBoxMobility set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxThermal") == 0)
+	{
+		param.elasticBoxThermal = (variableValueStr.compare("true") == 0);
+		std::cout << "elasticBoxThermal set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxCoupling") == 0)
+	{
+		param.elasticBoxCoupling = variableValueStr;
+		std::cout << "elasticBoxCoupling set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxMaxStrainPerStep") == 0)
+	{
+		param.elasticBoxMaxStrainPerStep = std::stod(variableValueStr);
+		std::cout << "elasticBoxMaxStrainPerStep set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("elasticBoxVertexGasTerm") == 0)
+	{
+		param.elasticBoxVertexGasTerm = (variableValueStr.compare("true") == 0);
+		std::cout << "elasticBoxVertexGasTerm set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidFlowMode") == 0)
+	{
+		param.lipidFlowMode = variableValueStr;
+		std::cout << "lipidFlowMode set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidFlowDiffusivity") == 0)
+	{
+		param.lipidFlowDiffusivity = std::stod(variableValueStr);
+		std::cout << "lipidFlowDiffusivity set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidFlowSubsteps") == 0)
+	{
+		param.lipidFlowSubsteps = std::stoi(variableValueStr);
+		std::cout << "lipidFlowSubsteps set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidFlowThermal") == 0)
+	{
+		param.lipidFlowThermal = (variableValueStr.compare("true") == 0);
+		std::cout << "lipidFlowThermal set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidFlowLinearStretching") == 0)
+	{
+		param.lipidFlowLinearStretching = (variableValueStr.compare("true") == 0);
+		std::cout << "lipidFlowLinearStretching set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidReservoirRegion") == 0)
+	{
+		param.lipidReservoirRegion = variableValueStr;
+		std::cout << "lipidReservoirRegion set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidFlipResampling") == 0)
+	{
+		param.lipidFlipResampling = variableValueStr;
+		std::cout << "lipidFlipResampling set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidReservoirTension") == 0)
+	{
+		param.lipidReservoirTension = std::stod(variableValueStr);
+		std::cout << "lipidReservoirTension set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("lipidReservoirRate") == 0)
+	{
+		param.lipidReservoirRate = std::stod(variableValueStr);
+		std::cout << "lipidReservoirRate set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("localOutput") == 0)
+	{
+		param.localOutput = (variableValueStr.compare("true") == 0);
+		std::cout << "localOutput set to: " << variableValueStr << std::endl;
 		return true;
 	}
 	else if (variableNameStr.compare("preRefineMesh") == 0)

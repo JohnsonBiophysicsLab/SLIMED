@@ -1,4 +1,5 @@
 #include "io/io.hpp"
+#include "Dynamics.hpp"
 #include <cstdio>
 #include <iomanip>
 
@@ -612,6 +613,77 @@ void output_trajectory_files(Mesh &mesh, const std::string &input_filename)
     }
     meshpoint_csv_temp << '\n';
     meshpoint_csv_temp.close();
+}
+
+namespace
+{
+std::ofstream localFaceEnergyCsv;
+std::ofstream localVertexForceCsv;
+
+void write_local_frame(DynamicMesh &mesh, const DynamicModel &model)
+{
+    // One line per frame, four numbers per face, in face order: bending
+    // energy, mesh-term energy, mean curvature, patch area.
+    localFaceEnergyCsv << setprecision(7);
+    for (const Face &face : mesh.faces)
+    {
+        localFaceEnergyCsv << face.energy.energyCurvature << ',' << face.energy.energyRegularization
+                           << ',' << face.meanCurvature << ',' << face.elementArea << ',';
+    }
+    localFaceEnergyCsv << '\n';
+    // One line per frame, twelve numbers per vertex, in vertex order: the
+    // bending, area-constraint, mesh-term and bead forces.
+    localVertexForceCsv << setprecision(7);
+    const bool bead = mesh.param.beadEnabled;
+    for (std::size_t v = 0; v < mesh.vertices.size(); v++)
+    {
+        const Force &force = mesh.vertices[v].force;
+        for (int axis = 0; axis < 3; axis++)
+        {
+            localVertexForceCsv << force.forceCurvature(axis, 0) << ',';
+        }
+        for (int axis = 0; axis < 3; axis++)
+        {
+            localVertexForceCsv << force.forceArea(axis, 0) << ',';
+        }
+        for (int axis = 0; axis < 3; axis++)
+        {
+            localVertexForceCsv << force.forceRegularization(axis, 0) << ',';
+        }
+        for (int axis = 0; axis < 3; axis++)
+        {
+            localVertexForceCsv << (bead ? model.beadForce(static_cast<int>(v), axis) : 0.0) << ',';
+        }
+    }
+    localVertexForceCsv << '\n';
+    // Flushed per frame, so a run in progress can be read up to its last
+    // complete frame; at a frame every hundred steps the cost is nothing.
+    localFaceEnergyCsv.flush();
+    localVertexForceCsv.flush();
+}
+} // namespace
+
+void dynamics_create_local_files(DynamicMesh &mesh, const DynamicModel &model,
+                                 const std::string &filename)
+{
+    localFaceEnergyCsv.close();
+    localVertexForceCsv.close();
+    localFaceEnergyCsv.clear();
+    localVertexForceCsv.clear();
+    localFaceEnergyCsv.open("faceenergy" + filename + ".csv");
+    localVertexForceCsv.open("vertexforce" + filename + ".csv");
+    write_local_frame(mesh, model);
+}
+
+void dynamics_output_local_frame(DynamicMesh &mesh, const DynamicModel &model,
+                                 const std::string &filename)
+{
+    if (!localFaceEnergyCsv.is_open() || !localVertexForceCsv.is_open())
+    {
+        dynamics_create_local_files(mesh, model, filename);
+        return;
+    }
+    write_local_frame(mesh, model);
 }
 
 void dynamics_output_trajectory_files(DynamicMesh &mesh, const std::string &filename)

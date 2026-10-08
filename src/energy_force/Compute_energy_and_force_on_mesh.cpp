@@ -90,6 +90,12 @@ void Mesh::compute_face_energies_and_forces()
     slimed::PatchParams patchParams;
     patchParams.kCurv = param.kCurv;
     patchParams.uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
+    if (lipid_flow_global() && lipidAreaNormalization > 0.0)
+    {
+        // Global lipid flow: the modulus is normalised by the relaxed area as
+        // built; param.area0 is the one that moves with the reservoir.
+        patchParams.uSurfPerArea = param.uSurf / lipidAreaNormalization;
+    }
     patchParams.area = param.area;
     patchParams.area0 = param.area0;
     patchParams.uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
@@ -161,6 +167,29 @@ void Mesh::compute_face_energies_and_forces()
 
             slimed::PatchParams facePatchParams = patchParams;
             facePatchParams.spontCurv = face.spontCurvature;
+
+            // Lipid flow: the face's own tension in place of the sheet's.
+            // The kernel's area force is areaScale * dS_f/dx with
+            // areaScale = uSurfPerArea * (area - area0), so the three fields
+            // are set to make that product sigma_f, and the face's
+            // stretching energy is its own. Off, nothing here changes.
+            if (lipid_flow_local() && !faceArea0.empty())
+            {
+                const std::size_t iFace = static_cast<std::size_t>(&face - faces.data());
+                const double relaxedArea = faceArea0[iFace];
+                const double modulusArea = param.lipidFlowLinearStretching ? faceArea0Initial[iFace] : relaxedArea;
+                double tension = 0.0;
+                if (relaxedArea > 0.0 && modulusArea > 0.0)
+                {
+                    const double excess = face.elementArea - relaxedArea;
+                    tension = param.uSurf * excess / modulusArea;
+                    face.energy.energyArea = 0.5 * param.uSurf / modulusArea * excess * excess;
+                }
+                faceTension[iFace] = tension;
+                facePatchParams.uSurfPerArea = 1.0;
+                facePatchParams.area = tension;
+                facePatchParams.area0 = 0.0;
+            }
 
             // One kernel for both patch kinds. The width lives in the rows and
             // in the control-point list, not in a branch: a regular face is 12
@@ -353,6 +382,13 @@ void Mesh::compute_face_energies_and_forces()
 
 void Mesh::energy_force_fluid_terms()
 {
+    // Hard walls are constraints the Monte Carlo moves enforce by rejection:
+    // no energy and no force. The slots were cleared at the top of the
+    // evaluation and stay that way. See Param::meshWallType.
+    if (walls_are_hard())
+    {
+        return;
+    }
     if (param.edgeSpringEnabled)
     {
         energy_force_edge_spring();
@@ -488,7 +524,16 @@ void Mesh::Compute_Energy_And_Force()
     }
 
     // Step 5. Calculate area constraint energy
-    if (param.isGlobalConstraint)
+    if (lipid_flow_local() && !faceArea0.empty())
+    {
+        // Local stretching: every face's own energy is already in the sum.
+    }
+    else if (lipid_flow_global() && lipidAreaNormalization > 0.0)
+    {
+        sumEnergy.energyArea = 0.5 * param.uSurf / lipidAreaNormalization *
+                               pow(param.area - param.area0, 2.0);
+    }
+    else if (param.isGlobalConstraint)
     {
         if (param.area0 == 0.0)
         {
@@ -522,6 +567,14 @@ void Mesh::Compute_Energy_And_Force()
                                         - param.energy.energyGagScaffolding
                                         - param.energy.energyIdealizedProteinLattice;
         param.energy.calculateTotalEnergy();
+    }
+
+    // The elastic box's generalized force: the virial of the raw forces,
+    // taken before the boundary handling below zeroes the ghosts and folds
+    // the images. See Mesh::accumulate_virial().
+    if (param.elasticBoxEnabled)
+    {
+        accumulate_virial();
     }
 
     // Step 8. Boundary conditions - manage ghost vertices
@@ -1251,4 +1304,32 @@ double Mesh::calculate_mean_force()
         sum += vertices[i].force.get_total_force_magnitude();
     }
     return sum / vertices.size();
+}
+
+void Mesh::accumulate_virial()
+{
+    double curvature[3] = {0.0, 0.0, 0.0};
+    double area[3] = {0.0, 0.0, 0.0};
+    double regularization[3] = {0.0, 0.0, 0.0};
+    // Every vertex, at its own position, with the force it accumulated:
+    // images and ghosts included, since the patches that reference them
+    // move them along under the rescale. Serial on purpose -- a reduction
+    // would reorder the sum with the thread count, and the box this drives
+    // would carry the difference into the trajectory.
+    for (const Vertex &vertex : vertices)
+    {
+        for (int axis = 0; axis < 3; axis++)
+        {
+            const double x = vertex.coord(axis, 0);
+            curvature[axis] += x * vertex.force.forceCurvature(axis, 0);
+            area[axis] += x * vertex.force.forceArea(axis, 0);
+            regularization[axis] += x * vertex.force.forceRegularization(axis, 0);
+        }
+    }
+    for (int axis = 0; axis < 3; axis++)
+    {
+        virialCurvature[axis] = curvature[axis];
+        virialArea[axis] = area[axis];
+        virialRegularization[axis] = regularization[axis];
+    }
 }

@@ -141,44 +141,6 @@ int valence(const Mesh &mesh, int iVertex)
     return static_cast<int>(mesh.vertices[iVertex].adjacentVertices.size());
 }
 
-/**
- * @brief Exchange the labels of two faces throughout the mesh.
- *
- * Used to undo the one thing a double flip does not restore. Applying it to
- * the twice-flipped mesh is what turns "restored up to the two face labels"
- * into an exact comparison, and makes the claim testable rather than a caveat
- * in a comment.
- */
-void relabel_two_faces(Mesh &mesh, int faceA, int faceB)
-{
-    std::swap(mesh.faces[faceA].adjacentVertices, mesh.faces[faceB].adjacentVertices);
-    std::swap(mesh.faces[faceA].adjacentFaces, mesh.faces[faceB].adjacentFaces);
-    std::swap(mesh.faces[faceA].oneRingVertices, mesh.faces[faceB].oneRingVertices);
-
-    const auto sigma = [faceA, faceB](int f) {
-        if (f == faceA) return faceB;
-        if (f == faceB) return faceA;
-        return f;
-    };
-    for (Vertex &vertex : mesh.vertices)
-    {
-        for (int &f : vertex.adjacentFaces)
-        {
-            f = sigma(f);
-        }
-    }
-    for (MeshEdge &edge : mesh.edges)
-    {
-        for (int k = 0; k < 2; k++)
-        {
-            if (edge.face[k] >= 0)
-            {
-                edge.face[k] = sigma(edge.face[k]);
-            }
-        }
-    }
-}
-
 /// A closed tetrahedron. Every edge's two opposite corners are already joined,
 /// so it is the smallest mesh on which a flip would create a duplicate edge.
 MeshFixture build_tetrahedron()
@@ -352,7 +314,7 @@ TEST(EdgeFlipTest, EveryAdmissibleFlipLeavesAValidManifold)
  * composes to the exchange. What matters is that nothing else moves, which is
  * what makes a rejected Metropolis trial free to undo.
  */
-TEST(EdgeFlipTest, FlippingTwiceRestoresTheMeshUpToTheTwoFaceLabels)
+TEST(EdgeFlipTest, FlippingTwiceRestoresTheMeshIncludingTheFaceLabels)
 {
     Param param;
     param.VERBOSE_MODE = false;
@@ -375,8 +337,11 @@ TEST(EdgeFlipTest, FlippingTwiceRestoresTheMeshUpToTheTwoFaceLabels)
         const auto adjacencyBefore = adjacency_sets(mesh);
         const auto edgesBefore = edge_set(mesh);
         const long long versionBefore = mesh.topologyVersion;
-        const int faceA = mesh.edges[iEdge].face[0];
-        const int faceB = mesh.edges[iEdge].face[1];
+        std::vector<std::vector<int>> cornersBefore;
+        for (const Face &face : mesh.faces)
+        {
+            cornersBefore.push_back(face.adjacentVertices);
+        }
 
         mesh.flip_edge(iEdge);
         ASSERT_NE(triangle_set(mesh), trianglesBefore)
@@ -384,13 +349,31 @@ TEST(EdgeFlipTest, FlippingTwiceRestoresTheMeshUpToTheTwoFaceLabels)
 
         mesh.flip_edge(iEdge);
 
-        // The triangles come back regardless of labelling.
-        EXPECT_EQ(triangle_set(mesh), trianglesBefore) << "edge " << iEdge;
-
-        // Everything else comes back once the two labels are exchanged. Undo
-        // that exchange and the match is exact -- which is the precise sense
-        // in which a rejected Metropolis trial restores the mesh.
-        relabel_two_faces(mesh, faceA, faceB);
+        // Everything comes back, the two face labels included: each record
+        // names the triangle it named before, wound the same way, so a
+        // rejected Metropolis trial restores the mesh for anything keyed by
+        // face index. (The orientation-based labelling an earlier version
+        // used left the two records holding each other's triangle, and this
+        // test had to swap them back before comparing.) The one thing not
+        // pinned is which corner the list starts from: a flip writes its two
+        // corner lists from the new corner, so they may come back rotated.
+        // That changes the order of floating-point sums and nothing else.
+        for (std::size_t f = 0; f < mesh.faces.size(); f++)
+        {
+            const std::vector<int> &now = mesh.faces[f].adjacentVertices;
+            const std::vector<int> &was = cornersBefore[f];
+            ASSERT_EQ(now.size(), was.size()) << "edge " << iEdge << ", face " << f;
+            bool sameCycle = false;
+            for (std::size_t shift = 0; shift < was.size() && !sameCycle; shift++)
+            {
+                sameCycle = true;
+                for (std::size_t c = 0; c < was.size(); c++)
+                {
+                    sameCycle = sameCycle && now[c] == was[(c + shift) % was.size()];
+                }
+            }
+            EXPECT_TRUE(sameCycle) << "edge " << iEdge << ", face " << f;
+        }
         EXPECT_EQ(triangle_set(mesh), trianglesBefore) << "edge " << iEdge;
         EXPECT_EQ(adjacency_sets(mesh), adjacencyBefore) << "edge " << iEdge;
         EXPECT_EQ(edge_set(mesh), edgesBefore) << "edge " << iEdge;

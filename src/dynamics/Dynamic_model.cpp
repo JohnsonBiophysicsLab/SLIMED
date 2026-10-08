@@ -43,6 +43,10 @@ DynamicModel::DynamicModel(DynamicMesh &mesh_, Record &record_)
 
     nodalForce = mat_calloc(mesh.vertices.size(), 3);
     driveForce = mat_calloc(mesh.vertices.size(), 3);
+    select_external_force_vertices();
+    setup_bead();
+    setup_elastic_box();
+    setup_lipid_flow();
     std::cout << "[DynamicModel] fdtConsistentSurfaceUpdate = "
               << (mesh.param.fdtConsistentSurfaceUpdate ? "true" : "false") << std::endl;
     // Output if model setup if verbose mode
@@ -110,6 +114,14 @@ void DynamicModel::next_step()
     // the gradient flow of any potential, so it can do net work on the
     // membrane: as shipped, the r.m.s. height grows without settling instead of
     // reaching a stationary spectrum at all.
+    // The bead, if there is one: put where this step wants it, its wall
+    // evaluated on the control points as a nodal force. Off, nothing here runs.
+    const bool beadOn = mesh.param.beadEnabled;
+    if (beadOn)
+    {
+        update_bead(this->iteration);
+    }
+
     if (mesh.param.fdtConsistentSurfaceUpdate)
     {
         for (int i = 0; i < static_cast<int>(mesh.vertices.size()); i++)
@@ -130,11 +142,23 @@ void DynamicModel::next_step()
                 {
                     f += mesh.vertices[i].force.forceRegularization(j, 0);
                 }
+                if (beadOn)
+                {
+                    f += beadForce(i, j);
+                }
                 nodalForce.set(i, j, std::isnan(f) ? 0.0 : f);
             }
         }
         mesh.apply_nodal_force_to_surface(nodalForce, driveForce);
     }
+
+    // The external force, if this iteration is inside its window. It acts
+    // on the surface point the step displaces, whichever way the membrane's
+    // own force reached it, and only on vertices the step integrates: the
+    // branch below skips the rest. Off, it changes nothing.
+    const bool pushing = external_force_active(this->iteration);
+    const double externalForce[3] = {mesh.param.externalForceX, mesh.param.externalForceY,
+                                     mesh.param.externalForceZ};
 
     // One key per (run, step); standard_normal() mixes the vertex and axis in.
     const std::uint64_t stepKey =
@@ -186,10 +210,18 @@ void DynamicModel::next_step()
                 {
                     forceterm += mesh.vertices[i].force.forceRegularization(j, 0);
                 }
+                if (!mesh.param.fdtConsistentSurfaceUpdate && beadOn)
+                {
+                    forceterm += beadForce(i, j);
+                }
                 //std::cout << "Force @ " << i << " , "<< j << " = "  << forceterm << std::endl;
                 if (std::isnan(forceterm))
                 {
                     forceterm = 0.0;
+                }
+                if (pushing && externalForceMask[i] != 0)
+                {
+                    forceterm += externalForce[j];
                 }
                 randomterm = standard_normal(stepKey, static_cast<std::uint64_t>(i),
                                              static_cast<std::uint64_t>(j)); // Get random term

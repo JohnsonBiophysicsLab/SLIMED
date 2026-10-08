@@ -492,18 +492,27 @@ without any geometric test. The bookkeeping, all `O(valence)`:
   classification of §3.3 for every face incident to `i`, `j`, `k`, `l`.
 - `topologyVersion++` — the counter every cache checks (§3.6).
 
-`flip_edge(e)` applied twice restores every one of those, with one exception
-found while building it: **the two incident face indices come back holding
-each other's triangle.** That is intrinsic, not an implementation artefact.
-The quadrilateral offers no canonical pairing between "the side of `c0`"
-before the flip and either side after it, so every consistent assignment rule
-composes to the exchange; OpenMesh's `flip()` does the same (Botsch et al.
-2002). It is
-unobservable here because the only per-face state that survives a step without
-being recomputed from connectivity is the spontaneous curvature, and the
-admission test refuses an edge whose two faces disagree about it. The
-involution test asserts the exchange rather than papering over it: it undoes
-the relabelling explicitly and then demands exact equality.
+`flip_edge(e)` applied twice restores every one of those, **the two face
+indices included**. That last point needs a deliberate rule. The obvious
+assignment -- `F1` takes the new triangle on the side of its own first
+endpoint -- composes to an exchange: two flips leave `F1` and `F2` holding
+each other's triangle (OpenMesh's `flip()` does this; Botsch et al. 2002),
+and an earlier version of this code did too, documenting it as intrinsic.
+It is not. The quadrilateral *does* offer pairings that read the same from
+both sides of the flip, because the two corners `{k, l}` and the two
+endpoints `{i, j}` trade roles under it: pair the record whose old corner
+has the smaller index with the new triangle whose corner has the smaller
+index (the rule `flip_edge()` uses), or pair the larger old triangle with
+the larger new one (the rule the lipid field adds on top, §5 of
+`docs/lipid_flow_plan.md`). Either is its own inverse. The change was
+forced by the per-face lipid field: with the exchange, a *rejected* trial
+silently permuted every per-face quantity -- the field, the flux graph built
+on the last accepted flip, and the per-face output frames written against a
+connectivity frame that no longer matched -- without bumping
+`topologyVersion`. The admission test still refuses an edge whose two faces
+disagree about spontaneous curvature: an accepted flip would now carry the
+curvature onto a triangle chosen by index. The involution test demands exact
+equality of every face's corner list after two flips.
 
 ### 3.3 Admission predicate and multi-extraordinary patches
 

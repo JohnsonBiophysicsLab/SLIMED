@@ -1,0 +1,81 @@
+# Example: a flat membrane whose relaxed area A0 changes with time.
+#
+# The 100 nm sheet of the bead examples, held at its rim, with no bead. The
+# global lipid-flow mode gives the sheet one relaxed area A0 that is no longer
+# fixed: it exchanges lipid with a reservoir held at 0.5 pN/nm,
+#     dA0/dt = (k A0_built / K) (sigma - sigma_res),  k = lipidReservoirRate,
+# with thermal noise on A0. The sheet starts at A0 = its flat area; the thermal
+# undulations add area, and A0 grows (by ~55 nm^2, ~0.6 %, in the first 2 us)
+# until the tension reads sigma_res, then fluctuates about it (measured: mean
+# 0.51 pN/nm over 2-20 us). A0, the tension and the exchanged area are in
+# inputlipid.csv. Set lipidReservoirRegion = none to recover the fixed-A0 global constraint. See
+# docs/lipid_flow_plan.md.
+#
+# Run from a directory of its own:  cp <this file> input.params && membrane_dynamics
+beadEnabled = false
+beadRadius = 10.0
+beadStiffness = 200.0
+beadCenterX = 0.0
+beadCenterY = 0.0
+beadCenterZ = -5.0
+beadVelocityX = 0.0
+beadVelocityY = 0.0
+beadVelocityZ = 0.5
+beadStartIteration = 0
+beadStopIteration = 70000
+beadAdhesionEnergy = 0.0
+beadAdhesionRange = 2.5
+boundaryType = Mixed
+boundaryTypeX = Fixed
+boundaryTypeY = Fixed
+fixedBoundaryRings = 1
+surfaceSolver = iterative
+lFace = 5.0
+isFlat = true
+sideX = 100.0
+sideY = 100.0
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4
+usMembraneStretching = 250.0
+setRelaxAreaToDefault = true
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17
+maxIterations = 20000
+timeStep = 0.001
+diffConst = 1.0
+randomSeed = 20261008
+meshpointOutput = true
+meshpointOutputInterval = 200
+xyzOutput = false
+fdtConsistentSurfaceUpdate = true
+localOutput = false
+inPlaneDynamicsEnabled = false
+edgeSpringEnabled = false
+edgeTetherShape = flat
+edgeTetherMinRatio = 0.7
+edgeTetherMaxRatio = 1.75
+edgeSpringConstant = 83.4
+triangleShapeEnabled = false
+triangleShapeMinAltitudeRatio = 0.4
+triangleShapeConstant = 83.4
+creaseWallEnabled = false
+creaseWallAngle = 60.0
+creaseWallConstant = 500.0
+edgeFlipEnabled = false
+edgeFlipAttemptRate = 0.5
+edgeFlipInterval = 1
+edgeFlipMinValence = 4
+edgeFlipMaxValence = 8
+irregularPatchDepthScale = 1.0
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+externalForceEnabled = false
+VERBOSE_MODE = false
+lipidFlowMode = global
+lipidReservoirRegion = bulk
+lipidReservoirTension = 0.5
+lipidReservoirRate = 20

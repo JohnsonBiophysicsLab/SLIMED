@@ -1,0 +1,102 @@
+# Example: push a disc of a clamped membrane upward, then let go.
+#
+# A 100 nm sheet clamped on all four sides (two rings, so the edge and its
+# slope are both held) is pushed up on a central disc of radius 20 nm with a
+# constant force of 5 pN on each of the disc's 60 vertices -- 300 pN in all,
+# about 0.23 pN/nm^2 of pressure -- for the first 30 us. Then the force is
+# switched off and the membrane is left to recover for 100 us. Thermal noise
+# is on throughout, as it is in every Brownian run.
+#
+# What to expect (serial Release build, seed 20260923; the numbers are in
+# docs/external_force.md section 4): the disc rises at 1.2 nm/us at first and
+# plateaus by 20-25 us at a mean height of 8 nm (apex 10.8 nm), storing 2.2 %
+# excess area -- a tension of about 5 pN/nm, which is what holds it. After
+# release the bump halves in 13 us, is down to a tenth by 70 us, and reaches
+# the thermal baseline about 100 us after release. 130 000 steps take about
+# 280 s.
+#
+# Run it, then animate it:
+#
+#   mkdir -p ~/slimed_runs/push_release && cp data/example/push_release.params \
+#       ~/slimed_runs/push_release/input.params && cd ~/slimed_runs/push_release
+#   ~/Workspace/SLIMED/build/bin/membrane_dynamics
+#   ~/anaconda3/bin/python ~/Workspace/SLIMED/analysis/push_release_animation.py .
+#
+# Besides the usual trajectory it writes inputexternal_force_vertices.csv, the
+# indices of the pushed vertices, which the animation uses to mark the disc.
+#
+# See docs/external_force.md for what the force does and what this run shows.
+
+############################################
+## External force
+############################################
+
+externalForceEnabled = true
+externalForceZ = 5.0             # pN per vertex, upward; X and Y stay 0
+externalForceShape = disc        # disc | rectangle
+externalForceCenterX = 0.0       # nm; the generated sheet is centred on the origin
+externalForceCenterY = 0.0
+externalForceRadius = 20.0       # nm; 60 vertices on a 5 nm mesh
+externalForceStartIteration = 0
+externalForceStopIteration = 30000   # exclusive: 30 us at timeStep = 0.001
+
+############################################
+## Boundary Conditions
+############################################
+
+boundaryType = Mixed             # per-vertex boundary: free, fixed or periodic image
+boundaryTypeX = Fixed            # clamped on all four sides
+boundaryTypeY = Fixed
+fixedBoundaryRings = 2           # 2 rings: the edge and its slope are held
+surfaceSolver = iterative        # required by the dynamics under Mixed
+
+############################################
+## Geometric Parameters
+############################################
+
+lFace = 5.0                      # target edge length of the triangular mesh (nm)
+isFlat = true
+sideX = 100.0                    # nm
+sideY = 100.0                    # nm
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4         # bending modulus (pN.nm), 20 kT
+usMembraneStretching = 250.0     # stretching modulus (pN/nm)
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17                       # 1 kBT = 4.17 pN.nm
+
+############################################
+## Dynamics
+############################################
+
+maxIterations = 130000           # 30 us pushed + 100 us recovering
+timeStep = 0.001                 # us
+diffConst = 1.0                  # nm^2/us
+randomSeed = 20260923
+meshpointOutput = true
+meshpointOutputInterval = 100    # a frame every 0.1 us: 1301 frames
+xyzOutput = true
+fdtConsistentSurfaceUpdate = true
+inPlaneDynamicsEnabled = false   # a solid sheet: vertices move along z only
+
+############################################
+## Off for this example
+############################################
+
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+edgeFlipEnabled = false
+
+############################################
+## Developer options
+############################################
+
+VERBOSE_MODE = false

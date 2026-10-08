@@ -97,6 +97,8 @@ void DynamicMesh::finish_dynamic_setup()
         report_edge_flip_feasibility();
     }
 
+    check_monte_carlo_configuration();
+
     // Assign mesh2surface and surface2mesh
     //
     // Skipped entirely under the iterative solver, which is the whole point of
@@ -126,6 +128,174 @@ void DynamicMesh::finish_dynamic_setup()
     matMesh = mat_calloc(vertices.size(), 3);
     matSurface = mat_calloc(vertices.size(), 3);
     mark_slaved_periodic_vertices();
+    // What wraps and how long the period is, for the elastic box. Cheap,
+    // and read off the mesh whichever way it was built.
+    detect_periodic_box();
+
+    // What the lipid flow covers. The force on the device still carries one
+    // area scalar for the whole mesh; the seam links of the local mode come
+    // from the typed images, which the global Periodic mode does not have.
+    if (param.lipidFlowMode != "off" && param.lipidFlowMode != "global" &&
+        param.lipidFlowMode != "local")
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::finish_dynamic_setup] lipidFlowMode must be off, global or local; "
+            "it is \"" + param.lipidFlowMode + "\".");
+    }
+    if (lipid_flow_on())
+    {
+        if (param.forceBackend != "cpu")
+        {
+            throw std::runtime_error(
+                "[DynamicMesh::finish_dynamic_setup] lipidFlowMode needs forceBackend = cpu: the "
+                "device kernels carry one area scalar for the whole mesh.");
+        }
+        if (lipid_flow_local() && param.boundaryCondition == BoundaryType::Periodic)
+        {
+            throw std::runtime_error(
+                "[DynamicMesh::finish_dynamic_setup] lipidFlowMode = local needs boundaryType = "
+                "Mixed for a periodic sheet: the flux across a seam is found through the typed "
+                "periodic images, which the global Periodic mode does not have.");
+        }
+    }
+    if (param.lipidFlipResampling != "auto" && param.lipidFlipResampling != "none" &&
+        param.lipidFlipResampling != "pair" && param.lipidFlipResampling != "patch")
+    {
+        throw std::runtime_error(
+            "[DynamicMesh::finish_dynamic_setup] lipidFlipResampling must be auto, none, pair or "
+            "patch; it is \"" + param.lipidFlipResampling + "\".");
+    }
+    if (param.lipidFlipResampling == "auto")
+    {
+        // Flips with a per-face field are rare unless the field is redrawn
+        // with them (docs/lipid_flow_plan.md section 6.5), so that is the
+        // default wherever it can apply. Resolved here, once, so every later
+        // reader sees a concrete setting.
+        param.lipidFlipResampling = (lipid_flow_local() && param.edgeFlipEnabled &&
+                                     param.lipidFlowLinearStretching)
+                                        ? "patch"
+                                        : "none";
+    }
+    if (param.lipidFlipResampling != "none")
+    {
+        if (!lipid_flow_local())
+        {
+            throw std::runtime_error(
+                "[DynamicMesh::finish_dynamic_setup] lipidFlipResampling redraws the per-face "
+                "relaxed areas and needs lipidFlowMode = local.");
+        }
+        if (!param.lipidFlowLinearStretching)
+        {
+            throw std::runtime_error(
+                "[DynamicMesh::finish_dynamic_setup] lipidFlipResampling needs "
+                "lipidFlowLinearStretching = true: the redraw is Gaussian only when the modulus "
+                "does not move with the relaxed area.");
+        }
+    }
+}
+
+void DynamicMesh::check_monte_carlo_configuration()
+{
+    const std::string where = "[DynamicMesh::check_monte_carlo_configuration] ";
+
+    if (param.meshWallType != "soft" && param.meshWallType != "hard")
+    {
+        throw std::runtime_error(where + "meshWallType = " + param.meshWallType +
+                                 " is not one of soft, hard.");
+    }
+    const bool hardWalls = walls_are_hard();
+
+    if (!param.brownianStepEnabled && !param.vertexMoveEnabled)
+    {
+        throw std::runtime_error(
+            where + "brownianStepEnabled = false needs vertexMoveEnabled = true: with neither, "
+                    "nothing moves a vertex.");
+    }
+
+    if (hardWalls)
+    {
+        // An explicit Brownian step has no refusal in it. It would carry the
+        // mesh through a wall that exerts no force, and from outside the
+        // admissible set every Monte Carlo move in that neighbourhood is
+        // rejected for good.
+        if (param.brownianStepEnabled)
+        {
+            throw std::runtime_error(
+                where + "meshWallType = hard needs brownianStepEnabled = false. A hard wall "
+                        "carries no force, so the Brownian step cannot feel it and has no way to "
+                        "refuse a step through it; the Monte Carlo moves enforce it by rejection. "
+                        "See docs/monte_carlo_vertex_moves.md.");
+        }
+        if (!param.edgeSpringEnabled || param.edgeTetherShape == "harmonic")
+        {
+            throw std::runtime_error(
+                where + "meshWallType = hard needs edgeSpringEnabled = true with edgeTetherShape = "
+                        "flat: the hard walls are the flat tether's range (and the altitude floor "
+                        "and crease angle, where enabled) read as constraints. A harmonic spring "
+                        "has no range.");
+        }
+    }
+
+    if (!param.vertexMoveEnabled)
+    {
+        return;
+    }
+
+    if (!(param.vertexMoveStepRatio > 0.0))
+    {
+        throw std::runtime_error(where + "vertexMoveStepRatio must be positive.");
+    }
+
+    // Terms of the energy that depend on vertex positions and that the local
+    // trial does not difference. A Metropolis move that ignored one of them
+    // would sample a different Hamiltonian from the rest of the run, so the
+    // combination is refused rather than approximated.
+    const auto refuse = [&](const std::string &what) {
+        throw std::runtime_error(
+            where + "vertexMoveEnabled = true cannot be combined with " + what +
+            " yet: its energy depends on the vertex positions and is not part of the move's "
+            "energy difference. See docs/monte_carlo_vertex_moves.md, \"Not covered\".");
+    };
+    if (param.isEnergyHarmonicBondIncluded)
+    {
+        refuse("isEnergyHarmonicBondIncluded = true (the scaffolding terms)");
+    }
+    if (param.beadEnabled)
+    {
+        refuse("beadEnabled = true");
+    }
+    if (param.externalForceEnabled)
+    {
+        refuse("externalForceEnabled = true");
+    }
+    if (param.elasticBoxEnabled)
+    {
+        refuse("elasticBoxEnabled = true");
+    }
+    if (!param.isGlobalConstraint && param.uSurf != 0.0)
+    {
+        refuse("isGlobalConstraint = false with a non-zero usMembraneStretching (the local "
+               "area constraint)");
+    }
+
+    // Throws for a boundary mode the move is not defined under.
+    build_vertex_move_table();
+
+    const double step = param.vertexMoveStepRatio * param.lFace;
+    std::cout << "[DynamicMesh] Monte Carlo vertex moves: " << vertexMoveCandidates.size()
+              << " independent vertices, " << param.vertexMoveAttemptsPerVertex
+              << " attempts per vertex every " << std::max(1, param.vertexMoveInterval)
+              << " iteration(s), trial cube half-width " << step << " nm"
+              << (param.inPlaneDynamicsEnabled ? "" : " along z only (inPlaneDynamicsEnabled = false)")
+              << "; walls " << param.meshWallType << "; Brownian step "
+              << (param.brownianStepEnabled ? "on" : "off") << "." << std::endl;
+    if (param.boundaryCondition == BoundaryType::Periodic && param.edgeSpringEnabled)
+    {
+        std::cout << "[DynamicMesh] NOTE: under boundaryType = Periodic the ring that duplicates "
+                     "the far edge is excluded from the tether and the flips, as it is for the "
+                     "Brownian step. boundaryType = Mixed with periodic axes has no such ring."
+                  << std::endl;
+    }
 }
 
 void DynamicMesh::report_edge_flip_feasibility()
