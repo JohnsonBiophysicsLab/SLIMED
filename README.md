@@ -36,6 +36,16 @@
 
 SLIMED (Subdivision-limit membrane dynamics) model is established with triangular mesh and optimized using an energy function. The installation instructions and dependencies are provided in the [Installation](#installation) section below. The first step requires setting up the triangular mesh model to approximate the membrane's geometry applying Loop's subdivision method. The lowest energy search model minimizes the membrane energy evaluated by the energy function. The Brownian Dynamics model simulates the moving membrane's surface with a displacement equation, performed on the limit surface with the help of a conversion matrix. Three types of boundary conditions are available: Fixed, Periodic, and Free, all defined for "ghost vertices" on the boundary of the triangular mesh.
 
+> **New in *Physical Review Research* (2026):** [Membrane bending energy selects for symmetric growth of protein assemblies](https://doi.org/10.1103/tnv7-fjh5). See [Featured publication](#featured-publication) below.
+
+## Featured publication
+
+**Membrane bending energy selects for symmetric growth of protein assemblies**<br>
+Yue Moon Ying & Margaret E. Johnson, *Phys. Rev. Research* **8**, 043025 (2026).<br>
+doi:[10.1103/tnv7-fjh5](https://doi.org/10.1103/tnv7-fjh5)
+
+Protein lattices such as the HIV Gag lattice grow stochastically while they bend the membrane into a bud. The paper couples SLIMED to growing Gag lattice intermediates and asks whether membrane mechanics favours some growth paths over others. Radially symmetric lattices bend the membrane at a lower cost per protein than eccentric ones. For rigid lattices, the shape of the lattice perimeter sets this penalty, not the density of protein–membrane links. For flexible lattices, eccentric growth also produces weaker curvature. Analytical spherical-cap estimates agree with the numerical energy minimization. Membrane bending alone therefore biases assembly toward symmetric growth.
+
 ## Installation
 To install the model, follow these steps:
 
@@ -490,15 +500,36 @@ NERDSS, please be kind and cite us:
 1. For continuum Membrane Implementation: Fu, Y., Yogurtcu, O.N., Kothari,
 R., Thorkelsdottir, G., Sodt, A.J. & Johnson, M.E. (2019) An implicit
 lipid model for efficient reaction-diffusion simulations of protein binding to surfaces of arbitrary topology. *J Chem Phys.* 151 (12), 124115. 
-doi:[10.1063/5.0045867](https://doi.org/10.1063/5.0045867)
+doi:[10.1063/1.5120516](https://doi.org/10.1063/1.5120516)
 
-3. For membrane energies and insertion: Fu, Y., Zeno, W., Stachowiak, J. &
+2. For membrane energies and insertion: Fu, Y., Zeno, W., Stachowiak, J. &
 Johnson, M.E. A continuum membrane model predicts curvature sensing by
 helix insertion. Soft Matter. 2021 Dec 8;17(47):10649–10663
 doi:[10.1039/d1sm01333e](https://doi.org/10.1039/d1sm01333e)
+
+3. For membrane remodeling by growing protein lattices: Ying, Y.M. &
+Johnson, M.E. (2026) Membrane bending energy selects for symmetric growth of
+protein assemblies. *Phys. Rev. Research* 8 (4), 043025.
+doi:[10.1103/tnv7-fjh5](https://doi.org/10.1103/tnv7-fjh5)
+
+BibTeX for the 2026 paper:
+
+```bibtex
+@article{Ying2026SymmetricGrowth,
+  author  = {Ying, Yue Moon and Johnson, Margaret E.},
+  title   = {Membrane bending energy selects for symmetric growth of protein assemblies},
+  journal = {Phys. Rev. Research},
+  volume  = {8},
+  number  = {4},
+  pages   = {043025},
+  year    = {2026},
+  doi     = {10.1103/tnv7-fjh5}
+}
+```
 
 ## License
 This project is licensed under the GPL License - see the LICENSE file for details.
 
 ## Reference
 1. Helfrich, W. (1973). Elastic properties of lipid bilayers: theory and possible experiments. Zeitschrift fur Naturforschung C, 28(11), 693-703.
+2. Ying, Y. M., & Johnson, M. E. (2026). Membrane bending energy selects for symmetric growth of protein assemblies. Physical Review Research, 8(4), 043025. https://doi.org/10.1103/tnv7-fjh5

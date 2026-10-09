@@ -1,0 +1,72 @@
+cff-version: 1.2.0
+message: "If you use SLIMED, please cite the paper below, together with the method papers listed under references."
+title: "SLIMED: Subdivision-limit membrane dynamics"
+type: software
+authors:
+  - family-names: Ying
+    given-names: Yue Moon
+  - family-names: Johnson
+    given-names: Margaret E.
+repository-code: "https://github.com/JohnsonBiophysicsLab/SLIMED"
+url: "https://johnsonbiophysicslab.github.io/SLIMED/index.html"
+license: GPL-3.0
+keywords:
+  - membrane mechanics
+  - continuum membrane model
+  - Loop subdivision
+  - Brownian dynamics
+preferred-citation:
+  type: article
+  title: "Membrane bending energy selects for symmetric growth of protein assemblies"
+  authors:
+    - family-names: Ying
+      given-names: Yue Moon
+    - family-names: Johnson
+      given-names: Margaret E.
+  journal: "Physical Review Research"
+  volume: 8
+  issue: 4
+  start: "043025"
+  year: 2026
+  month: 10
+  doi: "10.1103/tnv7-fjh5"
+references:
+  - type: article
+    title: "An implicit lipid model for efficient reaction-diffusion simulations of protein binding to surfaces of arbitrary topology"
+    authors:
+      - family-names: Fu
+        given-names: Yiben
+      - family-names: Yogurtcu
+        given-names: Osman N.
+      - family-names: Kothari
+        given-names: Ruchita
+      - family-names: Thorkelsdottir
+        given-names: Gudrun
+      - family-names: Sodt
+        given-names: Alexander J.
+      - family-names: Johnson
+        given-names: Margaret E.
+    journal: "The Journal of Chemical Physics"
+    volume: 151
+    issue: 12
+    start: "124115"
+    year: 2019
+    doi: "10.1063/1.5120516"
+  - type: article
+    title: "A continuum membrane model predicts curvature sensing by helix insertion"
+    authors:
+      - family-names: Fu
+        given-names: Yiben
+      - family-names: Zeno
+        given-names: Wade F.
+      - family-names: Stachowiak
+        given-names: Jeanne C.
+      - family-names: Johnson
+        given-names: Margaret E.
+    journal: "Soft Matter"
+    volume: 17
+    issue: 47
+    start: "10649"
+    end: "10663"
+    year: 2021
+    doi: "10.1039/d1sm01333e"
