@@ -429,3 +429,23 @@ void dynamics_output_trajectory_files(DynamicMesh &mesh, const std::string &file
  */
 bool dynamics_output_face_frame(DynamicMesh &mesh, const std::string &filename,
                                 long long iteration);
+
+class DynamicModel;
+
+/**
+ * @brief Open the local-output files (Param::localOutput) and write the first
+ * frame: faceenergy<filename>.csv and vertexforce<filename>.csv.
+ *
+ * The layout is documented at Param::localOutput. Like the trajectory files
+ * these stay open for the run.
+ */
+void dynamics_create_local_files(DynamicMesh &mesh, const DynamicModel &model,
+                                 const std::string &filename);
+
+/**
+ * @brief Append one frame to the local-output files: every face's stored
+ * energies, mean curvature and area, every vertex's stored force by term and
+ * the bead's force on it. Creates the files if they are not open.
+ */
+void dynamics_output_local_frame(DynamicMesh &mesh, const DynamicModel &model,
+                                 const std::string &filename);

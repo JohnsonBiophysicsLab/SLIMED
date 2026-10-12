@@ -101,6 +101,16 @@ public:
     /// Build from the mesh's current adjacency. Safe to call again.
     void build(const Mesh &mesh);
 
+    /**
+     * @brief Re-read the image offsets from the mesh, connectivity unchanged.
+     *
+     * The elastic box rescales every image offset when it stretches the
+     * sheet, and the offsets are baked into the right-hand side here, so
+     * they have to follow. O(N), no solve. A no-op unless built under the
+     * per-vertex boundary.
+     */
+    void refresh_image_offsets(const Mesh &mesh);
+
     bool empty() const { return nVertices_ == 0; }
     int nVertices() const { return nVertices_; }
     /// Vertices that are actual degrees of freedom; the rest carry the identity.

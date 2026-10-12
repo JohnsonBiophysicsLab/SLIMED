@@ -1,0 +1,73 @@
+# The same bead push with the global lipid-flow mode: one relaxed area for
+# the sheet, driven toward 0.5 pN/nm at 20 per us. The limit of infinitely
+# fast lateral flow: no tension gradients, and the cost of the global
+# constraint. See docs/lipid_flow_plan.md.
+#
+# Run from a directory of its own:  cp <this file> input.params && membrane_dynamics
+beadEnabled = true
+beadRadius = 10.0
+beadStiffness = 200.0
+beadCenterX = 0.0
+beadCenterY = 0.0
+beadCenterZ = -5.0
+beadVelocityX = 0.0
+beadVelocityY = 0.0
+beadVelocityZ = 0.5
+beadStartIteration = 0
+beadStopIteration = 70000
+beadAdhesionEnergy = 0.0
+beadAdhesionRange = 2.5
+boundaryType = Mixed
+boundaryTypeX = Fixed
+boundaryTypeY = Fixed
+fixedBoundaryRings = 1
+surfaceSolver = iterative
+lFace = 5.0
+isFlat = true
+sideX = 100.0
+sideY = 100.0
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4
+usMembraneStretching = 250.0
+setRelaxAreaToDefault = true
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17
+maxIterations = 90000
+timeStep = 0.001
+diffConst = 1.0
+randomSeed = 20260923
+meshpointOutput = true
+meshpointOutputInterval = 200
+xyzOutput = false
+fdtConsistentSurfaceUpdate = true
+localOutput = false
+inPlaneDynamicsEnabled = false
+edgeSpringEnabled = false
+edgeTetherShape = flat
+edgeTetherMinRatio = 0.7
+edgeTetherMaxRatio = 1.75
+edgeSpringConstant = 83.4
+triangleShapeEnabled = false
+triangleShapeMinAltitudeRatio = 0.4
+triangleShapeConstant = 83.4
+creaseWallEnabled = false
+creaseWallAngle = 60.0
+creaseWallConstant = 500.0
+edgeFlipEnabled = false
+edgeFlipAttemptRate = 0.5
+edgeFlipInterval = 1
+edgeFlipMinValence = 4
+edgeFlipMaxValence = 8
+irregularPatchDepthScale = 1.0
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+externalForceEnabled = false
+VERBOSE_MODE = false
+lipidFlowMode = global
+lipidReservoirRegion = bulk
+lipidReservoirTension = 0.5
+lipidReservoirRate = 20

@@ -21,6 +21,7 @@
 #include <math.h>
 #include <cmath>
 #include <memory>
+#include <cstdint>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -69,9 +70,13 @@ struct FaceSubsetEnergy
     double regularization = 0.0; ///< Sum of Face::energy.energyRegularization.
     double area = 0.0;           ///< Sum of Face::elementArea, ghosts excluded.
     double volume = 0.0;         ///< Sum of Face::elementVolume, ghosts excluded.
+    /// Local lipid flow: sum of the faces' own stretching energies
+    /// (K / 2 c_f)(S_f - S0_f)^2. Zero in the other modes, where the area
+    /// term is a function of the total.
+    double stretching = 0.0;
 
     /// The part of the total energy that is a sum over these faces.
-    double local_energy() const { return bending + regularization; }
+    double local_energy() const { return bending + regularization + stretching; }
 };
 
 /**
@@ -91,6 +96,61 @@ struct EdgeFlipDelta
     double volumeConstraint = 0.0; ///< Change in the global volume-constraint energy.
     double area = 0.0;             ///< Change in total membrane area.
     double volume = 0.0;           ///< Change in total enclosed volume.
+    /// Under meshWallType = hard: the flip would break a wall. `energy` is
+    /// then +infinity, so Metropolis rejects it without a special case.
+    bool wallViolated = false;
+};
+
+/**
+ * @brief What moving one vertex (and its periodic copies) would do to the
+ * total energy. The vertex-move counterpart of EdgeFlipDelta.
+ */
+struct VertexMoveDelta
+{
+    double energy = 0.0;           ///< The total, and the only number Metropolis needs.
+    double bending = 0.0;          ///< Change in summed bending energy.
+    double regularization = 0.0;   ///< Change in the soft walls' energy; zero under hard walls.
+    double areaConstraint = 0.0;   ///< Change in the global area-constraint energy.
+    double volumeConstraint = 0.0; ///< Change in the global volume-constraint energy.
+    double area = 0.0;             ///< Change in total membrane area.
+    double volume = 0.0;           ///< Change in total enclosed volume.
+    /// Under meshWallType = hard: the move would break a wall. `energy` is
+    /// then +infinity and the other fields are not filled.
+    bool wallViolated = false;
+};
+
+/// What one Metropolis vertex-move sweep did.
+struct VertexMoveSweepStats
+{
+    long long attempted = 0;    ///< Trial moves proposed.
+    long long wallRejected = 0; ///< Of those, refused by a hard wall.
+    long long accepted = 0;     ///< Of those, moves Metropolis kept.
+    double deltaEnergy = 0.0;   ///< Summed over accepted moves.
+
+    /// Accepted over attempted, wall rejections included in the denominator.
+    double acceptance() const
+    {
+        return (attempted > 0) ? static_cast<double>(accepted) / attempted : 0.0;
+    }
+
+    VertexMoveSweepStats &operator+=(const VertexMoveSweepStats &other)
+    {
+        attempted += other.attempted;
+        wallRejected += other.wallRejected;
+        accepted += other.accepted;
+        deltaEnergy += other.deltaEnergy;
+        return *this;
+    }
+};
+
+/// How many of each hard wall a mesh currently breaks. See Mesh::count_wall_violations().
+struct WallViolations
+{
+    int tether = 0;   ///< Edges outside [edgeTetherMinRatio, edgeTetherMaxRatio] * l0.
+    int altitude = 0; ///< Faces with an altitude under the floor.
+    int crease = 0;   ///< Interior edges creased past creaseWallAngle.
+
+    int total() const { return tether + altitude + crease; }
 };
 
 /**
@@ -135,6 +195,20 @@ struct EdgeFlipSweepStats
  */
 void write_edge_flip_log_csv(const std::vector<EdgeFlipRecord> &records,
                              const std::string &path);
+
+/**
+ * @brief Append one row to the vertex-move log, writing the header if the
+ * file is new.
+ *
+ * One row per trajectory frame rather than per attempt -- a sweep makes as
+ * many attempts as the mesh has vertices -- with the counts since the
+ * previous row and what the walls look like on the frame's mesh:
+ * `iteration,attempted,wallRejected,accepted,acceptance,deltaEnergy,
+ * tetherOutside,altitudeOutside,creaseOutside`.
+ */
+void write_vertex_move_log_csv(const std::string &path, long long iteration,
+                               const VertexMoveSweepStats &sinceLastRow,
+                               const WallViolations &walls);
 
 /**
  * @brief A class representing a triangular mesh that defines a
@@ -397,6 +471,174 @@ public:
     /// Whether the mesh carries any periodic image.
     bool has_periodic_images() const { return !periodicImageVertices.empty(); }
 
+    // ---------------------------------------------------------------------
+    // The virial, for the elastic box (Param::elasticBoxEnabled)
+    // -- see docs/elastic_box.md
+    // ---------------------------------------------------------------------
+
+    /**
+     * @brief Per force term and axis: the sum over every vertex of
+     * coord[axis] * F[axis], from the last force evaluation.
+     *
+     * Taken on the raw accumulated forces, before the boundary handling
+     * zeroes the ghosts and folds the images onto their sources, and over
+     * every vertex the energy-carrying patches reference. That makes it
+     * exactly -dE/d(ln lambda) for an affine rescale of the whole control
+     * net along that axis with the images and ghosts moving along: the
+     * derivative the box needs. Folding first would lose the sum over images
+     * of offset * F_image, which is the force carried across the seam and is
+     * most of the answer on a stretched sheet. Filled by
+     * Compute_Energy_And_Force() when param.elasticBoxEnabled is true, and
+     * left at zero otherwise.
+     */
+    std::array<double, 3> virialCurvature = {{0.0, 0.0, 0.0}};
+    /// The area constraint's part of the same sum.
+    std::array<double, 3> virialArea = {{0.0, 0.0, 0.0}};
+    /// The mesh-quality term's part: the tether, altitude floor and crease
+    /// wall in fluid mode, the reference-length regularization otherwise.
+    std::array<double, 3> virialRegularization = {{0.0, 0.0, 0.0}};
+
+    /// Fill the three virials from the vertices' current forces and coordinates.
+    void accumulate_virial();
+
+    // ---------------------------------------------------------------------
+    // Lipid flow (Param::lipidFlowMode) -- docs/lipid_flow_plan.md
+    // ---------------------------------------------------------------------
+
+    /// Which mode the parameters ask for.
+    bool lipid_flow_local() const { return param.lipidFlowMode == "local"; }
+    bool lipid_flow_global() const { return param.lipidFlowMode == "global"; }
+    bool lipid_flow_on() const { return lipid_flow_local() || lipid_flow_global(); }
+
+    /// c: the sheet's relaxed area as built, the fixed normalisation of the
+    /// stretching modulus under either mode. Zero until initialized.
+    double lipidAreaNormalization = 0.0;
+
+    /// a_f: the relaxed area of every face, nm^2; zero on a face that carries
+    /// no patch. Empty unless the local mode is on and initialized.
+    std::vector<double> faceArea0;
+    /// a_f as initialized. The reservoir's mobility is built on it, so that
+    /// the mobility does not depend on the variable it moves.
+    std::vector<double> faceArea0Initial;
+    /// sigma_f = K (S_f / a_f - 1) from the last force evaluation, pN/nm.
+    std::vector<double> faceTension;
+
+    /// One physical edge between two faces that carry lipids.
+    struct LipidLink
+    {
+        int faceA = -1;      ///< lipid-carrying face on one side
+        int faceB = -1;      ///< and on the other; across a periodic seam, the face the copy stands for
+        int localFaceA = -1; ///< the same two faces as they sit side by side in the mesh, for the geometry
+        int localFaceB = -1;
+        int v0 = -1;         ///< the shared edge's endpoints, in that local picture
+        int v1 = -1;
+    };
+    std::vector<LipidLink> lipidLinks;
+    /// Faces along an open or clamped boundary: where a rim reservoir acts.
+    std::vector<char> lipidRimFace;
+
+    /// Whether a face carries a patch, and so an area, an energy and lipids.
+    bool face_carries_lipids(int iFace) const;
+    /// Give every face a_f = S_f * (area0 / total area): the uniform strain
+    /// the global constraint would start from. Needs the element areas.
+    void initialize_lipid_flow();
+    /// Build lipidLinks and lipidRimFace from the edge table and the images.
+    void build_lipid_links();
+    /// The area the face's modulus is referred to: abar_f under the linear
+    /// form, a_f itself otherwise.
+    double lipid_modulus_area(int iFace) const;
+    /// sigma_f = K (S_f - a_f) / (modulus area): the tension the force uses.
+    double lipid_face_tension(int iFace) const;
+    /// pi_f = -de_f/da_f, what the lipids respond to: sigma_f under the
+    /// linear form, (K / 2) ((S_f / a_f)^2 - 1) otherwise.
+    double lipid_exchange_tension(int iFace) const;
+    /// The sum of a_f.
+    double total_face_area0() const;
+
+    /// Local mode: the stretching energy of one face from the areas as they stand.
+    double lipid_face_stretching_energy(int iFace) const;
+
+    /**
+     * @brief Local mode, right after flip_edge(iEdge): carry the two faces'
+     * relaxed areas and normalisations onto the two new triangles.
+     *
+     * No arithmetic on the field -- each old triangle's (a_f, c_f) is
+     * re-attached whole to one of the new triangles, so the sum is conserved
+     * bitwise and the flip is an involution on the field: flipping the new
+     * edge straight back restores exactly the state before. That is what
+     * makes a Metropolis flip with a per-face field sample exp(-E/kT) with
+     * the plain min(1, e^{-dE/kT}) acceptance. Pooling and re-splitting by
+     * area, which is what a dynamics code does (Batty et al. 2012), is not
+     * invertible and would equalise the strain of every flipped pair at the
+     * flip rate, independent of the energy.
+     *
+     * Which old triangle goes to which new one has to be decided by a rule
+     * that reads the same from both sides of the flip. flip_edge() pairs the
+     * records by corner index, which is such a rule, but it knows nothing of
+     * the geometry; the field uses a better one on top and swaps the two
+     * records' values when the two rules disagree: "the larger old triangle
+     * takes the larger new one" (flat triangle areas, computed in a canonical
+     * corner order so both sides see the same bits), which keeps the lipid
+     * mass relabelled by the flip as small as the pairing allows. On a tie
+     * it falls back to flip_edge()'s own index rule. `before` is the edge
+     * record as it was before flip_edge() ran. See docs/lipid_flow_plan.md
+     * section 5.
+     */
+    void lipid_carry_after_flip(int iEdge, const MeshEdge &before);
+
+    /// Flat area of the triangle (a, b, c), independent of the corner order.
+    double flat_triangle_area(int a, int b, int c) const;
+
+    /// Local mode with Param::lipidFlipResampling other than "none".
+    bool lipid_flip_resampling() const
+    {
+        return lipid_flow_local() && param.lipidFlipResampling != "none";
+    }
+
+    /**
+     * @brief The faces whose relaxed areas an accepted flip of iEdge redraws:
+     * the edge's two faces ("pair") or its whole flip patch ("patch"). The
+     * set is the same before and after the flip.
+     */
+    std::vector<int> lipid_resample_set(int iEdge) const;
+
+    /**
+     * @brief The stretching energy of faceList that the Metropolis ratio
+     * sees under flip resampling: every face's own (K / 2 c_f)(S_f - S0_f)^2,
+     * except that the faces in `pooled` enter with that sum minimised over
+     * the split of their pooled relaxed area, (K / 2 sum c)(sum S - sum S0)^2.
+     *
+     * That is the energy of the equal-tension split, and it is what the
+     * compound move "flip, then redraw the pooled faces' relaxed areas from
+     * their conditional Boltzmann distribution" is accepted on: the
+     * conditional is Gaussian with a Hessian diag(K / c_f) that does not
+     * depend on the geometry, so its normalisation is the same before and
+     * after and only the minimum survives in the ratio. `faceAreas` are the
+     * per-face areas evaluate_face_subset() returns for faceList.
+     */
+    double lipid_stretching_energy_with_pooled(const std::vector<int> &faceList,
+                                               const std::vector<double> &faceAreas,
+                                               const std::vector<int> &pooled) const;
+
+    /**
+     * @brief After an accepted flip under resampling: redraw the relaxed
+     * areas of `set` at the areas `faceAreas` (as evaluate_face_subset()
+     * returns them for `set`), keeping their total.
+     *
+     *     S0_f = S_f - sigma* c_f / K + eta_f - (c_f / sum c) sum eta ,
+     *     sigma* = K (sum S - sum S0) / sum c ,   eta_f ~ N(0, kT c_f / K) ,
+     *
+     * the conditional Gaussian of independent (K / 2 c_f)(S_f - S0_f)^2 terms
+     * given their sum of S0. Without Param::lipidFlowThermal the eta are zero
+     * and the set is left at one tension. `key` seeds the counter-based
+     * draws; the lane is the face index.
+     */
+    void lipid_resample_after_flip(const std::vector<int> &set, const std::vector<double> &faceAreas,
+                                   std::uint64_t key);
+
+    /// Connectivity the links were built for; rebuilt lazily when it moves.
+    long long lipidLinksTopologyVersion = -1;
+
     /**
      * @brief Give the generated flat sheet its per-vertex types from
      * param.boundaryConditionX and param.boundaryConditionY.
@@ -545,19 +787,21 @@ public:
      * wound along the same boundary cycle of the quadrilateral that the two
      * old ones were.
      *
-     * Flipping the same edge index twice restores the connectivity exactly --
-     * every triangle, every adjacency and every edge record -- with one
-     * caveat worth stating because it is easy to assume away: the two incident
-     * face *indices* come back holding each other's triangle. That is not a
-     * defect in this implementation, it is intrinsic. The quadrilateral offers
-     * no canonical pairing between "the side of target0" before the flip and
-     * either side after it, so every consistent rule composes to the exchange;
-     * OpenMesh's flip behaves the same way.
-     *
-     * It is unobservable here because the only per-face state that survives a
-     * step without being recomputed from connectivity is the spontaneous
-     * curvature, and edge_flip_is_admissible() refuses an edge whose two faces
-     * disagree about it. So a rejected Metropolis trial does restore the mesh.
+     * Flipping the same edge index twice restores the mesh exactly -- every
+     * triangle, every adjacency, every edge record, and which face *index*
+     * names which triangle. The last of those is not automatic. The obvious
+     * rule, "face[0] takes the new triangle on the side of its own first
+     * endpoint", composes to an exchange: two flips leave the two records
+     * holding each other's triangle (OpenMesh's flip does this), and then a
+     * rejected Metropolis trial silently permutes everything keyed by face
+     * index. The rule used instead pairs the record whose old corner has the
+     * smaller index with the new triangle whose corner has the smaller
+     * index; corners and endpoints trade roles under the flip, so the rule
+     * is its own inverse. Per-face state therefore survives a trial, and an
+     * accepted flip carries it onto a triangle chosen by index -- which is
+     * why edge_flip_is_admissible() still refuses an edge whose two faces
+     * disagree about their spontaneous curvature, and why the lipid field
+     * decides its own pairing in lipid_carry_after_flip().
      *
      * @param iEdge Edge to flip. Must be interior; call
      *              edge_flip_is_admissible() first.
@@ -654,7 +898,8 @@ public:
      * Not const only because the flat row tables are built lazily; it writes
      * nothing else.
      */
-    FaceSubsetEnergy evaluate_face_subset(const std::vector<int> &faceList);
+    FaceSubsetEnergy evaluate_face_subset(const std::vector<int> &faceList,
+                                          std::vector<double> *faceAreas = nullptr);
 
     /**
      * @brief What flipping @p iEdge would do to the total energy.
@@ -718,6 +963,108 @@ public:
      */
     EdgeFlipSweepStats edge_flip_sweep(long long iteration,
                                        std::vector<EdgeFlipRecord> *log = nullptr);
+
+    // ---------------------------------------------------------------------
+    // Monte Carlo vertex moves and hard walls
+    // -- see docs/monte_carlo_vertex_moves.md
+    // ---------------------------------------------------------------------
+
+    /// Whether the mesh-quality walls are constraints rather than energies.
+    bool walls_are_hard() const { return param.meshWallType == "hard"; }
+
+    /**
+     * @brief Whether every wall that touches the given faces is respected.
+     *
+     * The three walls of the fluid mesh-quality term, read as constraints at
+     * the positions the soft terms put them: each edge of each face inside
+     * the tether range, each altitude of each face above the floor, and the
+     * crease across each of its edges within the angle. An edge or a face
+     * the soft terms would not charge -- a stale copy in the ghost band, a
+     * ghost face -- is not constrained either, so the two modes agree about
+     * what the membrane is.
+     *
+     * @param faceList Faces to check; a face's three edges are checked with it.
+     * @param tally    Optional; counts what is broken (an edge shared by two
+     *                 listed faces is counted once per face).
+     */
+    bool faces_satisfy_walls(const std::vector<int> &faceList,
+                             WallViolations *tally = nullptr) const;
+
+    /// What the whole mesh breaks right now, each edge and face counted once.
+    WallViolations count_wall_violations() const;
+
+    /**
+     * @brief The independent vertices a Monte Carlo move may pick, and for
+     * each the copies that move with it.
+     *
+     * Built from the boundary treatment: under the per-vertex boundary the
+     * followers of a source are its periodic images; under the global
+     * Periodic mode every vertex of the generated sheet outside the periodic
+     * tile follows the tile vertex one or more periods away; a clamped or
+     * ghost vertex is neither a candidate nor a follower. Rebuilt on demand
+     * when the vertex count changes; connectivity does not enter it.
+     *
+     * @throw std::runtime_error under the global Free mode, whose rim is an
+     *        extrapolation rather than a set of coordinates -- use
+     *        boundaryType = Mixed there.
+     */
+    void build_vertex_move_table();
+
+    /// Independent vertices, in index order. Empty until build_vertex_move_table().
+    std::vector<int> vertexMoveCandidates;
+    /// Per vertex: the vertices that copy its displacement. Empty for most.
+    std::vector<std::vector<int>> vertexMoveFollowers;
+
+    /**
+     * @brief The faces whose energy a move of @p iVertex would change.
+     *
+     * A face's energy is a functional of its control net -- its corners and
+     * their neighbours -- so it changes when the moved vertex, or one of its
+     * followers, is a corner of the face or a neighbour of one: every face
+     * incident to the closed one-ring of a moved vertex, about twenty-four
+     * on a regular mesh. Sorted and deduplicated.
+     */
+    std::vector<int> vertex_move_patch_faces(int iVertex) const;
+
+    /**
+     * @brief What displacing @p iVertex by @p displacement would do to the
+     * total energy. The mesh is left exactly as it was found.
+     *
+     * The vertex and its followers are moved, the patch is measured again
+     * and everything is put back. Under hard walls the walls around the
+     * moved vertices are checked first, and a violation returns at once with
+     * `wallViolated` set and an infinite energy, before any patch integral
+     * is evaluated.
+     *
+     * The energy differenced is the one the run samples: bending and the two
+     * global constraints always, the soft walls when the fluid mesh-quality
+     * term is on and soft. The reference-length regularization of solid mode
+     * is not part of it, because the Brownian step does not integrate it.
+     */
+    VertexMoveDelta evaluate_vertex_move(int iVertex, const double displacement[3]);
+
+    /// Displace @p iVertex and its followers. No energy bookkeeping.
+    void displace_vertex_with_followers(int iVertex, const double displacement[3]);
+
+    /**
+     * @brief One Metropolis sweep of single-vertex moves.
+     *
+     * `vertexMoveAttemptsPerVertex * N` attempts (stochastically rounded),
+     * each on an independent vertex chosen uniformly at random, displaced by
+     * a vector uniform in the cube of half-width `vertexMoveStepRatio *
+     * lFace` and accepted with `min(1, exp(-dE / kT))`. Choosing the vertex
+     * at random and the displacement from a distribution symmetric about
+     * zero makes every attempt reversible on its own, so there is no
+     * proposal ratio.
+     *
+     * param.area and param.vol are kept current across accepted moves; the
+     * stored per-face energies and vertex forces are not, so the caller
+     * recomputes them afterwards if anything was accepted.
+     *
+     * @param iteration Mixed into the RNG key, so a sweep is reproducible
+     *                  from the seed and the step number alone.
+     */
+    VertexMoveSweepStats vertex_move_sweep(long long iteration);
 
     /**
      * @brief Replace the face corner lists and rebuild everything derived.

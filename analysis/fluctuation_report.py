@@ -123,12 +123,25 @@ def main(argv=None):
                          "matSurface the run wrote (not periodic at the seam).")
     ap.add_argument("--eta", type=float, default=1.0e-3,
                     help="solvent viscosity in pN.us/nm^2 (1e-3 = water)")
+    ap.add_argument("--box-log", default=None,
+                    help="the box<prefix>.csv of an elastic-box run (elasticBoxEnabled): "
+                         "the lattice is stretched by the mean scaleX, scaleY of that log "
+                         "over the analysed frames, so q and A are the box's actual ones")
     ap.add_argument("--npz", default=None)
     ap.add_argument("--png-prefix", default=None)
     args = ap.parse_args(argv)
 
     lat = ms.lattice_from_params(os.path.join(args.run_dir, "input.params"))
     par = read_scalars(os.path.join(args.run_dir, "input.params"))
+    if args.box_log is not None:
+        # The elastic box stretches the lattice as the run goes; the frames
+        # are analysed on the mean box, which is exact for the area and
+        # right for q to the box's relative fluctuation (about 1e-3).
+        sx, sy, n_box = ms.mean_box_scale(args.box_log,
+                                          burn=args.burn if args.burn is not None else -1)
+        lat = ms.Lattice(lat.n_face_x, lat.n_face_y, lat.d_face_x * sx, lat.d_face_y * sy)
+        print(f"elastic box: lattice stretched by ({sx:.6f}, {sy:.6f}), "
+              f"the mean over {n_box} logged frames")
     n_mode = lat.nx * lat.ny
     a_cell = lat.area / n_mode
 

@@ -163,6 +163,21 @@ class Lattice:
         )
 
 
+def mean_box_scale(box_log_path: str, burn: int = -1):
+    """The mean (scaleX, scaleY) of an elastic-box run's ``box<prefix>.csv``.
+
+    One row per trajectory frame; ``burn`` rows are skipped (a negative burn
+    skips the first fifth, matching the report's default). Returns the two
+    means and the number of rows they average.
+    """
+    rows = np.genfromtxt(box_log_path, delimiter=",", names=True)
+    rows = np.atleast_1d(rows)
+    n = rows.shape[0]
+    skip = n // 5 if burn < 0 else min(burn, n - 1)
+    kept = rows[skip:]
+    return float(kept["scaleX"].mean()), float(kept["scaleY"].mean()), int(kept.shape[0])
+
+
 def lattice_from_params(path: str) -> Lattice:
     """Rebuild the lattice from a SLIMED ``.params`` file.
 

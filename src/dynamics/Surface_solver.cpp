@@ -9,6 +9,7 @@
 
 #include "dynamics/Surface_solver.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <stdexcept>
@@ -490,6 +491,48 @@ int SurfaceSolver::nodal_force_to_surface(const Matrix &nodalForce, Matrix &surf
         }
     }
     return totalIterations;
+}
+
+} // namespace slimed
+
+namespace slimed
+{
+
+void SurfaceSolver::refresh_image_offsets(const Mesh &mesh)
+{
+    if (!perVertexBoundary_ || empty())
+    {
+        return;
+    }
+    for (int v : imageVertices_)
+    {
+        const Vertex &image = mesh.vertices[v];
+        for (int axis = 0; axis < 3; axis++)
+        {
+            imageOffset_[static_cast<std::size_t>(v) * 3 + axis] = image.mirrorOffset[axis];
+        }
+    }
+    // The constant of each wrapped row, rebuilt the way build() built it:
+    // the CSR stores the sources the image neighbours stand for, not the
+    // images themselves, so the adjacency is walked again.
+    std::fill(neighbourOffsetSum_.begin(), neighbourOffsetSum_.end(), 0.0);
+    const int nFreeVertices = static_cast<int>(freeOfCompact_.size());
+    for (int compact = 0; compact < nFreeVertices; compact++)
+    {
+        const int v = freeOfCompact_[compact];
+        for (int neighbour : mesh.vertices[v].adjacentVertices)
+        {
+            if (imageRoot_[neighbour] < 0)
+            {
+                continue;
+            }
+            for (int axis = 0; axis < 3; axis++)
+            {
+                neighbourOffsetSum_[static_cast<std::size_t>(compact) * 3 + axis] +=
+                    imageOffset_[static_cast<std::size_t>(neighbour) * 3 + axis];
+            }
+        }
+    }
 }
 
 } // namespace slimed

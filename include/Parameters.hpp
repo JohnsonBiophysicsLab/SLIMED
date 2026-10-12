@@ -321,6 +321,29 @@ struct Param
     bool fdtConsistentSurfaceUpdate = true; ///< Map the nodal force onto the limit-surface DOFs before the Brownian step
     bool integratePeriodicDuplicates = false; ///< Legacy: give the fourth-ring periodic duplicates their own Brownian kick before overwriting them
     bool surfacepointOutput = true; ///< whether to output surface point file
+    /**
+     * @brief Write the model's local quantities beside every trajectory frame.
+     *
+     * Two more trajectory files, one line per frame like meshpoint<prefix>.csv:
+     *
+     *   faceenergy<prefix>.csv    per face, in face order: bending energy,
+     *                             mesh-term energy (tether + altitude floor +
+     *                             crease wall, or the reference-length
+     *                             regularization), mean curvature, and the
+     *                             patch's area (pN.nm, pN.nm, 1/nm, nm^2).
+     *   vertexforce<prefix>.csv   per vertex, in vertex order: the bending,
+     *                             area-constraint, mesh-term and bead forces,
+     *                             three components each (pN).
+     *
+     * The numbers are the ones the last force evaluation stored, which is
+     * the configuration one step before the frame's: at a frame every
+     * hundred steps that is invisible, and it keeps the per-face rows on the
+     * connectivity the frame's face file describes. The area constraint's
+     * energy is global and has no per-face value; the tension it exerts is
+     * uniform, and its force per vertex is in the second force block. Off by
+     * default. See docs/bead_push_benchmark.md section 8.
+     */
+    bool localOutput = false;
 
     // Monte Carlo edge flips -- in-plane fluidity. See docs/edge_flip_plan.md.
     /// Run the Metropolis flip sweep alongside the Brownian step.
@@ -380,6 +403,23 @@ struct Param
      * for a fluid one, where in-plane motion is half of what fluidity means.
      */
     bool inPlaneDynamicsEnabled = false;
+
+    /**
+     * @brief Hold the mean height of the integrated vertices where it started.
+     *
+     * A sheet that is periodic along both axes is held by nothing in z: a
+     * bead that pushes on it, or pulls it, moves the whole sheet, at the
+     * speed the total force over N kT / D gives, and a push of fixed length
+     * is then a push of unknown depth. The surrounding membrane the tile
+     * stands for does hold it. With this on, the Brownian step subtracts the
+     * mean z displacement of the vertices it integrates, which is the same
+     * as spreading the opposite of the net vertical force evenly over them:
+     * a uniform counter-force, so the shape and the fluctuations of the
+     * tile are untouched and only the drift is removed. Off by default; it
+     * does nothing a clamped sheet can notice, and it changes a thermal
+     * periodic run by the one Brownian mode it removes.
+     */
+    bool meanHeightPinned = false;
 
     /**
      * @brief Replace the reference-length regularization with an edge spring.
@@ -544,6 +584,75 @@ struct Param
      */
     double creaseWallConstant = 500.0;
 
+    // Monte Carlo vertex moves and hard walls. See docs/monte_carlo_vertex_moves.md.
+    /**
+     * @brief How the mesh-quality walls are enforced: "soft" (default) or "hard".
+     *
+     * "soft" is the three quadratic walls above -- the tether, the altitude
+     * floor and the crease wall -- as energies with forces, which is what an
+     * explicit Brownian step needs: it has no way to refuse a step, so the
+     * Hamiltonian has to push back. The price is a stiffness that caps the
+     * time step, and walls that are leaned on rather than respected (a fluid
+     * run stores 100-500 pN.nm in them and its shortest edge sits 0.8 nm
+     * inside the lower wall).
+     *
+     * "hard" turns the same three walls, at the same positions, into
+     * constraints: they carry no energy and no force, and a Monte Carlo move
+     * -- a vertex move or an edge flip -- that would put an edge outside the
+     * tether range, an altitude under the floor or a crease past its angle
+     * is rejected outright. That is how the dynamically triangulated surface
+     * models hold their meshes together. The sampled distribution is then
+     * exp(-E/kT) of the membrane's own energy, restricted to the admissible
+     * meshes, with nothing stored in the walls and no stiffness to resolve.
+     *
+     * Which walls exist is still decided by edgeSpringEnabled (required),
+     * triangleShapeEnabled and creaseWallEnabled; their stiffness constants
+     * are unused. An explicit Brownian step cannot respect a hard wall, so
+     * "hard" requires brownianStepEnabled = false and vertexMoveEnabled =
+     * true, and the starting mesh must satisfy every wall.
+     */
+    std::string meshWallType = "soft";
+
+    /**
+     * @brief Run a Metropolis sweep of single-vertex moves every
+     * vertexMoveInterval iterations.
+     *
+     * Each attempt picks an independent vertex uniformly at random, displaces
+     * its control point by a vector drawn uniformly from the cube
+     * [-s, s]^3 with s = vertexMoveStepRatio * lFace (along z only when
+     * inPlaneDynamicsEnabled is false), carries its periodic copies along,
+     * and accepts with min(1, exp(-dE/kT)), where dE is the exact change of
+     * the energy the run samples: bending, the area and volume constraints,
+     * and the soft walls if those are in force. Under meshWallType = hard a
+     * move that breaks a wall is rejected before its energy is looked at.
+     * The proposal is symmetric, so the sweep leaves exp(-E/kT) invariant
+     * and composes with the flip sweep and the Brownian step exactly as
+     * those compose with each other.
+     *
+     * Off by default; a run with it off is unchanged to the byte.
+     */
+    bool vertexMoveEnabled = false;
+    /// Half-width of the trial cube, as a fraction of lFace. Tune it for an
+    /// acceptance of 30-50%; it is not adapted during the run, because an
+    /// adaptive proposal does not satisfy detailed balance.
+    double vertexMoveStepRatio = 0.05;
+    /// Mean attempts per independent vertex per sweep. 1 is the "Monte Carlo
+    /// step" of the triangulated-surface literature.
+    double vertexMoveAttemptsPerVertex = 1.0;
+    /// Iterations between sweeps.
+    int vertexMoveInterval = 1;
+
+    /**
+     * @brief Take the Brownian step. On by default.
+     *
+     * false makes the run a pure Monte Carlo one: an iteration is then a
+     * vertex-move sweep and a flip sweep, there is no time in it, and
+     * timeStep only converts edgeFlipAttemptRate into attempts per edge per
+     * iteration (rate * timeStep * edgeFlipInterval). Requires
+     * vertexMoveEnabled = true, since nothing else would move a vertex.
+     */
+    bool brownianStepEnabled = true;
+
     /**
      * @brief How the limit surface and the control net are converted.
      *
@@ -580,6 +689,244 @@ struct Param
      * memory for accuracy the sampling noise hides.
      */
     double irregularPatchDepthScale = 1.0;
+
+    // External force on a region of the membrane. See docs/external_force.md.
+    /**
+     * @brief Push a region of the membrane with a constant force per vertex.
+     *
+     * Every independent vertex whose initial (x, y) lies inside the region
+     * receives the force (externalForceX, externalForceY, externalForceZ),
+     * in pN, at every Brownian step from externalForceStartIteration up to
+     * but not including externalForceStopIteration. The force acts on the
+     * limit-surface point the step displaces, so a vertex inside the region
+     * moves by (D dt / kT) F per step on top of what the membrane's own
+     * forces do to it. With inPlaneDynamicsEnabled = false only the z
+     * component acts, as for every other force. Fixed vertices, ghosts and
+     * periodic images are never pushed: they are not integrated.
+     *
+     * A uniform pressure p over the region corresponds to a force per vertex
+     * of about p * (sqrt(3)/2) lFace^2 -- 21.7 nm^2 per vertex on a 5 nm mesh.
+     *
+     * Off by default; a run with it off is unchanged to the byte.
+     */
+    bool externalForceEnabled = false;
+    double externalForceX = 0.0;    ///< pN per vertex
+    double externalForceY = 0.0;    ///< pN per vertex
+    double externalForceZ = 0.0;    ///< pN per vertex; positive lifts the membrane
+    /// "disc" (radius externalForceRadius about the centre) or "rectangle"
+    /// (half-widths externalForceHalfWidthX/Y about the centre).
+    std::string externalForceShape = "disc";
+    /// Centre of the region in the sheet's plane, nm. The generated sheet is
+    /// centred on the origin, so (0, 0) is the middle of the membrane.
+    double externalForceCenterX = 0.0;
+    double externalForceCenterY = 0.0;
+    double externalForceRadius = 20.0;       ///< disc radius, nm
+    double externalForceHalfWidthX = 20.0;   ///< rectangle half-width along x, nm
+    double externalForceHalfWidthY = 20.0;   ///< rectangle half-width along y, nm
+    /// The window of iterations the force acts in: [start, stop). A negative
+    /// stop means the force never switches off.
+    int externalForceStartIteration = 0;
+    int externalForceStopIteration = -1;
+
+    // A rigid spherical bead pushed through the membrane. See docs/bead_push_benchmark.md.
+    /**
+     * @brief A rigid sphere the membrane cannot enter, moving at constant velocity.
+     *
+     * Every independent vertex closer to the bead's centre than beadRadius
+     * is pushed out radially by a harmonic wall,
+     *
+     * ```text
+     *     E = (k / 2) sum over vertices  max(0, R - |x_i - c|)^2,   k = beadStiffness,
+     * ```
+     *
+     * evaluated on the control points. The potential depends on positions
+     * only, so an edge flip -- which moves no vertex -- leaves it unchanged
+     * and the Metropolis sweep stays exact with the bead present. The force
+     * is a nodal force and reaches the Brownian step through the same map as
+     * the membrane's own (M^-T under fdtConsistentSurfaceUpdate). Fixed
+     * vertices, ghosts and periodic images are not integrated and are not
+     * pushed.
+     *
+     * The centre moves as c = c0 + v (t - t_start) between beadStartIteration
+     * and beadStopIteration and stays put outside that window, so a run can
+     * approach, push through, and then hold; a negative stop means it never
+     * stops moving. The wall acts for the whole run wherever the bead is.
+     *
+     * Per trajectory frame the dynamics driver writes <prefix>bead.csv: the
+     * centre, the wall energy, how many vertices are inside the wall and how
+     * deep, and the total force the membrane exerts on the bead.
+     *
+     * Off by default; a run with it off is unchanged to the byte.
+     */
+    bool beadEnabled = false;
+    double beadRadius = 10.0;       ///< R, nm
+    double beadStiffness = 200.0;   ///< k, pN/nm
+    double beadCenterX = 0.0;       ///< c0, nm
+    double beadCenterY = 0.0;
+    double beadCenterZ = 0.0;
+    double beadVelocityX = 0.0;     ///< v, nm/us
+    double beadVelocityY = 0.0;
+    double beadVelocityZ = 0.0;
+    int beadStartIteration = 0;
+    int beadStopIteration = -1;
+    /**
+     * @brief Adhesion between the bead and the membrane: a well outside the wall.
+     *
+     * A vertex within beadAdhesionRange of the sphere's surface gains
+     *
+     * ```text
+     *     E = -w s(x),   x = (d - R) / delta,   s(x) = 1 - 3 x^2 + 2 x^3  on [0, 1],
+     * ```
+     *
+     * with s = 1 inside the sphere and 0 beyond the range: a smooth step of
+     * depth w = beadAdhesionEnergy per vertex whose pull peaks at 1.5 w / delta.
+     * Zero by default, a bead that only pushes. Wrapping a sphere costs
+     * bending of 2 kc / R^2 per area plus the tension, so with the lattice's
+     * 21.65 nm^2 per vertex a 10 nm bead at kc = 83.4 needs w above about
+     * 40 pN.nm (10 kT) to be wrapped rather than tented over. Like the wall,
+     * a function of the control points alone, so the flip sweep stays exact.
+     */
+    double beadAdhesionEnergy = 0.0;   ///< w, pN.nm per vertex
+    double beadAdhesionRange = 2.0;    ///< delta, nm
+
+    /**
+     * @brief The shape of the bead's potential: "wall" or "harmonic".
+     *
+     * "wall" is the harmonic wall inside the sphere plus the adhesion well
+     * outside it, above: the bead only pushes, and the well is what holds
+     * the membrane on. "harmonic" makes the bead sticky. A vertex that comes
+     * within beadCaptureRange of the sphere's surface is bonded to it, and a
+     * bonded vertex feels the whole harmonic bond
+     *
+     *     E = (k / 2) (|x_i - c| - R)^2,   k = beadStiffness,
+     *
+     * which pushes it out when it is inside the sphere and pulls it back
+     * when it is outside -- the bead keeps what it touched. A bond breaks
+     * when its vertex is farther than beadBreakRange from the surface;
+     * negative, the default, never. The bonded set is state the step
+     * carries, changed only by refresh_bead_contact(), which a flip never
+     * calls: like the wall the energy is a function of the control points
+     * alone, so the flip sweep stays exact. beadAdhesionEnergy is ignored
+     * under "harmonic". See docs/bead_push_benchmark.md section 9.
+     */
+    std::string beadPotential = "wall";
+    double beadCaptureRange = 2.0; ///< nm outside the surface within which a vertex is bonded
+    double beadBreakRange = -1.0;  ///< nm outside the surface beyond which a bond breaks; negative = never
+
+    /**
+     * @name The elastic box (Param::elasticBox*)
+     *
+     * Let the periodic box relax so that the membrane's frame tension sits
+     * at a prescribed value, instead of being whatever the fixed projected
+     * area happens to impose. The strain of every periodic axis becomes a
+     * Brownian coordinate driven by the difference between the target and
+     * the tension the membrane actually exerts on its frame (the in-plane
+     * virial of the nodal forces), and the whole control net -- images,
+     * ghosts and reference coordinates included -- is rescaled with it.
+     * Dynamics only (membrane_dynamics); the minimizer ignores it. Off by
+     * default. See docs/elastic_box.md.
+     * @{
+     */
+    bool elasticBoxEnabled = false;
+    /// tau, pN/nm: the frame tension the box is driven to. Zero is a
+    /// stress-free membrane; positive stretches it.
+    double elasticBoxTension = 0.0;
+    /// m, nm/(pN us): the strain rate per unit tension mismatch,
+    /// d(lambda)/dt = m (tau - tau_measured). Intensive, so the same value
+    /// means the same relaxation rate whatever the box size: with an area
+    /// modulus K the strain relaxes at m n K per us, n periodic axes.
+    double elasticBoxMobility = 1.0e-3;
+    /// Give the box its own Brownian kick, sqrt(2 mu kT dt), so that the
+    /// box strain samples the constant-tension ensemble. false relaxes the
+    /// box deterministically toward the target (a Berendsen-like coupling),
+    /// which is smoother but is not an ensemble.
+    bool elasticBoxThermal = true;
+    /// "isotropic": one strain for every periodic axis, driven by the mean
+    /// tension, so the box keeps its shape. "anisotropic": each periodic axis
+    /// follows its own tension component; on a fluid sheet the aspect ratio
+    /// is then a soft mode that wanders.
+    std::string elasticBoxCoupling = "isotropic";
+    /// The largest |d lambda| one step may apply. A step that wants more is
+    /// clipped and counted; the count is reported at the end, and a run
+    /// that clips often has a mobility too large for its time step.
+    double elasticBoxMaxStrainPerStep = 1.0e-3;
+    /// Count the in-plane entropy of the vertices the step integrates in
+    /// the plane (inPlaneDynamicsEnabled): the -N kT ln(A_p) of a box move
+    /// on coordinates that are rescaled with it, which every constant-tension
+    /// scheme on particles carries (the (A'/A)^N of FreeDTS's box move, the
+    /// N kT/V of a Langevin piston). With it the prescribed tension is the
+    /// one the fluctuation spectrum reads; without it the box's zero is
+    /// offset by N kT / A_p, about 0.2 pN/nm on a 100 nm sheet, and a fluid
+    /// sheet run at "zero" tension buckles once the box is large enough.
+    /// Moot for a solid sheet, whose in-plane coordinates are not integrated.
+    bool elasticBoxVertexGasTerm = true;
+    /** @} */
+
+    /**
+     * @name Lipid flow: the relaxed area as a coordinate (Param::lipidFlow*)
+     *
+     * The stretching energy's relaxed area becomes a variable that moves
+     * with the lipids. Two modes, see docs/lipid_flow_plan.md:
+     *
+     * - "global": one relaxed area for the whole sheet, A0(t). The energy is
+     *   (K / 2 c)(A - A0)^2 with c the relaxed area as built, so with no
+     *   reservoir this is exactly the global constraint the tree always had.
+     *   A reservoir moves A0 toward the tension it sets: the limit of
+     *   infinitely fast lateral flow, cheap, no tension gradients.
+     * - "local": a relaxed area S0_f per face, e_f = (K / 2 c_f)(S_f - S0_f)^2,
+     *   the face's own tension in the force, and S0_f moving between
+     *   neighbouring faces down the tension gradient (tension diffuses at
+     *   D_sigma = K M), with the reservoir per face. Finite-rate tension
+     *   propagation; costs 6-10 % of run time.
+     *
+     * "off" leaves the area term untouched.
+     * @{
+     */
+    std::string lipidFlowMode = "off";
+    /// D_sigma, nm^2/us: the tension diffusivity K M of the lateral flow.
+    /// 0 freezes the lipids (purely local elasticity). Negative takes the
+    /// value the vertices' own friction implies, K a_v D / kT.
+    double lipidFlowDiffusivity = -1.0;
+    /// Explicit substeps of the transport per dynamics step; 0 chooses the
+    /// number that keeps the fastest mode's rate x dt at or under 0.5.
+    int lipidFlowSubsteps = 0;
+    /// Conserved (edge-flux) and reservoir noise at kT, so that the relaxed
+    /// areas sample their Boltzmann distribution.
+    bool lipidFlowThermal = false;
+    /// The form of the local stretching energy. true: (K / 2 abar_f)(S_f - a_f)^2
+    /// with abar_f the face's relaxed area as initialized, so the tension
+    /// K (S_f - a_f) / abar_f is linear in a_f, the lipids respond to the
+    /// tension itself, and thermal fluctuations of a_f leave its mean alone.
+    /// false: (K / 2 a_f)(S_f - a_f)^2, the modulus following the lipids
+    /// actually present; the tension is then 1/a_f-like, and with the noise
+    /// on its mean is shifted by a mesh-dependent kT / a_f.
+    bool lipidFlowLinearStretching = true;
+    /// Where the membrane exchanges lipids with a reservoir: none, rim (the
+    /// energy-carrying faces along an open or clamped boundary) or bulk
+    /// (every face).
+    std::string lipidReservoirRegion = "none";
+    double lipidReservoirTension = 0.0; ///< sigma_res, pN/nm
+    double lipidReservoirRate = 0.0;    ///< k, 1/us: d sigma/dt = -k (sigma - sigma_res) on a reservoir face
+    /**
+     * Local mode with edge flips: what an accepted flip does to the relaxed
+     * areas around it. "none" carries each face's relaxed area with the face
+     * (exact, no redistribution), and the flip is charged the change of the
+     * two faces' stretching energies at the local modulus -- which makes
+     * flips rare under a stiff K. "pair" and "patch" make the flip a compound
+     * move: flip, then redraw the relaxed areas of the two faces ("pair") or
+     * of every face whose patch the flip touched ("patch") from their
+     * Boltzmann distribution at the new geometry with their total fixed. The
+     * Metropolis ratio then sees the set's stretching energy minimised over
+     * that split, and the acceptance returns toward the global constraint's.
+     * Exact for sampling (a partial Gibbs step); for the dynamics it is an
+     * instant redistribution of lipids over the set at every accepted flip.
+     * Needs lipidFlowLinearStretching. With lipidFlowThermal off the redraw
+     * is the equal-tension split itself. "auto", the default, is "patch"
+     * when edge flips are enabled under the linear form and "none"
+     * otherwise; DynamicMesh::finish_dynamic_setup() resolves it.
+     */
+    std::string lipidFlipResampling = "auto";
+    /** @} */
 
     // thermal fluctuation / annealing for equilibrium searches
     bool thermalFluctuationEnabled = false;           ///< Enable Metropolis thermal trial moves during minimization

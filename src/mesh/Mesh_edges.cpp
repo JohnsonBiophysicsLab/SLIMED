@@ -267,13 +267,13 @@ bool Mesh::edge_flip_is_admissible(int iEdge, std::string *why) const
                       ", " + std::to_string(target1) + "), pinching the surface");
     }
 
-    // A flip exchanges which of the two face indices names which triangle --
-    // see the note on flip_edge(). That is unobservable as long as the two
-    // faces carry the same per-face payload, and spontaneous curvature is the
-    // only piece of that payload which is not recomputed from connectivity
-    // every step. Enforce the condition rather than assume it: an insertion
-    // that made the two sides differ would otherwise migrate by one face on
-    // every rejected trial.
+    // A flip hands each face index to one of the two new triangles by an
+    // index rule -- see the note on flip_edge() -- and whatever per-face
+    // payload the record holds goes with it. For spontaneous curvature,
+    // which is the only piece of that payload not recomputed from
+    // connectivity every step, that would move an insertion's curvature onto
+    // a triangle chosen by bookkeeping rather than by physics. Refuse the
+    // move instead of letting it happen.
     if (faces[edge.face[0]].spontCurvature != faces[edge.face[1]].spontCurvature)
     {
         return reject(label + " separates two faces with different spontaneous curvature; "
@@ -365,6 +365,23 @@ void Mesh::flip_edge(int iEdge)
     const int target0 = edges[iEdge].opposite[0]; // the corner of face0
     const int target1 = edges[iEdge].opposite[1]; // the corner of face1
 
+    // Which face index names which new triangle. The two new triangles are
+    // told apart by their corner off the new edge, nodeA or nodeB, just as
+    // the old two were told apart by target0 and target1. The rule: the
+    // record whose old corner has the smaller index takes the new triangle
+    // whose corner has the smaller index. Because the corners and the edge
+    // endpoints trade roles under the flip, the rule reads the same from the
+    // other side, so flipping the new edge straight back puts each record on
+    // exactly the triangle it came from. "face0 takes nodeA's side", the
+    // orientation-based choice, does not have that property: two flips in a
+    // row leave the records holding each other's triangle, and then a
+    // rejected Metropolis trial does not restore the mesh for anything
+    // keyed by face index -- a per-face field, a per-face output frame, a
+    // flux graph built on the last accepted flip.
+    const bool face0TakesNodeA = (target0 < target1) == (nodeA < nodeB);
+    const int faceAtA = face0TakesNodeA ? face0 : face1; // the record for (nodeA, target1, target0)
+    const int faceAtB = face0TakesNodeA ? face1 : face0; // the record for (nodeB, target0, target1)
+
     // The flip patch is invariant under the move: face0 and face1 each keep
     // two of the four quadrilateral corners, so the set of faces incident to
     // {nodeA, nodeB, target0, target1} is the same before and after. Taking it
@@ -383,8 +400,8 @@ void Mesh::flip_edge(int iEdge)
     // ------------------------------------------------------------------
     // 1. Retriangulate.
     // ------------------------------------------------------------------
-    faces[face0].adjacentVertices = {nodeA, target1, target0};
-    faces[face1].adjacentVertices = {nodeB, target0, target1};
+    faces[faceAtA].adjacentVertices = {nodeA, target1, target0};
+    faces[faceAtB].adjacentVertices = {nodeB, target0, target1};
 
     // ------------------------------------------------------------------
     // 2. Vertex adjacency.
@@ -394,10 +411,10 @@ void Mesh::flip_edge(int iEdge)
     push_unique(vertices[target0].adjacentVertices, target1);
     push_unique(vertices[target1].adjacentVertices, target0);
 
-    // nodeA leaves face1 and nodeB leaves face0; the two targets each pick up
-    // the face they were not part of.
-    erase_first(vertices[nodeA].adjacentFaces, face1);
-    erase_first(vertices[nodeB].adjacentFaces, face0);
+    // Each endpoint was on both faces and stays on one; the two targets each
+    // pick up the face they were not part of.
+    erase_first(vertices[nodeA].adjacentFaces, faceAtB);
+    erase_first(vertices[nodeB].adjacentFaces, faceAtA);
     push_unique(vertices[target0].adjacentFaces, face1);
     push_unique(vertices[target1].adjacentFaces, face0);
 
@@ -409,12 +426,11 @@ void Mesh::flip_edge(int iEdge)
         MeshEdge &edge = edges[iEdge];
         edge.v[0] = std::min(target0, target1);
         edge.v[1] = std::max(target0, target1);
-        // Slot k stays parallel to face[k]: face0 is now (nodeA, target1,
-        // target0), whose corner off this edge is nodeA.
+        // Slot k stays parallel to face[k], and the slots keep their records.
         edge.face[0] = face0;
-        edge.opposite[0] = nodeA;
+        edge.opposite[0] = face0TakesNodeA ? nodeA : nodeB;
         edge.face[1] = face1;
-        edge.opposite[1] = nodeB;
+        edge.opposite[1] = face0TakesNodeA ? nodeB : nodeA;
     }
     edgeIndex.emplace(undirected_edge_key(target0, target1), iEdge);
 

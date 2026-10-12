@@ -1,0 +1,147 @@
+# Example: push a rigid bead slowly through a fluid membrane.
+#
+# A 100 nm sheet, held at its rim, with the fluid mesh terms on (in-plane
+# motion, the flat tether, the altitude floor, the crease wall) and Metropolis
+# edge flips at nu = 0.5 attempts per edge per us. A rigid sphere of radius
+# 10 nm starts 5 nm below the sheet and rises at 0.5 nm/us for 70 us -- to 20 nm
+# above the sheet, two radii -- and then holds for 20 us. The
+# membrane cannot enter the sphere (a harmonic wall of 200 pN/nm on the
+# control points) and adheres to it (a well of 60 pN.nm per vertex, 14 kT,
+# over 2.5 nm outside the wall), so it wraps the bead as it passes and has to
+# form a neck behind it. Without the adhesion the membrane only tents over
+# the bead: at this tension a cone costs less than a wrap, and a cone is
+# developable, so fixed connectivity follows it as easily as a fluid mesh.
+# Wrapping a sphere is not developable -- it needs in-plane rearrangement --
+# which is what the benchmark is about.
+#
+# What to expect (measured 2026-09-23, docs/bead_push_benchmark.md section 5):
+# the membrane wraps the whole bead -- 64 vertices on the sphere by the end,
+# against 58 lattice cells of sphere -- and closes a neck of 8-9 nm behind
+# it, narrower than the bead and equal to the sqrt(kc / 2 sigma) the tension
+# sets; 9900 accepted flips, spread uniformly over the sheet. 890 s at 8
+# threads (101 steps/s).
+#
+# The area constraint is soft on purpose (usMembraneStretching = 5 pN/nm, not
+# the bilayer's 250): a clamped sheet has no reservoir, and wrapping a 10 nm
+# bead takes 13 % more area, which at 250 pN/nm would be a tension of 30
+# pN/nm -- well past where a bilayer tears. At 5 pN/nm the tension stays near
+# 1 pN/nm and the neck it sets, sqrt(kc / 2 sigma), is about 6 nm: a
+# bottleneck the 5 nm mesh can just resolve, and where fixed connectivity
+# runs out of ways to follow the shape.
+#
+# bead_push_frozen.params is this file with edgeFlipEnabled = false: the same
+# tethered mesh whose triangulation cannot rearrange. Run both, then compare:
+#
+#   for run in fluid frozen; do
+#     mkdir -p ~/slimed_runs/bead_$run && cp data/example/bead_push_$run.params \
+#         ~/slimed_runs/bead_$run/input.params
+#     (cd ~/slimed_runs/bead_$run && ~/Workspace/SLIMED/build-omp/bin/membrane_dynamics > run.log)
+#   done
+#   ~/anaconda3/bin/python analysis/bead_push_analysis.py \
+#       --fluid ~/slimed_runs/bead_fluid --frozen ~/slimed_runs/bead_frozen
+#
+# The fluid run is the expensive one: about 100 steps/s at 8 threads once the
+# mesh has disordered, so about 15-20 minutes. See docs/bead_push_benchmark.md.
+
+############################################
+## The bead
+############################################
+
+beadEnabled = true
+beadRadius = 10.0                # nm, two mesh edges
+beadStiffness = 200.0            # pN/nm, the harmonic wall on the control points
+beadCenterX = 0.0
+beadCenterY = 0.0
+beadCenterZ = -5.0               # the sheet is at z = 10: 5 nm of clearance at the start
+beadVelocityX = 0.0
+beadVelocityY = 0.0
+beadVelocityZ = 0.5              # nm/us
+beadStartIteration = 0
+beadStopIteration = 70000        # 35 nm of travel, then it holds at z = 30
+beadAdhesionEnergy = 60.0        # pN.nm per vertex (14 kT): the membrane wraps the bead
+beadAdhesionRange = 2.5          # nm, the well outside the wall
+
+############################################
+## Boundary Conditions
+############################################
+
+boundaryType = Mixed             # per-vertex boundary: free, fixed or periodic image
+boundaryTypeX = Fixed            # held on all four sides
+boundaryTypeY = Fixed
+fixedBoundaryRings = 1           # 1 ring: the rim is pinned, its slope is free
+surfaceSolver = iterative        # required by the dynamics under Mixed and by flips
+
+############################################
+## Geometric Parameters
+############################################
+
+lFace = 5.0
+isFlat = true
+sideX = 100.0
+sideY = 100.0
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4         # 20 kT
+usMembraneStretching = 5.0       # soft, see above
+setRelaxAreaToDefault = true     # the relaxed area is the flat sheet's
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17
+
+############################################
+## Dynamics
+############################################
+
+maxIterations = 90000            # 70 us pushing, 20 us holding
+timeStep = 0.001                 # us
+diffConst = 1.0                  # nm^2/us
+randomSeed = 20260923
+meshpointOutput = true
+meshpointOutputInterval = 100    # a frame every 0.1 us
+xyzOutput = false
+fdtConsistentSurfaceUpdate = true
+localOutput = true              # per-face energies and per-vertex forces beside every frame
+
+############################################
+## The fluid mesh: docs/edge_flip_plan.md, docs/fluidity_results.md
+############################################
+
+inPlaneDynamicsEnabled = true
+edgeSpringEnabled = true
+edgeTetherShape = flat
+edgeTetherMinRatio = 0.7         # the lower wall a conserved-area fluid sheet needs
+edgeTetherMaxRatio = 1.75
+edgeSpringConstant = 83.4
+triangleShapeEnabled = true
+triangleShapeMinAltitudeRatio = 0.4
+triangleShapeConstant = 83.4
+creaseWallEnabled = true
+creaseWallAngle = 60.0
+creaseWallConstant = 500.0
+edgeFlipEnabled = true           # false in bead_push_frozen.params
+edgeFlipAttemptRate = 0.5        # attempts per edge per us
+edgeFlipInterval = 1
+edgeFlipMinValence = 4
+edgeFlipMaxValence = 8
+irregularPatchDepthScale = 1.0
+
+############################################
+## Off for this example
+############################################
+
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+externalForceEnabled = false
+
+############################################
+## Developer options
+############################################
+
+VERBOSE_MODE = false

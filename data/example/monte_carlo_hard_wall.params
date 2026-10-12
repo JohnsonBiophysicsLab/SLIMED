@@ -1,0 +1,75 @@
+# A 100 nm fluid periodic sheet sampled by Monte Carlo alone: single-vertex
+# Metropolis moves and edge flips, with the mesh-quality walls enforced by
+# rejection instead of by stiff forces. See docs/monte_carlo_vertex_moves.md.
+#
+# This is the sampler of the dynamically triangulated surface models, on
+# SLIMED's limit-surface energy. The three walls a fluid Brownian run holds
+# with quadratic penalties -- the tether range, the altitude floor, the
+# crease angle -- are here constraints at the same positions: they carry no
+# energy and no force, and a move that would break one is refused. There is
+# no time step and no time in the run; an iteration is one sweep.
+#
+# Run from a directory of its own:  cp <this file> input.params && membrane_dynamics
+# Outputs beside the usual trajectory: inputVertexMoves.csv (acceptance and
+# wall counts per frame) and inputEdgeFlips.csv.
+
+maxIterations = 20000              # sweeps
+meshpointOutput = true
+meshpointOutputInterval = 20
+xyzOutput = false
+VERBOSE_MODE = false
+
+# The per-vertex boundary with both axes periodic: every periodic copy
+# follows its source exactly, and there is no duplicated ring.
+boundaryType = Mixed
+boundaryTypeX = Periodic
+boundaryTypeY = Periodic
+surfaceSolver = iterative
+isFlat = true
+lFace = 5.0
+sideX = 100.0
+sideY = 100.0
+
+kcMembraneBending = 83.4
+c0Membrane = 0.0
+usMembraneStretching = 250.0
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+setRelaxAreaToDefault = true
+KBT = 4.17
+randomSeed = 707
+forceBackend = cpu
+thermalFluctuationEnabled = false
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+
+# Pure Monte Carlo: no Brownian step.
+brownianStepEnabled = false
+
+# The vertex move.
+inPlaneDynamicsEnabled = true       # move in all three directions (false: z only)
+vertexMoveEnabled = true
+vertexMoveStepRatio = 0.1           # half-width of the trial cube, in lFace; tune for 30-50% acceptance
+vertexMoveAttemptsPerVertex = 1.0   # one attempt per vertex per sweep
+vertexMoveInterval = 1
+
+# The walls: which exist, where they are, and that they are hard.
+meshWallType = hard
+edgeSpringEnabled = true            # the tether (required for hard walls)
+edgeTetherShape = flat
+edgeTetherMinRatio = 0.7            # edges stay within [0.7, 1.75] lFace
+edgeTetherMaxRatio = 1.75           # must exceed sqrt(3): a flip of an equilateral rhombus makes sqrt(3) lFace
+triangleShapeEnabled = true
+triangleShapeMinAltitudeRatio = 0.4 # no altitude under 0.4 lFace
+creaseWallEnabled = true
+creaseWallAngle = 60.0              # adjacent face normals within 60 degrees
+
+# The flip. With no Brownian step, timeStep only converts the rate into
+# attempts: rate * timeStep * edgeFlipInterval attempts per edge per sweep.
+edgeFlipEnabled = true
+timeStep = 1.0
+edgeFlipAttemptRate = 0.1
+edgeFlipInterval = 1
+edgeFlipMinValence = 4
+edgeFlipMaxValence = 8
+irregularPatchDepthScale = 1.0

@@ -1,0 +1,48 @@
+# A 100 nm periodic sheet under the area constraint, with the elastic box
+# holding the frame tension at zero. See docs/elastic_box.md.
+#
+# With a fixed box this configuration (the "tension" run of
+# docs/fluctuation_spectrum.md section 5) reads a fluctuation tension of
+# 3.7 pN/nm, because the sheet has to stretch to buy the excess area its
+# undulations need. With the box free to shrink, the area constraint is
+# satisfied at a smaller projected area and the spectrum returns to q^-4.
+#
+# Run from a directory of its own:  cp <this file> input.params && membrane_dynamics
+
+maxIterations = 300000
+meshpointOutput = true
+meshpointOutputInterval = 100
+xyzOutput = false
+VERBOSE_MODE = false
+
+boundaryType = Periodic
+isFlat = true
+lFace = 5.0
+sideX = 100.0
+sideY = 100.0
+
+kcMembraneBending = 83.4
+c0Membrane = 0.0
+usMembraneStretching = 250.0
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+setRelaxAreaToDefault = true
+KBT = 4.17
+timeStep = 0.002
+diffConst = 1.0
+randomSeed = 303
+forceBackend = cpu
+fdtConsistentSurfaceUpdate = true
+integratePeriodicDuplicates = false
+thermalFluctuationEnabled = false
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+
+# The elastic box.
+elasticBoxEnabled = true            # let the periodic box relax
+elasticBoxTension = 0.0             # tau, pN/nm: the frame tension the box is driven to
+elasticBoxMobility = 0.001          # m, nm/(pN us): d(strain)/dt = m (tau - tau_measured)
+elasticBoxThermal = true            # the box takes its own Brownian kick (constant-tension ensemble)
+elasticBoxCoupling = isotropic      # one strain for both periodic axes
+elasticBoxMaxStrainPerStep = 0.001  # cap on |d strain| per step; clipped steps are counted
+elasticBoxVertexGasTerm = true      # -N kT ln(A_p) for in-plane vertices (only acts with inPlaneDynamicsEnabled)

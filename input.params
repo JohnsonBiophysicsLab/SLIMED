@@ -104,6 +104,54 @@ fdtConsistentSurfaceUpdate = true
 # Set true only to reproduce results from before this was fixed.
 integratePeriodicDuplicates = false
 
+# The elastic box: let the periodic box relax so that the membrane's frame
+# tension sits at elasticBoxTension instead of at whatever the fixed
+# projected area imposes. The strain of every periodic axis is a Brownian
+# coordinate driven by the tension the membrane exerts on its frame (the
+# virial of the nodal forces), and the whole net is rescaled with it. Writes
+# <prefix>box.csv. Dynamics only. See docs/elastic_box.md.
+# elasticBoxEnabled = true
+# elasticBoxTension = 0.0             # tau, pN/nm
+# elasticBoxMobility = 0.001          # m, nm/(pN us): d(strain)/dt = m (tau - tau_measured)
+# elasticBoxThermal = true            # Brownian kick on the box (false: Berendsen-like relaxation)
+# elasticBoxCoupling = isotropic      # isotropic | anisotropic
+# elasticBoxMaxStrainPerStep = 0.001  # cap on |d strain| per step
+# elasticBoxVertexGasTerm = true      # -N kT ln(A_p) of the in-plane vertices, when they are integrated
+
+# Monte Carlo vertex moves and hard walls: single-vertex Metropolis moves on
+# the control points, beside or instead of the Brownian step, and the fluid
+# mesh-quality walls (tether range, altitude floor, crease angle) enforced by
+# rejecting the moves that would break them rather than by stiff forces.
+# Writes <prefix>VertexMoves.csv. Dynamics only. See
+# docs/monte_carlo_vertex_moves.md and data/example/monte_carlo_hard_wall.params.
+# vertexMoveEnabled = true
+# vertexMoveStepRatio = 0.05          # half-width of the trial cube, in lFace (tune for 30-50% acceptance)
+# vertexMoveAttemptsPerVertex = 1.0   # mean attempts per independent vertex per sweep
+# vertexMoveInterval = 1              # iterations between sweeps
+# meshWallType = hard                 # soft (default) | hard; hard needs the two lines around it
+# brownianStepEnabled = false         # pure Monte Carlo: an iteration is a vertex sweep and a flip sweep
+
+# Lipid flow: let the stretching energy's relaxed area move with the lipids.
+# "global": one relaxed area for the sheet, driven toward lipidReservoirTension
+# at lipidReservoirRate (no reservoir = exactly the global constraint).
+# "local": a relaxed area per face, flowing between neighbours down the
+# tension gradient with diffusivity lipidFlowDiffusivity (-1 = the vertices'
+# own friction), optionally exchanging with a reservoir on the rim or
+# everywhere. Writes <prefix>lipid.csv. Dynamics, CPU backend only; the local
+# mode needs boundaryType = Mixed on a periodic sheet. See docs/lipid_flow_plan.md.
+# lipidFlowMode = off                 # off | global | local
+# lipidFlowDiffusivity = -1           # D_sigma, nm^2/us; -1 = K a_v D / kT; 0 = frozen lipids
+# lipidFlowSubsteps = 0               # 0 = automatic
+# lipidFlowThermal = true             # noise on the relaxed areas (keep on for equilibrium work)
+# lipidFlowLinearStretching = true    # modulus normalised by the relaxed area as built
+# lipidReservoirRegion = none         # none | rim | bulk
+# lipidReservoirTension = 0.5         # pN/nm
+# lipidReservoirRate = 20             # 1/us
+# lipidFlipResampling = auto          # auto | none | pair | patch: local mode with flips -- redraw the
+#                                     # relaxed areas of the flipped pair / the flip patch at each accepted
+#                                     # flip (keeps flip acceptance; an instant local redistribution).
+#                                     # auto = patch when flips are on under the linear form, else none
+
 ############################################
 ## Mesh Regularization
 ############################################

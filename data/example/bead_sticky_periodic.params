@@ -1,0 +1,131 @@
+# Example: a sticky bead pushed through a periodic fluid membrane.
+#
+# The bead of bead_push_fluid.params, but bonded to the membrane by the full
+# harmonic bond (beadPotential = harmonic): a vertex that comes within 2.5 nm
+# of the sphere's surface is captured, and from then on feels (k/2)(d - R)^2,
+# pushed out when inside and pulled back when outside, so the bead keeps what
+# it touched. At k = 20 pN/nm the capture is worth 15 kT per vertex, the same
+# as the 60 pN.nm well of the adhesive benchmark, at a tenth of the force
+# (k = 200 yanks a captured vertex with 500 pN and folds a frozen mesh).
+#
+# The sheet is periodic along both axes (the generated 130 nm sheet is a
+# 100 x 104 nm tile of 480 free vertices once the image bands are taken off),
+# its mean height pinned (meanHeightPinned = true: nothing else holds a
+# periodic sheet in z, and a bead would only drag it), and the area the wrap
+# needs comes from a reservoir at 0.5 pN/nm -- here the elastic box; see
+# analysis/sticky_bead_runs.py for the adaptive-S0 (lipid flow) alternative
+# and the fluidity series. The bead rises 35 nm in 70 us and holds 110 us.
+# docs/bead_push_benchmark.md section 9 has the measurements.
+#
+#   mkdir -p ~/slimed_runs/sticky && cp data/example/bead_sticky_periodic.params ~/slimed_runs/sticky/input.params
+#   (cd ~/slimed_runs/sticky && OMP_NUM_THREADS=4 ~/Workspace/SLIMED/build-omp/bin/membrane_dynamics > run.log)
+#   ~/anaconda3/bin/python analysis/sticky_bead_analysis.py --root ~/slimed_runs --runs sticky
+#
+beadEnabled = true
+beadPotential = harmonic         # the full harmonic bond on every vertex the bead captured
+beadRadius = 10.0                # nm, two mesh edges
+beadStiffness = 20.0      # pN/nm, the bond's stiffness (and the wall's): k/2 (2.5 nm)^2 = 15 kT at capture
+beadCaptureRange = 2.5           # nm outside the surface: a vertex this close is bonded
+beadBreakRange = -1              # never breaks
+beadAdhesionEnergy = 0.0         # ignored under harmonic
+beadCenterX = 0.0
+beadCenterY = 0.0
+beadCenterZ = -5.0               # the sheet is at z = 10: 5 nm of clearance at the start
+beadVelocityX = 0.0
+beadVelocityY = 0.0
+beadVelocityZ = 0.5              # nm/us
+beadStartIteration = 0
+beadStopIteration = 70000       # 35 nm of travel, then it holds at z = 30
+
+############################################
+## Boundary Conditions: periodic along both axes, mean height pinned
+############################################
+
+boundaryType = Mixed
+boundaryTypeX = Periodic
+boundaryTypeY = Periodic
+meanHeightPinned = true          # the surrounding membrane holds the tile's mean height
+surfaceSolver = iterative
+
+############################################
+## Geometric Parameters
+############################################
+
+lFace = 5.0
+isFlat = true
+sideX = 130.0
+sideY = 130.0                    # the generated sheet; the periodic tile is 30 nm narrower (the image bands)
+
+############################################
+## Physical Properties
+############################################
+
+c0Insertion = 0.0
+c0Membrane = 0.0
+kcMembraneBending = 83.4         # 20 kT
+usMembraneStretching = 250.0     # the bilayer's modulus; the reservoir supplies the area
+setRelaxAreaToDefault = true
+uvVolumeConstraint = 0.0
+isGlobalConstraint = true
+forceBackend = cpu
+KBT = 4.17
+
+############################################
+## Dynamics
+############################################
+
+maxIterations = 180000
+timeStep = 0.001                 # us
+diffConst = 1.0                  # nm^2/us
+randomSeed = 20261012
+meshpointOutput = true
+meshpointOutputInterval = 200
+xyzOutput = false
+fdtConsistentSurfaceUpdate = true
+localOutput = true               # per-face energies and per-vertex forces beside every frame
+
+############################################
+## The fluid mesh: docs/edge_flip_plan.md, docs/fluidity_results.md
+############################################
+
+inPlaneDynamicsEnabled = true
+edgeSpringEnabled = true
+edgeTetherShape = flat
+edgeTetherMinRatio = 0.7
+edgeTetherMaxRatio = 1.75
+edgeSpringConstant = 83.4
+triangleShapeEnabled = true
+triangleShapeMinAltitudeRatio = 0.4
+triangleShapeConstant = 83.4
+creaseWallEnabled = true
+creaseWallAngle = 60.0
+creaseWallConstant = 500.0
+edgeFlipEnabled = true
+edgeFlipAttemptRate = 0.5     # attempts per edge per us: the fluidity knob
+edgeFlipInterval = 1
+edgeFlipMinValence = 4
+edgeFlipMaxValence = 8
+irregularPatchDepthScale = 1.0
+
+############################################
+## The area reservoir: uniform scaling of the box at a frame tension of 0.5 pN/nm (docs/elastic_box.md)
+############################################
+
+elasticBoxEnabled = true
+elasticBoxTension = 0.5
+elasticBoxMobility = 0.02        # fast enough to follow a bead at 0.5 nm/us
+elasticBoxThermal = true
+elasticBoxCoupling = isotropic
+elasticBoxMaxStrainPerStep = 0.001
+elasticBoxVertexGasTerm = true
+lipidFlowMode = off
+
+############################################
+## Off for this run
+############################################
+
+isInsertionIncluded = false
+isEnergyHarmonicBondIncluded = false
+thermalFluctuationEnabled = false
+externalForceEnabled = false
+VERBOSE_MODE = false

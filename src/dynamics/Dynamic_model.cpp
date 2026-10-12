@@ -1,6 +1,7 @@
 #include "Dynamics.hpp"
 
 #include <cstdint>
+#include <vector>
 
 #include "Counter_rng.hpp"
 
@@ -43,6 +44,10 @@ DynamicModel::DynamicModel(DynamicMesh &mesh_, Record &record_)
 
     nodalForce = mat_calloc(mesh.vertices.size(), 3);
     driveForce = mat_calloc(mesh.vertices.size(), 3);
+    select_external_force_vertices();
+    setup_bead();
+    setup_elastic_box();
+    setup_lipid_flow();
     std::cout << "[DynamicModel] fdtConsistentSurfaceUpdate = "
               << (mesh.param.fdtConsistentSurfaceUpdate ? "true" : "false") << std::endl;
     // Output if model setup if verbose mode
@@ -110,6 +115,14 @@ void DynamicModel::next_step()
     // the gradient flow of any potential, so it can do net work on the
     // membrane: as shipped, the r.m.s. height grows without settling instead of
     // reaching a stationary spectrum at all.
+    // The bead, if there is one: put where this step wants it, its wall
+    // evaluated on the control points as a nodal force. Off, nothing here runs.
+    const bool beadOn = mesh.param.beadEnabled;
+    if (beadOn)
+    {
+        update_bead(this->iteration);
+    }
+
     if (mesh.param.fdtConsistentSurfaceUpdate)
     {
         for (int i = 0; i < static_cast<int>(mesh.vertices.size()); i++)
@@ -130,16 +143,53 @@ void DynamicModel::next_step()
                 {
                     f += mesh.vertices[i].force.forceRegularization(j, 0);
                 }
+                if (beadOn)
+                {
+                    f += beadForce(i, j);
+                }
                 nodalForce.set(i, j, std::isnan(f) ? 0.0 : f);
             }
         }
         mesh.apply_nodal_force_to_surface(nodalForce, driveForce);
     }
 
+    // The external force, if this iteration is inside its window. It acts
+    // on the surface point the step displaces, whichever way the membrane's
+    // own force reached it, and only on vertices the step integrates: the
+    // branch below skips the rest. Off, it changes nothing.
+    const bool pushing = external_force_active(this->iteration);
+    const double externalForce[3] = {mesh.param.externalForceX, mesh.param.externalForceY,
+                                     mesh.param.externalForceZ};
+
     // One key per (run, step); standard_normal() mixes the vertex and axis in.
     const std::uint64_t stepKey =
         splitmix64(static_cast<std::uint64_t>(randomSeed)) +
         static_cast<std::uint64_t>(this->iteration);
+
+    // The vertices the loop below integrates, and their mean height before
+    // the step, for the pin: see Param::meanHeightPinned.
+    const bool pinMean = mesh.param.meanHeightPinned;
+    std::vector<int> integrated;
+    double meanHeightBefore = 0.0;
+    if (pinMean)
+    {
+        const bool mixedBC = (mesh.param.boundaryCondition == BoundaryType::Mixed);
+        for (int i = 0; i < static_cast<int>(mesh.vertices.size()); i++)
+        {
+            const bool slaved = (mixedBC || !mesh.param.integratePeriodicDuplicates) &&
+                                !mesh.isSlavedPeriodic.empty() && mesh.isSlavedPeriodic[i] != 0;
+            if (mesh.vertices[i].isGhost || slaved || mesh.vertices[i].is_fixed())
+            {
+                continue;
+            }
+            integrated.push_back(i);
+            meanHeightBefore += mesh.matSurface(i, 2);
+        }
+        if (!integrated.empty())
+        {
+            meanHeightBefore /= static_cast<double>(integrated.size());
+        }
+    }
 
 #pragma omp parallel for shared(mesh) schedule(static)
     for (int i = 0; i < mesh.vertices.size(); i++)
@@ -186,10 +236,18 @@ void DynamicModel::next_step()
                 {
                     forceterm += mesh.vertices[i].force.forceRegularization(j, 0);
                 }
+                if (!mesh.param.fdtConsistentSurfaceUpdate && beadOn)
+                {
+                    forceterm += beadForce(i, j);
+                }
                 //std::cout << "Force @ " << i << " , "<< j << " = "  << forceterm << std::endl;
                 if (std::isnan(forceterm))
                 {
                     forceterm = 0.0;
+                }
+                if (pushing && externalForceMask[i] != 0)
+                {
+                    forceterm += externalForce[j];
                 }
                 randomterm = standard_normal(stepKey, static_cast<std::uint64_t>(i),
                                              static_cast<std::uint64_t>(j)); // Get random term
@@ -271,6 +329,25 @@ void DynamicModel::next_step()
                 }
                 
             }
+        }
+    }
+    // The pin: take the mean vertical displacement of the step back off
+    // every integrated vertex. A uniform shift of the surface points is a
+    // uniform shift of the control points (the limit mask's rows sum to
+    // one), so the shape is untouched; the images and ghosts follow their
+    // sources in postprocess_boundary().
+    if (pinMean && !integrated.empty())
+    {
+        double meanHeightAfter = 0.0;
+        for (const int i : integrated)
+        {
+            meanHeightAfter += mesh.matSurface(i, 2);
+        }
+        meanHeightAfter /= static_cast<double>(integrated.size());
+        const double drift = meanHeightAfter - meanHeightBefore;
+        for (const int i : integrated)
+        {
+            mesh.matSurface.set(i, 2, mesh.matSurface(i, 2) - drift);
         }
     }
     //rsc = 0.04472135955 for ts = 0.001

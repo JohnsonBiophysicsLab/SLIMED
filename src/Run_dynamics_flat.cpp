@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 void run_dynamics_flat(std::string param_filename) {
@@ -91,6 +93,12 @@ void run_dynamics_flat(std::string param_filename) {
     // Initialize all value before minimum energy search 
     mesh.calculate_element_area_volume(); // Calculate the elemental area and volume per triangles (faces)
     mesh.sum_membrane_area_and_volume(mesh.param.area0, mesh.param.vol0); // Calculate initial area and volume
+    if (mesh.lipid_flow_on())
+    {
+        // Every face's relaxed area, from the areas just computed: the
+        // uniform strain the global constraint would start from.
+        mesh.initialize_lipid_flow();
+    }
     mesh.report_volume_rebaseline(); // TEMPORARY -- see docs/volume_functional_split.md step 4
     mesh.update_previous_coord_for_vertex(); // Update previous coordinate...
     mesh.update_reference_coord_from_previous_coord(); // ...and reference coord
@@ -104,6 +112,44 @@ void run_dynamics_flat(std::string param_filename) {
 
     // Create a "Model" container object that packs mesh and record
     DynamicModel model(mesh, record);
+    if (mesh.param.externalForceEnabled)
+    {
+        // The pushed region, so an analysis can tell it from the rest.
+        model.write_external_force_vertices_csv(param_filename + "external_force_vertices.csv");
+    }
+    // The bead log: one row per trajectory frame, the first for the
+    // configuration before any step.
+    const std::string beadLogPath = param_filename + "bead.csv";
+    if (mesh.param.beadEnabled)
+    {
+        std::remove(beadLogPath.c_str());
+        model.update_bead(0);
+        model.append_bead_log(beadLogPath, 0);
+    }
+    // The box log: one row per trajectory frame, the first for the
+    // configuration before any step, each carrying the tension the step
+    // just taken was driven by.
+    const std::string boxLogPath = param_filename + "box.csv";
+    if (mesh.param.elasticBoxEnabled)
+    {
+        std::remove(boxLogPath.c_str());
+        model.refresh_box_tension();
+        model.append_box_log(boxLogPath, 0);
+    }
+    // The lipid log: totals and tension statistics per trajectory frame, and
+    // with localOutput the relaxed and actual area of every face.
+    const std::string lipidLogPath = param_filename + "lipid.csv";
+    const std::string lipidFacePath = "lipidface" + param_filename + ".csv";
+    if (mesh.lipid_flow_on())
+    {
+        std::remove(lipidLogPath.c_str());
+        std::remove(lipidFacePath.c_str());
+        model.append_lipid_log(lipidLogPath, 0);
+        if (mesh.param.localOutput)
+        {
+            model.append_lipid_face_frame(lipidFacePath);
+        }
+    }
 
     ///////////////////////////////////////
     mesh.update_vertices_mat_with_vector(); //Update matMesh
@@ -111,6 +157,11 @@ void run_dynamics_flat(std::string param_filename) {
 
     if (mesh.param.meshpointOutput) {
         dynamics_create_trajectory_files(mesh, param_filename);
+        if (mesh.param.localOutput) {
+            // The local quantities of the same frames: per-face energies and
+            // per-vertex forces, as the model stores them.
+            dynamics_create_local_files(mesh, model, param_filename);
+        }
         if (mesh.param.edgeFlipEnabled) {
             // The baseline a later frame is compared against. Only for a run
             // whose connectivity can move: with flips off this file would be a
@@ -134,13 +185,41 @@ void run_dynamics_flat(std::string param_filename) {
     }
 
 
+    // The Monte Carlo vertex moves: totals for the run, and since the last
+    // trajectory frame for the log beside it.
+    VertexMoveSweepStats vertexMoveTotals;
+    VertexMoveSweepStats vertexMoveSinceFrame;
+    const std::string vertexMoveLogPath = param_filename + "VertexMoves.csv";
+    if (mesh.param.vertexMoveEnabled) {
+        std::remove(vertexMoveLogPath.c_str());
+    }
+    // Hard walls are an invariant the moves preserve, not one they establish:
+    // a move is rejected when it leaves a wall broken, so a mesh that starts
+    // outside the admissible set would have its offending neighbourhood
+    // frozen for the whole run and report nothing but a low acceptance.
+    if (mesh.walls_are_hard()) {
+        const WallViolations broken = mesh.count_wall_violations();
+        if (broken.total() > 0) {
+            throw std::runtime_error(
+                "[run_dynamics_flat] meshWallType = hard, but the starting mesh breaks " +
+                std::to_string(broken.tether) + " tether, " + std::to_string(broken.altitude) +
+                " altitude and " + std::to_string(broken.crease) +
+                " crease walls. Start from a mesh inside the walls, or widen them "
+                "(edgeTetherMinRatio/MaxRatio, triangleShapeMinAltitudeRatio, creaseWallAngle).");
+        }
+    }
+
     for (model.iteration = 0; model.iteration < mesh.param.maxIterations; model.iteration ++) {
 
+        // A pure Monte Carlo run (brownianStepEnabled = false) skips the
+        // step: the control net is moved by the sweeps at the bottom of the
+        // loop and nothing else.
+        if (mesh.param.brownianStepEnabled) {
         //1.control mesh to limit surface
         mesh.apply_mesh_to_surface();
 
         //2.next time step - calculate displacement on limit surface
-        model.next_step(); 
+        model.next_step();
 
         //3.limit surface to control mesh: verticesOnMesh = surface2mesh * verticesProjSurface
         mesh.apply_surface_to_mesh();
@@ -148,15 +227,59 @@ void run_dynamics_flat(std::string param_filename) {
         //4. postprocessing based on boundary condition
         mesh.postprocess_boundary();
 
+        //4b. the elastic box: one Brownian step of the periodic strain from
+        // the same force evaluation the vertex step used, then the rescale
+        // of the whole net, images and ghosts included. Off, nothing runs.
+        if (mesh.param.elasticBoxEnabled) {
+            model.update_elastic_box();
+        }
+        }
+
+        // The relaxed areas take their step from the same force evaluation:
+        // lateral flux down the tension gradient, the reservoir, the noise.
+        if (mesh.lipid_flow_on()) {
+            model.advance_lipid_flow();
+        }
+
         mesh.update_vertices_vector_with_mat();
         //@todo move this to io.hpp
         //4.update values of vertex (vector of double) with verticesOnMesh (gsl matrix)
         if (mesh.param.meshpointOutput &&
             (model.iteration + 1) % mesh.param.meshpointOutputInterval == 0) {
+            if (!mesh.param.brownianStepEnabled) {
+                // The frame writes the limit surface beside the control net,
+                // and with no Brownian step nothing else has refreshed it.
+                mesh.apply_mesh_to_surface();
+            }
+            if (mesh.param.vertexMoveEnabled) {
+                const WallViolations broken =
+                    mesh.param.edgeSpringEnabled ? mesh.count_wall_violations() : WallViolations();
+                write_vertex_move_log_csv(vertexMoveLogPath, model.iteration + 1,
+                                          vertexMoveSinceFrame, broken);
+                vertexMoveSinceFrame = VertexMoveSweepStats();
+            }
             // A frame every step is only affordable for short runs: at the
             // 10^6-10^7 iterations an equilibrium spectrum needs, one line per
             // step per vertex runs to tens of gigabytes.
             dynamics_output_trajectory_files(mesh, param_filename);
+            if (mesh.param.localOutput) {
+                dynamics_output_local_frame(mesh, model, param_filename);
+            }
+            if (mesh.param.beadEnabled) {
+                // The wall re-evaluated on the frame just written, at the
+                // centre the step used.
+                model.refresh_bead_contact();
+                model.append_bead_log(beadLogPath, model.iteration + 1);
+            }
+            if (mesh.param.elasticBoxEnabled) {
+                model.append_box_log(boxLogPath, model.iteration + 1);
+            }
+            if (mesh.lipid_flow_on()) {
+                model.append_lipid_log(lipidLogPath, model.iteration + 1);
+                if (mesh.param.localOutput) {
+                    model.append_lipid_face_frame(lipidFacePath);
+                }
+            }
             if (mesh.param.edgeFlipEnabled) {
                 // Beside the frame, and only when the connectivity moved since
                 // the last one: a coordinate frame of a fluid run is
@@ -176,6 +299,7 @@ void run_dynamics_flat(std::string param_filename) {
         // difference against them, and it invalidates them by construction, so
         // an accepted flip is followed by a second evaluation before the next
         // Brownian step reads a force.
+        bool sweepChangedMesh = false;
         if (mesh.param.edgeFlipEnabled &&
             (model.iteration + 1) % std::max(1, mesh.param.edgeFlipInterval) == 0) {
             const EdgeFlipSweepStats stats = mesh.edge_flip_sweep(model.iteration, &edgeFlipLog);
@@ -188,12 +312,34 @@ void run_dynamics_flat(std::string param_filename) {
                 // device layout, the sparse limit mask -- notices the version
                 // bump on its own. What does not is the stored energy and
                 // force, which still describe the old triangulation.
-                mesh.Compute_Energy_And_Force();
+                sweepChangedMesh = true;
             }
             if (edgeFlipLog.size() >= 4096) {
                 write_edge_flip_log_csv(edgeFlipLog, edgeFlipLogPath);
                 edgeFlipLog.clear();
             }
+        }
+
+        // The vertex-move sweep, after the flips and on the connectivity they
+        // left. Each is a kernel that leaves exp(-E/kT) invariant, so the
+        // order between them is a matter of bookkeeping: both keep
+        // param.area and param.vol current, which is all the next trial's
+        // constraint difference reads.
+        if (mesh.param.vertexMoveEnabled &&
+            (model.iteration + 1) % std::max(1, mesh.param.vertexMoveInterval) == 0) {
+            const VertexMoveSweepStats stats = mesh.vertex_move_sweep(model.iteration);
+            vertexMoveTotals += stats;
+            vertexMoveSinceFrame += stats;
+            if (stats.accepted > 0) {
+                // The moves act on the vertices; the step and the trajectory
+                // read the control net from matMesh.
+                mesh.update_vertices_mat_with_vector();
+                sweepChangedMesh = true;
+            }
+        }
+
+        if (sweepChangedMesh) {
+            mesh.Compute_Energy_And_Force();
         }
 
         // A run that has gone non-finite has nothing left to say, and it says
@@ -224,6 +370,43 @@ void run_dynamics_flat(std::string param_filename) {
                   << edgeFlipTotals.drawn << " drawn), acceptance "
                   << edgeFlipTotals.acceptance() << ", total dE " << edgeFlipTotals.deltaEnergy
                   << " pN.nm." << std::endl;
+    }
+
+    if (mesh.param.vertexMoveEnabled) {
+        std::cout << "[run_dynamics_flat] Vertex moves: " << vertexMoveTotals.accepted
+                  << " accepted of " << vertexMoveTotals.attempted << " attempts, acceptance "
+                  << vertexMoveTotals.acceptance() << "; " << vertexMoveTotals.wallRejected
+                  << " refused by a hard wall; total dE " << vertexMoveTotals.deltaEnergy
+                  << " pN.nm." << std::endl;
+        if (mesh.param.edgeSpringEnabled) {
+            const WallViolations broken = mesh.count_wall_violations();
+            std::cout << "[run_dynamics_flat] Walls at the end of the run: " << broken.tether
+                      << " tether, " << broken.altitude << " altitude, " << broken.crease
+                      << " crease outside ("
+                      << (mesh.walls_are_hard() ? "hard walls: all three must be zero"
+                                                : "soft walls: these are leaned on, not broken")
+                      << ")." << std::endl;
+        }
+    }
+
+    if (mesh.lipid_flow_on()) {
+        std::cout << "[run_dynamics_flat] Lipid flow: relaxed area "
+                  << (mesh.lipid_flow_local() ? mesh.total_face_area0() : mesh.param.area0)
+                  << " nm^2 against a membrane area of " << mesh.param.area << " nm^2; "
+                  << model.lipidReservoirExchanged << " nm^2 taken from the reservoir; "
+                  << model.lipidClampedUpdates << " updates hit the positivity floor." << std::endl;
+    }
+    if (mesh.param.elasticBoxEnabled) {
+        const double meanTension =
+            (model.boxSteps > 0) ? model.boxTensionRunningSum / model.boxSteps : 0.0;
+        std::cout << "[run_dynamics_flat] Elastic box: strain (" << mesh.boxScale[0] << ", "
+                  << mesh.boxScale[1] << "), box " << mesh.boxLength[0] << " x "
+                  << mesh.boxLength[1] << " nm, projected area " << mesh.box_projected_area()
+                  << " nm^2 against a membrane area of " << mesh.param.area
+                  << " nm^2; mean tension over " << model.boxSteps << " box steps "
+                  << meanTension << " pN/nm (target " << mesh.param.elasticBoxTension
+                  << "); " << model.boxClippedSteps
+                  << " steps clipped at elasticBoxMaxStrainPerStep." << std::endl;
     }
 
     // Output Energy and meanforce

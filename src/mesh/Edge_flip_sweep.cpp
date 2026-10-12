@@ -192,7 +192,27 @@ EdgeFlipSweepStats Mesh::edge_flip_sweep(long long iteration, std::vector<EdgeFl
             continue;
         }
 
+        const bool carryLipids = lipid_flow_local() && !faceArea0.empty();
+        const MeshEdge edgeBeforeFlip = edges[iEdge];
         flip_edge(iEdge);
+        if (carryLipids)
+        {
+            // The two new triangles carry the relaxed areas the trial
+            // differenced; the flux graph is rebuilt before the next flow step.
+            lipid_carry_after_flip(iEdge, edgeBeforeFlip);
+            if (lipid_flip_resampling())
+            {
+                // The second half of the compound move the trial priced:
+                // redraw the set's relaxed areas at the new geometry, total
+                // fixed. A sub-key of the attempt's, so the draw is
+                // reproducible and independent of the acceptance draw.
+                const std::vector<int> set = lipid_resample_set(iEdge);
+                std::vector<double> areas;
+                evaluate_face_subset(set, &areas);
+                lipid_resample_after_flip(set, areas,
+                                          slimed::splitmix64(attemptKey ^ 0x4C4950494453ULL));
+            }
+        }
         stats.accepted++;
         stats.deltaEnergy += delta.energy;
 

@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "energy_force/Patch_kernel.hpp"
 #include "mesh/Multi_extraordinary_patch.hpp"
@@ -122,9 +123,16 @@ double Mesh::face_regularization_energy(int iFace) const
     }
 }
 
-FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
+FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList,
+                                            std::vector<double> *faceAreas)
 {
     FaceSubsetEnergy result;
+    if (faceAreas != nullptr)
+    {
+        // One entry per face of the list, in its order; a face that carries
+        // no area (ghost, boundary, no patch) reads zero.
+        faceAreas->assign(faceList.size(), 0.0);
+    }
 
     // Built lazily, and not thread safe, so it happens before anything else.
     ensure_patch_rows_flat();
@@ -144,8 +152,9 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
     patchParams.vol = param.vol;
     patchParams.vol0 = param.vol0;
 
-    for (int iFace : faceList)
+    for (std::size_t k = 0; k < faceList.size(); k++)
     {
+        const int iFace = faceList[k];
         const Face &face = faces[iFace];
 
         // Whichever mesh-quality term the dynamics is actually integrating.
@@ -160,13 +169,24 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
         // Both run over every face, ghosts included, and every face's energy is
         // summed into the total. A flip never touches a ghost, so that only
         // ever matters for consistency.
-        result.regularization += param.edgeSpringEnabled ? face_tether_energy(iFace)
-                                                         : face_regularization_energy(iFace);
-        if (param.triangleShapeEnabled)
+        //
+        // Under hard walls the fluid term carries no energy at all -- the
+        // walls are constraints, checked by faces_satisfy_walls() -- which is
+        // what energy_force_fluid_terms() does on the whole mesh.
+        const bool hardWalls = walls_are_hard();
+        if (!param.edgeSpringEnabled)
+        {
+            result.regularization += face_regularization_energy(iFace);
+        }
+        else if (!hardWalls)
+        {
+            result.regularization += face_tether_energy(iFace);
+        }
+        if (param.triangleShapeEnabled && !hardWalls)
         {
             result.regularization += face_shape_energy(iFace);
         }
-        if (param.creaseWallEnabled)
+        if (param.creaseWallEnabled && !hardWalls)
         {
             result.regularization += face_crease_energy(iFace);
         }
@@ -278,6 +298,21 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList)
         {
             result.area += area;
             result.volume += volume;
+            if (faceAreas != nullptr)
+            {
+                (*faceAreas)[k] = area;
+            }
+            // Local lipid flow: the face's own stretching energy, at the
+            // area just integrated and the relaxed area it carries now.
+            if (lipid_flow_local() && !faceArea0.empty() && faceArea0[iFace] > 0.0)
+            {
+                const double modulusArea = lipid_modulus_area(iFace);
+                if (modulusArea > 0.0)
+                {
+                    const double excess = area - faceArea0[iFace];
+                    result.stretching += 0.5 * param.uSurf / modulusArea * excess * excess;
+                }
+            }
         }
     }
 
@@ -307,7 +342,16 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
         hadPatch[i] = faces[patch[i]].oneRingVertices.empty() ? 0 : 1;
     }
 
-    const FaceSubsetEnergy before = evaluate_face_subset(patch);
+    // Local lipid flow: the two retriangulated faces carry the relaxed areas
+    // the accepted flip would hand them, so the trial differences the energy
+    // the mesh would actually carry. Put back with the flip. Under flip
+    // resampling the per-face areas are needed as well (see below).
+    const bool localLipids = lipid_flow_local() && !faceArea0.empty();
+    const bool resampleLipids = localLipids && lipid_flip_resampling();
+    std::vector<double> areasBefore;
+    std::vector<double> areasAfter;
+    const FaceSubsetEnergy before =
+        evaluate_face_subset(patch, resampleLipids ? &areasBefore : nullptr);
 
     // The trial below flips and flips back, and each of those bumps
     // topologyVersion. That leaves the mesh exactly as it was but the version
@@ -319,6 +363,7 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
     // and on a fluid run most attempts are rejected. Put it back with the
     // mesh.
     const long long versionBeforeTrial = topologyVersion;
+    const MeshEdge edgeBeforeTrial = edges[iEdge];
     flip_edge(iEdge);
 
     // A face whose one-ring cannot be built carries no energy at all, and that
@@ -360,8 +405,39 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
         return false;
     }
 
-    const FaceSubsetEnergy after = evaluate_face_subset(patch);
+    // Hard walls: a flip that leaves one of its two new triangles outside a
+    // wall is an ordinary Metropolis rejection -- the forbidden state has
+    // zero weight -- so it is reported as admissible with an infinite energy
+    // and counted as an attempt. Only the two retriangulated faces can have
+    // changed: their five edges' lengths and creases, and their altitudes.
+    if (walls_are_hard())
+    {
+        const MeshEdge &flipped = edges[iEdge];
+        const std::vector<int> retriangulated = {flipped.face[0], flipped.face[1]};
+        if (!faces_satisfy_walls(retriangulated))
+        {
+            flip_edge(iEdge); // restore
+            topologyVersion = versionBeforeTrial;
+            delta.wallViolated = true;
+            delta.energy = std::numeric_limits<double>::infinity();
+            return true;
+        }
+    }
+
+    if (localLipids)
+    {
+        lipid_carry_after_flip(iEdge, edgeBeforeTrial);
+    }
+    const FaceSubsetEnergy after =
+        evaluate_face_subset(patch, resampleLipids ? &areasAfter : nullptr);
+    const MeshEdge edgeAfterTrial = edges[iEdge];
     flip_edge(iEdge); // restore
+    if (localLipids)
+    {
+        // The carry is an involution: carrying back through the reverse flip
+        // puts every value on the triangle it came from, bitwise.
+        lipid_carry_after_flip(iEdge, edgeAfterTrial);
+    }
     topologyVersion = versionBeforeTrial;
 
     delta.bending = after.bending - before.bending;
@@ -379,7 +455,30 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
     // param.area and param.vol are the totals as they stand now, which is what
     // the last Compute_Energy_And_Force() left there. A sweep that accepts
     // several flips has to keep them current between attempts.
-    if (param.isGlobalConstraint && param.area0 != 0.0)
+    if (resampleLipids)
+    {
+        // The compound move "flip, then redraw the set's relaxed areas at the
+        // new geometry" is accepted on the set's stretching energy minimised
+        // over its split -- the Gaussian normalisations cancel -- with the
+        // rest of the patch at the relaxed areas it carries.
+        const std::vector<int> pooled = lipid_resample_set(iEdge);
+        delta.areaConstraint = lipid_stretching_energy_with_pooled(patch, areasAfter, pooled) -
+                               lipid_stretching_energy_with_pooled(patch, areasBefore, pooled);
+    }
+    else if (localLipids)
+    {
+        // Local lipid flow: the area term is a sum over faces, already in
+        // the subset energies.
+        delta.areaConstraint = after.stretching - before.stretching;
+    }
+    else if (lipid_flow_global() && lipidAreaNormalization > 0.0)
+    {
+        // Global lipid flow: the same quadratic, normalised by the relaxed
+        // area as built rather than the one that moves.
+        delta.areaConstraint = param.uSurf / (2.0 * lipidAreaNormalization) * delta.area *
+                               (delta.area + 2.0 * (param.area - param.area0));
+    }
+    else if (param.isGlobalConstraint && param.area0 != 0.0)
     {
         delta.areaConstraint = param.uSurf / (2.0 * param.area0) * delta.area *
                                (delta.area + 2.0 * (param.area - param.area0));
