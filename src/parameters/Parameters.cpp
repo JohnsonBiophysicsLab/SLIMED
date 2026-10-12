@@ -83,6 +83,7 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "thermalFluctuationCoolingRate: " << param.thermalFluctuationCoolingRate << std::endl;
     os << "thermalFluctuationStepScale: " << param.thermalFluctuationStepScale << std::endl;
     os << "inPlaneDynamicsEnabled: " << param.inPlaneDynamicsEnabled << std::endl;
+    os << "meanHeightPinned: " << param.meanHeightPinned << std::endl;
     os << "edgeSpringEnabled: " << param.edgeSpringEnabled << std::endl;
     os << "edgeSpringConstant: " << param.edgeSpringConstant << std::endl;
     os << "edgeSpringRestLength: " << param.edgeSpringRestLength << std::endl;
@@ -133,6 +134,9 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "beadStopIteration: " << param.beadStopIteration << std::endl;
     os << "beadAdhesionEnergy: " << param.beadAdhesionEnergy << std::endl;
     os << "beadAdhesionRange: " << param.beadAdhesionRange << std::endl;
+    os << "beadPotential: " << param.beadPotential << std::endl;
+    os << "beadCaptureRange: " << param.beadCaptureRange << std::endl;
+    os << "beadBreakRange: " << param.beadBreakRange << std::endl;
     os << "elasticBoxEnabled: " << param.elasticBoxEnabled << std::endl;
     os << "elasticBoxTension: " << param.elasticBoxTension << std::endl;
     os << "elasticBoxMobility: " << param.elasticBoxMobility << std::endl;

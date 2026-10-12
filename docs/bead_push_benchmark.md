@@ -361,3 +361,74 @@ Reading the maps and profiles (`local_maps.png`, `local_profiles.png`,
   else, on both membranes; the largest values are at the neck (fluid) and
   at the funnel's rim (frozen).
 
+
+## 9. The sticky bead on a periodic sheet (`beadPotential = harmonic`)
+
+The wall of section 1 only pushes, and the well of section 5 holds the
+membrane on with a force that saturates at `1.5 w / delta`. A *sticky* bead
+is the other limit: once the membrane has touched it, it is bonded, and the
+bond is the full harmonic potential on both sides of the surface,
+
+    E = (k / 2) sum over bonded vertices (|x_i - c| - R)^2,   k = beadStiffness.
+
+A free vertex is bonded when it comes within `beadCaptureRange` of the
+sphere's surface, and a bond breaks when its vertex is farther than
+`beadBreakRange` from the surface -- never, when that is negative (the
+default), so the bead keeps what it touched. The two ranges give the bond
+hysteresis, so a vertex sitting at the capture distance does not flicker.
+The bonded set is state the step carries (`DynamicModel::beadBonded`),
+changed only in `refresh_bead_contact()`, which a flip never calls: like the
+wall the energy is a function of the control points alone and the Metropolis
+sweep stays exact. The bead log gains two columns, `bonded` and
+`maxStretch_nm` (the largest `d - R` among the bonded vertices outside the
+sphere). `beadAdhesionEnergy` is ignored under `harmonic`.
+`tests/test_bead.cpp` checks the keys, the force on both sides of the surface
+against `-dE/dz`, the capture, the persistence past the capture range, and
+the break.
+
+**Choose `k` from the capture energy, not from the wall.** At the wall's
+200 pN/nm a vertex captured 2.5 nm out is pulled with 500 pN, and a mesh that
+cannot rearrange is folded by it: with flips off the energy went non-finite
+at 53-82 us (reversed face normals from 47 us on, as the bead left the plane
+and the sheet had to neck), under every reservoir. `k = 20 pN/nm` makes the
+capture worth `k delta^2 / 2 = 62 pN.nm = 15 kT` per vertex -- the well of
+section 5 -- at a tenth of the force, and with 30-60 vertices sharing the
+bead's reaction the wall side still penetrates well under a nanometre.
+
+**A periodic sheet needs a pin.** Nothing holds a sheet periodic along both
+axes in z: a bead that pulls on it moves the whole tile at the total force
+over `N kT / D` (docs/elastic_box.md section 5, "unheld periodic sheet"), and
+a push of fixed length becomes a push of unknown depth. `meanHeightPinned =
+true` subtracts the mean vertical displacement of the integrated vertices
+from every one of them at each step: a uniform counter-force, which is what
+the surrounding membrane the tile stands for exerts, so the shape and the
+fluctuations are untouched and only the drift is removed (one Brownian mode
+of the tile). Off by default; tested on the periodic sheet with and without a
+bead.
+
+### 9.1 The matrix (`analysis/sticky_bead_runs.py`)
+
+A generated 130 nm sheet, which under `Mixed`/`Periodic` is a 100 x 104 nm
+tile of 480 free vertices; `kc = 83.4`, `K = 250` (the bilayer's modulus:
+the reservoir supplies the area, not stretch), the fluid mesh terms of
+section 4, the bead of `bead_push_fluid.params` with `beadPotential =
+harmonic`, `k = 20`, capture 2.5 nm, rising 35 nm in 70 us and holding 110 us
+(180 000 steps at `dt = 0.001`), frames every 0.2 us with `localOutput`.
+
+- Reservoir: **box** -- the elastic box at `tau = 0.5 pN/nm`, mobility 0.02
+  (docs/elastic_box.md); **s0global** -- `lipidFlowMode = global`, bulk
+  reservoir at 0.5 pN/nm, rate 20/us, thermal; **s0local** -- the per-face
+  relaxed area with tension-driven flow at the natural `D_sigma` and the same
+  bulk reservoir; **fixed** -- neither, one run as the control.
+- Fluidity: flips off (frozen), and `edgeFlipAttemptRate` 0.05, 0.5 and
+  5 per edge per us.
+
+13 runs, made on the cluster (`submit_array.sh`, 4 threads each) with the
+`-O3` OpenMP build; `analysis/sticky_bead_analysis.py --root DIR` writes the
+traces, the hold-phase relaxation fits, the bending-energy maps and ring
+profiles, the Fourier analysis of the hold phase, one animation per run and
+`stats.md`.
+
+### 9.2 Results
+
+(filled in below from the runs of 2026-10-12)

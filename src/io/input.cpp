@@ -840,6 +840,30 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "beadAdhesionRange set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("beadPotential") == 0)
+	{
+		param.beadPotential = variableValueStr;
+		std::cout << "beadPotential set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadCaptureRange") == 0)
+	{
+		param.beadCaptureRange = std::stod(variableValueStr);
+		std::cout << "beadCaptureRange set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("beadBreakRange") == 0)
+	{
+		param.beadBreakRange = std::stod(variableValueStr);
+		std::cout << "beadBreakRange set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("meanHeightPinned") == 0)
+	{
+		param.meanHeightPinned = (variableValueStr.compare("true") == 0);
+		std::cout << "meanHeightPinned set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("elasticBoxEnabled") == 0)
 	{
 		param.elasticBoxEnabled = (variableValueStr.compare("true") == 0);

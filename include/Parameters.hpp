@@ -380,6 +380,23 @@ struct Param
     bool inPlaneDynamicsEnabled = false;
 
     /**
+     * @brief Hold the mean height of the integrated vertices where it started.
+     *
+     * A sheet that is periodic along both axes is held by nothing in z: a
+     * bead that pushes on it, or pulls it, moves the whole sheet, at the
+     * speed the total force over N kT / D gives, and a push of fixed length
+     * is then a push of unknown depth. The surrounding membrane the tile
+     * stands for does hold it. With this on, the Brownian step subtracts the
+     * mean z displacement of the vertices it integrates, which is the same
+     * as spreading the opposite of the net vertical force evenly over them:
+     * a uniform counter-force, so the shape and the fluctuations of the
+     * tile are untouched and only the drift is removed. Off by default; it
+     * does nothing a clamped sheet can notice, and it changes a thermal
+     * periodic run by the one Brownian mode it removes.
+     */
+    bool meanHeightPinned = false;
+
+    /**
      * @brief Replace the reference-length regularization with an edge spring.
      *
      * The regularization term measures each face's edges against the same
@@ -746,6 +763,30 @@ struct Param
      */
     double beadAdhesionEnergy = 0.0;   ///< w, pN.nm per vertex
     double beadAdhesionRange = 2.0;    ///< delta, nm
+
+    /**
+     * @brief The shape of the bead's potential: "wall" or "harmonic".
+     *
+     * "wall" is the harmonic wall inside the sphere plus the adhesion well
+     * outside it, above: the bead only pushes, and the well is what holds
+     * the membrane on. "harmonic" makes the bead sticky. A vertex that comes
+     * within beadCaptureRange of the sphere's surface is bonded to it, and a
+     * bonded vertex feels the whole harmonic bond
+     *
+     *     E = (k / 2) (|x_i - c| - R)^2,   k = beadStiffness,
+     *
+     * which pushes it out when it is inside the sphere and pulls it back
+     * when it is outside -- the bead keeps what it touched. A bond breaks
+     * when its vertex is farther than beadBreakRange from the surface;
+     * negative, the default, never. The bonded set is state the step
+     * carries, changed only by refresh_bead_contact(), which a flip never
+     * calls: like the wall the energy is a function of the control points
+     * alone, so the flip sweep stays exact. beadAdhesionEnergy is ignored
+     * under "harmonic". See docs/bead_push_benchmark.md section 9.
+     */
+    std::string beadPotential = "wall";
+    double beadCaptureRange = 2.0; ///< nm outside the surface within which a vertex is bonded
+    double beadBreakRange = -1.0;  ///< nm outside the surface beyond which a bond breaks; negative = never
 
     /**
      * @name The elastic box (Param::elasticBox*)

@@ -364,7 +364,7 @@ TEST(BeadTest, TheLogHasAHeaderAndOneRowPerCall)
     ASSERT_EQ(lines.size(), 3u);
     EXPECT_EQ(lines[0],
               "iteration,time_us,centerX,centerY,centerZ,energy_pNnm,contacts,maxPenetration_nm,"
-              "forceOnBeadX,forceOnBeadY,forceOnBeadZ,adhesion_pNnm,adhered");
+              "forceOnBeadX,forceOnBeadY,forceOnBeadZ,adhesion_pNnm,adhered,bonded,maxStretch_nm");
 
     const auto fields = [](const std::string &line) {
         std::vector<double> out;
@@ -378,8 +378,8 @@ TEST(BeadTest, TheLogHasAHeaderAndOneRowPerCall)
     };
     const std::vector<double> first = fields(lines[1]);
     const std::vector<double> second = fields(lines[2]);
-    ASSERT_EQ(first.size(), 13u);
-    ASSERT_EQ(second.size(), 13u);
+    ASSERT_EQ(first.size(), 15u);
+    ASSERT_EQ(second.size(), 15u);
     EXPECT_DOUBLE_EQ(first[0], 0.0);
     EXPECT_DOUBLE_EQ(first[1], 0.0);
     EXPECT_NEAR(first[4], 5.0, 1e-9);
@@ -500,4 +500,291 @@ TEST(BeadTest, TheAdhesionWellPullsSmoothlyTowardTheBead)
     Param bad = param;
     bad.beadAdhesionRange = 0.0;
     EXPECT_THROW(BeadRun run(bad), std::runtime_error);
+}
+
+// ---------------------------------------------------------------------------
+// The sticky bead (beadPotential = harmonic) and the mean-height pin.
+// docs/bead_push_benchmark.md section 9.
+// ---------------------------------------------------------------------------
+
+namespace
+{
+
+/// A periodic 60 nm sheet under the per-vertex boundary, lifted to z = 10.
+void configure_periodic_sheet(Param &param)
+{
+    configure_clamped_sheet(param);
+    param.boundaryConditionX = BoundaryType::Periodic;
+    param.boundaryConditionY = BoundaryType::Periodic;
+}
+
+/// Mean height of the vertices the step integrates, on the control net.
+double mean_free_height(const DynamicMesh &mesh)
+{
+    double sum = 0.0;
+    int count = 0;
+    for (int v = 0; v < static_cast<int>(mesh.vertices.size()); v++)
+    {
+        const bool slaved = !mesh.isSlavedPeriodic.empty() && mesh.isSlavedPeriodic[v] != 0;
+        if (mesh.vertices[v].isGhost || slaved || mesh.vertices[v].is_fixed())
+        {
+            continue;
+        }
+        sum += mesh.vertices[v].coord(2, 0);
+        count++;
+    }
+    return sum / count;
+}
+
+} // namespace
+
+TEST(BeadTest, TheStickyParameterKeysParse)
+{
+    Param param;
+    EXPECT_EQ(param.beadPotential, "wall");
+    EXPECT_DOUBLE_EQ(param.beadCaptureRange, 2.0);
+    EXPECT_LT(param.beadBreakRange, 0.0);
+    EXPECT_FALSE(param.meanHeightPinned);
+    EXPECT_TRUE(import_kv_string("beadPotential", "harmonic", param));
+    EXPECT_EQ(param.beadPotential, "harmonic");
+    EXPECT_TRUE(import_kv_string("beadCaptureRange", "1.5", param));
+    EXPECT_DOUBLE_EQ(param.beadCaptureRange, 1.5);
+    EXPECT_TRUE(import_kv_string("beadBreakRange", "6", param));
+    EXPECT_DOUBLE_EQ(param.beadBreakRange, 6.0);
+    EXPECT_TRUE(import_kv_string("meanHeightPinned", "true", param));
+    EXPECT_TRUE(param.meanHeightPinned);
+
+    // An unknown shape is refused at setup, a negative capture range too.
+    Param bad;
+    configure_clamped_sheet(bad);
+    bad.beadEnabled = true;
+    bad.beadCenterZ = -30.0;
+    bad.beadPotential = "sticky";
+    EXPECT_THROW(BeadRun run(bad), std::runtime_error);
+    bad.beadPotential = "harmonic";
+    bad.beadCaptureRange = -1.0;
+    EXPECT_THROW(BeadRun run(bad), std::runtime_error);
+    bad.beadCaptureRange = 0.0;
+    EXPECT_NO_THROW(BeadRun run(bad));
+}
+
+/**
+ * @brief Under "harmonic" every free vertex within the capture range of the
+ * surface is bonded and feels -k (d - R) along the radius -- outward inside
+ * the sphere, inward outside it -- and nothing beyond the capture range is
+ * touched. The force is minus the gradient of the energy on both sides.
+ */
+TEST(BeadTest, TheHarmonicBondPushesInsideAndPullsOutside)
+{
+    Param param;
+    configure_clamped_sheet(param);
+    param.beadEnabled = true;
+    param.beadPotential = "harmonic";
+    param.beadRadius = 8.0;
+    param.beadStiffness = 150.0;
+    param.beadCaptureRange = 2.0;
+    param.beadAdhesionEnergy = 60.0; // ignored under harmonic
+    param.beadCenterX = 1.0;
+    param.beadCenterY = -1.5;
+    param.beadCenterZ = 10.0 - 8.0 + 3.0; // the sheet cuts the sphere 3 nm below its top
+    BeadRun run(param);
+    DynamicModel &model = *run.model;
+    const DynamicMesh &mesh = *run.mesh;
+    model.update_bead(0);
+
+    const std::array<double, 3> centre = {{1.0, -1.5, 5.0}};
+    int bonded = 0;
+    int inside = 0;
+    int pulled = 0;
+    double energy = 0.0;
+    int probeIn = -1;
+    int probeOut = -1;
+    for (int v = 0; v < static_cast<int>(mesh.vertices.size()); v++)
+    {
+        const Vertex &vertex = mesh.vertices[v];
+        const double d = distance_to(vertex, centre);
+        const bool bond = mesh.is_independent_vertex(v) && d <= 8.0 + 2.0;
+        EXPECT_EQ(model.beadBonded[v] != 0, bond) << v;
+        if (!bond)
+        {
+            EXPECT_EQ(model.beadForce(v, 0), 0.0) << v;
+            EXPECT_EQ(model.beadForce(v, 1), 0.0) << v;
+            EXPECT_EQ(model.beadForce(v, 2), 0.0) << v;
+            continue;
+        }
+        bonded++;
+        const double stretch = d - 8.0;
+        energy += 0.5 * 150.0 * stretch * stretch;
+        double radial = 0.0;
+        for (int axis = 0; axis < 3; axis++)
+        {
+            const double u = (vertex.coord(axis, 0) - centre[axis]) / d;
+            EXPECT_NEAR(model.beadForce(v, axis), -150.0 * stretch * u, 1e-9) << v << " " << axis;
+            radial += model.beadForce(v, axis) * u;
+        }
+        if (stretch < 0.0)
+        {
+            inside++;
+            EXPECT_GT(radial, 0.0) << v; // pushed out
+            probeIn = v;
+        }
+        else
+        {
+            pulled++;
+            EXPECT_LE(radial, 0.0) << v; // pulled in
+            probeOut = v;
+        }
+    }
+    EXPECT_GE(inside, 3);
+    EXPECT_GE(pulled, 3);
+    EXPECT_EQ(model.beadBondedCount, bonded);
+    EXPECT_EQ(model.beadAdhered, bonded);
+    EXPECT_EQ(model.beadContacts, inside);
+    EXPECT_NEAR(model.beadEnergy, energy, 1e-9);
+    EXPECT_DOUBLE_EQ(model.beadAdhesion, 0.0); // the well is not in force
+    EXPECT_GT(model.beadMaxStretch, 0.0);
+    EXPECT_LE(model.beadMaxStretch, 2.0 + 1e-12);
+
+    // -dE/dz by central difference, on a pushed and on a pulled vertex.
+    for (const int probeVertex : {probeIn, probeOut})
+    {
+        ASSERT_GE(probeVertex, 0);
+        Vertex &probe = run.mesh->vertices[probeVertex];
+        const double z0 = probe.coord(2, 0);
+        const double h = 1e-4;
+        probe.coord.set(2, 0, z0 + h);
+        model.refresh_bead_contact();
+        const double up = model.beadEnergy;
+        probe.coord.set(2, 0, z0 - h);
+        model.refresh_bead_contact();
+        const double down = model.beadEnergy;
+        probe.coord.set(2, 0, z0);
+        model.refresh_bead_contact();
+        EXPECT_NEAR(-(up - down) / (2.0 * h), model.beadForce(probeVertex, 2), 1e-5) << probeVertex;
+    }
+}
+
+/**
+ * @brief A bond, once made, outlives the contact: when the bead moves away
+ * the bonded vertices are still pulled, with the full stretch, until the
+ * break range (if any) is crossed. The two ranges give hysteresis.
+ */
+TEST(BeadTest, TheBondPersistsUntilTheBreakRange)
+{
+    Param param;
+    configure_clamped_sheet(param);
+    param.beadEnabled = true;
+    param.beadPotential = "harmonic";
+    param.beadRadius = 8.0;
+    param.beadStiffness = 100.0;
+    param.beadCaptureRange = 1.0;
+    param.beadBreakRange = 5.0;
+    param.beadCenterZ = 10.0 - 8.0 + 1.0; // the sheet cuts the sphere 1 nm below its top
+    BeadRun run(param);
+    DynamicModel &model = *run.model;
+    model.update_bead(0);
+    const int bondedAtContact = model.beadBondedCount;
+    ASSERT_GE(bondedAtContact, 1);
+
+    // Move the bead 3 nm down: every bonded vertex is now outside the
+    // capture range but inside the break range, and still bonded.
+    model.beadCenter[2] -= 3.0;
+    model.refresh_bead_contact();
+    EXPECT_EQ(model.beadBondedCount, bondedAtContact);
+    EXPECT_EQ(model.beadContacts, 0);
+    EXPECT_GT(model.beadMaxStretch, 1.0);
+    EXPECT_GT(model.beadReaction[2], 0.0); // the membrane above pulls the bead up
+    const double pullAt3 = model.beadReaction[2];
+    // 1 nm farther, the pull grows (a harmonic bond, not a saturating well).
+    model.beadCenter[2] -= 1.0;
+    model.refresh_bead_contact();
+    EXPECT_EQ(model.beadBondedCount, bondedAtContact);
+    EXPECT_GT(model.beadReaction[2], pullAt3);
+    // Past the break range every bond is gone and stays gone.
+    model.beadCenter[2] -= 10.0;
+    model.refresh_bead_contact();
+    EXPECT_EQ(model.beadBondedCount, 0);
+    EXPECT_DOUBLE_EQ(model.beadEnergy, 0.0);
+    model.beadCenter[2] += 10.0;
+    model.refresh_bead_contact();
+    EXPECT_EQ(model.beadBondedCount, 0);
+
+    // Without a break range the bond never breaks.
+    Param forever = param;
+    forever.beadBreakRange = -1.0;
+    BeadRun held(forever);
+    held.model->update_bead(0);
+    const int bondedForever = held.model->beadBondedCount;
+    held.model->beadCenter[2] -= 40.0;
+    held.model->refresh_bead_contact();
+    EXPECT_EQ(held.model->beadBondedCount, bondedForever);
+    EXPECT_GT(held.model->beadMaxStretch, 30.0);
+}
+
+/**
+ * @brief On a sheet periodic along both axes a bead drags the whole sheet;
+ * with the pin the mean height of the integrated vertices stays where it
+ * started, to round-off, while the bead still deforms the sheet.
+ */
+TEST(BeadTest, ThePinHoldsTheMeanHeightOfAPeriodicSheet)
+{
+    Param param;
+    configure_periodic_sheet(param);
+    param.beadEnabled = true;
+    param.beadRadius = 8.0;
+    param.beadStiffness = 200.0;
+    param.beadCenterZ = 10.0 - 8.0 + 3.0;
+
+    Param pinned = param;
+    pinned.meanHeightPinned = true;
+    BeadRun free(param);
+    BeadRun held(pinned);
+    const double start = mean_free_height(*held.mesh);
+    EXPECT_NEAR(start, 10.0, 1e-9);
+    for (int iteration = 0; iteration < 200; iteration++)
+    {
+        free.step(iteration);
+        held.step(iteration);
+    }
+    // The free sheet has been lifted by the bead; the pinned one has not.
+    EXPECT_GT(mean_free_height(*free.mesh) - 10.0, 0.05);
+    EXPECT_NEAR(mean_free_height(*held.mesh), 10.0, 1e-8);
+    // The pinned sheet is still deformed by the bead: the vertices over the
+    // bead sit above the mean, and the bead is still being pushed down.
+    held.model->refresh_bead_contact();
+    EXPECT_LT(held.model->beadReaction[2], 0.0);
+    double apex = -1e9;
+    for (int v = 0; v < static_cast<int>(held.mesh->vertices.size()); v++)
+    {
+        if (held.mesh->is_independent_vertex(v))
+        {
+            apex = std::max(apex, held.mesh->vertices[v].coord(2, 0));
+        }
+    }
+    EXPECT_GT(apex - 10.0, 1.0);
+    EXPECT_TRUE(std::isfinite(held.mesh->param.energy.energyTotal));
+
+    // The pin without a bead: the mean stays put and the sheet still
+    // fluctuates, so only the one drift mode is removed.
+    Param thermal;
+    configure_periodic_sheet(thermal);
+    thermal.meanHeightPinned = true;
+    BeadRun quiet(thermal);
+    for (int iteration = 0; iteration < 50; iteration++)
+    {
+        quiet.step(iteration);
+    }
+    EXPECT_NEAR(mean_free_height(*quiet.mesh), 10.0, 1e-8);
+    double spread = 0.0;
+    int count = 0;
+    for (int v = 0; v < static_cast<int>(quiet.mesh->vertices.size()); v++)
+    {
+        if (quiet.mesh->is_independent_vertex(v))
+        {
+            const double dz = quiet.mesh->vertices[v].coord(2, 0) - 10.0;
+            spread += dz * dz;
+            count++;
+        }
+    }
+    EXPECT_GT(std::sqrt(spread / count), 0.05);
 }

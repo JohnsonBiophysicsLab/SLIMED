@@ -365,6 +365,9 @@ public:
     double beadAdhesion = 0.0;                           ///< The adhesion energy at the last evaluation, pN.nm (zero or negative).
     int beadAdhered = 0;                                 ///< Vertices inside the sphere or its adhesion range.
     std::array<double, 3> beadReaction = {{0.0, 0.0, 0.0}}; ///< Force the membrane exerts on the bead: minus the sum of beadForce.
+    std::vector<unsigned char> beadBonded;               ///< beadPotential = harmonic: 1 for a vertex bonded to the bead, one entry per vertex.
+    int beadBondedCount = 0;                             ///< Bonded vertices at the last evaluation.
+    double beadMaxStretch = 0.0;                         ///< The largest d - R among the bonded vertices outside the sphere, nm.
 
     /**
      * @brief Allocate the force rows and check the bead's parameters.

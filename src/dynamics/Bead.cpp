@@ -26,9 +26,22 @@ void DynamicModel::setup_bead()
     beadAdhesion = 0.0;
     beadAdhered = 0;
     beadReaction = {{0.0, 0.0, 0.0}};
+    beadBonded.assign(mesh.vertices.size(), 0);
+    beadBondedCount = 0;
+    beadMaxStretch = 0.0;
     if (!param.beadEnabled)
     {
         return;
+    }
+    if (param.beadPotential != "wall" && param.beadPotential != "harmonic")
+    {
+        throw std::runtime_error("[DynamicModel::setup_bead] beadPotential must be \"wall\" or \"harmonic\"; got \"" +
+                                 param.beadPotential + "\"");
+    }
+    if (param.beadPotential == "harmonic" && !(param.beadCaptureRange >= 0.0))
+    {
+        throw std::runtime_error("[DynamicModel::setup_bead] beadCaptureRange must not be negative; got " +
+                                 std::to_string(param.beadCaptureRange));
     }
     if (!(param.beadRadius > 0.0))
     {
@@ -56,7 +69,21 @@ void DynamicModel::setup_bead()
                   << ", " << last[2] << ") nm";
     }
     std::cout << "." << std::endl;
-    if (param.beadAdhesionEnergy != 0.0)
+    if (param.beadPotential == "harmonic")
+    {
+        std::cout << "[DynamicModel] Sticky bead: a vertex within " << param.beadCaptureRange
+                  << " nm of the surface is bonded by the full harmonic bond (k / 2)(d - R)^2, and the bond ";
+        if (param.beadBreakRange < 0.0)
+        {
+            std::cout << "never breaks";
+        }
+        else
+        {
+            std::cout << "breaks beyond " << param.beadBreakRange << " nm";
+        }
+        std::cout << "; beadAdhesionEnergy is ignored." << std::endl;
+    }
+    else if (param.beadAdhesionEnergy != 0.0)
     {
         if (!(param.beadAdhesionRange > 0.0))
         {
@@ -100,8 +127,19 @@ void DynamicModel::refresh_bead_contact()
     beadAdhesion = 0.0;
     beadAdhered = 0;
     beadReaction = {{0.0, 0.0, 0.0}};
+    beadBondedCount = 0;
+    beadMaxStretch = 0.0;
     const double well = param.beadAdhesionEnergy;
     const double range = param.beadAdhesionRange;
+    const bool sticky = (param.beadPotential == "harmonic");
+    const double captureRange = param.beadCaptureRange;
+    const double breakRange = param.beadBreakRange;
+    if (beadBonded.size() != static_cast<std::size_t>(nVertices))
+    {
+        // A flip never changes the vertex count, but a mesh rebuilt between
+        // evaluations would; start those bonds from nothing.
+        beadBonded.assign(nVertices, 0);
+    }
     for (int i = 0; i < nVertices; i++)
     {
         beadForce.set(i, 0, 0.0);
@@ -122,6 +160,57 @@ void DynamicModel::refresh_bead_contact()
         const double dy = coord(1, 0) - beadCenter[1];
         const double dz = coord(2, 0) - beadCenter[2];
         const double d = std::sqrt(dx * dx + dy * dy + dz * dz);
+        if (sticky)
+        {
+            // The bond: formed inside the capture range, broken beyond the
+            // break range (never, when that is negative), and in between
+            // whatever it was -- hysteresis, so that a vertex sitting at the
+            // capture distance does not flicker.
+            if (d <= radius + captureRange)
+            {
+                beadBonded[i] = 1;
+            }
+            else if (breakRange >= 0.0 && d > radius + breakRange)
+            {
+                beadBonded[i] = 0;
+            }
+            if (beadBonded[i] == 0)
+            {
+                continue;
+            }
+            beadBondedCount++;
+            beadAdhered++;
+            // The whole harmonic bond, (k / 2)(d - R)^2: outward when the
+            // vertex is inside the sphere, inward when it is outside.
+            const double stretch = d - radius;
+            double ux = 0.0;
+            double uy = 0.0;
+            double uz = 1.0;
+            if (d > 1e-12)
+            {
+                ux = dx / d;
+                uy = dy / d;
+                uz = dz / d;
+            }
+            const double f = -stiffness * stretch;
+            beadForce.set(i, 0, f * ux);
+            beadForce.set(i, 1, f * uy);
+            beadForce.set(i, 2, f * uz);
+            beadEnergy += 0.5 * stiffness * stretch * stretch;
+            beadReaction[0] -= f * ux;
+            beadReaction[1] -= f * uy;
+            beadReaction[2] -= f * uz;
+            if (stretch < 0.0)
+            {
+                beadContacts++;
+                beadMaxPenetration = std::max(beadMaxPenetration, -stretch);
+            }
+            else
+            {
+                beadMaxStretch = std::max(beadMaxStretch, stretch);
+            }
+            continue;
+        }
         if (d >= radius)
         {
             // Outside the wall: the adhesion well, if there is one. A smooth
@@ -185,11 +274,12 @@ void DynamicModel::append_bead_log(const std::string &filepath, int iteration)
     if (!beadLogHeaderWritten)
     {
         out << "iteration,time_us,centerX,centerY,centerZ,energy_pNnm,contacts,maxPenetration_nm,"
-               "forceOnBeadX,forceOnBeadY,forceOnBeadZ,adhesion_pNnm,adhered\n";
+               "forceOnBeadX,forceOnBeadY,forceOnBeadZ,adhesion_pNnm,adhered,bonded,maxStretch_nm\n";
         beadLogHeaderWritten = true;
     }
     out << iteration << ',' << std::setprecision(10) << iteration * mesh.param.timeStep << ','
         << beadCenter[0] << ',' << beadCenter[1] << ',' << beadCenter[2] << ',' << beadEnergy << ','
         << beadContacts << ',' << beadMaxPenetration << ',' << beadReaction[0] << ','
-        << beadReaction[1] << ',' << beadReaction[2] << ',' << beadAdhesion << ',' << beadAdhered << '\n';
+        << beadReaction[1] << ',' << beadReaction[2] << ',' << beadAdhesion << ',' << beadAdhered << ','
+        << beadBondedCount << ',' << beadMaxStretch << '\n';
 }

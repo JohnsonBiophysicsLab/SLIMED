@@ -1,6 +1,7 @@
 #include "Dynamics.hpp"
 
 #include <cstdint>
+#include <vector>
 
 #include "Counter_rng.hpp"
 
@@ -165,6 +166,31 @@ void DynamicModel::next_step()
         splitmix64(static_cast<std::uint64_t>(randomSeed)) +
         static_cast<std::uint64_t>(this->iteration);
 
+    // The vertices the loop below integrates, and their mean height before
+    // the step, for the pin: see Param::meanHeightPinned.
+    const bool pinMean = mesh.param.meanHeightPinned;
+    std::vector<int> integrated;
+    double meanHeightBefore = 0.0;
+    if (pinMean)
+    {
+        const bool mixedBC = (mesh.param.boundaryCondition == BoundaryType::Mixed);
+        for (int i = 0; i < static_cast<int>(mesh.vertices.size()); i++)
+        {
+            const bool slaved = (mixedBC || !mesh.param.integratePeriodicDuplicates) &&
+                                !mesh.isSlavedPeriodic.empty() && mesh.isSlavedPeriodic[i] != 0;
+            if (mesh.vertices[i].isGhost || slaved || mesh.vertices[i].is_fixed())
+            {
+                continue;
+            }
+            integrated.push_back(i);
+            meanHeightBefore += mesh.matSurface(i, 2);
+        }
+        if (!integrated.empty())
+        {
+            meanHeightBefore /= static_cast<double>(integrated.size());
+        }
+    }
+
 #pragma omp parallel for shared(mesh) schedule(static)
     for (int i = 0; i < mesh.vertices.size(); i++)
     {   
@@ -303,6 +329,25 @@ void DynamicModel::next_step()
                 }
                 
             }
+        }
+    }
+    // The pin: take the mean vertical displacement of the step back off
+    // every integrated vertex. A uniform shift of the surface points is a
+    // uniform shift of the control points (the limit mask's rows sum to
+    // one), so the shape is untouched; the images and ghosts follow their
+    // sources in postprocess_boundary().
+    if (pinMean && !integrated.empty())
+    {
+        double meanHeightAfter = 0.0;
+        for (const int i : integrated)
+        {
+            meanHeightAfter += mesh.matSurface(i, 2);
+        }
+        meanHeightAfter /= static_cast<double>(integrated.size());
+        const double drift = meanHeightAfter - meanHeightBefore;
+        for (const int i : integrated)
+        {
+            mesh.matSurface.set(i, 2, mesh.matSurface(i, 2) - drift);
         }
     }
     //rsc = 0.04472135955 for ts = 0.001
