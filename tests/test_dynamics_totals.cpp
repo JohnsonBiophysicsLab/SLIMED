@@ -212,9 +212,9 @@ TEST(DynamicsTotalsTest, ASolidRunLeavesTheRegularizationOutOfItsTotals)
 /**
  * The measurement that found this, as a test: two runs that differ only in
  * the reference configuration the regularization measures against. The
- * trajectories are the same to the last bit, so everything that claims to
- * describe the sampled Hamiltonian has to be too, up to the order in which
- * an OpenMP reduction happens to add it up.
+ * trajectories are the same (to the last bit in the serial build, to the
+ * order of an OpenMP reduction otherwise), so everything that claims to
+ * describe the sampled Hamiltonian has to be too.
  */
 TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
 {
@@ -243,6 +243,8 @@ TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
         << "the two references give the same regularization; the test would pass vacuously";
 
     const int nSteps = 20;
+    const double kCoordinateTolerance = 1e-9; // nm
+    const double kRelativeTolerance = 1e-9;
     Record recordA(nSteps + 1);
     Record recordB(nSteps + 1);
     recordA.add(meshA.param.area, meshA.param.energy, meshA.calculate_mean_force());
@@ -259,25 +261,30 @@ TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
         step(meshA, modelA, recordA);
         step(meshB, modelB, recordB);
 
+        // In the serial build the two trajectories are the same to the last
+        // bit. In the OpenMP build they are not quite: the membrane area that
+        // the global area constraint acts on is an OpenMP reduction, whose
+        // order varies from one call to the next, and that last-bit noise
+        // reaches every force and so every coordinate (about 1e-13 nm a
+        // step). The tolerances are set where that noise cannot reach and
+        // the regularization force could not hide: with the reference
+        // stretched by a tenth it would move a vertex by ~1e-3 nm a step and
+        // shift the totals by more than 1 pN.nm (the assertion before the
+        // loop), against 1e-9 nm and 1e-9 relative here.
         for (std::size_t v = 0; v < meshA.vertices.size(); v++)
         {
             for (int axis = 0; axis < 3; axis++)
             {
-                ASSERT_EQ(meshA.vertices[v].coord.get(axis, 0), meshB.vertices[v].coord.get(axis, 0))
+                ASSERT_NEAR(meshA.vertices[v].coord.get(axis, 0), meshB.vertices[v].coord.get(axis, 0),
+                            kCoordinateTolerance)
                     << "the trajectories part at step " << iteration << ", vertex " << v;
             }
         }
-        // The two totals are sums over the mesh, and in the OpenMP build the
-        // order of a reduction varies from one call to the next, so two equal
-        // fields sum to values a few ulp apart. The coordinates above are
-        // compared exactly; the sums get 1e-12 relative, which is nothing
-        // next to the difference the unsampled term would make (more than
-        // 1 pN.nm, by the assertion before the loop).
         EXPECT_NEAR(meshA.param.energy.energyTotal, meshB.param.energy.energyTotal,
-                    1e-12 * std::abs(meshA.param.energy.energyTotal))
+                    kRelativeTolerance * std::abs(meshA.param.energy.energyTotal))
             << "step " << iteration;
         const double meanForceA = meshA.calculate_mean_force();
-        EXPECT_NEAR(meanForceA, meshB.calculate_mean_force(), 1e-12 * meanForceA)
+        EXPECT_NEAR(meanForceA, meshB.calculate_mean_force(), kRelativeTolerance * meanForceA)
             << "step " << iteration;
         EXPECT_NE(meshA.param.energy.energyRegularization, meshB.param.energy.energyRegularization)
             << "step " << iteration;
@@ -286,9 +293,11 @@ TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
     for (std::size_t row = 0; row < recordA.energyVec.size(); row++)
     {
         EXPECT_NEAR(recordA.energyVec[row].energyTotal, recordB.energyVec[row].energyTotal,
-                    1e-12 * std::abs(recordA.energyVec[row].energyTotal))
+                    kRelativeTolerance * std::abs(recordA.energyVec[row].energyTotal))
             << row;
-        EXPECT_NEAR(recordA.meanForce[row], recordB.meanForce[row], 1e-12 * recordA.meanForce[row]) << row;
+        EXPECT_NEAR(recordA.meanForce[row], recordB.meanForce[row],
+                    kRelativeTolerance * recordA.meanForce[row])
+            << row;
     }
 }
 
