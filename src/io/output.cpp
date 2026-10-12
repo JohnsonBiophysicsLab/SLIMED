@@ -89,12 +89,28 @@ void write_vertex_data_to_csv(const Mesh &mesh, const int iteration)
     outfile.close();
 }
 
+std::string energy_force_csv_header(bool regularizationInTotals)
+{
+    // No comma inside the label: the readers of this file split the header
+    // the same way they split the rows.
+    const char *const regularizationLabel =
+        regularizationInTotals ? "E_Regularization"
+                               : "E_Regularization (diagnostic; not in E_Total or Mean Force)";
+    return std::string("E_Curvature, E_Area, ") + regularizationLabel +
+           ", E_HarmonicBond, E_GagScaffolding, E_IdealizedProteinLattice, E_Total ((pN.nm)), Mean Force (pN)";
+}
+
 /**
  * @brief Writes the energy force data to a CSV file.
  *
  * This function writes the energy and force data for each iteration in the following format:
  *
  * "E_Curvature, E_Area, E_Regularization, E_Total ((pN.nm)), Mean Force (pN)"
+ *
+ * When the run did not sample the regularization (Mesh::regularizationInTotals
+ * is false: a Brownian run with the edge spring off) the third column is a
+ * diagnostic that E_Total and Mean Force leave out, and its header says so.
+ * The columns keep their number and order either way.
  *
  * @note File name is left in definition in case customization is needed.
  *
@@ -109,7 +125,7 @@ void write_energy_force_data_to_csv(const Model &model)
     {
         if (j == 0)
         {
-            outfileEF << "E_Curvature, E_Area, E_Regularization, E_HarmonicBond, E_GagScaffolding, E_IdealizedProteinLattice, E_Total ((pN.nm)), Mean Force (pN)" << '\n';
+            outfileEF << energy_force_csv_header(model.mesh.regularizationInTotals) << '\n';
         }
         outfileEF << model.record.energyVec[j].energyCurvature << ", "
                   << model.record.energyVec[j].energyArea << ", "

@@ -36,7 +36,7 @@ Force::Force(const Force &force) : forceCurvature(force.forceCurvature),
  * @brief Set forceTotal to the sum of 7 force components.
  * @return gsl_matrix of calculated total force.
  */
-Matrix &Force::calculate_total_force()
+Matrix &Force::calculate_total_force(bool includeRegularization)
 {
     // zero the total force
     forceTotal.set_all(0);
@@ -47,7 +47,10 @@ Matrix &Force::calculate_total_force()
     forceTotal += forceVolume;
     forceTotal += forceThickness;
     forceTotal += forceTilt;
-    forceTotal += forceRegularization;
+    if (includeRegularization)
+    {
+        forceTotal += forceRegularization;
+    }
     forceTotal += forceHarmonicBond;
 
     return forceTotal;

@@ -1390,8 +1390,10 @@ two-parameter fit lands above the solid's — κ_c 94 (wall 0.7) and 76 (wall
 0.8) on the whole trajectory against the solid's 59, with block errors of
 ±10–16 that cannot tell the input 83 from the solid's 57 — where the frozen
 `fluid_c` had agreed with the solid. Mode by mode the fluid has more power
-at the longest wavelengths, in the order of in-plane stiffness (solid,
-frozen, 0.8, 0.7: less resistance in plane, more long-wavelength power) and
+at the longest wavelengths, in the order of in-plane freedom (solid,
+frozen, 0.8, 0.7: less held in plane, more long-wavelength power; the solid
+is held by having its in-plane motion switched off, not by its
+reference-length term, which is not in its drive) and
 10% less at the shortest in the window (the mesh scale). Neither spectrum
 is a Helfrich one with a single tension. The altitude floor and overhangs
 were checked and are not involved. Not settled; `fluidity_results.md`

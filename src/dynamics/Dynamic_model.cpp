@@ -137,6 +137,10 @@ void DynamicModel::next_step()
                 // act on anyway. The edge spring is a real part of the
                 // Hamiltonian the flip sweep samples, so leaving it out of the
                 // dynamics would make the two disagree about the energy.
+                //
+                // The logged E_Total and mean force follow this choice: see
+                // Mesh::regularizationInTotals, which DynamicMesh sets from
+                // the same flag.
                 double f = mesh.vertices[i].force.forceCurvature(j, 0) +
                            mesh.vertices[i].force.forceArea(j, 0);
                 if (mesh.param.edgeSpringEnabled)

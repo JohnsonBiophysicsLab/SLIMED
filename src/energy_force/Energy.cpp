@@ -28,10 +28,19 @@ Energy::Energy(const Energy& energy):
 {
 }
 
-double Energy::calculateTotalEnergy() {
-    energyTotal = energyCurvature + energyArea + energyVolume + energyThickness
-                + energyTilt + energyRegularization + energyHarmonicBond
-                + energyGagScaffolding + energyIdealizedProteinLattice;
+double Energy::calculateTotalEnergy(bool includeRegularization) {
+    // Two expressions rather than one with a zeroed term: the sum with the
+    // regularization in it is the one every existing output was written
+    // with, and it keeps its order of additions.
+    if (includeRegularization) {
+        energyTotal = energyCurvature + energyArea + energyVolume + energyThickness
+                    + energyTilt + energyRegularization + energyHarmonicBond
+                    + energyGagScaffolding + energyIdealizedProteinLattice;
+    } else {
+        energyTotal = energyCurvature + energyArea + energyVolume + energyThickness
+                    + energyTilt + energyHarmonicBond
+                    + energyGagScaffolding + energyIdealizedProteinLattice;
+    }
     return energyTotal;
 }
 

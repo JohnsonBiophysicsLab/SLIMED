@@ -657,16 +657,40 @@ the spectrum's curvature puts it: the solid's a third below the input, as
 the solid notebook found for its own tension run and as the frozen
 `fluid_c` -- a solid -- repeated; the fluid's above the solid's, by an
 amount that grows as the wall drops. That order is the order of in-plane
-stiffness -- the solid with its reference lengths, then `fluid_c` pressing
-473 pN.nm per frame into its lower wall, then `fluid_f` at 206 and
-`fluid_e` at 103 -- and the less a sheet's vertices resist in plane, the
-more long-wavelength power it has. That is what a sheet without in-plane
-stiffness should have: a polymerized membrane's bending is renormalised
-upward at long wavelength by its shear modulus, a fluid one's is not, and
-the fit reads the difference as a lower tension with a higher `kc`. At the
-shortest wavelengths in the window the fluid has 10% less power, and 27%
-less beyond it, on a triangulation whose vertices are 60% extraordinary and
-whose edges run from 3 to 9 nm -- the mesh scale, not the membrane.
+freedom -- the solid, whose vertices do not move in the plane at all, then
+`fluid_c` pressing 473 pN.nm per frame into its lower wall, then `fluid_f`
+at 206 and `fluid_e` at 103 -- and the less a sheet's vertices are held in
+plane, the more long-wavelength power it has. Among the three tethered runs
+that is what a loss of in-plane stiffness should do: a polymerized
+membrane's bending is renormalised upward at long wavelength by its shear
+modulus, a fluid one's is not, and the fit reads the difference as a lower
+tension with a higher `kc`. At the shortest wavelengths in the window the
+fluid has 10% less power, and 27% less beyond it, on a triangulation whose
+vertices are 60% extraordinary and whose edges run from 3 to 9 nm -- the
+mesh scale, not the membrane.
+
+*What holds the solid in plane* (corrected 2026-10-01; this paragraph used
+to say "the solid with its reference lengths"). It is not the
+reference-length regularization. `DynamicModel::next_step()` drives a run
+with `edgeSpringEnabled = false` by the bending and area forces alone, so
+that term is evaluated and logged and never reaches the trajectory: three
+3000-step runs of the 100 nm sheet with it scaled by 0, 1 and 25 wrote
+byte-identical `meshpoint`, `surfacepoint` and vertex files. The solid's
+in-plane rigidity is a constraint, not an energy -- `inPlaneDynamicsEnabled
+= false` zeroes the x and y displacement, every vertex stays on its lattice
+site, and the sheet is a height field over a fixed lattice. So the solid
+does not sit on the same axis as the other three: they differ from each
+other in how hard a term of their Hamiltonian presses, and from the solid
+in having in-plane degrees of freedom at all. The solid has no shear
+modulus in what it samples for the renormalisation argument to act
+through, and its place at the head of the order is an observation that the
+argument does not yet explain. (The same went for its logged totals:
+`E_Total` and `Mean Force` in the solid runs' `EnergyForce.csv` included
+the regularization -- 978 pN.nm against a bending energy of 505 in
+`pure_a`, 599 against 452 in `tension` -- until the totals were made to
+follow the drive. In a solid run `E_Regularization` is now a diagnostic
+column that the two totals leave out; the fluid runs, whose tether, shape
+term and crease wall are in the drive, log what they always did.)
 
 Two things that were suspected and are not it: the altitude floor, which is
 live on the same 5% of interior faces in `fluid_c` (4.6%, 29 pN.nm in it
@@ -687,14 +711,24 @@ periodic images.
 two-parameter fit above the solid's (94 and 76 against 59 on the whole
 trajectory) with block errors of +-10-16 pN.nm that cannot tell the input
 83 from the solid's 57, and the difference sits at the two ends of the
-window. The tests are a solid run at `muS = 250` with its reference-length
-regularization weakened (if the long-wavelength deficit is the shear
-modulus renormalising `kc`, it goes), a fluid run at `muS = 500` (the fitted
-tension should double and `kc` stay), a finer mesh (`lFace = 2.5`, pushing
-the mesh scale out of the window, for the 10%), and length: the block error
-falls as the square root of the time, so four runs of 400 us at each wall
-would bring +-16 to +-8. Until then the fluid `kc` is a 400 us number with
-its prefixes still moving (99.6, 96.8, 94.1 at 0.7; 79.1, 78.1, 75.6 at 0.8).
+window. The tests are a fixed-connectivity run at `muS = 250` with the
+fluid's Hamiltonian (`edgeFlipEnabled = false`, everything else as
+`fluid_e` or `fluid_f`: in-plane motion on, the tether at the same wall --
+a tethered sheet with a shear modulus, where the frozen `fluid_c` was one
+only by accident of its packing; if the long-wavelength deficit is the
+shear modulus renormalising `kc`, it is there and not in the fluid run
+beside it), a fluid run at `muS = 500` (the fitted tension should double
+and `kc` stay), a finer mesh (`lFace = 2.5`, pushing the mesh scale out of
+the window, for the 10%), and length: the block error falls as the square
+root of the time, so four runs of 400 us at each wall would bring +-16 to
++-8. Until then the fluid `kc` is a 400 us number with its prefixes still
+moving (99.6, 96.8, 94.1 at 0.7; 79.1, 78.1, 75.6 at 0.8).
+
+The first of those replaces a test that could not have shown anything: "a
+solid run with its reference-length regularization weakened". That term is
+not in the solid run's drive (section 11), so weakening it changes the
+`E_Regularization` column and leaves the trajectory, and with it the
+spectrum, identical to the last byte.
 
 **The default lower wall.** `edgeTetherMinRatio` stays at 0.95 in
 `Parameters.hpp` -- the value at which a run at conserved area freezes --

@@ -64,9 +64,13 @@ public:
 
     /**
      * @brief Set forceTotal to the sum of 7 force components.
+     *
+     * @param includeRegularization Whether forceRegularization is one of
+     * them. It is everywhere except a Brownian run whose drive leaves that
+     * slot out; see Mesh::regularizationInTotals.
      * @return gsl_matrix of calculated total force.
      */
-    Matrix &calculate_total_force();
+    Matrix &calculate_total_force(bool includeRegularization = true);
 
     /**
      * @brief Reset all force components to zero without reallocating matrices.

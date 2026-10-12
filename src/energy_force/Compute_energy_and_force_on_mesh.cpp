@@ -507,10 +507,15 @@ void Mesh::Compute_Energy_And_Force()
     // Step 4.
     // Summing up energy and force
     // On each vertex, the total Force is the sum of internal, constraint and regularization Force.
+    //
+    // The regularization slot is left out of both totals when the run does
+    // not sample it -- a Brownian run with the edge spring off; see
+    // regularizationInTotals. The slot itself is written either way.
+    const bool includeRegularization = regularizationInTotals;
 #pragma omp parallel for
     for (Vertex &vertex : vertices)
     {
-        vertex.force.calculate_total_force();
+        vertex.force.calculate_total_force(includeRegularization);
         //std::cout << "F@v = " << vertex.index << "," << vertex.force.forceTotal.get(2,0)<< std::endl;
     }
 
@@ -519,7 +524,7 @@ void Mesh::Compute_Energy_And_Force()
 //#pragma omp parallel for
     for (Face &face : faces)
     {
-        face.energy.calculateTotalEnergy();
+        face.energy.calculateTotalEnergy(includeRegularization);
         sumEnergy += face.energy;
     }
 
@@ -554,7 +559,7 @@ void Mesh::Compute_Energy_And_Force()
     {
         sumEnergy.energyVolume = 0.5 * param.uVol / param.vol0 * pow(param.vol - param.vol0, 2.0);
     }
-    sumEnergy.calculateTotalEnergy();
+    sumEnergy.calculateTotalEnergy(includeRegularization);
     param.energy = sumEnergy;
 
     // Step 7. Calculate scaffolding energy
@@ -566,7 +571,7 @@ void Mesh::Compute_Energy_And_Force()
         param.energy.energyHarmonicBond = scaffoldingEnergyTotal
                                         - param.energy.energyGagScaffolding
                                         - param.energy.energyIdealizedProteinLattice;
-        param.energy.calculateTotalEnergy();
+        param.energy.calculateTotalEnergy(includeRegularization);
     }
 
     // The elastic box's generalized force: the virial of the raw forces,
