@@ -1,5 +1,6 @@
 #include "io/io.hpp"
 #include <cctype>
+#include <cmath>
 
 using namespace std;
 
@@ -208,6 +209,43 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		param.deltaForceScaleConverge = std::stod(variableValueStr);
 		std::cout << "deltaForceScaleConverge set to: " << variableValueStr
 				  << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("usingRpi") == 0)
+	{
+		// Validated, like forceBackend: this switches which energy the
+		// regularization is, so "True" must not quietly mean false.
+		if (variableValueStr.compare("true") != 0 && variableValueStr.compare("false") != 0)
+		{
+			throw std::runtime_error("[read_param_file] usingRpi must be true or false; got '" +
+									 variableValueStr + "'");
+		}
+		param.usingRpi = (variableValueStr.compare("true") == 0);
+		std::cout << "usingRpi set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("gamaShape") == 0 ||
+			 variableNameStr.compare("gamaArea") == 0)
+	{
+		// The R-pi thresholds. Zero is legal (every face that deviates at all
+		// is in the adaptive case); a negative or non-finite threshold is not
+		// a threshold.
+		const double threshold = std::stod(variableValueStr);
+		if (!std::isfinite(threshold) || threshold < 0.0)
+		{
+			throw std::runtime_error("[read_param_file] " + variableNameStr +
+									 " must be a finite number >= 0; got '" +
+									 variableValueStr + "'");
+		}
+		if (variableNameStr.compare("gamaShape") == 0)
+		{
+			param.gamaShape = threshold;
+		}
+		else
+		{
+			param.gamaArea = threshold;
+		}
+		std::cout << variableNameStr << " set to: " << variableValueStr << std::endl;
 		return true;
 	}
 	else if (variableNameStr.compare("sideX") == 0)

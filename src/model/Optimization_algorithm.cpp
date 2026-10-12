@@ -4,7 +4,6 @@
  * @brief Constructor for the OptimizationAlgorithm class.
  *
  * Initializes an instance of the OptimizationAlgorithm class with default settings.
- * Sets usingNCG to true, isNCGstuck to false, and usingRpi to true.
  */
 OptimizationAlgorithm::OptimizationAlgorithm()
 {
@@ -15,7 +14,6 @@ OptimizationAlgorithm::OptimizationAlgorithm()
  *
  * Initializes an instance of the OptimizationAlgorithm class with default settings.
  * Customize iteration interval, c1, c2, and step threshold.
- * Sets usingNCG to true, isNCGstuck to false, and usingRpi to true.
  */
 OptimizationAlgorithm::OptimizationAlgorithm(const int trialIterationInterval,
                                              const double c1,
@@ -27,15 +25,14 @@ OptimizationAlgorithm::OptimizationAlgorithm(const int trialIterationInterval,
 {
 }
 
-/** @brief Reset NCG and Rpi to default.
+/** @brief Clear the stuck flag before a new line search.
  *
- * Sets usingNCG to true, isNCGstuck to false, and usingRpi to true.
+ * Sets isNCGstuck to false. usingNCG is left as it is.
  */
-void OptimizationAlgorithm::reset_NCG_Rpi()
+void OptimizationAlgorithm::reset_NCG_stuck()
 {
     //usingNCG = true;
     isNCGstuck = false;
-    usingRpi = true;
 }
 
 /**

@@ -32,7 +32,7 @@ double Model::linear_search_for_stepsize_to_minimize_energy()
     double ncgFactor = 0.0;
 //if (ROWOUTPUT)cout << "R32" << endl;
     // Reset flags and variables for NCG optimization
-    oa.reset_NCG_Rpi();
+    oa.reset_NCG_stuck();
 
     // Start the line search loop until the criteria is satisfied or the step size falls below a threshold
     while (true)
@@ -70,9 +70,16 @@ double Model::linear_search_for_stepsize_to_minimize_energy()
 
                 // Reinitialize variables for simple line search
                 this->stepSize = oa.trialStepSize;
+                // Refreshing the reference is the whole fallback: every face
+                // in the reference-length case then starts the retry with no
+                // regularization energy and no regularization force. The R-pi
+                // adaptive cases (Param::usingRpi) stay as configured. Turning
+                // them off here and back on for the next search would make
+                // that search compare the energy it starts from and the
+                // energies it evaluates under two different functions, and
+                // where any face is in an adaptive case no step passes that.
                 mesh.update_reference_coord_from_previous_coord();
                 oa.isNCGstuck = true;
-                oa.usingRpi = false;
 //if (ROWOUTPUT)cout << "R73" << endl;
                 // Change ncgDirection0 to nodal force in parallel
                 #pragma omp parallel for

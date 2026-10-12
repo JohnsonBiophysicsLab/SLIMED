@@ -105,6 +105,27 @@ fdtConsistentSurfaceUpdate = true
 integratePeriodicDuplicates = false
 
 ############################################
+## Mesh Regularization
+############################################
+
+# The regularization keeps the triangles well shaped. It is a spring on every
+# triangle side, with the bending modulus kcMembraneBending as its stiffness,
+# and each face is in one of three cases:
+#   - its side lengths scatter by more than gamaShape (the sum of their squared
+#     deviations from their mean, over the mean squared): springs towards the
+#     equilateral triangle of the face's current area;
+#   - otherwise, its area is off its reference area by the fraction gamaArea or
+#     more: springs towards the equilateral triangle of the reference area;
+#   - otherwise: springs towards the face's reference side lengths. The
+#     minimizer refreshes the reference as it goes, so this case fades to zero.
+# usingRpi = false turns the first two (the R-pi adaptive cases) off and leaves
+# every face in the third. The values below are the defaults. None of this is
+# used when edgeSpringEnabled = true: the edge tether replaces the term.
+usingRpi = true                 # true to use the R-pi adaptive cases
+gamaShape = 0.2                 # shape threshold of the adaptive cases
+gamaArea = 0.2                  # area threshold of the adaptive cases
+
+############################################
 ## Insertion Mode
 ############################################
 
