@@ -316,6 +316,15 @@ Measured on the ribbon, 1000 steps at `timeStep = 0.001`:
 | without the tether | 16.1 nm | 87.8 pN | 37 984 pN·nm |
 | with the flat tether | 8.6 nm | 4.7 pN | 0 |
 
+(The first row's mean force was logged when `EnergyForce.csv` still summed
+the regularization force into `Mean Force` and its energy into `E_Total`,
+whether or not the run was driven by it: the 87.8 pN is that term reporting
+the stretched rim, not a force the vertices felt. The totals now follow the
+drive, and the same run -- the same trajectory, byte for byte -- logs a
+mean force of 4.8 pN. With the edge spring off the `E_Regularization`
+column is a diagnostic, labelled as one in the header; it and the edge
+lengths are what show the runaway, and the mean force no longer does.)
+
 The flat tether is exactly zero inside `[0.95, 1.75] * lFace`, so it does not
 change the membrane being sampled; it only forbids the runaway. With in-plane
 motion off a lattice edge is 5 nm across in the plane, so the upper wall caps

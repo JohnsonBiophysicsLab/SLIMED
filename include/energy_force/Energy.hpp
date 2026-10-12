@@ -54,9 +54,13 @@ public:
 
     /**
      * @brief Set energyTotal to the sum of energy components.
+     *
+     * @param includeRegularization Whether energyRegularization is one of
+     * them. It is everywhere except a Brownian run whose drive leaves that
+     * slot out; see Mesh::regularizationInTotals.
      * @return Calculated total energy.
      */
-    double calculateTotalEnergy();
+    double calculateTotalEnergy(bool includeRegularization = true);
 
     /**
      * @brief Overrides the operator << in ostream. Outputs

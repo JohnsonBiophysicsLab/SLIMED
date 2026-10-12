@@ -92,6 +92,16 @@ void DynamicMesh::finish_dynamic_setup()
             "Param::triangleShapeEnabled.");
     }
 
+    // The totals this mesh reports follow the drive. DynamicModel::next_step()
+    // takes the regularization slot into the Brownian step only when the edge
+    // spring is on -- the checks above guarantee that what sits in the slot
+    // then is the fluid term, all of it. With the spring off the slot holds
+    // the reference-length regularization, which next_step() leaves out, and
+    // which used to be added to E_Total and the mean force all the same: two
+    // thirds of the logged total energy of a 100 nm solid run was a term the
+    // trajectory never felt. It stays in its own column as a diagnostic.
+    regularizationInTotals = param.edgeSpringEnabled;
+
     if (param.edgeFlipEnabled)
     {
         report_edge_flip_feasibility();

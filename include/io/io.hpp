@@ -318,11 +318,25 @@ void write_vertex_data_to_csv(const Mesh &mesh, const int iteration)
 __attribute__((deprecated("Use Mesh::write_vertex_data_to_csv instead.")));
 
 /**
+ * @brief The header line of EnergyForce.csv, without the newline.
+ *
+ * Eight columns, the same eight whichever way the flag is set. When the
+ * regularization is not in the totals its label says so; see
+ * Mesh::regularizationInTotals.
+ */
+std::string energy_force_csv_header(bool regularizationInTotals);
+
+/**
  * @brief Writes the energy force data to a CSV file.
  *
  * This function writes the energy and force data for each iteration in the following format:
  * 
  * "E_Curvature, E_Area, E_Regularization, E_Total ((pN.nm)), Mean Force (pN)"
+ *
+ * E_Total and Mean Force describe the Hamiltonian the run used. For a
+ * Brownian run with the edge spring off that leaves the regularization out
+ * (Mesh::regularizationInTotals); its column is still written, as a
+ * diagnostic, under a header that says it is not in the total.
  * 
  * @note File name is left in definition in case customization is needed.
  *

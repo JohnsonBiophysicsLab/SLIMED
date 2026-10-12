@@ -327,6 +327,30 @@ public:
      */
     void energy_force_fluid_terms();
 
+    /**
+     * @brief Whether the regularization slot counts toward the totals:
+     * Energy::energyTotal on every face and on param.energy, and
+     * Force::forceTotal on every vertex, which calculate_mean_force() and
+     * get_max_force_magnitude() read.
+     *
+     * True for the energy minimization, which descends that total and so has
+     * the term in its Hamiltonian by construction. A Brownian run is
+     * different: DynamicModel::next_step() drives the membrane with the
+     * bending and area forces and takes the slot in only when
+     * Param::edgeSpringEnabled puts the fluid mesh-quality terms there. With
+     * the spring off the slot holds the reference-length regularization,
+     * which is still evaluated -- it is the record of how far the triangles
+     * have strayed from where they started -- but which the run does not
+     * sample, so DynamicMesh::finish_dynamic_setup() clears this and the
+     * totals describe the Hamiltonian the trajectory was drawn from.
+     *
+     * Only the sums change. Face::energy.energyRegularization,
+     * param.energy.energyRegularization and Force::forceRegularization hold
+     * what they always held, on the CPU and the device path alike: both write
+     * the slots and leave the summing to Compute_Energy_And_Force().
+     */
+    bool regularizationInTotals = true;
+
     Matrix forceTotalOnScaffolding; ///< Total force exerted on the scaffolding lattice
     Matrix scaffoldingMovementVector; ///< Vector representing the movement of scaffolding over the course of simulation
     std::vector<Matrix> forceOnScaffoldingPoints; ///< Per-point force used when propagating the scaffold
