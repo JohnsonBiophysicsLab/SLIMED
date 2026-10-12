@@ -336,6 +336,14 @@ void run_flat(std::string param_filename)
     }
     // Output Energy and meanforce
     write_energy_force_data_to_csv(model);
+    // Which case of the regularization the faces ended in: the only feedback
+    // there is on usingRpi, gamaShape and gamaArea.
+    std::cout << "[main()] Regularization at the final structure: energy= "
+              << mesh.param.energy.energyRegularization
+              << ". shape-deformed faces= " << mesh.param.deformationCount.shapeDeformCount
+              << ". area-deformed faces= " << mesh.param.deformationCount.areaDeformCount
+              << ". reference-length faces= " << mesh.param.deformationCount.noDeformCount
+              << std::endl;
     if (!model.thermalFluctuationRecords.empty())
     {
         std::ofstream thermalOutfile("ThermalFluctuation.csv");

@@ -241,8 +241,24 @@ struct Param
     double deltaForceScaleConverge = 1e-5; ///< Convergence criteria for max force scale
 
     // regularization
-    double gamaShape = 0.2;                       ///< Shape deformation coefficient
-    double gamaArea = 0.2;                        ///< Area deformation coefficient
+    /**
+     * @brief Shape threshold of the R-pi adaptive regularization (input key gamaShape).
+     *
+     * A face whose side lengths a, b, c scatter about their mean l by
+     * ((a-l)^2 + (b-l)^2 + (c-l)^2) / l^2 > gamaShape counts as shape-deformed
+     * and is pulled towards the equilateral triangle of its own area instead
+     * of towards its reference side lengths. Read only when usingRpi is true.
+     */
+    double gamaShape = 0.2;
+    /**
+     * @brief Area threshold of the R-pi adaptive regularization (input key gamaArea).
+     *
+     * A face that is not shape-deformed and whose area differs from its
+     * reference area by this fraction or more counts as area-deformed and is
+     * pulled towards the equilateral triangle of the reference area. Read only
+     * when usingRpi is true.
+     */
+    double gamaArea = 0.2;
     /**
      * @brief Apply one global Loop refinement to the control mesh at setup.
      *
@@ -253,7 +269,16 @@ struct Param
      */
     bool isPreRefinementEnabled = false;
 
-    bool usingRpi = true;             ///< Whether to use R-pi adaptive method for regularization energy;
+    /**
+     * @brief Whether the regularization uses its R-pi adaptive cases (input key usingRpi).
+     *
+     * true: a face past gamaShape or gamaArea is regularized towards an
+     * equilateral triangle, every other face towards its reference side
+     * lengths. false: every face is regularized towards its reference side
+     * lengths, so the term and its force vanish wherever the reference was
+     * just refreshed. A setting of the energy: nothing changes it during a run.
+     */
+    bool usingRpi = true;
 
     // spline points
     bool xyzOutput = true;                                       ///< Whether to output XYZ coordinates of vertices

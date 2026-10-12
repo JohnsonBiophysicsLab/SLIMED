@@ -24,16 +24,21 @@
  *
  * @brief A class that defines an optimization algorithm and its settings.
  * This class defines the settings for an optimization algorithm, including whether to use
- * nonlinear conjugate gradient (NCG), whether NCG has gotten stuck and cannot further minimize,
- * and whether to use R-pi adaptive method for regularization energy. These settings can be accessed
- * and modified using the public member variables of the class.
+ * nonlinear conjugate gradient (NCG) and whether NCG has gotten stuck and cannot further minimize.
+ * These settings can be accessed and modified using the public member variables of the class.
+ *
+ * The regularization's R-pi adaptive mode is not one of them. It is a setting
+ * of the energy, Param::usingRpi, and the minimizer never changes it: a copy
+ * of the flag used to live here and was switched off when NCG fell back to the
+ * simple line search, but the regularizer never read that copy. Switching the
+ * energy function in the middle of a minimization is also not something the
+ * line search survives -- see Model::linear_search_for_stepsize_to_minimize_energy().
  */
 class OptimizationAlgorithm
 {
 public:
     bool usingNCG = false;                  ///< Flag indicating whether to use the nonlinear conjugate gradient optimizer.
     bool isNCGstuck = false;               ///< Flag indicating whether the NCG optimizer has gotten stuck and cannot further minimize.
-    bool usingRpi = false;                  ///< Flag indicating whether to use the R-pi adaptive method for regularization energy.
     bool isCriteriaSatisfied = false;      ///< Flag indicating whether the optimization criteria have been met.
     double trialStepSize = 0.0;            ///< The step size used in the optimization algorithm.
     int trialIterationInterval = 300;       ///< The number of iterations between trial step size adjustments.
@@ -49,7 +54,6 @@ public:
      * @brief Constructor for the OptimizationAlgorithm class.
      *
      * Initializes an instance of the OptimizationAlgorithm class with default settings.
-     * Sets usingNCG to true, isNCGstuck to false, and usingRpi to true.
      */
     OptimizationAlgorithm();
 
@@ -58,7 +62,6 @@ public:
      *
      * Initializes an instance of the OptimizationAlgorithm class with default settings.
      * Customize iteration interval, c1, c2, and step threshold.
-     * Sets usingNCG to true, isNCGstuck to false, and usingRpi to true.
      */
     OptimizationAlgorithm(const int trialIterationInterval,
                           const double c1,
@@ -66,11 +69,11 @@ public:
                           const double stepThreshold);
 
     /**
-     * @brief Reset NCG and Rpi to default.
+     * @brief Clear the stuck flag before a new line search.
      *
-     * Sets usingNCG to true, isNCGstuck to false, and usingRpi to true.
+     * Sets isNCGstuck to false. usingNCG is left as it is.
      */
-    void reset_NCG_Rpi();
+    void reset_NCG_stuck();
 
     /**
      * @brief Disables the use of NCG if it has been stuck consecutively over a threshold.

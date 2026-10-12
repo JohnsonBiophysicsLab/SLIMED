@@ -146,10 +146,14 @@ bool write_model_restart_checkpoint(const Model &model,
     outfile << "SLIMED_RESTART_V2\n";
     outfile << "nextIteration " << nextIteration << "\n";
     outfile << "stepSize " << model.stepSize << "\n";
+    // The third field was OptimizationAlgorithm::usingRpi, a flag nothing ever
+    // read. The slot stays, holding the value every minimizer checkpoint had
+    // in it, so the layout of the line does not change under V1 or V2.
+    const int reservedFormerUsingRpi = 1;
     outfile << "oa "
             << model.oa.usingNCG << ' '
             << model.oa.isNCGstuck << ' '
-            << model.oa.usingRpi << ' '
+            << reservedFormerUsingRpi << ' '
             << model.oa.isCriteriaSatisfied << ' '
             << model.oa.trialStepSize << ' '
             << model.oa.trialIterationInterval << ' '
@@ -292,9 +296,13 @@ bool load_model_restart_checkpoint(Model &model, const std::string &filepath)
     {
         return false;
     }
+    // The third field is reserved (see the writer) and is not applied: the
+    // regularization's R-pi mode is Param::usingRpi, which a restart takes
+    // from its parameter file like every other setting of the energy.
+    bool reservedFormerUsingRpi = false;
     infile >> model.oa.usingNCG
            >> model.oa.isNCGstuck
-           >> model.oa.usingRpi
+           >> reservedFormerUsingRpi
            >> model.oa.isCriteriaSatisfied
            >> model.oa.trialStepSize
            >> model.oa.trialIterationInterval
