@@ -36,15 +36,7 @@
 
 SLIMED (Subdivision-limit membrane dynamics) model is established with triangular mesh and optimized using an energy function. The installation instructions and dependencies are provided in the [Installation](#installation) section below. The first step requires setting up the triangular mesh model to approximate the membrane's geometry applying Loop's subdivision method. The lowest energy search model minimizes the membrane energy evaluated by the energy function. The Brownian Dynamics model simulates the moving membrane's surface with a displacement equation, performed on the limit surface with the help of a conversion matrix. Three types of boundary conditions are available: Fixed, Periodic, and Free, all defined for "ghost vertices" on the boundary of the triangular mesh.
 
-> **New in *Physical Review Research* (2026):** [Membrane bending energy selects for symmetric growth of protein assemblies](https://doi.org/10.1103/tnv7-fjh5). See [Featured publication](#featured-publication) below.
-
-## Featured publication
-
-**Membrane bending energy selects for symmetric growth of protein assemblies**<br>
-Yue Moon Ying & Margaret E. Johnson, *Phys. Rev. Research* **8**, 043025 (2026).<br>
-doi:[10.1103/tnv7-fjh5](https://doi.org/10.1103/tnv7-fjh5)
-
-Protein lattices such as the HIV Gag lattice grow stochastically while they bend the membrane into a bud. The paper couples SLIMED to growing Gag lattice intermediates and asks whether membrane mechanics favours some growth paths over others. Radially symmetric lattices bend the membrane at a lower cost per protein than eccentric ones. For rigid lattices, the shape of the lattice perimeter sets this penalty, not the density of protein–membrane links. For flexible lattices, eccentric growth also produces weaker curvature. Analytical spherical-cap estimates agree with the numerical energy minimization. Membrane bending alone therefore biases assembly toward symmetric growth.
+> **New in *Physical Review Research* (2026):** [Yue Moon Ying & Margaret E. Johnson. Membrane bending energy selects for symmetric growth of protein assemblies. *Phys. Rev. Research* **8**, 043025 (2026).](https://doi.org/10.1103/tnv7-fjh5).
 
 ## Installation
 To install the model, follow these steps:
@@ -511,21 +503,6 @@ doi:[10.1039/d1sm01333e](https://doi.org/10.1039/d1sm01333e)
 Johnson, M.E. (2026) Membrane bending energy selects for symmetric growth of
 protein assemblies. *Phys. Rev. Research* 8 (4), 043025.
 doi:[10.1103/tnv7-fjh5](https://doi.org/10.1103/tnv7-fjh5)
-
-BibTeX for the 2026 paper:
-
-```bibtex
-@article{Ying2026SymmetricGrowth,
-  author  = {Ying, Yue Moon and Johnson, Margaret E.},
-  title   = {Membrane bending energy selects for symmetric growth of protein assemblies},
-  journal = {Phys. Rev. Research},
-  volume  = {8},
-  number  = {4},
-  pages   = {043025},
-  year    = {2026},
-  doi     = {10.1103/tnv7-fjh5}
-}
-```
 
 ## License
 This project is licensed under the GPL License - see the LICENSE file for details.
