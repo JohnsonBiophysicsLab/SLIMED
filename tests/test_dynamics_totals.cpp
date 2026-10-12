@@ -213,7 +213,8 @@ TEST(DynamicsTotalsTest, ASolidRunLeavesTheRegularizationOutOfItsTotals)
  * The measurement that found this, as a test: two runs that differ only in
  * the reference configuration the regularization measures against. The
  * trajectories are the same to the last bit, so everything that claims to
- * describe the sampled Hamiltonian has to be too.
+ * describe the sampled Hamiltonian has to be too, up to the order in which
+ * an OpenMP reduction happens to add it up.
  */
 TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
 {
@@ -266,9 +267,17 @@ TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
                     << "the trajectories part at step " << iteration << ", vertex " << v;
             }
         }
-        EXPECT_EQ(meshA.param.energy.energyTotal, meshB.param.energy.energyTotal)
+        // The two totals are sums over the mesh, and in the OpenMP build the
+        // order of a reduction varies from one call to the next, so two equal
+        // fields sum to values a few ulp apart. The coordinates above are
+        // compared exactly; the sums get 1e-12 relative, which is nothing
+        // next to the difference the unsampled term would make (more than
+        // 1 pN.nm, by the assertion before the loop).
+        EXPECT_NEAR(meshA.param.energy.energyTotal, meshB.param.energy.energyTotal,
+                    1e-12 * std::abs(meshA.param.energy.energyTotal))
             << "step " << iteration;
-        EXPECT_EQ(meshA.calculate_mean_force(), meshB.calculate_mean_force())
+        const double meanForceA = meshA.calculate_mean_force();
+        EXPECT_NEAR(meanForceA, meshB.calculate_mean_force(), 1e-12 * meanForceA)
             << "step " << iteration;
         EXPECT_NE(meshA.param.energy.energyRegularization, meshB.param.energy.energyRegularization)
             << "step " << iteration;
@@ -276,8 +285,10 @@ TEST(DynamicsTotalsTest, ASolidRunsTotalsDoNotDependOnTheReferenceConfiguration)
     // What reaches EnergyForce.csv.
     for (std::size_t row = 0; row < recordA.energyVec.size(); row++)
     {
-        EXPECT_EQ(recordA.energyVec[row].energyTotal, recordB.energyVec[row].energyTotal) << row;
-        EXPECT_EQ(recordA.meanForce[row], recordB.meanForce[row]) << row;
+        EXPECT_NEAR(recordA.energyVec[row].energyTotal, recordB.energyVec[row].energyTotal,
+                    1e-12 * std::abs(recordA.energyVec[row].energyTotal))
+            << row;
+        EXPECT_NEAR(recordA.meanForce[row], recordB.meanForce[row], 1e-12 * recordA.meanForce[row]) << row;
     }
 }
 
