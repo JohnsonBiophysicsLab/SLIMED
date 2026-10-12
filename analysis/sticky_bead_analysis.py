@@ -176,8 +176,9 @@ class StickyRun:
         # Lattice of the real tile, from the free vertices as built.
         x0 = self.control[0, self.free, 0]
         y0 = self.control[0, self.free, 1]
-        self.n_x = len(np.unique(np.round(x0 / self.l_face)))
-        self.n_y = len(np.unique(np.round(y0 / (self.l_face * np.sqrt(3.0) / 2.0))))
+        # Rows alternate by half a cell in x, so the x range is (n_x - 1/2) cells.
+        self.n_x = int(round(np.ptp(x0) / self.l_face + 0.5))
+        self.n_y = int(round(np.ptp(y0) / (self.l_face * np.sqrt(3.0) / 2.0))) + 1
         self.L0 = np.array([self.n_x * self.l_face, self.n_y * self.l_face * np.sqrt(3.0) / 2.0])
         self.origin = np.array([x0.min(), y0.min()])
 
@@ -267,25 +268,48 @@ class StickyRun:
         return neck, apex
 
     # -- the height field on a grid, for the Fourier analysis -------------------
-    def height_grid(self, k):
-        """The upper envelope of the membrane on the tile's lattice grid (n_x x n_y)."""
+    def height_grid(self, k, envelope=True):
+        """The membrane's height on the tile's lattice grid (n_y x n_x cells).
+
+        envelope=True takes the highest vertex of each cell (the bead's bump
+        included); False the mean of the cell's vertices, which is the sheet
+        itself where it is single-valued. Also returns the cell's distance to
+        the bead's axis, wrapped, for masking the footprint."""
         pts = self.control[k]
         L = self.L0 * self.scale[k]
-        origin = self.origin * self.scale[k]
-        # Wrap every vertex (images included) into the tile.
+        origin = self.origin * self.scale[k] - 0.5 * self.l_face
         u = np.mod(pts[:, 0] - origin[0], L[0])
         v = np.mod(pts[:, 1] - origin[1], L[1])
         ix = np.minimum((u / L[0] * self.n_x).astype(int), self.n_x - 1)
         iy = np.minimum((v / L[1] * self.n_y).astype(int), self.n_y - 1)
-        h = np.full((self.n_y, self.n_x), -np.inf)
-        np.maximum.at(h, (iy, ix), pts[:, 2])
-        empty = ~np.isfinite(h)
+        if envelope:
+            h = np.full((self.n_y, self.n_x), -np.inf)
+            np.maximum.at(h, (iy, ix), pts[:, 2])
+            empty = ~np.isfinite(h)
+        else:
+            # Linear interpolation of the control net at the cell centres: a
+            # vertex that drifts across a cell boundary then moves the field
+            # continuously, where binning would make it jump. The images
+            # around the tile close the Delaunay hull over every cell.
+            from scipy.interpolate import LinearNDInterpolator
+            cx = (np.arange(self.n_x) + 0.5) * L[0] / self.n_x + origin[0]
+            cy = (np.arange(self.n_y) + 0.5) * L[1] / self.n_y + origin[1]
+            CX, CY = np.meshgrid(cx, cy)
+            interp = LinearNDInterpolator(pts[:, :2], pts[:, 2])
+            h = interp(CX, CY)
+            empty = ~np.isfinite(h)
+            h = np.where(empty, 0.0, h)
         if empty.any():
-            # Fill from the nearest filled cell.
             from scipy.ndimage import distance_transform_edt
             _, (iy_near, ix_near) = distance_transform_edt(empty, return_indices=True)
             h = h[iy_near, ix_near]
-        return h - self.base_level, L
+        cx = (np.arange(self.n_x) + 0.5) * L[0] / self.n_x
+        cy = (np.arange(self.n_y) + 0.5) * L[1] / self.n_y
+        c = self.bead_center[k]
+        dx = np.mod(cx - (c[0] - origin[0]) + L[0] / 2.0, L[0]) - L[0] / 2.0
+        dy = np.mod(cy - (c[1] - origin[1]) + L[1] / 2.0, L[1]) - L[1] / 2.0
+        r = np.hypot(dx[None, :], dy[:, None])
+        return h - self.base_level, L, r
 
     def hold_frames(self, skip_us=20.0):
         """Frames of the hold phase, the first skip_us after the stop left out."""
@@ -346,20 +370,34 @@ def ring_profile(run, k, n_bins=12, r_max=None):
     return 0.5 * (edges[:-1] + edges[1:]), prof
 
 
-def spectrum(run, frames):
-    """Static imprint |<h_q>|^2 and fluctuation <|h_q - <h_q>|^2> on radial q bins, plus the fit."""
-    grids = []
+def spectrum(run, frames, mask_radii=1.5):
+    """Fourier analysis of the hold phase on the tile's lattice grid.
+
+    Static imprint: |<h_q>|^2 of the upper envelope (the bead's bump included).
+    Fluctuations: <|h_q - <h_q>|^2> of the sheet's mean height per cell with
+    the bead's footprint (mask_radii x R plus one cell around the axis) held
+    at its time mean, so that the sphere's and the neck's vertices, which the
+    gridding cannot follow, do not put a white floor under the spectrum. The
+    fit is kT / (A (kc q^4 + sigma q^2)) for q below 0.35 /nm, clear of the lattice end."""
+    env, sheet, radii = [], [], None
     for k in frames:
-        h, L = run.height_grid(k)
-        grids.append(h)
-    grids = np.array(grids)
-    ny, nx = grids.shape[1:]
+        h, L, r = run.height_grid(k, envelope=True)
+        env.append(h)
+        h2, _, _ = run.height_grid(k, envelope=False)
+        sheet.append(h2)
+        radii = r
+    env, sheet = np.array(env), np.array(sheet)
+    ny, nx = env.shape[1:]
     L = run.L0 * np.mean(run.scale[frames])
     A = L[0] * L[1]
-    hq = np.fft.fft2(grids, axes=(1, 2)) / (nx * ny)
-    mean_q = hq.mean(axis=0)
-    static = np.abs(mean_q) ** 2
-    fluct = (np.abs(hq - mean_q) ** 2).mean(axis=0)
+    hq_env = np.fft.fft2(env, axes=(1, 2)) / (nx * ny)
+    static = np.abs(hq_env.mean(axis=0)) ** 2
+    footprint = radii < mask_radii * run.radius + run.l_face
+    masked = np.where(footprint[None, :, :], sheet.mean(axis=0)[None, :, :], sheet)
+    hq = np.fft.fft2(masked, axes=(1, 2)) / (nx * ny)
+    fluct = (np.abs(hq - hq.mean(axis=0)) ** 2).mean(axis=0)
+    # The masked cells carry no fluctuation: rescale by the sheet's share.
+    fluct = fluct / (1.0 - footprint.mean())
     qx = 2.0 * np.pi * np.fft.fftfreq(nx, d=L[0] / nx)
     qy = 2.0 * np.pi * np.fft.fftfreq(ny, d=L[1] / ny)
     QX, QY = np.meshgrid(qx, qy)
@@ -374,9 +412,8 @@ def spectrum(run, frames):
             st.append(static[m].mean())
             fl.append(fluct[m].mean())
     qs, st, fl = np.array(qs), np.array(st), np.array(fl)
-    # <|h_q|^2> = kT / (A (kc q^4 + sigma q^2)) with this normalisation.
     fit = None
-    m = qs < 0.7
+    m = qs < 0.35
     if m.sum() >= 4:
         try:
             popt, _ = curve_fit(lambda qq, kc, sig: np.log(run.kbt / (A * (kc * qq ** 4 + sig * qq ** 2))),
@@ -407,7 +444,7 @@ def summarize(run):
         "excess_area_end_nm2": float(np.mean(run.excess_area[last])),
         "neck_end_nm": float(np.nanmean(run.neck[last])) if np.isfinite(run.neck[last]).any() else np.nan,
         "apex_end_nm": float(np.mean(run.apex[last])),
-        "E_bend_end_pNnm": float(np.nanmean(run.e_bend[last])),
+        "E_bend_end_pNnm": float(np.nanmean(run.e_bend[last])) if np.isfinite(run.e_bend[last]).any() else np.nan,
         "flips_per_us_end": float(np.mean(run.flips_per_us[last])),
         "tau_force_us": np.nan, "tau_bonded_us": np.nan, "tau_tension_us": np.nan,
     }
@@ -417,7 +454,7 @@ def summarize(run):
                             ("tau_bonded_us", run.bonded[hold].astype(float)),
                             ("tau_tension_us", run.tension[hold])):
             fit = fit_relaxation(t, series)
-            if fit is not None:
+            if fit is not None and np.ptp(series[np.isfinite(series)]) > 0 and fit[2] < 0.9 * (t[-1] - t[0]) * 10:
                 out[key] = float(fit[2])
     try:
         alt = fluidity.altitude_stats(run.run, -1)
@@ -516,7 +553,7 @@ def energy_map_grid(runs, path, t_us, vmax=None):
     reservoirs = [k for k in RESERVOIR_STYLES if any(r.reservoir == k for r in runs)]
     fluidities = [k for k in FLUIDITY_COLORS if any(r.fluidity == k for r in runs)]
     fig, axes = plt.subplots(len(reservoirs), len(fluidities),
-                             figsize=(3.6 * len(fluidities) + 1.2, 3.4 * len(reservoirs)), dpi=110, squeeze=False)
+                             figsize=(4.0 * len(fluidities) + 2.0, 3.8 * len(reservoirs) + 0.8), dpi=110, squeeze=False)
     if vmax is None:
         vmax = max(np.percentile(r.bending_density(frame_index(r, t_us)), 99) for r in runs)
     norm = Normalize(0.0, vmax)
@@ -552,7 +589,7 @@ def energy_map_grid(runs, path, t_us, vmax=None):
             ax.set_title(f"{r.label}\nbead at {c[2] - r.base_level:+.0f} nm, {r.bonded[k]} bonded", fontsize=8)
             ax.tick_params(labelsize=7)
     sm = plt.cm.ScalarMappable(norm=norm, cmap=ENERGY_CMAP)
-    cbar = fig.colorbar(sm, ax=axes, shrink=0.8, pad=0.02)
+    cbar = fig.colorbar(sm, ax=axes.ravel().tolist(), shrink=0.8, pad=0.03, fraction=0.04)
     cbar.set_label("bending energy density (pN/nm)")
     fig.suptitle(f"Bending energy density on the control net, top view, t = {t_us:.0f} µs "
                  f"(teal: the periodic tile; white: the bead)", fontsize=10)
@@ -601,7 +638,7 @@ def write_spectra(runs, path, stats):
     axes[1].plot(q_ref, runs[0].kbt / (runs[0].L0.prod() * runs[0].kc * q_ref ** 4), color=INK_2, lw=0.8, ls="--",
                  label=f"kT/(A kc q⁴), kc = {runs[0].kc:g}, σ = 0")
     axes[0].set_title("static imprint of the bead, |⟨h_q⟩|² over the hold", fontsize=10)
-    axes[1].set_title("fluctuations about it, ⟨|h_q − ⟨h_q⟩|²⟩, thin lines: kc, σ fit", fontsize=10)
+    axes[1].set_title("fluctuations of the sheet outside the bead's footprint (1.5 R), thin lines: kc, σ fit", fontsize=10)
     for ax in axes:
         ax.set_xscale("log")
         ax.set_yscale("log")
