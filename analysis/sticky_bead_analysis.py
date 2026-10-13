@@ -240,6 +240,19 @@ class StickyRun:
         e, area = self.face_data[k, :, 0], self.face_data[k, :, 3]
         return np.where(area > 0, e / np.where(area > 0, area, 1.0), 0.0)
 
+    def energy_faces(self, k):
+        """The energy-carrying faces at frame k and their bending energy density.
+
+        The mesh's periodic image band holds copy faces that carry no energy
+        (area 0 in the per-face output). Under edge flips the code never
+        re-mirrors them from the flipped real faces, so their connectivity
+        goes stale and they stretch across the band, while every force on the
+        tile stays exact (docs/mixed_boundary_conditions.md section 9). They
+        must not be drawn or binned: this is the set to use."""
+        faces = self.faces_at(k)
+        carry = self.face_data[k, :, 3] > 0
+        return faces[carry], self.bending_density(k)[carry]
+
     def _neck_and_apex(self):
         """Per frame: the narrowest ring of membrane below the bead's centre
         (mean radial distance of the free vertices in the narrowest 2.5 nm
@@ -570,17 +583,17 @@ def energy_map_grid(runs, path, t_us, vmax=None):
             r = match[0]
             k = frame_index(r, t_us)
             pts = r.control[k]
-            faces = r.faces_at(k)
-            dens = r.bending_density(k)
-            # Only faces whose vertices do not straddle the tile seam (short edges), for a clean map.
-            tri = pts[faces]
-            span = np.ptp(tri[:, :, :2], axis=1).max(axis=1)
-            keep = span < 3.0 * r.l_face
-            ax.tripcolor(pts[:, 0], pts[:, 1], faces[keep], facecolors=dens[keep], cmap=ENERGY_CMAP, norm=norm,
-                         edgecolors="none")
+            faces, dens = r.energy_faces(k)
+            L = r.L0 * r.scale[k]
+            # The margin shows the tile's own periodic continuation: the
+            # energy-carrying faces shifted by the period. The mesh's copy
+            # faces are not drawn -- see energy_faces().
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    ax.tripcolor(pts[:, 0] + dx * L[0], pts[:, 1] + dy * L[1], faces, facecolors=dens,
+                                 cmap=ENERGY_CMAP, norm=norm, edgecolors="none")
             c = r.bead_center[k]
             ax.add_patch(plt.Circle((c[0], c[1]), r.radius, fill=False, ec="white", lw=1.0, ls="--"))
-            L = r.L0 * r.scale[k]
             o = r.origin * r.scale[k] - 0.5 * r.l_face
             ax.add_patch(plt.Rectangle((o[0], o[1]), L[0], L[1], fill=False, ec="#2bb3a5", lw=0.8))
             ax.set_xlim(o[0] - 0.08 * L[0], o[0] + 1.08 * L[0])
@@ -589,12 +602,12 @@ def energy_map_grid(runs, path, t_us, vmax=None):
             ax.set_title(f"{r.label}\nbead at {c[2] - r.base_level:+.0f} nm, {r.bonded[k]} bonded", fontsize=8)
             ax.tick_params(labelsize=7)
     sm = plt.cm.ScalarMappable(norm=norm, cmap=ENERGY_CMAP)
-    cbar = fig.colorbar(sm, ax=axes.ravel().tolist(), shrink=0.8, pad=0.03, fraction=0.04)
-    cbar.set_label("bending energy density (pN/nm)")
+    fig.subplots_adjust(left=0.05, right=0.86, top=0.92, bottom=0.05, hspace=0.4, wspace=0.3)
+    cax = fig.add_axes([0.89, 0.3, 0.015, 0.4])
+    fig.colorbar(sm, cax=cax).set_label("bending energy density (pN/nm)")
     fig.suptitle(f"Bending energy density on the control net, top view, t = {t_us:.0f} µs "
                  f"(teal: the periodic tile; white: the bead)", fontsize=10)
-    fig.subplots_adjust(hspace=0.45, wspace=0.25)
-    fig.savefig(path, bbox_inches="tight")
+    fig.savefig(path)
     plt.close(fig)
 
 
@@ -661,8 +674,7 @@ def draw_bead(ax, centre, radius):
 def paint_membrane(ax, run, k, norm, zmax, xlim, zoom=1.3, elev=22, azim=-58):
     ax.cla()
     pts = run.surface[k]
-    faces = run.faces_at(k)
-    values = run.bending_density(k)
+    faces, values = run.energy_faces(k)
     surface = ax.plot_trisurf(pts[:, 0], pts[:, 1], pts[:, 2], triangles=faces, cmap=ENERGY_CMAP,
                               linewidth=0.12, edgecolor=(0.0, 0.0, 0.0, 0.10), antialiased=True)
     surface.set_array(values)
