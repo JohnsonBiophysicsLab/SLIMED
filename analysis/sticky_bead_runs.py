@@ -4,9 +4,12 @@ The sticky-bead matrix: a rigid bead bonded to a periodic membrane by the full
 harmonic bond (beadPotential = harmonic), pushed 35 nm through it and held,
 under two area reservoirs (the elastic box, and the adaptive relaxed area of
 the lipid-flow modes) and several fluidities (edge-flip attempt rates).
+--potential wall is the same matrix with a bead that only pushes (the
+repulsive half of the bond, no adhesion), the control for what stickiness does.
 
     python analysis/sticky_bead_runs.py --out ~/slimed_runs/sticky_bead --proto
     python analysis/sticky_bead_runs.py --out ~/slimed_runs/sticky_bead --matrix
+    python analysis/sticky_bead_runs.py --out ~/slimed_runs/sticky_bead/push_matrix --matrix --potential wall
 
 writes one directory per run with its input.params and a run.sh, and, for the
 matrix, a Slurm array script for the cluster. See docs/bead_push_benchmark.md
@@ -27,12 +30,7 @@ BASE = """\
 ############################################
 
 beadEnabled = true
-beadPotential = harmonic         # the full harmonic bond on every vertex the bead captured
-beadRadius = 10.0                # nm, two mesh edges
-beadStiffness = {stiffness}      # pN/nm, the bond's stiffness (and the wall's): k/2 (2.5 nm)^2 = 15 kT at capture
-beadCaptureRange = 2.5           # nm outside the surface: a vertex this close is bonded
-beadBreakRange = -1              # never breaks
-beadAdhesionEnergy = 0.0         # ignored under harmonic
+{bead}
 beadCenterX = 0.0
 beadCenterY = 0.0
 beadCenterZ = -5.0               # the sheet is at z = 10: 5 nm of clearance at the start
@@ -129,6 +127,21 @@ externalForceEnabled = false
 VERBOSE_MODE = false
 """
 
+BEADS = {
+    "harmonic": """\
+beadPotential = harmonic         # the full harmonic bond on every vertex the bead captured
+beadRadius = 10.0                # nm, two mesh edges
+beadStiffness = {stiffness}      # pN/nm, the bond's stiffness (and the wall's): k/2 (2.5 nm)^2 = 15 kT at capture
+beadCaptureRange = 2.5           # nm outside the surface: a vertex this close is bonded
+beadBreakRange = -1              # never breaks
+beadAdhesionEnergy = 0.0         # ignored under harmonic""",
+    "wall": """\
+beadPotential = wall             # the repulsive half of the bond only: the bead pushes and holds nothing
+beadRadius = 10.0                # nm, two mesh edges
+beadStiffness = {stiffness}      # pN/nm, the wall's stiffness
+beadAdhesionEnergy = 0.0         # no well: a bead that only pushes""",
+}
+
 RESERVOIRS = {
     "fixed": ("no reservoir: a fixed box and the global area constraint",
               "elasticBoxEnabled = false\nlipidFlowMode = off"),
@@ -168,9 +181,11 @@ RESERVOIRS = {
 FLUIDITIES = [("frozen", 0.0), ("nu0.05", 0.05), ("nu0.5", 0.5), ("nu5", 5.0)]
 
 
-def write_run(root, name, reservoir, rate, total, push, interval, side=130.0, stiffness=20.0, seed=SEED, threads=4, binary=None):
+def write_run(root, name, reservoir, rate, total, push, interval, side=130.0, stiffness=20.0, seed=SEED, threads=4, binary=None,
+              potential="harmonic"):
     label, block = RESERVOIRS[reservoir]
-    text = BASE.format(push=push, total=total, seed=seed, interval=interval, side=side, stiffness=stiffness,
+    text = BASE.format(push=push, total=total, seed=seed, interval=interval, side=side,
+                       bead=BEADS[potential].format(stiffness=stiffness),
                        flips="true" if rate > 0 else "false", rate=rate if rate > 0 else 0.5,
                        reservoir_label=label, reservoir=block)
     directory = os.path.join(root, name)
@@ -197,26 +212,29 @@ def main():
     parser.add_argument("--interval", type=int, default=200)
     parser.add_argument("--side", type=float, default=130.0, help="sideX = sideY of the generated sheet, nm")
     parser.add_argument("--stiffness", type=float, default=20.0, help="beadStiffness, pN/nm (200 folds a frozen mesh)")
+    parser.add_argument("--potential", choices=sorted(BEADS), default="harmonic",
+                        help="harmonic: the sticky bead; wall: the same bead that only pushes")
     args = parser.parse_args()
+    extra = dict(potential=args.potential)
     root = os.path.expanduser(args.out)
     names = []
     if args.proto:
         for reservoir in ("box", "s0global", "s0local"):
             names.append(write_run(root, f"proto_{reservoir}_nu0.5", reservoir, 0.5,
-                                   args.proto_steps, min(PUSH_ITERATIONS, args.proto_steps), args.interval, args.side, args.stiffness))
+                                   args.proto_steps, min(PUSH_ITERATIONS, args.proto_steps), args.interval, args.side, args.stiffness, **extra))
     if args.matrix:
         total = PUSH_ITERATIONS + HOLD_ITERATIONS
-        names.append(write_run(root, "fixed_nu0.5", "fixed", 0.5, total, PUSH_ITERATIONS, args.interval, args.side, args.stiffness))
+        names.append(write_run(root, "fixed_nu0.5", "fixed", 0.5, total, PUSH_ITERATIONS, args.interval, args.side, args.stiffness, **extra))
         for reservoir in ("box", "s0global", "s0local"):
             for fname, rate in FLUIDITIES:
                 names.append(write_run(root, f"{reservoir}_{fname}", reservoir, rate, total,
-                                       PUSH_ITERATIONS, args.interval, args.side, args.stiffness))
+                                       PUSH_ITERATIONS, args.interval, args.side, args.stiffness, **extra))
         with open(os.path.join(root, "runs.txt"), "w") as handle:
             handle.write("\n".join(os.path.basename(n) for n in names) + "\n")
         with open(os.path.join(root, "submit_array.sh"), "w") as handle:
             handle.write(textwrap.dedent(f"""\
             #!/bin/bash
-            #SBATCH --job-name=sticky_bead
+            #SBATCH --job-name={"sticky" if args.potential == "harmonic" else "push"}_bead
             #SBATCH --partition=shared
             #SBATCH --account=mjohn218
             #SBATCH --nodes=1
