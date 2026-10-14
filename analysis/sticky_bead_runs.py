@@ -33,7 +33,7 @@ BASE = """\
 ## The sticky bead: docs/bead_push_benchmark.md section 9
 ############################################
 
-beadEnabled = true
+beadEnabled = {bead_enabled}
 {bead}
 beadCenterX = 0.0
 beadCenterY = 0.0
@@ -89,7 +89,7 @@ meshpointOutput = true
 meshpointOutputInterval = {interval}
 xyzOutput = false
 fdtConsistentSurfaceUpdate = true
-localOutput = true               # per-face energies and per-vertex forces beside every frame
+localOutput = {local_output}               # per-face energies and per-vertex forces beside every frame
 
 ############################################
 ## The fluid mesh: docs/edge_flip_plan.md, docs/fluidity_results.md
@@ -144,6 +144,7 @@ beadPotential = wall             # the repulsive half of the bond only: the bead
 beadRadius = 10.0                # nm, two mesh edges
 beadStiffness = {stiffness}      # pN/nm, the wall's stiffness
 beadAdhesionEnergy = 0.0         # no well: a bead that only pushes""",
+    "none": "# no bead: the flat sheet under the reservoir alone (docs/flat_tension_matrix.md)",
 }
 
 RESERVOIRS = {
@@ -192,6 +193,8 @@ def write_run(root, name, reservoir, rate, total, push, interval, side=130.0, st
     label, block = label.format(tension=tension), block.format(tension=tension)
     text = BASE.format(push=push, total=total, seed=seed, interval=interval, side=side,
                        bead=BEADS[potential].format(stiffness=stiffness),
+                       bead_enabled="false" if potential == "none" else "true",
+                       local_output="false" if potential == "none" else "true",
                        flips="true" if rate > 0 else "false", rate=rate if rate > 0 else 0.5,
                        reservoir_label=label, reservoir=block)
     directory = os.path.join(root, name)
@@ -219,7 +222,10 @@ def main():
     parser.add_argument("--side", type=float, default=130.0, help="sideX = sideY of the generated sheet, nm")
     parser.add_argument("--stiffness", type=float, default=20.0, help="beadStiffness, pN/nm (200 folds a frozen mesh)")
     parser.add_argument("--potential", choices=sorted(BEADS), default="harmonic",
-                        help="harmonic: the sticky bead; wall: the same bead that only pushes")
+                        help="harmonic: the sticky bead; wall: the same bead that only pushes; none: no bead, "
+                             "the flat sheet (no per-face output)")
+    parser.add_argument("--steps", type=int, default=None,
+                        help="maxIterations of the matrix (default: the push plus the hold, 180000)")
     parser.add_argument("--tension", type=float, default=DEFAULT_TENSION,
                         help="the reservoirs' target tension, pN/nm (box frame tension and lipid reservoir alike)")
     args = parser.parse_args()
@@ -231,7 +237,7 @@ def main():
             names.append(write_run(root, f"proto_{reservoir}_nu0.5", reservoir, 0.5,
                                    args.proto_steps, min(PUSH_ITERATIONS, args.proto_steps), args.interval, args.side, args.stiffness, **extra))
     if args.matrix:
-        total = PUSH_ITERATIONS + HOLD_ITERATIONS
+        total = args.steps or (PUSH_ITERATIONS + HOLD_ITERATIONS)
         names.append(write_run(root, "fixed_nu0.5", "fixed", 0.5, total, PUSH_ITERATIONS, args.interval, args.side, args.stiffness, **extra))
         for reservoir in ("box", "s0global", "s0local"):
             for fname, rate in FLUIDITIES:
@@ -239,10 +245,11 @@ def main():
                                        PUSH_ITERATIONS, args.interval, args.side, args.stiffness, **extra))
         with open(os.path.join(root, "runs.txt"), "w") as handle:
             handle.write("\n".join(os.path.basename(n) for n in names) + "\n")
+        job = {"harmonic": "sticky_bead", "wall": "push_bead", "none": "flat_sheet"}[args.potential]
         with open(os.path.join(root, "submit_array.sh"), "w") as handle:
             handle.write(textwrap.dedent(f"""\
             #!/bin/bash
-            #SBATCH --job-name={"sticky" if args.potential == "harmonic" else "push"}_bead
+            #SBATCH --job-name={job}
             #SBATCH --partition=shared
             #SBATCH --account=mjohn218
             #SBATCH --nodes=1
