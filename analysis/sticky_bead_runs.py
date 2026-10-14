@@ -11,6 +11,10 @@ repulsive half of the bond, no adhesion), the control for what stickiness does.
     python analysis/sticky_bead_runs.py --out ~/slimed_runs/sticky_bead --matrix
     python analysis/sticky_bead_runs.py --out ~/slimed_runs/sticky_bead/push_matrix --matrix --potential wall
 
+The reservoirs' target tension is --tension, 0 pN/nm by default (the code's
+default for elasticBoxTension and lipidReservoirTension); the matrices of
+docs/bead_push_benchmark.md section 9 were run at 0.5.
+
 writes one directory per run with its input.params and a run.sh, and, for the
 matrix, a Slurm array script for the cluster. See docs/bead_push_benchmark.md
 section 9 for what the runs showed.
@@ -145,25 +149,25 @@ beadAdhesionEnergy = 0.0         # no well: a bead that only pushes""",
 RESERVOIRS = {
     "fixed": ("no reservoir: a fixed box and the global area constraint",
               "elasticBoxEnabled = false\nlipidFlowMode = off"),
-    "box": ("uniform scaling of the box at a frame tension of 0.5 pN/nm (docs/elastic_box.md)",
+    "box": ("uniform scaling of the box at a frame tension of {tension} pN/nm (docs/elastic_box.md)",
             textwrap.dedent("""\
             elasticBoxEnabled = true
-            elasticBoxTension = 0.5
+            elasticBoxTension = {tension}
             elasticBoxMobility = 0.02        # fast enough to follow a bead at 0.5 nm/us
             elasticBoxThermal = true
             elasticBoxCoupling = isotropic
             elasticBoxMaxStrainPerStep = 0.001
             elasticBoxVertexGasTerm = true
             lipidFlowMode = off""")),
-    "s0global": ("adaptive relaxed area, one A0 for the sheet, bulk reservoir at 0.5 pN/nm (docs/lipid_flow_plan.md)",
+    "s0global": ("adaptive relaxed area, one A0 for the sheet, bulk reservoir at {tension} pN/nm (docs/lipid_flow_plan.md)",
                  textwrap.dedent("""\
                  elasticBoxEnabled = false
                  lipidFlowMode = global
                  lipidFlowThermal = true
                  lipidReservoirRegion = bulk
-                 lipidReservoirTension = 0.5
+                 lipidReservoirTension = {tension}
                  lipidReservoirRate = 20""")),
-    "s0local": ("adaptive relaxed area per face, tension-driven flow, bulk reservoir at 0.5 pN/nm",
+    "s0local": ("adaptive relaxed area per face, tension-driven flow, bulk reservoir at {tension} pN/nm",
                 textwrap.dedent("""\
                 elasticBoxEnabled = false
                 lipidFlowMode = local
@@ -173,17 +177,19 @@ RESERVOIRS = {
                 lipidFlowSubsteps = 0
                 lipidFlipResampling = auto
                 lipidReservoirRegion = bulk
-                lipidReservoirTension = 0.5
+                lipidReservoirTension = {tension}
                 lipidReservoirRate = 20""")),
 }
+DEFAULT_TENSION = 0.0   # pN/nm, the reservoirs' target; the 2026-10-12/13 matrices were run at 0.5
 
 # (name, attempt rate); 0 = flips off, the frozen mesh
 FLUIDITIES = [("frozen", 0.0), ("nu0.05", 0.05), ("nu0.5", 0.5), ("nu5", 5.0)]
 
 
 def write_run(root, name, reservoir, rate, total, push, interval, side=130.0, stiffness=20.0, seed=SEED, threads=4, binary=None,
-              potential="harmonic"):
+              potential="harmonic", tension=DEFAULT_TENSION):
     label, block = RESERVOIRS[reservoir]
+    label, block = label.format(tension=tension), block.format(tension=tension)
     text = BASE.format(push=push, total=total, seed=seed, interval=interval, side=side,
                        bead=BEADS[potential].format(stiffness=stiffness),
                        flips="true" if rate > 0 else "false", rate=rate if rate > 0 else 0.5,
@@ -214,8 +220,10 @@ def main():
     parser.add_argument("--stiffness", type=float, default=20.0, help="beadStiffness, pN/nm (200 folds a frozen mesh)")
     parser.add_argument("--potential", choices=sorted(BEADS), default="harmonic",
                         help="harmonic: the sticky bead; wall: the same bead that only pushes")
+    parser.add_argument("--tension", type=float, default=DEFAULT_TENSION,
+                        help="the reservoirs' target tension, pN/nm (box frame tension and lipid reservoir alike)")
     args = parser.parse_args()
-    extra = dict(potential=args.potential)
+    extra = dict(potential=args.potential, tension=args.tension)
     root = os.path.expanduser(args.out)
     names = []
     if args.proto:

@@ -265,6 +265,8 @@ vertices' positions like every other term -- a bead pressed into the
 membrane raises the tension, and the box feeds it area from the target. It
 is logged separately (`tensionBead`). The external force is a constant force
 per vertex, not a function of the box, and takes no part in the box's force.
+How the box settles, lags and reads with a bead inside, and what the target
+tension changes, is `docs/elastic_box_with_bead.md`.
 
 ## 4. Parameters
 
