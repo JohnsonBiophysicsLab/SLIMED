@@ -344,7 +344,10 @@ void Mesh::calculate_element_area_volume()
     const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
     const int nSamples = patchRowsFlat.nSamples();
 
-#pragma omp parallel for
+    // Interleaved static chunks for load balance, as in
+    // compute_face_energies_and_forces(). Each face writes only its own
+    // fields, so the schedule cannot change any result here.
+#pragma omp parallel for schedule(static, 4)
     for (Face& face : faces)
     {
         // Ghost faces won't contribute to the membrane area

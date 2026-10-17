@@ -298,6 +298,15 @@ delete it and configure again. Under Homebrew GCC the unit tests will not link,
 because Homebrew's `libgtest.a` is built against libc++ while GCC uses
 libstdc++; use the default Apple Clang when you need the tests.
 
+The two face loops (`Mesh::compute_face_energies_and_forces()` and
+`Mesh::calculate_element_area_volume()`) use `schedule(static, 4)`. Face cost
+varies about 40-fold on a fluid mesh, and interleaved chunks keep the threads
+balanced. The schedule stays static, so the face-to-thread map is fixed for a
+given thread count; changing the thread count changes the order in which the
+per-thread force buffers are summed, which moves coordinates at the 1e-12 nm
+level and leaves the flip history unchanged. See
+[docs/patch_kernel_performance.md](docs/patch_kernel_performance.md).
+
 ### Tests
 
 `SLIMED_BUILD_TESTS` defaults to `ON`, so any build directory configured by hand

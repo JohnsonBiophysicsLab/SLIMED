@@ -107,8 +107,16 @@ void Mesh::compute_face_energies_and_forces()
     const int nSamples = patchRowsFlat.nSamples();
 
     // Step 2.
-    // Iterate through faces and calculate forces
-#pragma omp parallel for
+    // Iterate through faces and calculate forces.
+    //
+    // Interleaved static chunks, not the default contiguous blocks. A face's
+    // cost is 1 kernel call when regular and ~3 x depth when an extraordinary
+    // vertex touches it, and on a fluid mesh those cluster, so contiguous
+    // blocks leave threads idle. Still static, so the face-to-thread map --
+    // and with it the order the per-thread force buffers are summed -- is
+    // fixed for a given thread count. Never dynamic: it is no faster here and
+    // not reproducible (docs/patch_kernel_performance.md).
+#pragma omp parallel for schedule(static, 4)
     for (Face &face : faces)
     {
 #ifdef OMP
