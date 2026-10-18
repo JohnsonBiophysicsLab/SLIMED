@@ -58,10 +58,10 @@ surfaceSolver = iterative
 ## Geometric Parameters
 ############################################
 
-lFace = 5.0
+lFace = {lface}
 isFlat = true
 sideX = {side}
-sideY = {side}                    # the generated sheet; the periodic tile is 30 nm narrower (the image bands)
+sideY = {side_y}                    # the generated sheet; the periodic tile is 30 nm narrower (the image bands)
 
 ############################################
 ## Physical Properties
@@ -82,7 +82,7 @@ KBT = 4.17
 ############################################
 
 maxIterations = {total}
-timeStep = 0.001                 # us
+timeStep = {dt}                 # us
 diffConst = 1.0                  # nm^2/us
 randomSeed = {seed}
 meshpointOutput = true
@@ -188,10 +188,11 @@ FLUIDITIES = [("frozen", 0.0), ("nu0.05", 0.05), ("nu0.5", 0.5), ("nu5", 5.0)]
 
 
 def write_run(root, name, reservoir, rate, total, push, interval, side=130.0, stiffness=20.0, seed=SEED, threads=4, binary=None,
-              potential="harmonic", tension=DEFAULT_TENSION):
+              potential="harmonic", tension=DEFAULT_TENSION, time_step=0.001, l_face=5.0, side_y=None):
     label, block = RESERVOIRS[reservoir]
     label, block = label.format(tension=tension), block.format(tension=tension)
     text = BASE.format(push=push, total=total, seed=seed, interval=interval, side=side,
+                       side_y=side if side_y is None else side_y, dt=time_step, lface=l_face,
                        bead=BEADS[potential].format(stiffness=stiffness),
                        bead_enabled="false" if potential == "none" else "true",
                        local_output="false" if potential == "none" else "true",
