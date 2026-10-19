@@ -153,6 +153,55 @@ SLIMED_HD inline void element_energy_force_patch_pod(const double *sampleRows,
         // Per control point: differentiate the basis with respect to that
         // point's coordinate and contract with the resultants above. The force
         // is the negative derivative of the energy, hence the -sqa.
+        //
+        // That derivative is linear in the point's seven shape-function
+        // values, so the force on control point j factors as
+        //   f_j = sum_k sf_k(j) * G_k,
+        // with sample-only vectors G_k built once here. The couple term
+        // m_be . d(a^alpha)/dx_j, which used to be two 3x3 outer-product sums
+        // per point (~400 flops), collapses onto the dot products m^alpha . a^beta
+        // and m^alpha . a^beta_gamma. The per-point work is then 33
+        // multiply-adds. Same terms as the expanded form, reassociated, so the
+        // result differs from it only in rounding (~1e-13 nm on a trajectory;
+        // docs/patch_kernel_performance.md).
+        const double c = halfGaussQuadratureCoeff * -sqa;
+        const double m1a1 = v3_dot(m1_be, a1);
+        const double m1a2 = v3_dot(m1_be, a2);
+        const double m2a1 = v3_dot(m2_be, a1);
+        const double m2a2 = v3_dot(m2_be, a2);
+        const double m1a11 = v3_dot(m1_be, a11);
+        const double m1a21 = v3_dot(m1_be, a21);
+        const double m2a12 = v3_dot(m2_be, a12);
+        const double m2a22 = v3_dot(m2_be, a22);
+
+        // gb_k: bending, k = 1..6 (rows 1..6); ga_k: area, rows 1..2;
+        // gv_k: volume, rows 0..2.
+        double gb1[3];
+        double gb2[3];
+        double gb3[3];
+        double gb4[3];
+        double gb5[3];
+        double gb6[3];
+        double ga1[3];
+        double ga2[3];
+        double gv0[3];
+        double gv1[3];
+        double gv2[3];
+        for (int i = 0; i < 3; i++)
+        {
+            gb1[i] = c * (n1_be[i] - (m1a11 + m2a12) * a_3[i] - m1a1 * a_31[i] - m2a1 * a_32[i]);
+            gb2[i] = c * (n2_be[i] - (m1a21 + m2a22) * a_3[i] - m1a2 * a_31[i] - m2a2 * a_32[i]);
+            gb3[i] = -c * m1a1 * a_3[i];
+            gb4[i] = -c * m2a2 * a_3[i];
+            gb5[i] = -c * m2a1 * a_3[i];
+            gb6[i] = -c * m1a2 * a_3[i];
+            ga1[i] = c * n1_cons[i];
+            ga2[i] = c * n2_cons[i];
+            gv0[i] = c * volScale * a_3[i];
+            gv1[i] = c * n1_conv[i];
+            gv2[i] = c * n2_conv[i];
+        }
+
         for (int j = 0; j < nCtrl; j++)
         {
             const double sf0 = rows[0 * nCtrl + j];
@@ -163,48 +212,15 @@ SLIMED_HD inline void element_energy_force_patch_pod(const double *sampleRows,
             const double sf5 = rows[5 * nCtrl + j];
             const double sf6 = rows[6 * nCtrl + j];
 
-            // da1 and da2 are the outer-product sums the original built with
-            // six kron() calls apiece -- each of which allocated a 3x3 matrix,
-            // copied it out by value, and threw the copy away.
-            double da1[3][3];
-            double da2[3][3];
-            for (int r = 0; r < 3; r++)
-            {
-                for (int c = 0; c < 3; c++)
-                {
-                    da1[r][c] = a1[r] * a_3[c] * -sf3
-                              + a11[r] * a_3[c] * -sf1
-                              + a1[r] * a_31[c] * -sf1
-                              + a2[r] * a_3[c] * -sf6
-                              + a21[r] * a_3[c] * -sf2
-                              + a2[r] * a_31[c] * -sf2;
-                    da2[r][c] = a1[r] * a_3[c] * -sf5
-                              + a12[r] * a_3[c] * -sf1
-                              + a1[r] * a_32[c] * -sf1
-                              + a2[r] * a_3[c] * -sf4
-                              + a22[r] * a_3[c] * -sf2
-                              + a2[r] * a_32[c] * -sf2;
-                }
-            }
-
             double *outBend = fBend + j * 3;
             double *outArea = fArea + j * 3;
             double *outVol = fVolume + j * 3;
             for (int i = 0; i < 3; i++)
             {
-                // m_be contracted with da over the first index, the
-                // colvec_matrix_multiplication() helper.
-                const double couple1 = m1_be[0] * da1[0][i] + m1_be[1] * da1[1][i] + m1_be[2] * da1[2][i];
-                const double couple2 = m2_be[0] * da2[0][i] + m2_be[1] * da2[1][i] + m2_be[2] * da2[2][i];
-                const double couple = couple1 + couple2;
-
-                const double fBendSample = (couple + n1_be[i] * sf1 + n2_be[i] * sf2) * -sqa;
-                const double fAreaSample = (n1_cons[i] * sf1 + n2_cons[i] * sf2) * -sqa;
-                const double fVolSample = (n1_conv[i] * sf1 + n2_conv[i] * sf2 + a_3[i] * (volScale * sf0)) * -sqa;
-
-                outBend[i] += halfGaussQuadratureCoeff * fBendSample;
-                outArea[i] += halfGaussQuadratureCoeff * fAreaSample;
-                outVol[i] += halfGaussQuadratureCoeff * fVolSample;
+                outBend[i] += sf1 * gb1[i] + sf2 * gb2[i] + sf3 * gb3[i] + sf4 * gb4[i] +
+                              sf5 * gb5[i] + sf6 * gb6[i];
+                outArea[i] += sf1 * ga1[i] + sf2 * ga2[i];
+                outVol[i] += sf0 * gv0[i] + sf1 * gv1[i] + sf2 * gv2[i];
             }
         }
 

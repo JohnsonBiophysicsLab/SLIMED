@@ -288,6 +288,13 @@ number that moved the other way, the dense solver at a single `-O3` thread
 serial Release builds of the pre-WP8 and WP8 trees gives 0.94 s best on both,
 319 steps/s, identical.
 
+**Factored force loop** (2026-10-16). The per-control-point loop of the patch
+kernel was rewritten as `f_j = sum_k sf_k(j) G_k`, and the face loops moved to
+`schedule(static, 4)`. On the 960-face matrix box at `nu = 5` (3000 steps, one
+thread) the fluid run goes from 235 s to 155 s, with the same flips and 1e-12 nm
+drift. The derivation, the re-baselined byte-identity gate and the timing
+caveats are in [patch_kernel_performance.md](patch_kernel_performance.md).
+
 ## 8. The ghost band: why every long fluid run diverged
 
 Found while setting up the spectrum run, and it took three wrong diagnoses to
