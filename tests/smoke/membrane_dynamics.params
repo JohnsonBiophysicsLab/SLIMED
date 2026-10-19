@@ -1,0 +1,24 @@
+# Smoke-test input for membrane_dynamics and membrane_dynamics_multithreading.
+# A 40 nm periodic sheet, five Brownian steps. See tests/CMakeLists.txt.
+#
+# The trajectory streams (meshpoint*.csv, surfacepoint*.csv) and the local
+# output streams are process-wide globals in src/io/output.cpp, so the
+# multithreading driver, which runs eight replicas on eight threads, must not
+# enable them: meshpointOutput stays false here. membrane_dynamics_trajectory.params
+# is the single-process variant with the trajectory on.
+
+maxIterations = 5
+VERBOSE_MODE = false
+boundaryType = Periodic
+lFace = 5.0
+sideX = 40.0
+sideY = 40.0
+setRelaxAreaToDefault = true
+isEnergyHarmonicBondIncluded = false
+isInsertionIncluded = false
+thermalFluctuationEnabled = false
+meshpointOutput = false
+localOutput = false
+timeStep = 0.001
+diffConst = 1.0
+randomSeed = 7

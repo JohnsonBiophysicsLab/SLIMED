@@ -1,0 +1,20 @@
+# Smoke-test input for membrane_dynamics (single process): a 40 nm periodic
+# sheet, five Brownian steps, with the trajectory and local outputs on.
+# See tests/CMakeLists.txt.
+
+maxIterations = 5
+VERBOSE_MODE = false
+boundaryType = Periodic
+lFace = 5.0
+sideX = 40.0
+sideY = 40.0
+setRelaxAreaToDefault = true
+isEnergyHarmonicBondIncluded = false
+isInsertionIncluded = false
+thermalFluctuationEnabled = false
+meshpointOutput = true
+meshpointOutputInterval = 1
+localOutput = true
+timeStep = 0.001
+diffConst = 1.0
+randomSeed = 7
