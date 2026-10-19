@@ -49,12 +49,13 @@ double Model::linear_search_for_stepsize_to_minimize_energy()
         // Check if using NCG and not stuck
         if (oa.usingNCG && !oa.isNCGstuck)
         {
-            // Calculate NCG factor in parallel
+            // Calculate NCG factor in parallel: the directional derivative at
+            // the trial point, so from the force just computed there
             ncgFactor = 0.0;
             #pragma omp parallel for reduction(+ : ncgFactor)
             for (int i = 0; i < nVertices; i++)
             {
-                ncgFactor -= dot_col(mesh.vertices[i].forcePrev.forceTotal, ncgDirection0[i].forceTotal);
+                ncgFactor -= dot_col(mesh.vertices[i].force.forceTotal, ncgDirection0[i].forceTotal);
             }
 //if (ROWOUTPUT)cout << "R56" << endl;
             // Satisfy NCG Wolfe conditions
