@@ -37,7 +37,7 @@
 class OptimizationAlgorithm
 {
 public:
-    bool usingNCG = false;                  ///< Flag indicating whether to use the nonlinear conjugate gradient optimizer.
+    bool usingNCG = false;                  ///< Flag indicating whether to use the nonlinear conjugate gradient optimizer. Model's constructor sets it from Param::usingNCG.
     bool isNCGstuck = false;               ///< Flag indicating whether the NCG optimizer has gotten stuck and cannot further minimize.
     bool isCriteriaSatisfied = false;      ///< Flag indicating whether the optimization criteria have been met.
     double trialStepSize = 0.0;            ///< The step size used in the optimization algorithm.

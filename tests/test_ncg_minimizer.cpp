@@ -131,6 +131,26 @@ private:
 } // namespace
 
 // ---------------------------------------------------------------------------
+// Bug 1: the NCG switch comes from the parameters
+// ---------------------------------------------------------------------------
+
+TEST(NcgMinimizerTest, TheModelTakesUsingNcgFromTheParameters)
+{
+    EXPECT_TRUE(Param().usingNCG) << "the documented default is NCG on";
+
+    for (const bool configured : {true, false})
+    {
+        Param param;
+        param.VERBOSE_MODE = false;
+        param.usingNCG = configured;
+        Mesh mesh(param);
+        Record record(1);
+        Model model(mesh, record);
+        EXPECT_EQ(model.oa.usingNCG, configured);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Bug 2: the curvature condition is evaluated at the trial point
 // ---------------------------------------------------------------------------
 

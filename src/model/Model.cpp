@@ -24,6 +24,7 @@ Model::Model(Mesh &mesh_, Record &record_)
     }
     oa.energyDiffThreshold = mesh.param.deltaEnergyConverge;
     oa.forceDiffThreshold = mesh.param.deltaForceScaleConverge;
+    oa.usingNCG = mesh.param.usingNCG;
 }
 
 /**
