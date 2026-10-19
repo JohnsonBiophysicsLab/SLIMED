@@ -1,4 +1,5 @@
 #include "Run_simulation.hpp"
+#include "dynamics/Divergence_guard.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -209,6 +210,9 @@ void run_dynamics_flat(std::string param_filename) {
         }
     }
 
+    // The divergence bounds, from the mesh as the first step finds it.
+    const DivergenceGuard divergenceGuard(mesh);
+
     for (model.iteration = 0; model.iteration < mesh.param.maxIterations; model.iteration ++) {
 
         // A pure Monte Carlo run (brownianStepEnabled = false) skips the
@@ -345,10 +349,13 @@ void run_dynamics_flat(std::string param_filename) {
         // A run that has gone non-finite has nothing left to say, and it says
         // it for as long as it is given: the 3000-step fluid run that found
         // this wrote NaN into every row after step 1535 and took four minutes
-        // doing it. Stop at the first one, keeping what was collected.
-        if (!std::isfinite(mesh.param.energy.energyTotal)) {
-            std::cerr << "[run_dynamics_flat] The total energy is "
-                      << mesh.param.energy.energyTotal << " at iteration " << model.iteration
+        // doing it. Stop at the first one, keeping what was collected. Nor
+        // does a blow-up always reach NaN: diag_fixedbox_dt0.005 stayed finite
+        // at E ~ 1e206 for 80k steps, so the guard also stops a run whose
+        // coordinates or energy have left any range a healthy run visits.
+        const std::string divergence = divergenceGuard.check(mesh);
+        if (!divergence.empty()) {
+            std::cerr << "[run_dynamics_flat] " << divergence << " at iteration " << model.iteration
                       << "; the run has diverged and is stopping. Everything up to here has "
                          "been written. A membrane that blows up this way is usually held "
                          "together too weakly for the moves it is being asked to make -- check "
