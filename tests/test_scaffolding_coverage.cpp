@@ -10,6 +10,14 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <ftw.h>
+#include <limits.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 /**
@@ -22,8 +30,6 @@
  * planar, non colinear) interfaces so every angle term is away from its
  * singular points; the membrane is a small flat periodic sheet.
  */
-
-namespace fs = std::filesystem;
 
 namespace
 {
@@ -94,6 +100,7 @@ double orthogonality_defect(const Matrix &r)
 }
 
 /// A fresh, uniquely named directory under the system temp dir; removed on destruction.
+/// POSIX rather than std::filesystem: the project builds at C++14.
 class TempDir
 {
 public:
@@ -106,36 +113,78 @@ public:
         // parameterised test names contain '/': keep the directory a single path component
         std::replace_if(name.begin(), name.end(),
                         [](char ch) { return !std::isalnum(static_cast<unsigned char>(ch)) && ch != '_'; }, '_');
-        path_ = fs::temp_directory_path() / name;
-        fs::remove_all(path_);
-        fs::create_directories(path_);
+        const char *tmpdir = std::getenv("TMPDIR");
+        std::string base = (tmpdir && *tmpdir) ? tmpdir : "/tmp";
+        if (base.back() == '/')
+            base.pop_back();
+        path_ = base + "/" + name;
+        remove_tree(path_);
+        if (::mkdir(path_.c_str(), 0700) != 0)
+            throw std::runtime_error("TempDir: cannot create " + path_ + ": " + std::strerror(errno));
     }
-    ~TempDir()
-    {
-        std::error_code ec;
-        fs::remove_all(path_, ec);
-    }
-    const fs::path &path() const { return path_; }
-    std::string file(const std::string &name) const { return (path_ / name).string(); }
+    ~TempDir() { remove_tree(path_); }
+    const std::string &path() const { return path_; }
+    std::string file(const std::string &name) const { return path_ + "/" + name; }
 
 private:
-    fs::path path_;
+    static int remove_entry(const char *entry, const struct stat *, int, struct FTW *)
+    {
+        return std::remove(entry);
+    }
+    static void remove_tree(const std::string &dir)
+    {
+        ::nftw(dir.c_str(), remove_entry, 16, FTW_DEPTH | FTW_PHYS);
+    }
+
+    std::string path_;
 };
 
 /// chdir into a directory for the lifetime of the guard; always restores the cwd.
 class CwdGuard
 {
 public:
-    explicit CwdGuard(const fs::path &dir) : original_(fs::current_path()) { fs::current_path(dir); }
+    explicit CwdGuard(const std::string &dir)
+    {
+        char buffer[PATH_MAX];
+        if (::getcwd(buffer, sizeof(buffer)) == nullptr)
+            throw std::runtime_error("CwdGuard: getcwd failed");
+        original_ = buffer;
+        if (::chdir(dir.c_str()) != 0)
+            throw std::runtime_error("CwdGuard: cannot chdir to " + dir);
+    }
     ~CwdGuard()
     {
-        std::error_code ec;
-        fs::current_path(original_, ec);
+        if (::chdir(original_.c_str()) != 0)
+        {
+            // Nothing sensible to do in a destructor; later tests would notice the cwd.
+        }
     }
 
 private:
-    fs::path original_;
+    std::string original_;
 };
+
+/// Absolute form of a path relative to the current directory.
+std::string absolute_path(const std::string &relative)
+{
+    char buffer[PATH_MAX];
+    if (::getcwd(buffer, sizeof(buffer)) == nullptr)
+        throw std::runtime_error("absolute_path: getcwd failed");
+    return std::string(buffer) + "/" + relative;
+}
+
+bool file_exists(const std::string &path)
+{
+    std::ifstream in(path);
+    return in.good();
+}
+
+void copy_file(const std::string &from, const std::string &to)
+{
+    std::ifstream in(from, std::ios::binary);
+    std::ofstream out(to, std::ios::binary);
+    out << in.rdbuf();
+}
 
 void write_text(const std::string &path, const std::string &text)
 {
@@ -477,7 +526,7 @@ TEST(ScafCovShapeProfile, LoadMembraneShapeProfileThrowsOnMissingOrHeaderedFile)
 {
     Param p;
     Mesh mesh(p);
-    const fs::path shipped = fs::absolute("data/shape_profiles/membrane_shape_10.csv");
+    const std::string shipped = absolute_path("data/shape_profiles/membrane_shape_10.csv");
     TempDir tmp;
     std::vector<double> r, h;
     CwdGuard cwd(tmp.path());
@@ -485,9 +534,9 @@ TEST(ScafCovShapeProfile, LoadMembraneShapeProfileThrowsOnMissingOrHeaderedFile)
     EXPECT_THROW(mesh.loadMembraneShapeProfile(100.0, r, h), std::invalid_argument);
     // The shipped profiles start with an "r,h" header, which read_data_from_csv
     // cannot convert: document that they cannot be loaded as they stand.
-    if (fs::exists(shipped))
+    if (file_exists(shipped))
     {
-        fs::copy_file(shipped, tmp.path() / "membrane_shape_10.csv");
+        copy_file(shipped, tmp.file("membrane_shape_10.csv"));
         EXPECT_THROW(mesh.loadMembraneShapeProfile(10.0, r, h), std::invalid_argument);
     }
 }
