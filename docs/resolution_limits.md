@@ -31,6 +31,13 @@ The mesh size is limited by the **shortest wavelength that matters**: every mesh
 spectrum, mode by mode, as long as q·lFace ≲ 2. Coarsening at fixed `diffConst` also makes the
 membrane faster in physical time (section 3.2).
 
+![Time step: error of the shortest modes against dt at lFace 5, and where runs diverge](figures/resolution_timestep.png)
+
+![Mesh size: error in the bending rigidity each mode reads against q·lFace, every mesh](figures/resolution_meshsize.png)
+
+Both figures are drawn by `analysis/resolution_limit_figures.py <runs root> docs/figures` from the
+run summaries.
+
 ## 2. The time step
 
 ### 2.1 Divergence comes at a random time
