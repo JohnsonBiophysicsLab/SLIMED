@@ -226,12 +226,12 @@ void run_flat(std::string param_filename)
             }
         }
         // Search for a step size above model.oa.stepSizeThreshold
-        model.linear_search_for_stepsize_to_minimize_energy(); 
+        const double stepSizeFound = model.linear_search_for_stepsize_to_minimize_energy();
         // Command line out put for current step
         std::cout << "[main()] " << model.to_string_current_step() << std::endl;
- 
+
         // End program if no efficient step size found; assumed energy minimized (criteria based on model.oa.stepSizeThreshold)
-        if (model.stepSize < 0)
+        if (stepSizeFound < 0)
         {
             std::cout << "[main()] Step: " << model.iteration << "  -- could not find an efficient step size. Stopped." << std::endl;
             break;

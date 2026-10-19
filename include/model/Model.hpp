@@ -196,8 +196,8 @@ public:
      * @brief Performs a linear search to find the optimal step size that minimizes energy using
      * either nonlinear conjugate gradient method or simple line search.
      *
-     * @return double The optimal step size. Returns -1 if no efficient step size is found with
-     * the simple line search method.
+     * @return double The optimal step size, also stored in stepSize. Returns -1, and sets
+     * stepSize to -1, if no efficient step size is found with the simple line search method.
      */
     double linear_search_for_stepsize_to_minimize_energy();
 

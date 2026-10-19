@@ -7,8 +7,8 @@
  *
  * @param[in,out] ncgDirection0 Reference to a vector of nodal force directions.
  * Will be updated if switching to simple line search.
- * @return double The optimal step size. Returns -1 if no efficient step size is found with
- * the simple line search method.
+ * @return double The optimal step size, also stored in stepSize. Returns -1, and sets
+ * stepSize to -1, if no efficient step size is found with the simple line search method.
  */
 double Model::linear_search_for_stepsize_to_minimize_energy()
 {
@@ -100,6 +100,7 @@ double Model::linear_search_for_stepsize_to_minimize_energy()
             if (this->stepSize < oa.stepThreshold)
             {
                 cout << "Note: cannot find an efficient small stepSize to minimize the Energy even with the simple method!" << endl;
+                this->stepSize = -1;
                 return -1;
             }
         }
