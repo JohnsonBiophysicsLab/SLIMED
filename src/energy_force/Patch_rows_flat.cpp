@@ -74,6 +74,7 @@ void PatchRowsFlat::build(const std::vector<Matrix> &regularShapeFunctions,
     // honestly instead.
     irregular_.clear();
     offsets_.clear();
+    levelWeights_.clear();
     depth_ = 0;
     if (irregularRows.empty())
     {
@@ -83,6 +84,8 @@ void PatchRowsFlat::build(const std::vector<Matrix> &regularShapeFunctions,
     depth_ = irregularRows.depth();
     offsets_.assign(static_cast<std::size_t>(kValenceCount) * depth_ * kRegularChildrenPerStep,
                     kNoSlot);
+    // Levels a valence does not integrate keep weight 1; nothing reads them.
+    levelWeights_.assign(static_cast<std::size_t>(kValenceCount) * depth_ * 2, 1.0);
 
     for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
     {
@@ -92,6 +95,10 @@ void PatchRowsFlat::build(const std::vector<Matrix> &regularShapeFunctions,
         // depth_for() truncates deep valences and those blocks are never read.
         for (int depth = 0; depth < irregularRows.depth_for(valence); depth++)
         {
+            const std::size_t level =
+                static_cast<std::size_t>(valence - kMinIrregularValence) * depth_ + depth;
+            irregularRows.level_weights(valence, depth, levelWeights_[level * 2],
+                                        levelWeights_[level * 2 + 1]);
             for (int child = 0; child < kRegularChildrenPerStep; child++)
             {
                 const std::vector<Matrix> &rows = irregularRows.rows_for_child(valence, depth, child);
@@ -104,6 +111,19 @@ void PatchRowsFlat::build(const std::vector<Matrix> &regularShapeFunctions,
                 }
                 offsets_[slot_index(valence, depth, child)] = offset;
             }
+        }
+    }
+
+    // A weighted level copies its quadrature weights into a fixed-size buffer
+    // (element_energy_force_patch_weighted_pod()), which a device cannot grow.
+    for (const double weight : levelWeights_)
+    {
+        if (weight != 1.0 && nSamples_ > slimed::kMaxQuadratureSamples)
+        {
+            throw std::invalid_argument(
+                "[PatchRowsFlat] the irregular-patch tail correction supports at most " +
+                std::to_string(slimed::kMaxQuadratureSamples) + " quadrature points, got " +
+                std::to_string(nSamples_));
         }
     }
 }
@@ -134,5 +154,6 @@ const double *PatchRowsFlat::child(int valence, int depth, int childIndex) const
 
 std::size_t PatchRowsFlat::memory_bytes() const
 {
-    return (regular_.size() + irregular_.size() + gaussCoeff_.size()) * sizeof(double);
+    return (regular_.size() + irregular_.size() + levelWeights_.size() + gaussCoeff_.size()) *
+           sizeof(double);
 }

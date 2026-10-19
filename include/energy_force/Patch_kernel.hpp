@@ -48,6 +48,10 @@ constexpr int kMaxControlPoints = 18;
 /// (du, dv, duu, dvv, duv, dvu), in that order.
 constexpr int kShapeRows = 7;
 
+/// Most quadrature points a weighted call can carry: the largest rule
+/// get_gauss_quadrature_weight_VWU() offers has 12.
+constexpr int kMaxQuadratureSamples = 12;
+
 /// (1/3) from the divergence theorem times (1/2) for the reference triangle's
 /// own area. See element_area_volume_pod().
 constexpr double kSignedVolumeQuadratureFactor = 1.0 / 6.0;
@@ -372,6 +376,50 @@ SLIMED_HD inline void element_area_volume_pod(const double *sampleRows,
                                        int nCtrl,
                                        double &area,
                                        double &volume);
+
+/**
+ * @brief element_energy_force_patch_pod() for one level of a tail-corrected
+ * irregular patch.
+ *
+ * The bending energy and force are integrated with every quadrature weight
+ * multiplied by `bendWeight`; the area and volume forces as if multiplied by
+ * `areaWeight`. Both are fixed constants, so the result is still an exact
+ * energy and its exact gradient. See irregular_tail_weights().
+ *
+ * With both weights exactly 1 this is element_energy_force_patch_pod() itself,
+ * operation for operation, which is what keeps an uncorrected run
+ * bit-identical. `meanCurv` is reported unweighted, since it is a curvature
+ * and not a share of an integral.
+ *
+ * @param nSamples  At most kMaxQuadratureSamples when a weight is not 1.
+ */
+SLIMED_HD inline void element_energy_force_patch_weighted_pod(const double *sampleRows,
+                                                       const double *gaussCoeff,
+                                                       int nSamples,
+                                                       const double *ctrlPts,
+                                                       int nCtrl,
+                                                       const PatchParams &p,
+                                                       double bendWeight,
+                                                       double areaWeight,
+                                                       double &eBend,
+                                                       double &meanCurv,
+                                                       double normVector[3],
+                                                       double *fBend,
+                                                       double *fArea,
+                                                       double *fVolume);
+
+/**
+ * @brief element_area_volume_pod() with every quadrature weight multiplied by
+ * `areaWeight`. With a weight of exactly 1 it is element_area_volume_pod().
+ */
+SLIMED_HD inline void element_area_volume_weighted_pod(const double *sampleRows,
+                                                const double *gaussCoeff,
+                                                int nSamples,
+                                                const double *ctrlPts,
+                                                int nCtrl,
+                                                double areaWeight,
+                                                double &area,
+                                                double &volume);
 
 } // namespace slimed
 

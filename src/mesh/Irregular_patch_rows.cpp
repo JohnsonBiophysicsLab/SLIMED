@@ -20,23 +20,35 @@ Matrix identity(int n)
 }
 } // namespace
 
-int recommended_irregular_depth(int valence)
+int irregular_depth_index(int valence)
 {
     switch (valence)
     {
     case 4:
-        return 12;
+        return 0;
     case 5:
-        return 8;
+        return 1;
     case 7:
-        return 7;
+        return 2;
     case 8:
-        return 7;
+        return 3;
     default:
-        // Valence 6 is regular and never reads the table; anything else is
-        // rejected long before it reaches here.
-        return kDefaultIrregularDepth;
+        return -1;
     }
+}
+
+int recommended_irregular_depth(int valence)
+{
+    const int index = irregular_depth_index(valence);
+    // Valence 6 is regular and never reads the table; anything else is
+    // rejected long before it reaches here.
+    return index < 0 ? 1 : kDefaultIrregularPatchDepths[index];
+}
+
+int legacy_irregular_depth(int valence)
+{
+    const int index = irregular_depth_index(valence);
+    return index < 0 ? 1 : kLegacyIrregularPatchDepths[index];
 }
 
 int scaled_irregular_depth(int recommendedDepth, double depthScale)
@@ -49,14 +61,58 @@ int scaled_irregular_depth(int recommendedDepth, double depthScale)
     return static_cast<int>(std::max<long>(1, scaled));
 }
 
+void irregular_tail_weights(int valence, int depth, int level, bool tailCorrection,
+                            double &bendWeight, double &areaWeight)
+{
+    bendWeight = 1.0;
+    areaWeight = 1.0;
+    if (!tailCorrection || irregular_depth_index(valence) < 0 || depth < 1 || level < depth - 2 ||
+        level >= depth)
+    {
+        return;
+    }
+
+    const double pi = std::acos(-1.0);
+    const double lambda = 3.0 / 8.0 + std::cos(2.0 * pi / valence) / 4.0;
+    const double mu2 = 3.0 / 8.0 + std::cos(4.0 * pi / valence) / 4.0;
+    const double lambda2 = lambda * lambda;
+    const double rBowl = 1.0 / (16.0 * lambda2);
+    const double rSaddle = mu2 * mu2 / lambda2;
+
+    if (level == depth - 1)
+    {
+        areaWeight = 1.0 / (1.0 - lambda2);
+    }
+
+    if (depth == 1)
+    {
+        // One level cannot carry two corrections; take the slower mode's.
+        bendWeight = 1.0 / (1.0 - std::max(rBowl, rSaddle));
+        return;
+    }
+    // w_{D-2} + w_{D-1} r = 1/(1 - r) for r = rBowl and r = rSaddle.
+    const double gBowl = 1.0 / (1.0 - rBowl);
+    const double gSaddle = 1.0 / (1.0 - rSaddle);
+    const double last = (gBowl - gSaddle) / (rBowl - rSaddle);
+    bendWeight = (level == depth - 1) ? last : gBowl - last * rBowl;
+}
+
 int IrregularPatchRowTable::depth_for(int valence) const
 {
-    if (policy_ == DepthPolicy::Uniform)
+    const int index = irregular_depth_index(valence);
+    if (policy_ == DepthPolicy::Uniform || index < 0)
     {
         return depth_;
     }
-    return std::min(depth_,
-                    scaled_irregular_depth(recommended_irregular_depth(valence), depthScale_));
+    return std::min(depth_, scaled_irregular_depth(depths_[index], depthScale_));
+}
+
+void IrregularPatchRowTable::level_weights(int valence, int level, double &bendWeight,
+                                           double &areaWeight) const
+{
+    irregular_tail_weights(valence, depth_for(valence), level,
+                           policy_ == DepthPolicy::PerValence && tailCorrection_, bendWeight,
+                           areaWeight);
 }
 
 int IrregularPatchRowTable::child_index(int valence, int depth, int child) const
@@ -81,23 +137,52 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
             "[IrregularPatchRowTable] irregularPatchDepthScale must be positive, got " +
             std::to_string(depthScale));
     }
-
-    // Under PerValence the built depth is only ever consumed up to the scaled
-    // recommendation, so build exactly that much: a scale below 1 then costs
-    // less to build as well as to evaluate, and a scale above 1 has the extra
-    // levels to hand out instead of silently clamping back to the default.
-    // Uniform is left alone -- see the header.
     if (policy == DepthPolicy::PerValence && depthScale != 1.0)
     {
-        int needed = 1;
-        for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
-        {
-            needed = std::max(
-                needed, scaled_irregular_depth(recommended_irregular_depth(valence), depthScale));
-        }
-        depth = needed;
+        // A scaled table is built to exactly what it hands out.
+        IrregularPatchQuadrature quadrature;
+        quadrature.depthScale = depthScale;
+        build(regularShapeFunctions, quadrature);
+        return;
     }
+    // Built to the depth asked for; PerValence then consumes the default
+    // depths, capped by it, with the tail correction.
+    build_rows(regularShapeFunctions, depth, policy, depthScale,
+               policy == DepthPolicy::PerValence, kDefaultIrregularPatchDepths);
+}
 
+void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFunctions,
+                                   const IrregularPatchQuadrature &quadrature)
+{
+    if (!(quadrature.depthScale > 0.0))
+    {
+        throw std::invalid_argument(
+            "[IrregularPatchRowTable] irregularPatchDepthScale must be positive, got " +
+            std::to_string(quadrature.depthScale));
+    }
+    // The built depth is only ever consumed up to the deepest scaled entry, so
+    // build exactly that much: shallower depths cost less to build as well as
+    // to evaluate, and deeper ones have the levels to hand out.
+    int needed = 1;
+    for (int index = 0; index < kExtraordinaryValenceCount; index++)
+    {
+        const int depth = quadrature.depths[index];
+        if (depth < 1 || depth > kMaxIrregularPatchDepth)
+        {
+            throw std::invalid_argument(
+                "[IrregularPatchRowTable] irregularPatchDepths entries must lie in [1, " +
+                std::to_string(kMaxIrregularPatchDepth) + "], got " + std::to_string(depth));
+        }
+        needed = std::max(needed, scaled_irregular_depth(depth, quadrature.depthScale));
+    }
+    build_rows(regularShapeFunctions, needed, DepthPolicy::PerValence, quadrature.depthScale,
+               quadrature.tailCorrection, quadrature.depths);
+}
+
+void IrregularPatchRowTable::build_rows(const std::vector<Matrix> &regularShapeFunctions,
+                                        int depth, DepthPolicy policy, double depthScale,
+                                        bool tailCorrection, const IrregularPatchDepths &depths)
+{
     if (depth <= 0)
     {
         throw std::invalid_argument("[IrregularPatchRowTable] depth must be positive, got " +
@@ -173,6 +258,8 @@ void IrregularPatchRowTable::build(const std::vector<Matrix> &regularShapeFuncti
     nSamples_ = nSamples;
     policy_ = policy;
     depthScale_ = depthScale;
+    tailCorrection_ = tailCorrection;
+    depths_ = depths;
     rows_ = std::move(built);
 }
 

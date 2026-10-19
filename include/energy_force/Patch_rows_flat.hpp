@@ -81,6 +81,31 @@ public:
     /// Depth the slot arithmetic is indexed by; 0 when there are no rows.
     int depth() const { return depth_; }
 
+    /**
+     * @brief The bending and area quadrature weights of one irregular level.
+     *
+     * IrregularPatchRowTable::level_weights(), copied: both exactly 1 unless
+     * the table carries the tail correction. See irregular_tail_weights().
+     */
+    void level_weights(int valence, int depth, double &bendWeight, double &areaWeight) const
+    {
+        const std::size_t at = level_index(valence, depth) * 2;
+        bendWeight = levelWeights_[at];
+        areaWeight = levelWeights_[at + 1];
+    }
+
+    /**
+     * @brief Every level's two weights, for a device upload.
+     *
+     * Indexed `((valence - 4) * depth() + level) * 2`, bending then area: the
+     * slot arithmetic with the child dropped. Null when there are no rows.
+     */
+    const double *irregularLevelWeights() const
+    {
+        return levelWeights_.empty() ? nullptr : levelWeights_.data();
+    }
+    std::size_t irregular_level_weight_count() const { return levelWeights_.size(); }
+
     /// Doubles in the irregular buffer, for sizing a device allocation.
     std::size_t irregular_count() const { return irregular_.size(); }
     /// Entries in the offset table, likewise.
@@ -91,6 +116,10 @@ public:
 
 private:
     int slot_index(int valence, int depth, int childIndex) const;
+    std::size_t level_index(int valence, int depth) const
+    {
+        return static_cast<std::size_t>(slot_index(valence, depth, 0) / kRegularChildrenPerStep);
+    }
 
     int nSamples_ = 0;
     int depth_ = 0;
@@ -100,5 +129,7 @@ private:
     /// One offset per (valence, depth, child) slot, in the same order the
     /// IrregularPatchRowTable uses. kNoSlot marks a slot that was not built.
     std::vector<std::size_t> offsets_;
+    /// Two weights per (valence, depth) level, bending then area.
+    std::vector<double> levelWeights_;
     std::vector<double> gaussCoeff_;
 };

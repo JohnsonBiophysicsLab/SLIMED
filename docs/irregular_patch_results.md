@@ -386,8 +386,10 @@ topologies, not a fix to current runs.
 ## 9. How many kernel evaluations an extraordinary face needs
 
 **Measured 2026-10-16.** Fixture: [`analysis/ev_patch_cost.cpp`](../analysis/ev_patch_cost.cpp),
-linked against `build-omp/libslimed_core.a` (Release). **Status: measured only;
-nothing in `src/` changed and no default moved.**
+linked against `build-omp/libslimed_core.a` (Release). **Status: implemented as
+the default on 2026-10-19 (§9.9).** Sections 9.1–9.8 are the measurements made
+before the change, against the 12/8/7/7 default of that time, which they call
+"production".
 
 In a fluid run only about 10% of faces stay regular. On the final box_nu5 state
 (600k steps, 960 evaluated faces) the split is 644 multi-EV, 236 single-EV and 80
@@ -610,7 +612,7 @@ at the 3-point quadrature floor, 36 samples (4 levels) suffice. A multi-EV face
 needs 3 samples for its regular centre child plus that per extraordinary
 corner (3 per regular corner).
 
-**Recommended default (not applied; needs the user's OK):** tail2A, i.e.
+**Recommended default (now the default, §9.9):** tail2A, i.e.
 two-rate bending weights plus an area/volume tail weight from §9.3, with
 per-valence depths **6/5/5/5** for N = 4/5/7/8.
 
@@ -630,8 +632,9 @@ per-valence depths **6/5/5/5** for N = 4/5/7/8.
   not touch meshes without extraordinary vertices. The shipped periodic
   workload is one, so the legacy byte-identity gate is unaffected.
 
-A faster setting for exploratory runs: tail2A at 6/4/4/4. That is the same
-cost as `irregularPatchDepthScale = 0.5` (1.65× measured) at about 1/20 of its
+A faster setting for exploratory runs: tail2A at 6/4/4/4
+(`irregularPatchDepths = 6, 4, 4, 4`). That is the cost the old
+`irregularPatchDepthScale = 0.5` had (1.65× measured) at about 1/20 of its
 error (≤5e-4 against 8e-3).
 
 **Not recommended:**
@@ -640,10 +643,70 @@ error (≤5e-4 against 8e-3).
 - (c): its plateau does not shrink with depth.
 - (d): about one depth level's worth of savings, for a third code path.
 
-**To implement (b'),** carry a per-(valence, level) bending weight and an
-area weight in `PatchRowsFlat`. Apply them in the three CPU loops (force,
-`calculate_element_area_volume()`, `Local_patch_energy.cpp`) and the device
-layout. Rescale the kernel's `fArea`/`fVol` output by `w_A/w_B` on the two
-weighted levels. Change `recommended_irregular_depth()` to 6/5/5/5 only
-together with the weights. Gate the changes with a regression test that pins
-the fan values of §9.6.
+### 9.9 Implemented: the parameters and the new default
+
+Three parameters now set the irregular-patch quadrature:
+
+| key | default | meaning |
+| --- | ------- | ------- |
+| `irregularPatchDepths` | `6, 5, 5, 5` | levels for valences 4, 5, 7, 8, in that order; each in [1, 24]. `[12, 8, 7, 7]` with brackets also reads |
+| `irregularPatchTailCorrection` | `true` | the §9.3 weights on the last two levels (bending) and the last level (area, volume) |
+| `irregularPatchDepthScale` | `1.0` | multiplies every entry of `irregularPatchDepths`, rounded, floored at 1 |
+
+**Reproducing a run from before the change:**
+
+```text
+irregularPatchDepths = 12, 8, 7, 7
+irregularPatchTailCorrection = false
+```
+
+This pair is the old evaluation bit for bit: with both weights at 1 the
+weighted kernel calls the plain kernel unchanged.
+`IrregularPatchQuadratureTest.TheLegacyParametersReproduceThePlainTruncatedSum`
+pins that per face. Note that a scale now multiplies the new default:
+`irregularPatchDepthScale = 0.5` alone gives 3/3/3/3 with the tail correction,
+not the old 6/4/4/4.
+
+**Where the weights live.** `irregular_tail_weights()` in
+`Irregular_patch_rows.cpp` holds the formula. `IrregularPatchRowTable` and
+`PatchRowsFlat` carry two weights per (valence, level). The force pass,
+`calculate_element_area_volume()`, `evaluate_face_subset()` (the flip ΔE) and
+the device kernels (`Force_kernels.inl`, uploaded by the CUDA backend) all go
+through `element_energy_force_patch_weighted_pod()` and
+`element_area_volume_weighted_pod()`. The first of those rescales the area and
+volume forces of a weighted level by `w_A/w_B`. The CUDA build was not
+compiled or run here (no NVIDIA GPU); the host backend that shares its kernel
+bodies is tested against the CPU path on valences 4–8 and on a flipped grid.
+
+**Tests** (`tests/test_irregular_patch_quadrature.cpp`):
+- the weights match the §9.3 table;
+- the weights sum both geometric bending tails and the area tail exactly at
+  every depth 2–24, and are positive;
+- defaults and params-file parsing, including the rejected forms;
+- the legacy pair is bit-identical per face;
+- on fans at N = 4, 5, 7, 8 the default is within 1.5e-4 of a depth-16
+  reference, and more than 10× better than the same depths without the
+  correction;
+- bending, area and volume forces are the gradients of their energies, to
+  1e-6, with the correction on.
+
+**Measured after the change.** `box_nu5` parameters, 3000 steps, 1 thread,
+`OMP_SCHEDULE=static`, one binary for both rows. This tree includes the
+factored kernel of PR #15, so the absolute times are below those in §9.7:
+
+| quadrature | rep 1 | rep 2 | speedup |
+| ---------- | ----- | ----- | ------- |
+| legacy: `12, 8, 7, 7`, no tail correction | 154.3 s | 153.1 s | 1.00× |
+| default: `6, 5, 5, 5`, tail correction | 112.2 s | 112.4 s | **1.37×** |
+
+The §9.7 fit predicted 1.37×. The legacy run's final E_curvature (1068.54) is
+the pre-change binary's to the printed digits.
+
+**Byte identity, serial builds, before (5858f10) and after.**
+- Shipped periodic workload, new defaults (no extraordinary faces): dynamics,
+  8 of 8 output files identical; minimizer, 12 of 12.
+- box_nu5 fluid run, 300 steps, with the legacy pair: 14 of 14 identical.
+
+The full test suite passes in the serial and OpenMP builds (290 tests). Run
+with the new default, a fluid workload changes at the 1e-4 level and is no
+longer byte-identical to earlier runs; the legacy pair restores it.

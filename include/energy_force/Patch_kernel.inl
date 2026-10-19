@@ -282,4 +282,75 @@ SLIMED_HD inline void element_area_volume_pod(const double *sampleRows,
     }
 }
 
+SLIMED_HD inline void element_energy_force_patch_weighted_pod(const double *sampleRows,
+                                                       const double *gaussCoeff,
+                                                       int nSamples,
+                                                       const double *ctrlPts,
+                                                       int nCtrl,
+                                                       const PatchParams &p,
+                                                       double bendWeight,
+                                                       double areaWeight,
+                                                       double &eBend,
+                                                       double &meanCurv,
+                                                       double normVector[3],
+                                                       double *fBend,
+                                                       double *fArea,
+                                                       double *fVolume)
+{
+    if (bendWeight == 1.0 && areaWeight == 1.0)
+    {
+        element_energy_force_patch_pod(sampleRows, gaussCoeff, nSamples, ctrlPts, nCtrl, p, eBend,
+                                       meanCurv, normVector, fBend, fArea, fVolume);
+        return;
+    }
+
+    double weighted[kMaxQuadratureSamples];
+    for (int s = 0; s < nSamples; s++)
+    {
+        weighted[s] = bendWeight * gaussCoeff[s];
+    }
+
+    // The kernel integrates every term with one set of weights. The area and
+    // volume forces want areaWeight, so they are collected apart and rescaled
+    // by the ratio before joining the caller's sums.
+    double childArea[kMaxControlPoints * 3];
+    double childVolume[kMaxControlPoints * 3];
+    for (int j = 0; j < nCtrl * 3; j++)
+    {
+        childArea[j] = 0.0;
+        childVolume[j] = 0.0;
+    }
+    element_energy_force_patch_pod(sampleRows, weighted, nSamples, ctrlPts, nCtrl, p, eBend,
+                                   meanCurv, normVector, fBend, childArea, childVolume);
+    const double ratio = areaWeight / bendWeight;
+    for (int j = 0; j < nCtrl * 3; j++)
+    {
+        fArea[j] += ratio * childArea[j];
+        fVolume[j] += ratio * childVolume[j];
+    }
+    meanCurv /= bendWeight;
+}
+
+SLIMED_HD inline void element_area_volume_weighted_pod(const double *sampleRows,
+                                                const double *gaussCoeff,
+                                                int nSamples,
+                                                const double *ctrlPts,
+                                                int nCtrl,
+                                                double areaWeight,
+                                                double &area,
+                                                double &volume)
+{
+    if (areaWeight == 1.0)
+    {
+        element_area_volume_pod(sampleRows, gaussCoeff, nSamples, ctrlPts, nCtrl, area, volume);
+        return;
+    }
+    double weighted[kMaxQuadratureSamples];
+    for (int s = 0; s < nSamples; s++)
+    {
+        weighted[s] = areaWeight * gaussCoeff[s];
+    }
+    element_area_volume_pod(sampleRows, weighted, nSamples, ctrlPts, nCtrl, area, volume);
+}
+
 } // namespace slimed

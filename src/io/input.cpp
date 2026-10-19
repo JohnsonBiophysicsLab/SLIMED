@@ -1,6 +1,8 @@
 #include "io/io.hpp"
 #include <cctype>
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
 
 using namespace std;
 
@@ -389,6 +391,73 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 	{
 		param.edgeSpringRestLength = std::stod(variableValueStr);
 		std::cout << "edgeSpringRestLength set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("irregularPatchDepths") == 0)
+	{
+		// Four depths, for valences 4, 5, 7 and 8. pop_space() has already
+		// taken the spaces out, so commas separate them; brackets are allowed
+		// so `[12, 8, 7, 7]` reads as well.
+		std::string list = variableValueStr;
+		for (char &c : list)
+		{
+			if (c == '[' || c == ']' || c == ';')
+			{
+				c = ',';
+			}
+		}
+		std::vector<int> depths;
+		std::stringstream stream(list);
+		std::string item;
+		while (std::getline(stream, item, ','))
+		{
+			if (item.empty())
+			{
+				continue;
+			}
+			std::size_t used = 0;
+			int depth = 0;
+			try
+			{
+				depth = std::stoi(item, &used);
+			}
+			catch (const std::exception &)
+			{
+				used = 0;
+			}
+			if (used != item.size() || depth < 1 || depth > 24)
+			{
+				throw std::runtime_error(
+					"[read_param_file] irregularPatchDepths entries must be integers in [1, 24]; got '" +
+					item + "'");
+			}
+			depths.push_back(depth);
+		}
+		if (depths.size() != param.irregularPatchDepths.size())
+		{
+			throw std::runtime_error(
+				"[read_param_file] irregularPatchDepths needs four depths, for valences 4, 5, 7 "
+				"and 8; got '" + variableValueStr + "'");
+		}
+		for (std::size_t i = 0; i < depths.size(); i++)
+		{
+			param.irregularPatchDepths[i] = depths[i];
+		}
+		std::cout << "irregularPatchDepths set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("irregularPatchTailCorrection") == 0)
+	{
+		// Validated: it changes the Hamiltonian, so "True" must not quietly
+		// mean false.
+		if (variableValueStr.compare("true") != 0 && variableValueStr.compare("false") != 0)
+		{
+			throw std::runtime_error(
+				"[read_param_file] irregularPatchTailCorrection must be true or false; got '" +
+				variableValueStr + "'");
+		}
+		param.irregularPatchTailCorrection = (variableValueStr.compare("true") == 0);
+		std::cout << "irregularPatchTailCorrection set to: " << variableValueStr << std::endl;
 		return true;
 	}
 	else if (variableNameStr.compare("irregularPatchDepthScale") == 0)
