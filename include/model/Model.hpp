@@ -43,8 +43,9 @@ public:
     double trialStepSize = 0.0;            ///< The step size used in the optimization algorithm.
     int trialIterationInterval = 300;       ///< The number of iterations between trial step size adjustments.
     double c1 = 1e-6;                      ///< The c1 parameter in the NCG Wolfe condition.
-    double c2 = 0.001;                     ///< The c2 parameter in the NCG Wolfe condition.
+    double c2 = 0.45;                      ///< The c2 parameter in the NCG strong Wolfe condition. Fletcher-Reeves needs c2 < 1/2 for every direction to be a descent direction.
     double stepThreshold = 1e-15;          ///< The lower bound for the step size in NCG.
+    int nMaxNcgLineSearchTrials = 20;      ///< The most energy evaluations one NCG line search spends looking for a strong-Wolfe step.
     int nConsecutiveNcgStuck = 0;          ///< The number of consecutive times the NCG optimizer has gotten stuck.
     int nConsecutiveNcgStuckThreshold = 3; ///< The threshold of consecutive NCG stuck iterations before disabling it.
     double energyDiffThreshold = 1e-5;     ///< The energy difference threshold for convergence checking.
@@ -124,6 +125,7 @@ public:
     double stepSize = 0.0;
     OptimizationAlgorithm oa;         /**< The state for the optimization algorithm. */
     std::vector<Force> ncgDirection0; ///< vector to store the initial direction for nonlinear conjugate gradient optimization
+    double ncgForceNormSquaredPrev = 0.0; ///< sum |F|^2 at the last update_ncg_direction() (or construction): the Fletcher-Reeves denominator
 
     // Simulated Annealing
     bool isHeating = true;
@@ -191,6 +193,18 @@ public:
     void reset_ncg_direction();
 
     // energy and force
+    /**
+     * @brief Strong-Wolfe line search along ncgDirection0 by expansion,
+     * bracketing and cubic interpolation (Nocedal & Wright, Alg. 3.5/3.6).
+     *
+     * @param currentEnergy The energy at the start point.
+     * @param slope0 The directional derivative at the start point.
+     * @return The accepted step size, or -1 if no trial decreased the energy.
+     * A step with sufficient decrease but not the curvature condition is
+     * accepted with oa.isNCGstuck set.
+     */
+    double strong_wolfe_line_search(double currentEnergy, double slope0);
+
     /**
      *
      * @brief Performs a linear search to find the optimal step size that minimizes energy using

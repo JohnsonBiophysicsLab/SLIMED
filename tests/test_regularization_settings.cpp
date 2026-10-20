@@ -222,8 +222,8 @@ TEST(RegularizationSettingsTest, TheTermVanishesAtARefreshedReferenceOnlyWithout
 /**
  * @brief The NCG fallback refreshes the reference and leaves usingRpi alone.
  *
- * c2 = 0 makes the curvature condition unsatisfiable, so the search runs out
- * of step and takes the fallback whatever else the NCG branch does. Run with
+ * With no trials allowed the NCG search finds no step, so the line search
+ * takes the fallback whatever else the NCG branch does. Run with
  * the mode configured each way: the minimizer must not turn it off (the old
  * dead toggle's intent) and must not turn it on (what resetting it before
  * every search would do to a run configured without it).
@@ -253,7 +253,7 @@ TEST(RegularizationSettingsTest, TheLineSearchFallbackKeepsTheConfiguredMode)
         record.add(param.area, param.energy, mesh.calculate_mean_force());
         Model model(mesh, record);
         model.oa.usingNCG = true;
-        model.oa.c2 = 0.0;
+        model.oa.nMaxNcgLineSearchTrials = 0; // the NCG search finds nothing
         model.determine_trial_step_size();
         ASSERT_GT(model.oa.trialStepSize, 0.0);
 

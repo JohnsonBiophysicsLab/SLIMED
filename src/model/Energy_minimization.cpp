@@ -1,9 +1,167 @@
+#include <algorithm>
+#include <cmath>
+
 #include "model/Model.hpp"
 
+namespace
+{
 /**
- * 
+ * @brief The minimizer of the cubic that interpolates phi and phi' at a and b
+ * (Nocedal & Wright, eq. 3.59), kept at least a tenth of the interval away
+ * from either end; the midpoint when the cubic has no real minimizer.
+ */
+double interpolate_step(double a, double phiA, double dphiA,
+                        double b, double phiB, double dphiB)
+{
+    const double lower = std::min(a, b);
+    const double upper = std::max(a, b);
+    const double margin = 0.1 * (upper - lower);
+    double step = 0.5 * (a + b);
+    const double d1 = dphiA + dphiB - 3.0 * (phiA - phiB) / (a - b);
+    const double radicand = d1 * d1 - dphiA * dphiB;
+    if (radicand >= 0.0)
+    {
+        const double d2 = (b > a ? 1.0 : -1.0) * std::sqrt(radicand);
+        const double denominator = dphiB - dphiA + 2.0 * d2;
+        if (denominator != 0.0)
+        {
+            const double cubic = b - (b - a) * (dphiB + d2 - d1) / denominator;
+            if (std::isfinite(cubic))
+            {
+                step = cubic;
+            }
+        }
+    }
+    return std::min(std::max(step, lower + margin), upper - margin);
+}
+} // namespace
+
+/**
+ * @brief Strong-Wolfe line search along ncgDirection0 (Nocedal & Wright,
+ * Algorithms 3.5 and 3.6).
+ *
+ * phi(a) is the energy at coordPrev + a * ncgDirection0 and phi'(a) is
+ * -sum F(a) . ncgDirection0, so every trial costs one energy and force
+ * evaluation and gives both. Starting from oa.trialStepSize the step doubles
+ * while it still satisfies sufficient decrease and the slope is still steeply
+ * negative; once a trial overshoots, the minimizer lies in a bracket that each
+ * further trial narrows by cubic interpolation. Pure backtracking cannot do
+ * this: when the trial step is too long and the next shorter step already too
+ * short, it skips the strong-Wolfe band and runs down to oa.stepThreshold.
+ *
+ * @param currentEnergy phi(0).
+ * @param slope0 phi'(0); negative along a descent direction.
+ * @return The accepted step size; the mesh is left at that step with its
+ * energy and force. When no trial meets both conditions within
+ * oa.nMaxNcgLineSearchTrials, the lowest-energy trial with sufficient decrease is
+ * returned, if it gained at least a tenth of the decrease the slope predicts,
+ * and oa.isNCGstuck is set so that the next direction restarts from the
+ * force; otherwise -1.
+ */
+double Model::strong_wolfe_line_search(double currentEnergy, double slope0)
+{
+    const int nVertices = mesh.vertices.size();
+    if (!(slope0 < 0.0))
+    {
+        return -1;
+    }
+
+    // lo: the trial with sufficient decrease and the lowest energy so far
+    // (step 0 to begin with). hi: once set, the other end of an interval
+    // that contains strong-Wolfe steps.
+    double stepLo = 0.0, phiLo = currentEnergy, dphiLo = slope0;
+    double stepHi = 0.0, phiHi = 0.0, dphiHi = 0.0;
+    bool bracketed = false;
+    double trial = oa.trialStepSize;
+
+    for (int nTrial = 0; nTrial < oa.nMaxNcgLineSearchTrials; nTrial++)
+    {
+        this->stepSize = trial;
+        update_vertex_using_NCG();
+        mesh.Compute_Energy_And_Force();
+        const double phi = mesh.param.energy.energyTotal;
+        // The directional derivative at the trial point, so from the force
+        // just computed there
+        double dphi = 0.0;
+        #pragma omp parallel for reduction(+ : dphi)
+        for (int i = 0; i < nVertices; i++)
+        {
+            dphi -= dot_col(mesh.vertices[i].force.forceTotal, ncgDirection0[i].forceTotal);
+        }
+
+        // Written so that a non-finite energy counts as no decrease
+        const bool sufficientDecrease = phi <= currentEnergy + oa.c1 * trial * slope0;
+        if (!sufficientDecrease || !(phi < phiLo))
+        {
+            stepHi = trial, phiHi = phi, dphiHi = dphi;
+            bracketed = true;
+        }
+        else
+        {
+            if (std::abs(dphi) <= oa.c2 * std::abs(slope0))
+            {
+                return this->stepSize;
+            }
+            if (bracketed ? dphi * (stepHi - stepLo) >= 0.0 : dphi >= 0.0)
+            {
+                stepHi = stepLo, phiHi = phiLo, dphiHi = dphiLo;
+                bracketed = true;
+            }
+            stepLo = trial, phiLo = phi, dphiLo = dphi;
+        }
+
+        if (bracketed)
+        {
+            // A bracket this narrow has closed on a kink of phi (the
+            // regularization switching case, a scaffold bond crossing its
+            // point), where the slope jumps and no strong-Wolfe step exists.
+            if (std::abs(stepHi - stepLo) <= 1e-3 * std::max(stepLo, stepHi))
+            {
+                break;
+            }
+            trial = interpolate_step(stepLo, phiLo, dphiLo, stepHi, phiHi, dphiHi);
+        }
+        else
+        {
+            trial *= 2.0;
+        }
+    }
+
+    // Sufficient decrease without the curvature condition: take the step if
+    // it gained at least a tenth of what the slope predicts. With c1 = 1e-6 a
+    // round-off decrease at a step of 1e-14 passes sufficient decrease, and
+    // taking it would make the next trial step just as small. The step does
+    // not keep the next Fletcher-Reeves direction downhill, so the direction
+    // restarts from the force.
+    if (stepLo <= 0.0 || !(phiLo <= currentEnergy + 0.1 * stepLo * slope0))
+    {
+        return -1;
+    }
+    oa.isNCGstuck = true;
+    if (this->stepSize != stepLo)
+    {
+        this->stepSize = stepLo;
+        update_vertex_using_NCG();
+        mesh.Compute_Energy_And_Force();
+    }
+    return this->stepSize;
+}
+
+/**
+ *
  * @brief Performs a linear search to find the optimal step size that minimizes energy using
  * either nonlinear conjugate gradient method or simple line search.
+ *
+ * With NCG on, strong_wolfe_line_search() looks along ncgDirection0. When it
+ * finds no step that decreases the energy, the search falls back to the
+ * simple line search along the force. The simple line search tries
+ * oa.trialStepSize first and shrinks the step by 0.8 after each trial that
+ * does not lower the energy. When it reaches oa.stepThreshold it refreshes
+ * the regularization reference and searches once more along the force there,
+ * from the rule-of-thumb step (the fastest vertex moves 0.1 lFace). So a
+ * failure means that no step from the rule of thumb down to
+ * oa.stepThreshold lowers the energy -- not that the step decayed over
+ * earlier iterations.
  *
  * @param[in,out] ncgDirection0 Reference to a vector of nodal force directions.
  * Will be updated if switching to simple line search.
@@ -12,100 +170,91 @@
  */
 double Model::linear_search_for_stepsize_to_minimize_energy()
 {
-    bool ROWOUTPUT = false;
-//if (ROWOUTPUT)cout << "R15" << endl;
     // Initialize variables at the beginning of the function
     const int nVertices = mesh.vertices.size();
-    this->stepSize = oa.trialStepSize;
     double currentEnergy = mesh.param.energy.energyTotal;
     double ncgFactor0 = 0.0;
-//if (ROWOUTPUT)cout << "R21" << endl;
     // Compute the dot product of the negative force and the element triangle area in parallel
     #pragma omp parallel for reduction(+ : ncgFactor0)
     for (int i = 0; i < nVertices; i++)
     {
         ncgFactor0 -= dot_col(mesh.vertices[i].forcePrev.forceTotal, ncgDirection0[i].forceTotal);
     }
-//if (ROWOUTPUT)cout << "R28" << endl;
-    // Set up the constants for the nonlinear conjugate gradient method
-    double newEnergy = 0.0;
-    double ncgFactor = 0.0;
-//if (ROWOUTPUT)cout << "R32" << endl;
     // Reset flags and variables for NCG optimization
     oa.reset_NCG_stuck();
 
-    // Start the line search loop until the criteria is satisfied or the step size falls below a threshold
+    if (oa.usingNCG)
+    {
+        if (strong_wolfe_line_search(currentEnergy, ncgFactor0) > 0.0)
+        {
+            return this->stepSize;
+        }
+        cout << "Now change the NCG WolfeConditions to simple line search method!" << endl;
+        // Refreshing the reference is the whole fallback: every face
+        // in the reference-length case then starts the retry with no
+        // regularization energy and no regularization force. The R-pi
+        // adaptive cases (Param::usingRpi) stay as configured. Turning
+        // them off here and back on for the next search would make
+        // that search compare the energy it starts from and the
+        // energies it evaluates under two different functions, and
+        // where any face is in an adaptive case no step passes that.
+        mesh.update_reference_coord_from_previous_coord();
+        oa.isNCGstuck = true;
+        // Change ncgDirection0 to nodal force in parallel
+        #pragma omp parallel for
+        for (int i = 0; i < nVertices; i++)
+        {
+            ncgDirection0[i].forceTotal = mesh.vertices[i].forcePrev.forceTotal;
+        }
+    }
+
+    // Simple line search when NCG is not used or found no step
+    this->stepSize = oa.trialStepSize;
+    bool retried = false;
     while (true)
     {
-// if (ROWOUTPUT)cout << "R38" << endl;
+        // Apply displacement and recompute energy and force
+        update_vertex_using_NCG();
+        mesh.Compute_Energy_And_Force();
+        if (mesh.param.energy.energyTotal < currentEnergy)
+        {
+            break;
+        }
         // Scale down step size
         this->stepSize *= 0.8;
-//if (ROWOUTPUT)cout << "R41" << endl;
-        // Apply displacement and recompute energy and force
-        update_vertex_using_NCG();//cout << "R43" << endl;
-        mesh.Compute_Energy_And_Force();//cout << "R44" << endl;
-        newEnergy = mesh.param.energy.energyTotal;
-//if (ROWOUTPUT)cout << "R46" << endl;
-        // Check if using NCG and not stuck
-        if (oa.usingNCG && !oa.isNCGstuck)
+        if (this->stepSize < oa.stepThreshold)
         {
-            // Calculate NCG factor in parallel: the directional derivative at
-            // the trial point, so from the force just computed there
-            ncgFactor = 0.0;
-            #pragma omp parallel for reduction(+ : ncgFactor)
-            for (int i = 0; i < nVertices; i++)
-            {
-                ncgFactor -= dot_col(mesh.vertices[i].force.forceTotal, ncgDirection0[i].forceTotal);
-            }
-//if (ROWOUTPUT)cout << "R56" << endl;
-            // Satisfy NCG Wolfe conditions
-            if (newEnergy <= currentEnergy + oa.c1 * this->stepSize * ncgFactor0 && abs(ncgFactor) <= oa.c2 * abs(ncgFactor0))
-            {
-                break;
-            }
-//if (ROWOUTPUT)cout << "R62" << endl;
-            // Switch to simple linear search if cannot find a step size larger than oa.stepThreshold
-            if (this->stepSize < oa.stepThreshold)
-            {
-                cout << "Now change the NCG WolfeConditions to simple line search method!" << endl;
-
-                // Reinitialize variables for simple line search
-                this->stepSize = oa.trialStepSize;
-                // Refreshing the reference is the whole fallback: every face
-                // in the reference-length case then starts the retry with no
-                // regularization energy and no regularization force. The R-pi
-                // adaptive cases (Param::usingRpi) stay as configured. Turning
-                // them off here and back on for the next search would make
-                // that search compare the energy it starts from and the
-                // energies it evaluates under two different functions, and
-                // where any face is in an adaptive case no step passes that.
-                mesh.update_reference_coord_from_previous_coord();
-                oa.isNCGstuck = true;
-//if (ROWOUTPUT)cout << "R73" << endl;
-                // Change ncgDirection0 to nodal force in parallel
-                #pragma omp parallel for
-                for (int i = 0; i < nVertices; i++)
-                {
-                    ncgDirection0[i].forceTotal = mesh.vertices[i].forcePrev.forceTotal;
-                }
-            }
-        }
-        else // Simple line search when NCG is not used or stuck
-        {
-            if (newEnergy < currentEnergy)
-            {
-                break;
-            }
-
-            if (this->stepSize < oa.stepThreshold)
+            if (retried)
             {
                 cout << "Note: cannot find an efficient small stepSize to minimize the Energy even with the simple method!" << endl;
                 this->stepSize = -1;
                 return -1;
             }
+            // Before giving up, search once more from a fresh start. The
+            // trial step follows the last accepted step and can have become
+            // tiny, so start from the rule of thumb determine_trial_step_size
+            // uses: the fastest vertex moves a tenth of lFace. And the force
+            // need not be a descent direction of the energy with the
+            // regularization reference as it is (this is what the NCG
+            // fallback above refreshes it for), so refresh it, re-evaluate
+            // the start point under it and search along that force.
+            retried = true;
+            mesh.update_reference_coord_from_previous_coord();
+            this->stepSize = 0.0;
+            update_vertex_using_NCG();
+            mesh.Compute_Energy_And_Force();
+            mesh.update_previous_force_for_vertex();
+            currentEnergy = mesh.param.energy.energyTotal;
+            double maxForceMag = 0.0;
+            #pragma omp parallel for reduction(max : maxForceMag)
+            for (int i = 0; i < nVertices; i++)
+            {
+                ncgDirection0[i].forceTotal = mesh.vertices[i].forcePrev.forceTotal;
+                maxForceMag = std::max(maxForceMag, ncgDirection0[i].forceTotal.calculate_norm());
+            }
+            this->stepSize = 0.1 * mesh.param.lFace / std::max(maxForceMag, 5.0);
         }
     }
-//if (ROWOUTPUT)cout << "R96" << endl;
     // Update member stepSize
     return this->stepSize;
 }
