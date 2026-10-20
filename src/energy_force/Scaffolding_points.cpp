@@ -32,9 +32,9 @@ struct ReferenceBoundState
 
 struct ReferenceMolecule
 {
-    Matrix com = Matrix(3, 1);
+    Matrix com = Matrix(3, 1, true);
     std::unordered_map<std::string, Matrix> interfaces;
-    Matrix referenceVector = Matrix(3, 1);
+    Matrix referenceVector = Matrix(3, 1, true);
     bool hasReferenceVector = false;
 };
 
@@ -169,7 +169,7 @@ Matrix rotation_aligning_vectors(const Matrix &fromVec, const Matrix &toVec)
     }
     if (c < -1.0 + 1.0e-12)
     {
-        Matrix trialAxis(3, 1);
+        Matrix trialAxis(3, 1, true);
         trialAxis.set(0, 0, 1.0);
         Matrix axis = safe_cross(fromUnit, trialAxis);
         if (axis.calculate_norm() < 1.0e-8)
@@ -1076,7 +1076,7 @@ double Mesh::calculate_scaffolding_energy_force(bool doLocalSearch)
     // initialize total energy to zero; reset total force
     double totalEnergy = 0.0;
     forceTotalOnScaffolding = mat_calloc(3, 1);
-    forceOnScaffoldingPoints.assign(param.scaffoldingPoints.size(), Matrix(3, 1));
+    forceOnScaffoldingPoints.assign(param.scaffoldingPoints.size(), Matrix(3, 1, true));
 
     // iterate over spline points
     for (int i = 0; i < param.scaffoldingPoints.size(); i++)
@@ -1155,7 +1155,7 @@ bool Mesh::propagate_scaffolding()
         {
             const std::vector<Matrix> gagTranslationForces = calculate_gag_subunit_translation_forces_fd();
             const std::vector<Matrix> gagRotationTorques = calculate_gag_subunit_rotation_torques_fd();
-            Matrix averageDisplacement(3, 1);
+            Matrix averageDisplacement(3, 1, true);
             for (int j = 0; j < param.scaffoldingPoints.size(); j++)
             {
                 Matrix pointForce = forceOnScaffoldingPoints[j];
@@ -1209,12 +1209,12 @@ bool Mesh::pre_relax_gag_scaffolding()
     initialize_gag_scaffolding_topology();
 
     const double preRelaxStepSize = param.gagPropagationStepSize;
-    Matrix totalMovement(3, 1);
+    Matrix totalMovement(3, 1, true);
     for (int stepIndex = 0; stepIndex < param.gagPreRelaxSteps; ++stepIndex)
     {
         const std::vector<Matrix> gagTranslationForces = calculate_gag_subunit_translation_forces_fd();
         const std::vector<Matrix> gagRotationTorques = calculate_gag_subunit_rotation_torques_fd();
-        Matrix averageDisplacement(3, 1);
+        Matrix averageDisplacement(3, 1, true);
 
         for (int subunitIndex = 0; subunitIndex < static_cast<int>(param.scaffoldingPoints.size()); ++subunitIndex)
         {
@@ -1256,7 +1256,7 @@ bool Mesh::orient_scaffolding_plane_to_membrane()
         return false;
     }
 
-    Matrix centroid(3, 1);
+    Matrix centroid(3, 1, true);
     for (const Matrix &point : param.scaffoldingPoints)
     {
         centroid += point;
@@ -1303,7 +1303,7 @@ bool Mesh::orient_scaffolding_plane_to_membrane()
         normal *= -1.0;
     }
 
-    Matrix zAxis(3, 1);
+    Matrix zAxis(3, 1, true);
     zAxis.set(2, 0, 1.0);
     gagInitialAlignmentRotation = rotation_aligning_vectors(normal, zAxis);
 
@@ -1675,7 +1675,7 @@ double Mesh::calculate_gag_scaffolding_internal_energy(const std::vector<Matrix>
 
 std::vector<Matrix> Mesh::calculate_gag_scaffolding_forces_fd() const
 {
-    std::vector<Matrix> forces(param.scaffoldingPoints.size(), Matrix(3, 1));
+    std::vector<Matrix> forces(param.scaffoldingPoints.size(), Matrix(3, 1, true));
     if (!param.isGagScaffoldingEnergyIncluded && !param.isIdealizedProteinLatticeEnergyIncluded)
     {
         return forces;
@@ -1706,7 +1706,7 @@ std::vector<Matrix> Mesh::calculate_gag_scaffolding_forces_fd() const
 
 std::vector<Matrix> Mesh::calculate_gag_subunit_translation_forces_fd()
 {
-    std::vector<Matrix> forces(param.scaffoldingPoints.size(), Matrix(3, 1));
+    std::vector<Matrix> forces(param.scaffoldingPoints.size(), Matrix(3, 1, true));
     if (!param.isGagScaffoldingEnergyIncluded && !param.isIdealizedProteinLatticeEnergyIncluded)
     {
         return forces;
@@ -1739,7 +1739,7 @@ std::vector<Matrix> Mesh::calculate_gag_subunit_translation_forces_fd()
 
 std::vector<Matrix> Mesh::calculate_gag_subunit_rotation_torques_fd()
 {
-    std::vector<Matrix> torques(param.scaffoldingPoints.size(), Matrix(3, 1));
+    std::vector<Matrix> torques(param.scaffoldingPoints.size(), Matrix(3, 1, true));
     if (!param.isGagScaffoldingEnergyIncluded && !param.isIdealizedProteinLatticeEnergyIncluded)
     {
         return torques;
@@ -1761,7 +1761,7 @@ std::vector<Matrix> Mesh::calculate_gag_subunit_rotation_torques_fd()
         const Matrix baseRotation = baseSubunits[pointIndex].rotation;
         for (int axis = 0; axis < 3; ++axis)
         {
-            Matrix axisVector(3, 1);
+            Matrix axisVector(3, 1, true);
             axisVector.set(axis, 0, 1.0);
             Matrix rotPlus = rotation_matrix_from_axis_angle(axisVector, step);
             Matrix rotMinus = rotation_matrix_from_axis_angle(axisVector, -step);
