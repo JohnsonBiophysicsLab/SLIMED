@@ -740,6 +740,34 @@ public:
     void fold_forces_onto_periodic_sources();
 
     /**
+     * @brief Under the global BoundaryType::Periodic, the real vertex whose
+     * displacement a ghost vertex copies; the vertex itself for a real one.
+     *
+     * The minimizer moves the three ghost rows and columns on each side by
+     * the displacement of the rows and columns one period in
+     * (Model::enforce_boundary_conditions_after_coordinate_update()); a
+     * corner ghost copies both shifts. This is that map, flattened.
+     */
+    int legacy_periodic_source(int iVertex) const;
+
+    /**
+     * @brief Under the global BoundaryType::Periodic, add every ghost's force
+     * to legacy_periodic_source(ghost) before the ghosts are zeroed.
+     *
+     * The ghosts follow their sources, so the energy is a function of the
+     * real vertices alone and its gradient with respect to a source is its
+     * own force plus that of every ghost copying it. Zeroing the ghosts
+     * instead leaves -F.d short of the slope of the energy (by 0.73x in the
+     * area term on the shipped bud, with the regularization term's sign
+     * reversed), and a line search along F then stops on points where the
+     * energy still goes down. Only the minimizer moves ghosts this way, so
+     * only run_flat sets this, from Param::periodicGhostForceFolding; the
+     * dynamics keeps its own handling of the periodic rows. See
+     * manage_force_for_boundary_ghost_vertex().
+     */
+    bool foldLegacyPeriodicGhostForces = false;
+
+    /**
      * @brief Whether a vertex is a coordinate the model integrates or minimizes.
      *
      * False for ghosts, clamped vertices and periodic images; true for

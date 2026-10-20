@@ -21,6 +21,14 @@ deltaForceScaleConverge = 1e-4  # converging criteria for max force scale
 
 boundaryType = Periodic          # boundary condition type : Fixed, Free, Periodic or Mixed
 
+# Energy minimization (run_flat) under boundaryType = Periodic: true adds each
+# ghost vertex's force to the vertex it follows instead of dropping it, so the
+# force is the gradient of the energy the line search measures (the default).
+# false drops them, as before, and reproduces the old trajectory; the minimizer
+# then stops where no step along the inexact force lowers the energy. The
+# dynamics does not read it.
+# periodicGhostForceFolding = true
+
 # Mixed: the boundary condition is a property of each vertex (free, fixed, or
 # a periodic image of another vertex), so the two axes of the generated sheet
 # can differ and a mesh can be loaded from files. See
@@ -172,6 +180,12 @@ integratePeriodicDuplicates = false
 usingRpi = true                 # true to use the R-pi adaptive cases
 gamaShape = 0.2                 # shape threshold of the adaptive cases
 gamaArea = 0.2                  # area threshold of the adaptive cases
+# The springs' targets differ on the two sides of a threshold, so a hard switch
+# makes the energy jump wherever a face crosses one, and the minimizer's line
+# search stops there. The cases are blended instead: a face's shape-deformed
+# weight rises smoothly from 0 at gamaShape to 1 at gamaShape + this width (the
+# area-deformed weight likewise from gamaArea). 0 is the old hard switch.
+# regularizationBlendWidth = 0.05
 
 ############################################
 ## Insertion Mode
@@ -211,6 +225,11 @@ relaxLengthRatioApproximation = 1.0  # ratio of relax length to cap length appro
 scaffoldingZeroPlaneZ = 45.0         # height of the flat membrane plane around the Gag cap
 propagateScaffoldingInterv = 50       # Iteration interval for repositioning scaffolding based on energy and force
 propagateScaffoldingNstep = 10      # Number of steps every time propagating scaffolding
+# How the harmonic bond charges a vertex below its scaffold point's plane (nm):
+# a wall of slope 2 k lbond in the depth below the plane, rounded over this
+# width, on top of 0.5 k (|r| - lbond)^2. 0 is the old signed distance, whose
+# energy jumps by 2 k lbond |r| where a vertex beside its point crosses the plane.
+# harmonicBondSideWidth = 1.0
 
 ############################################
 ## Developer options

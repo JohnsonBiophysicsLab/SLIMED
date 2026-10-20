@@ -131,6 +131,7 @@ void HostForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
     args.gamaShape = param.gamaShape;
     args.gamaArea = param.gamaArea;
     args.usingRpi = param.usingRpi;
+    args.regularizationBlendWidth = param.regularizationBlendWidth;
     // In fluid mode the edge tether replaces the reference-length term and
     // runs on the host afterwards (Mesh::energy_force_fluid_terms()); the
     // regularization stage then writes zeros. Same choice the CPU loop makes.

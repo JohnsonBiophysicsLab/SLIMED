@@ -556,8 +556,10 @@ TEST(NcgMinimizerTest, RunFlatStopsAtTheFirstFailedLineSearch)
     EXPECT_GT(stoppedAt, 0);
     EXPECT_LT(stoppedAt, 399);
 
-    // NCG was never turned off, and the run stopped at the minimum.
-    EXPECT_EQ(out.find("Disabled NCG"), std::string::npos);
+    // The run stopped at the minimum, and NCG was not turned off on the way
+    // there. Once the energy is down to round-off (1e-25 from 1e3 here), the
+    // searches stall and NCG may switch itself off just before the stop;
+    // which iteration that is depends on the last bits of the force sums.
     auto energy_of_record = [&out](std::size_t at) {
         const std::size_t key = out.find("energy= ", at);
         return std::stod(out.substr(key + 8));
@@ -565,4 +567,10 @@ TEST(NcgMinimizerTest, RunFlatStopsAtTheFirstFailedLineSearch)
     const double energyFirst = energy_of_record(out.find("[Record::print_iteration()]"));
     const double energyLast = energy_of_record(out.rfind("[Record::print_iteration()]", failure));
     EXPECT_LT(energyLast, 1e-6 * energyFirst);
+    const std::size_t disabled = out.find("Disabled NCG");
+    if (disabled != std::string::npos)
+    {
+        EXPECT_LT(energy_of_record(out.rfind("[Record::print_iteration()]", disabled)), 1e-12 * energyFirst)
+            << "NCG was turned off before the sheet converged";
+    }
 }

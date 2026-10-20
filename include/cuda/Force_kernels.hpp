@@ -72,6 +72,7 @@ struct ForceKernelArgs
     double gamaShape = 0.0;
     double gamaArea = 0.0;
     bool usingRpi = true;
+    double regularizationBlendWidth = 0.0; ///< Param::regularizationBlendWidth
     /// Whether the reference-length regularization is part of this run's
     /// Hamiltonian. False in fluid mode, where the edge tether replaces it
     /// (Param::edgeSpringEnabled) and is evaluated on the host over the edge

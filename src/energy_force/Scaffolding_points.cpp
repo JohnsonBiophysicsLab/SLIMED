@@ -1082,6 +1082,55 @@ double Mesh::calculate_scaffolding_energy_force(bool doLocalSearch)
     for (int i = 0; i < param.scaffoldingPoints.size(); i++)
     {
         int index = param.scaffoldingPoints_correspondingVertexIndex[i];
+        if (param.harmonicBondSideWidth > 0.0)
+        {
+            // The bond, made continuous. The signed distance below charged a
+            // vertex under its point's plane 0.5 k (|r| + l)^2 instead of
+            // 0.5 k (|r| - l)^2: a jump of 2 k l |r| wherever a vertex beside
+            // its point crossed that plane, and a line search across it
+            // finds no step that lowers the energy. Here the bond is
+            // 0.5 k (|r| - l)^2 on both sides, and the side is charged by a
+            // wall of slope 2 k l in the depth u below the plane, rounded
+            // over the first harmonicBondSideWidth (a Huber function, so the
+            // energy is C1): E_side = 2 k l (u^2 / 2w) for u < w, and
+            // 2 k l (u - w/2) beyond. Straight under its point, deeper than
+            // w, a vertex is charged what the signed distance charged it,
+            // less the constant k l w.
+            const double k = param.springConst;
+            const double l = param.lbond;
+            const double w = param.harmonicBondSideWidth;
+            Matrix diffVec = vertices[index].coord - param.scaffoldingPoints[i];
+            const double distance = diffVec.calculate_norm();
+            const double depth = -diffVec(2, 0);
+            double sideEnergy = 0.0;
+            double sideSlope = 0.0; // d E_side / d depth
+            if (depth > 0.0)
+            {
+                if (depth < w)
+                {
+                    sideEnergy = 2.0 * k * l * depth * depth / (2.0 * w);
+                    sideSlope = 2.0 * k * l * depth / w;
+                }
+                else
+                {
+                    sideEnergy = 2.0 * k * l * (depth - w / 2.0);
+                    sideSlope = 2.0 * k * l;
+                }
+            }
+            totalEnergy += 0.5 * k * pow(distance - l, 2) + sideEnergy;
+
+            Matrix r_unit(3, 1);
+            get_unit_vector(diffVec, r_unit);
+            Matrix bondForce = -k * (distance - l) * r_unit;
+            // depth = p_z - x_z, so -dE_side/dx_z = +sideSlope: up, out of the wall
+            bondForce.set(2, 0, bondForce(2, 0) + sideSlope);
+            vertices[index].force.forceHarmonicBond = bondForce;
+            vertices[index].force.forceTotal += vertices[index].force.forceHarmonicBond;
+            forceTotalOnScaffolding -= vertices[index].force.forceHarmonicBond;
+            forceOnScaffoldingPoints[i] -= vertices[index].force.forceHarmonicBond;
+            continue;
+        }
+        // harmonicBondSideWidth = 0: the legacy signed distance.
         double distance = getDistance(param.scaffoldingPoints[i], vertices[index]);
         // @test get absolute distance
         // distance = abs(distance);
