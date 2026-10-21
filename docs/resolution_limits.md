@@ -25,7 +25,8 @@ per µs. Every run is 400 µs with a frame every 0.2 µs, and every statistic is
 
 The time step is limited by **stability, not accuracy**: below the step at which runs start to
 diverge, the spectrum is off by a few per cent at most. The default dt = 0.001 sits a factor of 2
-(fluid) to 2.5 (frozen) under the bound at lFace 5.
+(fluid) to 2.5 (frozen) under the bound at lFace 5. Truncating the Brownian noise
+(`noiseTruncation`) does not move the bound (section 2.5).
 
 The mesh size is limited by the **shortest wavelength that matters**: every mesh reads the same
 spectrum, mode by mode, as long as q·lFace ≲ 2. Coarsening at fixed `diffConst` also makes the
@@ -136,6 +137,66 @@ The membrane update is `(D dt / kT) F + sqrt(2 D dt) ξ`, so every bound above i
 D = 1 nm²/µs: at another `diffConst` divide by D. The box (`elasticBoxMobility`), the lipid reservoir
 and the flip attempt rate carry their own clocks and do not rescale; the box warns at rate·dt above 1
 and sits at 0.01 at dt 0.001.
+
+### 2.5 Truncating the noise does not move the bound
+
+**Runs:** 2026-10-20, `~/slimed_runs/trunc_noise` (README there; the keys are the shipped
+`noiseTruncation` and `noiseTruncationRenormalize`), the sheet of this section at lFace 5.
+
+A run that diverges ends in a node cross-over -- a face turns over -- so a natural guess is that a
+large random kick throws a vertex past its neighbour, and that a Gaussian cut off at a few standard
+deviations would stop it. `noiseTruncation = c` draws every ξ of the vertex step from the standard
+normal restricted to |ξ| < c (by rejection, so draws already inside are unchanged), and
+`noiseTruncationRenormalize = true`, the default, divides by its standard deviation to keep the
+variance at 1. Neither helps.
+
+**The cross-over is the force step's, not the noise's.** A kick is sqrt(2 D dt) ξ = 0.09 nm per σ at
+dt 0.004 against 5 nm edges. In `dt0.004_frozen` (divergence at step 6741), stepped again with a
+frame every step and its kicks recomputed from the counter key: at step 6734 the force term moves
+vertex 417 by 1.27 nm, against its usual 0.3, while its noise term is 0.19 nm (2.1 σ); at 6735 the
+face (443, 444, 417) inverts; after that the force step grows 2-4× per step. In the 6700 steps
+before, no face inverted, including at a 5.2 σ kick at step 6160. Variants of one seed often fail at
+the same step whatever the noise law -- seed 6 at step 1889 untruncated, cut at 4, 3 and 2 σ, and with
+every kick scaled by 0.88 -- so the noise sets which vertex reaches the stiff walls, and the explicit
+step on the walls of section 2.2 does the rest.
+
+**Divergence rate**, frozen, dt 0.004, 100 µs caps, seeds pooled as for section 2.1:
+
+| noise | seeds | diverged | simulated (µs) | per ms |
+| --- | --- | --- | --- | --- |
+| Gaussian | 32 | 32 | 493 | 65 |
+| cut at 2 σ, rescaled | 32 | 32 | 716 | 45 (× 0.69, 95 % 0.42-1.13) |
+| cut at 4, 3, 2.5, 1 σ, rescaled | 8 each | 8 each | 115-205 | 39-70 |
+| cut at 2 σ, not rescaled (variance 0.774) | 32 | 16 | 2306 | 6.9 |
+| Gaussian at 0.774 kT (`KBT` and `diffConst` × 0.774) | 32 | 26 | 1677 | 15.5 |
+
+Clipping at fixed variance, both comparisons pooled, multiplies the rate by 0.58 (0.40-0.86). Since
+the rate grows about as dt^12.6 (more than tenfold per 20 % of dt, section 2.1), that is a 4 %
+(1-8 %) longer step. The unrescaled cut is more stable mostly because it is colder: the same
+variance with the tails kept already gives a quarter of the rate. Fluid, dt 0.003, 6 seeds of
+60 µs: 4 diverged untruncated, 4 cut at 2 σ, 3 at 1 σ.
+
+**The spectrum and the rates.** For the linear modes the Euler-Maruyama step gives
+⟨|h_q|²⟩ = (k_BT / A K_q) Var(ξ) / (1 - Γ dt / 2) and an autocorrelation (1 - Γ dt)ⁿ: the noise
+enters only through its variance, whatever its distribution, and each mode sums some 750 independent
+kicks, so its amplitude stays Gaussian anyway. On a linear lattice membrane at Γ_max dt = 1.5 the
+rescaled cuts at 2 and 1 σ reproduce S(q) and Γ(q) to 0.1 %, and ⟨|h_q|⁴⟩ / ⟨|h_q|²⟩² = 2.00. On the
+sheet, frozen, dt 0.002, 400 µs, two seeds each, against the Gaussian:
+
+| noise | S, q 0.12-0.3 nm⁻¹ | 0.3-0.6 | 0.6-1.0 | Γ, 0.12-0.3 | E_bend (pN·nm) |
+| --- | --- | --- | --- | --- | --- |
+| Gaussian | 1 | 1 | 1 | 1 | 1114 |
+| cut at 2 σ, rescaled | 0.99 | 1.003 | 1.02 ± 0.01 | 1.004 | 1113 |
+| cut at 1 σ, rescaled | 0.98 | 1.000 | 1.015 ± 0.01 | 1.012 | 1111 |
+| cut at 2 σ, not rescaled | 0.75 | 0.77 | 0.78 | 1.02 | 846 |
+
+Rescaled, the truncated noise keeps the spectrum and the rates (the shortest shell may read 1-2 % high,
+at the edge of the seed scatter). Unrescaled, the spectrum drops by the variance, 0.774, while Γ stays:
+the membrane is sampled at 0.774 k_BT on the original clock, which breaks the fluctuation-dissipation
+relation between the two. Keep `noiseTruncationRenormalize = true` for any physics run.
+
+So `noiseTruncation` is there to bound the largest single kick, not to buy time step. The bound is
+set by how the stiff mesh terms are integrated.
 
 ## 3. The mesh size
 
