@@ -10,12 +10,14 @@ reads, under the runs root,
   base_dt0.004_frozen_s1/stepdiag.csv  the per-step force and noise steps of the
                                        diverging reference run (written by the
                                        study's step-diagnostics patch)
-  A_dt0.004_*, C_dt0.004_*             the stability runs (run.log, input.params)
+  A_dt0.004_*, C_dt0.004_*, D_dt0.004_* the dt 0.004 stability runs (run.log, input.params)
+  D_dt*_*                              the time-step sweep (16 seeds per point)
   B_dt0.002_*/resolution_summary.npz   the spectrum runs, reduced by
                                        resolution_sweep_analysis.py reduce
 
-and writes truncated_noise_mechanism.png, truncated_noise_stability.png and
-truncated_noise_spectrum.png to the output directory.
+and writes truncated_noise_mechanism.png, truncated_noise_stability.png,
+truncated_noise_dt_sweep.png and truncated_noise_spectrum.png to the output
+directory.
 """
 import math
 import re
@@ -120,7 +122,7 @@ def mechanism(root, out):
 def stability_runs(root):
     """{law: [(time of divergence or None, simulated time)]} over the A and C sets."""
     runs = {}
-    for d in sorted(list(root.glob("A_dt0.004_*")) + list(root.glob("C_dt0.004_*"))):
+    for d in sorted(list(root.glob("A_dt0.004_*")) + list(root.glob("C_dt0.004_*")) + list(root.glob("D_dt0.004_*"))):
         log = d / "run.log"
         if not log.exists() or "exit" not in log.read_text(errors="replace"):
             continue
@@ -205,6 +207,62 @@ def stability(root, out):
 
 
 # q >= 0.12 nm^-1 only: the slower modes are under-sampled in 300 us (section 2.3, Q_COMPARE)
+def dt_sweep(root, out):
+    """Divergence rate against dt per law: does truncation move the bound?"""
+    points = {}
+    for d in sorted(root.glob("D_dt*_*")):
+        log = d / "run.log"
+        if not log.exists() or "exit" not in log.read_text(errors="replace"):
+            continue
+        p = read_params(d / "input.params")
+        dt, cap = float(p["timeStep"]), int(p["maxIterations"]) * float(p["timeStep"])
+        m = re.search(r"at iteration (\d+); the run has diverged", log.read_text(errors="replace"))
+        law = re.sub(r"_s\d+$", "", d.name).split("_")[-1]
+        e = int(m.group(1)) * dt if m else None
+        k, T = points.get((law, dt), (0, 0.0))
+        points[(law, dt)] = (k + (e is not None), T + (e if e is not None else cap))
+    shown = [("inf", "Gaussian (default)", BLUE, "o", 1.0), ("c2", "cut at 2σ, rescaled", ORANGE, "s", 0.985),
+             ("c1", "cut at 1σ, rescaled", INK2, "D", 1.015)]
+    fig, ax = plt.subplots(figsize=(7.2, 4.3), constrained_layout=True)
+    for law, label, color, marker, shift in shown:
+        dts = sorted(dt for (l, dt) in points if l == law)
+        for dt in dts:
+            k, T = points[(law, dt)]
+            lo, hi = poisson_interval(k, T)
+            x = dt * shift
+            if k == 0:
+                ax.annotate("", xy=(x, 0.3), xytext=(x, hi), arrowprops=dict(arrowstyle="->", color=color, lw=1.5))
+                ax.plot(x, hi, marker="_", color=color, ms=10, mew=2)
+            else:
+                ax.plot([x, x], [lo, hi], color=color, lw=1.5, solid_capstyle="round")
+                ax.plot(x, 1000 * k / T, marker=marker, color=color, mec=SURFACE, mew=1.5, ls="none")
+        # Poisson maximum-likelihood power law through the points with divergences
+        xs = np.log([dt for dt in dts]); ks = np.array([points[(law, dt)][0] for dt in dts])
+        Ts = np.array([points[(law, dt)][1] for dt in dts]) / 1000
+        b, a = np.polyfit(xs[ks > 0], np.log(ks[ks > 0] / Ts[ks > 0]), 1)
+        for _ in range(200):     # Newton on the Poisson likelihood, from the log-linear start
+            mu = Ts * np.exp(a + b * xs)
+            g = np.array([np.sum(ks - mu), np.sum((ks - mu) * xs)])
+            H = -np.array([[np.sum(mu), np.sum(mu * xs)], [np.sum(mu * xs), np.sum(mu * xs * xs)]])
+            step = np.linalg.solve(H, g)
+            a, b = a - step[0], b - step[1]
+        grid = np.geomspace(0.0029, 0.0062, 50)
+        ax.plot(grid, np.exp(a + b * np.log(grid)), color=color, lw=1, alpha=0.7,
+                label=f"{label}: rate ∝ dt^{b:.0f}")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    plain(ax.xaxis, [0.003, 0.0035, 0.004, 0.005, 0.006])
+    ax.set_ylim(0.3, 6000)
+    plain(ax.yaxis, [1, 10, 100, 1000])
+    ax.set_xlabel("time step dt (µs)")
+    ax.set_ylabel("divergences per ms (95 % interval)")
+    ax.set_title("The stability bound does not move: frozen, lFace 5, 16 seeds per point")
+    ax.text(0.00312, 0.36, "arrow: no divergence,\nbar at the 95 % upper limit", fontsize=8, color=INK2, va="bottom")
+    ax.legend(loc="upper left", fontsize=8)
+    fig.savefig(out / "truncated_noise_dt_sweep.png")
+    plt.close(fig)
+
+
 SHELLS = np.array([0.12, 0.2, 0.3, 0.45, 0.6, 0.8, 1.0])
 
 
@@ -290,8 +348,10 @@ def main():
     style()
     mechanism(root, out)
     stability(root, out)
+    dt_sweep(root, out)
     spectrum(root, out)
-    print("wrote", ", ".join(f"truncated_noise_{n}.png" for n in ("mechanism", "stability", "spectrum")), "to", out)
+    print("wrote", ", ".join(f"truncated_noise_{n}.png" for n in ("mechanism", "stability", "dt_sweep", "spectrum")),
+          "to", out)
 
 
 if __name__ == "__main__":

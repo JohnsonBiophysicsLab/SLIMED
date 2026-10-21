@@ -166,17 +166,26 @@ step on the walls of section 2.2 does the rest.
 
 | noise | seeds | diverged | simulated (µs) | per ms |
 | --- | --- | --- | --- | --- |
-| Gaussian | 32 | 32 | 493 | 65 |
-| cut at 2 σ, rescaled | 32 | 32 | 716 | 45 (× 0.69, 95 % 0.42-1.13) |
-| cut at 4, 3, 2.5, 1 σ, rescaled | 8 each | 8 each | 115-205 | 39-70 |
+| Gaussian | 48 | 48 | 938 | 51 |
+| cut at 2 σ, rescaled | 48 | 48 | 998 | 48 (× 0.94, 95 % 0.63-1.40) |
+| cut at 1 σ, rescaled | 24 | 24 | 517 | 46 (× 0.91, 0.56-1.48) |
+| cut at 4, 3, 2.5 σ, rescaled | 8 each | 8 each | 115-205 | 39-70 |
 | cut at 2 σ, not rescaled (variance 0.774) | 32 | 16 | 2306 | 6.9 |
 | Gaussian at 0.774 kT (`KBT` and `diffConst` × 0.774) | 32 | 26 | 1677 | 15.5 |
 
-Clipping at fixed variance, both comparisons pooled, multiplies the rate by 0.58 (0.40-0.86). Since
-the rate grows about as dt^12.6 (more than tenfold per 20 % of dt, section 2.1), that is a 4 %
-(1-8 %) longer step. The unrescaled cut is more stable mostly because it is colder: the same
-variance with the tails kept already gives a quarter of the rate. Fluid, dt 0.003, 6 seeds of
-60 µs: 4 diverged untruncated, 4 cut at 2 σ, 3 at 1 σ.
+The first 32 seeds put the 2 σ cut at × 0.69 of the Gaussian rate; 16 more brought it to × 0.94,
+so that was scatter. **Nor does truncation move the bound.** Swept from dt 0.003 to 0.006, 16 seeds
+per point, the Gaussian and the cuts at 2 and 1 σ lie on one power law, rate ∝ dt^10-11, and a
+truncated law reaches a given rate at the same dt as the Gaussian to within × 1.00 (0.93-1.08) at
+1 σ and × 0.97-1.01 (0.90-1.04) at 2 σ. Where every Gaussian run diverges within 1-2 µs (dt 0.005,
+0.006), every truncated run does too, in the same time. Fluid, dt 0.003, 10 seeds of 60 µs per law:
+6 diverged in each, 16.8, 17.9 and 14.7 per ms untruncated, at 2 σ and at 1 σ.
+
+The unrescaled cut is more stable because it is colder: a Gaussian at the same 0.774 k_BT already has
+a quarter of the rate. It has about half that again (× 0.45, 0.24-0.83, from the 32 seeds; not
+retested), but at a sampled temperature 23 % below `KBT` it is not a fix either (below).
+
+![Divergence rate against the time step for the Gaussian and the rescaled cuts](figures/truncated_noise_dt_sweep.png)
 
 ![Survival and divergence rate per noise law, frozen, dt 0.004](figures/truncated_noise_stability.png)
 
@@ -196,7 +205,7 @@ sheet, frozen, dt 0.002, 400 µs, two seeds each, against the Gaussian:
 
 ![Spectrum and relaxation rates of the truncated laws against the Gaussian, frozen, dt 0.002](figures/truncated_noise_spectrum.png)
 
-The three figures are drawn by `analysis/truncated_noise_figures.py <runs> docs/figures` from the
+The four figures are drawn by `analysis/truncated_noise_figures.py <runs> docs/figures` from the
 runs of `~/slimed_runs/trunc_noise/runs`.
 
 Rescaled, the truncated noise keeps the spectrum and the rates (the shortest shell may read 1-2 % high,
