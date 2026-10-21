@@ -231,6 +231,12 @@ void run_dynamics_flat(std::string param_filename) {
         //4. postprocessing based on boundary condition
         mesh.postprocess_boundary();
 
+        //4a. the rest of the mesh-quality force's substeps, at
+        // meshForceSubsteps > 1. Off, nothing runs.
+        if (mesh.param.meshForceSubsteps > 1) {
+            model.mesh_force_substeps();
+        }
+
         //4b. the elastic box: one Brownian step of the periodic strain from
         // the same force evaluation the vertex step used, then the rescale
         // of the whole net, images and ghosts included. Off, nothing runs.

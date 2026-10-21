@@ -367,6 +367,23 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("meshForceSubsteps") == 0)
+	{
+		param.meshForceSubsteps = std::stoi(variableValueStr);
+		std::cout << "meshForceSubsteps set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("meshForceSubstepNoise") == 0)
+	{
+		if (variableValueStr != "once" && variableValueStr != "split")
+		{
+			throw std::invalid_argument("meshForceSubstepNoise must be once or split, got " +
+			                            variableValueStr);
+		}
+		param.meshForceSubstepNoise = variableValueStr;
+		std::cout << "meshForceSubstepNoise set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("inPlaneDynamicsEnabled") == 0)
 	{
 		param.inPlaneDynamicsEnabled = (variableValueStr.compare("true") == 0);

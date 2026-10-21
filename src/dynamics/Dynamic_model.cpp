@@ -1,6 +1,7 @@
 #include "Dynamics.hpp"
 
 #include <cstdint>
+#include <stdexcept>
 #include <vector>
 
 #include "Counter_rng.hpp"
@@ -48,6 +49,22 @@ DynamicModel::DynamicModel(DynamicMesh &mesh_, Record &record_)
     setup_bead();
     setup_elastic_box();
     setup_lipid_flow();
+    if (mesh.param.meshForceSubsteps > 1)
+    {
+        // The substeps move the limit surface by M^-T F and add up to the full
+        // wall force only when next_step() carries the first 1/n of it, which
+        // it does on the FDT-consistent path with the spring in the drive.
+        if (!mesh.param.fdtConsistentSurfaceUpdate || !mesh.param.edgeSpringEnabled ||
+            mesh.walls_are_hard() || !mesh.param.brownianStepEnabled)
+        {
+            throw std::runtime_error(
+                "[DynamicModel] meshForceSubsteps > 1 needs fdtConsistentSurfaceUpdate = true, "
+                "edgeSpringEnabled = true, soft walls and brownianStepEnabled = true.");
+        }
+        std::cout << "[DynamicModel] meshForceSubsteps = " << mesh.param.meshForceSubsteps
+                  << ": the mesh-quality force takes substeps of "
+                  << mesh.param.timeStep / mesh.param.meshForceSubsteps << " us" << std::endl;
+    }
     std::cout << "[DynamicModel] fdtConsistentSurfaceUpdate = "
               << (mesh.param.fdtConsistentSurfaceUpdate ? "true" : "false") << std::endl;
     // Output if model setup if verbose mode
@@ -145,7 +162,18 @@ void DynamicModel::next_step()
                            mesh.vertices[i].force.forceArea(j, 0);
                 if (mesh.param.edgeSpringEnabled)
                 {
-                    f += mesh.vertices[i].force.forceRegularization(j, 0);
+                    // Substepped, this step carries the first of the n
+                    // substeps of the mesh-quality force; mesh_force_substeps()
+                    // integrates the rest.
+                    if (mesh.param.meshForceSubsteps > 1)
+                    {
+                        f += mesh.vertices[i].force.forceRegularization(j, 0) /
+                             static_cast<double>(mesh.param.meshForceSubsteps);
+                    }
+                    else
+                    {
+                        f += mesh.vertices[i].force.forceRegularization(j, 0);
+                    }
                 }
                 if (beadOn)
                 {
@@ -166,6 +194,12 @@ void DynamicModel::next_step()
                                      mesh.param.externalForceZ};
 
     // One key per (run, step); standard_normal() mixes the vertex and axis in.
+    // Split substep noise: this step draws the first of n parts of the
+    // variance, mesh_force_substeps() the rest. Otherwise the shipped scale.
+    const double noiseScale =
+        (mesh.param.meshForceSubsteps > 1 && mesh.param.meshForceSubstepNoise == "split")
+            ? randScaleConst / std::sqrt(static_cast<double>(mesh.param.meshForceSubsteps))
+            : randScaleConst;
     const std::uint64_t stepKey =
         splitmix64(static_cast<std::uint64_t>(randomSeed)) +
         static_cast<std::uint64_t>(this->iteration);
@@ -314,7 +348,7 @@ void DynamicModel::next_step()
                 //if (i == 425 && j != 2){
                 //    disp = 0.1;
                 //}
-                    disp = randScaleConst * randomtermVector(j,0)
+                    disp = noiseScale * randomtermVector(j,0)
                                 + forceScaleConst * forcetermVector(j,0);
                 //std::cout << "Disp @ " << i << " , "<< j << " = "  << disp << std::endl;
                 //if (j != 2)
@@ -359,4 +393,172 @@ void DynamicModel::next_step()
     //if (randScaleConst <= 0.04462135955){
     //    randScaleConst = 0.0;
     //}
+}
+
+/**
+ * @brief The other n - 1 substeps of the mesh-quality force (Param::meshForceSubsteps).
+ *
+ * The full step diverges by an explicit overshoot of the walls, not of bending
+ * (docs/resolution_limits.md section 2.2): a control-point force sees a
+ * mobility up to 16 D/kT at the zone corner, so a few walls leaning on one
+ * vertex already put D k dt / kT past 2. The walls are local sums over the
+ * edge table, cheap next to the patch kernels, so they can take n Euler
+ * substeps of timeStep / n for the price of n - 1 evaluations of themselves
+ * and two surface solves each. Bending and area stay on the full step, which
+ * next_step() has already taken together with the first wall substep.
+ *
+ * Each substep is the full step's pipeline with only the wall force: control
+ * net to limit surface, the force mapped onto it (M^-T), the move, the mean
+ * height taken back off, and the map back with the boundary re-asserted.
+ *
+ * The noise (Param::meshForceSubstepNoise): "split" adds sqrt(2 D dt / n) of
+ * it to every substep, keyed per substep, so the walls take true
+ * Euler-Maruyama steps of dt / n while the bending modes still receive one
+ * Gaussian of variance 2 D dt per step. "once" leaves all of it on the first
+ * substep; the remaining n - 1 then relax every wall violation without
+ * refreshing it, and the walls are sampled too cold (measured 2026-10-20 on
+ * the frozen 100 nm tile at dt 0.004: wall energy 82 against 262 pN nm at
+ * dt 0.0005; "split" gives 297 at n = 2 and 260 at n = 4). Only "once" can
+ * stop early, at the first substep whose wall force is exactly zero.
+ */
+void DynamicModel::mesh_force_substeps()
+{
+    const int n = mesh.param.meshForceSubsteps;
+    if (n <= 1)
+    {
+        return;
+    }
+    const double scale = forceScaleConst / static_cast<double>(n);
+    const int nVertices = static_cast<int>(mesh.vertices.size());
+
+    // The coordinates next_step() integrates, by the same rule.
+    const bool mixed = (mesh.param.boundaryCondition == BoundaryType::Mixed);
+    std::vector<int> integrated;
+    for (int i = 0; i < nVertices; i++)
+    {
+        const bool slaved = (mixed || !mesh.param.integratePeriodicDuplicates) &&
+                            !mesh.isSlavedPeriodic.empty() && mesh.isSlavedPeriodic[i] != 0;
+        if (mesh.vertices[i].isGhost || slaved || mesh.vertices[i].is_fixed())
+        {
+            continue;
+        }
+        integrated.push_back(i);
+    }
+    if (integrated.empty())
+    {
+        return;
+    }
+    const int firstAxis = mesh.param.inPlaneDynamicsEnabled ? 0 : 2;
+    const bool splitNoise = (mesh.param.meshForceSubstepNoise == "split");
+    const double noiseScale = randScaleConst / std::sqrt(static_cast<double>(n));
+    const std::uint64_t stepKey =
+        splitmix64(static_cast<std::uint64_t>(randomSeed)) +
+        static_cast<std::uint64_t>(this->iteration);
+
+    for (int k = 1; k < n; k++)
+    {
+        // The walls read the vertex copies of the control net.
+        mesh.update_vertices_vector_with_mat();
+        // Only the regularization slot is rewritten (the edge spring sets it,
+        // the floor and the crease wall add to it); the boundary handling is
+        // then idempotent on every other slot, which it already folded and
+        // zeroed in the full evaluation.
+        mesh.energy_force_fluid_terms();
+        if (mixed)
+        {
+            // manage_force_for_boundary_ghost_vertex() on the one slot: the
+            // whole-Force version reassigns every slot of every ghost and
+            // costs more than the walls themselves. Same order of additions.
+            for (const int v : mesh.periodicImageVertices)
+            {
+                Matrix &imageForce = mesh.vertices[v].force.forceRegularization;
+                Matrix &sourceForce =
+                    mesh.vertices[mesh.vertices[v].reflectiveVertexIndex].force.forceRegularization;
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    sourceForce.set(axis, 0, sourceForce(axis, 0) + imageForce(axis, 0));
+                    imageForce.set(axis, 0, 0.0);
+                }
+            }
+            for (Vertex &vertex : mesh.vertices)
+            {
+                if (vertex.is_fixed() || vertex.type == VertexType::Ghost || vertex.isGhost)
+                {
+                    for (int axis = 0; axis < 3; axis++)
+                    {
+                        vertex.force.forceRegularization.set(axis, 0, 0.0);
+                    }
+                }
+            }
+        }
+        else
+        {
+            mesh.manage_force_for_boundary_ghost_vertex();
+        }
+
+        bool anyForce = false;
+        for (int i = 0; i < nVertices; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                const double f = mesh.vertices[i].force.forceRegularization(j, 0);
+                const double clean = std::isnan(f) ? 0.0 : f;
+                anyForce = anyForce || (clean != 0.0);
+                nodalForce.set(i, j, clean);
+            }
+        }
+        if (!anyForce && !splitNoise)
+        {
+            break;
+        }
+        if (anyForce)
+        {
+            mesh.apply_nodal_force_to_surface(nodalForce, driveForce);
+        }
+        else
+        {
+            driveForce.set_all(0.0);
+        }
+        mesh.apply_mesh_to_surface();
+        // A key per substep, hashed so that it collides neither with another
+        // step's key (consecutive integers) nor with another substep's.
+        const std::uint64_t substepKey =
+            splitmix64(stepKey ^ (0x9E3779B97F4A7C15ULL * static_cast<std::uint64_t>(k)));
+
+        double meanHeightBefore = 0.0;
+        for (const int i : integrated)
+        {
+            meanHeightBefore += mesh.matSurface(i, 2);
+        }
+        meanHeightBefore /= static_cast<double>(integrated.size());
+        for (const int i : integrated)
+        {
+            for (int j = firstAxis; j < 3; j++)
+            {
+                double disp = scale * driveForce(i, j);
+                if (splitNoise)
+                {
+                    disp += noiseScale * standard_normal(substepKey, static_cast<std::uint64_t>(i),
+                                                         static_cast<std::uint64_t>(j));
+                }
+                mesh.matSurface.set(i, j, mesh.matSurface(i, j) + disp);
+            }
+        }
+        if (mesh.param.meanHeightPinned)
+        {
+            double meanHeightAfter = 0.0;
+            for (const int i : integrated)
+            {
+                meanHeightAfter += mesh.matSurface(i, 2);
+            }
+            meanHeightAfter /= static_cast<double>(integrated.size());
+            const double drift = meanHeightAfter - meanHeightBefore;
+            for (const int i : integrated)
+            {
+                mesh.matSurface.set(i, 2, mesh.matSurface(i, 2) - drift);
+            }
+        }
+        mesh.apply_surface_to_mesh();
+        mesh.postprocess_boundary();
+    }
 }
