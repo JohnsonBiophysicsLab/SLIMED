@@ -25,7 +25,7 @@ The ladder is given as the lFace-5 step f; the run's step is f (L/5)^2. The elas
 keeps the membrane's clock (mobility 0.02 (5/L)^2) and is capped at rate x dt = 0.1.
 Reduce with analysis/resolution_sweep_analysis.py reduce (spec) or
 analysis/substep_resolution_report.py reduce (dyn: the short window), and compare with
-analysis/substep_resolution_report.py report. See docs/resolution_limits.md section 5.
+analysis/substep_resolution_report.py report. See docs/resolution_limits.md section 2.6.
 """
 import argparse
 import math
