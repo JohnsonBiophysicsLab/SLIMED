@@ -160,6 +160,8 @@ the same step whatever the noise law -- seed 6 at step 1889 untruncated, cut at 
 every kick scaled by 0.88 -- so the noise sets which vertex reaches the stiff walls, and the explicit
 step on the walls of section 2.2 does the rest.
 
+![The last 100 steps before a divergence: the force step runs away while the noise step stays at its usual size](figures/truncated_noise_mechanism.png)
+
 **Divergence rate**, frozen, dt 0.004, 100 µs caps, seeds pooled as for section 2.1:
 
 | noise | seeds | diverged | simulated (µs) | per ms |
@@ -176,6 +178,8 @@ the rate grows about as dt^12.6 (more than tenfold per 20 % of dt, section 2.1),
 variance with the tails kept already gives a quarter of the rate. Fluid, dt 0.003, 6 seeds of
 60 µs: 4 diverged untruncated, 4 cut at 2 σ, 3 at 1 σ.
 
+![Survival and divergence rate per noise law, frozen, dt 0.004](figures/truncated_noise_stability.png)
+
 **The spectrum and the rates.** For the linear modes the Euler-Maruyama step gives
 ⟨|h_q|²⟩ = (k_BT / A K_q) Var(ξ) / (1 - Γ dt / 2) and an autocorrelation (1 - Γ dt)ⁿ: the noise
 enters only through its variance, whatever its distribution, and each mode sums some 750 independent
@@ -189,6 +193,11 @@ sheet, frozen, dt 0.002, 400 µs, two seeds each, against the Gaussian:
 | cut at 2 σ, rescaled | 0.99 | 1.003 | 1.02 ± 0.01 | 1.004 | 1113 |
 | cut at 1 σ, rescaled | 0.98 | 1.000 | 1.015 ± 0.01 | 1.012 | 1111 |
 | cut at 2 σ, not rescaled | 0.75 | 0.77 | 0.78 | 1.02 | 846 |
+
+![Spectrum and relaxation rates of the truncated laws against the Gaussian, frozen, dt 0.002](figures/truncated_noise_spectrum.png)
+
+The three figures are drawn by `analysis/truncated_noise_figures.py <runs> docs/figures` from the
+runs of `~/slimed_runs/trunc_noise/runs`.
 
 Rescaled, the truncated noise keeps the spectrum and the rates (the shortest shell may read 1-2 % high,
 at the edge of the seed scatter). Unrescaled, the spectrum drops by the variance, 0.774, while Γ stays:
