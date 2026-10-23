@@ -917,3 +917,67 @@ TEST(RunDriversDynamicsTest, ADivergedRunStopsAtTheFirstNonFiniteEnergy)
     EXPECT_TRUE(file_exists("blowupvertex_final.csv"));
     EXPECT_TRUE(std::isfinite(energy.front()[kEnergyTotalColumn]));
 }
+
+namespace
+{
+/// The flat Mixed periodic tile of docs/resolution_limits.md, shrunk, with the
+/// fluid mesh walls in the drive and the walls substepped.
+std::vector<std::string> substepped_periodic_sheet(const std::string &noise)
+{
+    return {"maxIterations = 6",
+            "VERBOSE_MODE = false",
+            "boundaryType = Mixed",
+            "boundaryTypeX = Periodic",
+            "boundaryTypeY = Periodic",
+            "meanHeightPinned = true",
+            "surfaceSolver = iterative",
+            "lFace = 5.0",
+            "sideX = 80.0",
+            "sideY = 77.94228634",
+            "setRelaxAreaToDefault = true",
+            "meshpointOutput = true",
+            "meshpointOutputInterval = 3",
+            "timeStep = 0.004",
+            "diffConst = 1.0",
+            "randomSeed = 7",
+            "inPlaneDynamicsEnabled = true",
+            "edgeSpringEnabled = true",
+            "triangleShapeEnabled = true",
+            "creaseWallEnabled = true",
+            "meshForceSubsteps = 3",
+            "meshForceSubstepNoise = " + noise};
+}
+} // namespace
+
+TEST(RunDriversDynamicsTest, SubsteppedWallsRunOnAPeriodicMixedSheet)
+{
+    ScratchRunDirectory dir;
+    for (const std::string noise : {"split", "once"})
+    {
+        const std::string name = "sub" + noise;
+        write_params(name, substepped_periodic_sheet(noise));
+        run_dynamics_flat(name);
+        EXPECT_TRUE(file_exists(name + "vertex_final.csv")) << noise;
+        // One record before the first step and one per step, none of them blown up.
+        const auto energy = read_numeric_csv("EnergyForce.csv", 1);
+        ASSERT_EQ(energy.size(), 7u) << noise;
+        expect_all_finite(energy, "EnergyForce.csv");
+        const auto final = read_numeric_csv(name + "vertex_final.csv", 0);
+        expect_all_finite(final, name + "vertex_final.csv");
+    }
+}
+
+TEST(RunDriversDynamicsTest, AnUnknownSubstepNoiseModeIsRefused)
+{
+    ScratchRunDirectory dir;
+    write_params("subbad", substepped_periodic_sheet("sometimes"));
+    try
+    {
+        run_dynamics_flat("subbad");
+        FAIL() << "an unknown meshForceSubstepNoise was accepted";
+    }
+    catch (const std::exception &error)
+    {
+        EXPECT_NE(std::string(error.what()).find("meshForceSubstepNoise"), std::string::npos) << error.what();
+    }
+}

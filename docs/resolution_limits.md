@@ -28,6 +28,12 @@ diverge, the spectrum is off by a few per cent at most. The default dt = 0.001 s
 (fluid) to 2.5 (frozen) under the bound at lFace 5. Truncating the Brownian noise
 (`noiseTruncation`) does not move the bound (section 2.5).
 
+**With the walls substepped (`meshForceSubsteps`, section 2.6) that changes:** the stability bound
+moves out to the height-only one, 0.03 (lFace/5)² µs, and the step is limited by accuracy instead.
+S(q) and Γ(q) stay within 5 % across the mesh-resolved window q·lFace ≤ 2 up to
+dt ≈ 0.01 (lFace/5)² µs (0.01, 0.04, 0.16 µs at lFace 5, 10, 20; about 0.005 µs fluid at lFace 5),
+2.4-3.2x the throughput of the plain step at its bound. Section 2.6.5 has the table.
+
 The mesh size is limited by the **shortest wavelength that matters**: every mesh reads the same
 spectrum, mode by mode, as long as q·lFace ≲ 2. Coarsening at fixed `diffConst` also makes the
 membrane faster in physical time (section 3.2).
@@ -104,7 +110,8 @@ surface S = M C, so a control point moves by M⁻¹ times the step, and the vale
 points -- the mesh terms are such forces -- is up to 16× D/kT there, and two of the 83.4 pN/nm walls
 pressing on one vertex are already enough at dt 0.004. Softening the walls lets the vertex penetrate
 further, which is why it did not help. Bending is computed on the limit surface and does not see the
-factor.
+factor. Section 2.6 confirms the reading: integrating only the walls in substeps of the plain step's
+size removes the divergence up to the height-only bound.
 
 ### 2.3 Below the bound the error is small
 

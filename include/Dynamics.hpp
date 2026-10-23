@@ -487,6 +487,14 @@ public:
 
     void next_step();
 
+    /**
+     * @brief The remaining n - 1 substeps of the mesh-quality force, after
+     * next_step() and the map back to the control net (Param::meshForceSubsteps).
+     * Each re-evaluates only the fluid mesh terms, moves the surface points by
+     * D (timeStep / n) / kT times that force, and maps back. Does nothing at n = 1.
+     */
+    void mesh_force_substeps();
+
 private:
     bool beadLogHeaderWritten = false;
     bool boxLogHeaderWritten = false;

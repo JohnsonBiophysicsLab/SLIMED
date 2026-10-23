@@ -319,6 +319,33 @@ struct Param
     double KBT = 4.17;       // 1KbT = 4.17 pN.nm
     unsigned int randomSeed = 42; ///< random seed used in normal distribution
     bool fdtConsistentSurfaceUpdate = true; ///< Map the nodal force onto the limit-surface DOFs before the Brownian step
+    /**
+     * @brief Substeps of the mesh-quality force per Brownian step (prototype).
+     *
+     * 1, the default, is the single Euler step every run has used. n > 1
+     * splits the edge tether, altitude floor and crease wall -- the stiff,
+     * cheap, local part of the drive -- into n Euler substeps of timeStep / n:
+     * the first rides along with the bending, area and noise step from the
+     * step's starting force, the other n - 1 re-evaluate only those terms
+     * (DynamicModel::mesh_force_substeps()). The noise is drawn once per full
+     * step, so the bending modes see exactly the shipped update; only the
+     * walls are integrated more finely. Requires fdtConsistentSurfaceUpdate
+     * and edgeSpringEnabled, soft walls and the Brownian step.
+     */
+    int meshForceSubsteps = 1;
+    /**
+     * @brief Where the substepped step draws its noise: "once" or "split".
+     *
+     * "split" (the default) draws 2 D timeStep / n on every substep: their
+     * sum is still one Gaussian of variance 2 D timeStep, so the bending modes
+     * see the shipped step in law, while the walls get a true Euler-Maruyama
+     * step of timeStep / n, and the stable step is then timeStep / n <= ~0.003
+     * us at lFace 5 up to timeStep 0.02. "once" keeps the shipped single draw
+     * on the first substep; the other n - 1 push every wall violation back
+     * before the next frame, so the walls are sampled too cold and it needs
+     * more substeps to be stable. Read only at meshForceSubsteps > 1.
+     */
+    std::string meshForceSubstepNoise = "split";
     bool integratePeriodicDuplicates = false; ///< Legacy: give the fourth-ring periodic duplicates their own Brownian kick before overwriting them
     bool surfacepointOutput = true; ///< whether to output surface point file
     /**
