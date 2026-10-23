@@ -422,6 +422,42 @@ struct Param
     bool meanHeightPinned = false;
 
     /**
+     * @brief Truncate the Brownian noise of the vertex step at |xi| < this.
+     *
+     * The step draws one standard normal xi per coordinate and moves the
+     * limit surface by sqrt(2 D dt) xi. A positive value here redraws every
+     * xi that falls outside (-noiseTruncation, noiseTruncation), so no single
+     * kick exceeds that many standard deviations. 0, the default, is the
+     * untruncated Gaussian, and the run is byte-identical to one without the
+     * key. The parameter file accepts 0 or a value of at least 0.1.
+     *
+     * Only the vertex step is affected: the elastic box, the lipid
+     * reservoir and the flip sweep draw their own numbers.
+     *
+     * It does not raise the stable time step: the node cross-over that ends
+     * a run at too large a step is the explicit overshoot of the stiff mesh
+     * terms, not a large kick, and with the variance held at 1 the divergence
+     * rate does not change measurably. See docs/resolution_limits.md
+     * section 2.5.
+     */
+    double noiseTruncation = 0.0;
+
+    /**
+     * @brief Divide the truncated noise by its own standard deviation.
+     *
+     * Truncation alone lowers the variance of xi to
+     * truncated_normal_variance(noiseTruncation) -- 0.774 at 2 -- and the
+     * step then samples the membrane at that fraction of KBT while its
+     * relaxation rates stay where they were, which breaks the
+     * fluctuation-dissipation relation between the spectrum and the rates.
+     * true (the default) restores unit variance, and with it the spectrum
+     * and the rates of the Gaussian step: under Euler-Maruyama both depend on
+     * the noise only through its variance. Set false only to study that
+     * effect. Ignored when noiseTruncation is 0.
+     */
+    bool noiseTruncationRenormalize = true;
+
+    /**
      * @brief Replace the reference-length regularization with an edge spring.
      *
      * The regularization term measures each face's edges against the same
