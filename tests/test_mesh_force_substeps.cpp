@@ -149,3 +149,58 @@ TEST(MeshForceSubstepsTest, SplitNoiseKeepsTheStepVariance)
     EXPECT_NEAR(sumShipped / count / expected, 1.0, 0.4);
     EXPECT_NEAR(sumSplit / count / expected, 1.0, 0.4);
 }
+
+/**
+ * With no wall force and split noise the substeps still have the noise to
+ * draw: the step differs from the shipped one and keeps its variance.
+ */
+TEST(MeshForceSubstepsTest, WithNoWallForceTheSplitStepStillDrawsEveryShare)
+{
+    const std::vector<double> shipped = one_step(1, "split", true);
+    const std::vector<double> split = one_step(4, "split", true);
+    ASSERT_EQ(shipped.size(), split.size());
+    const double expected = 2.0 * 1.0 * 0.004;
+    double sum = 0.0;
+    int count = 0;
+    bool differs = false;
+    for (std::size_t k = 0; k < split.size(); k++)
+    {
+        if (k % 3 == 2)
+        {
+            continue; // z carries the pin
+        }
+        sum += split[k] * split[k];
+        differs = differs || (shipped[k] != split[k]);
+        count++;
+    }
+    ASSERT_GT(count, 300);
+    EXPECT_TRUE(differs);
+    EXPECT_NEAR(sum / count / expected, 1.0, 0.4);
+}
+
+/// At n = 1 the substep routine is a no-op: the shipped step is the whole step.
+TEST(MeshForceSubstepsTest, OneSubstepLeavesTheSurfaceAlone)
+{
+    Param param;
+    configure(param, 1, "split");
+    DynamicMesh mesh(param);
+    mesh.setup_flat();
+    mesh.update_vertices_mat_with_vector();
+    mesh.calculate_element_area_volume();
+    mesh.sum_membrane_area_and_volume(param.area0, param.vol0);
+    mesh.update_previous_coord_for_vertex();
+    mesh.update_reference_coord_from_previous_coord();
+    mesh.Compute_Energy_And_Force();
+    Record record(4);
+    DynamicModel model(mesh, record);
+    mesh.apply_mesh_to_surface();
+    const Matrix before = mesh.matSurface;
+    model.mesh_force_substeps();
+    for (int v = 0; v < static_cast<int>(mesh.vertices.size()); v++)
+    {
+        for (int axis = 0; axis < 3; axis++)
+        {
+            EXPECT_EQ(mesh.matSurface(v, axis), before(v, axis));
+        }
+    }
+}
