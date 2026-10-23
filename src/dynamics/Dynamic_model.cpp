@@ -43,6 +43,26 @@ DynamicModel::DynamicModel(DynamicMesh &mesh_, Record &record_)
     gen.seed(randomSeed);
     normal_dist = std::normal_distribution<>{0.0, 1.0};
 
+    // The truncated noise, if asked for: see Param::noiseTruncation. The
+    // rescale is worked out once here rather than per draw.
+    noiseCutoff = mesh.param.noiseTruncation;
+    if (noiseCutoff > 0.0)
+    {
+        const double variance = slimed::truncated_normal_variance(noiseCutoff);
+        noiseRescale = mesh.param.noiseTruncationRenormalize ? 1.0 / std::sqrt(variance) : 1.0;
+        std::cout << "[DynamicModel] Brownian noise truncated at |xi| < " << noiseCutoff;
+        if (mesh.param.noiseTruncationRenormalize)
+        {
+            std::cout << ", rescaled by " << noiseRescale << " to unit variance" << std::endl;
+        }
+        else
+        {
+            std::cout << ", not rescaled: its variance is " << variance
+                      << ", so the membrane is sampled at " << variance
+                      << " KBT while its relaxation rates are unchanged" << std::endl;
+        }
+    }
+
     nodalForce = mat_calloc(mesh.vertices.size(), 3);
     driveForce = mat_calloc(mesh.vertices.size(), 3);
     select_external_force_vertices();
@@ -287,8 +307,17 @@ void DynamicModel::next_step()
                 {
                     forceterm += externalForce[j];
                 }
-                randomterm = standard_normal(stepKey, static_cast<std::uint64_t>(i),
-                                             static_cast<std::uint64_t>(j)); // Get random term
+                if (noiseCutoff > 0.0)
+                {
+                    randomterm = noiseRescale *
+                                 slimed::truncated_standard_normal(stepKey, static_cast<std::uint64_t>(i),
+                                                                   static_cast<std::uint64_t>(j), noiseCutoff);
+                }
+                else
+                {
+                    randomterm = standard_normal(stepKey, static_cast<std::uint64_t>(i),
+                                                 static_cast<std::uint64_t>(j)); // Get random term
+                }
                 // In-plane motion is switched off by default, which is what
                 // this model has always done. It is defensible for a sheet
                 // whose triangulation cannot rearrange: the in-plane degrees

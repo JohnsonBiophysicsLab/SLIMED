@@ -286,6 +286,11 @@ public:
     double randScaleConst;
     double forceScaleConst;
     unsigned int randomSeed;
+    /// |xi| cutoff of the vertex noise (Param::noiseTruncation); 0 = Gaussian.
+    double noiseCutoff = 0.0;
+    /// Factor every truncated xi is multiplied by: 1 / its standard deviation,
+    /// or 1 when Param::noiseTruncationRenormalize is false.
+    double noiseRescale = 1.0;
 
     Matrix nodalForce;  /**< -dE/dc_i, assembled per control point, one row per vertex. */
     Matrix driveForce;  /**< The same force expressed in whatever coordinates next_step() advances. */
