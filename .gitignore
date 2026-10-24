@@ -188,3 +188,5 @@ tests/cmake_install.cmake
 
 data/example/input.params
 data/example/vertex_initial_step_0.csv
+# Rendered copies of the markdown notes; regenerate rather than track
+docs/*.pdf
