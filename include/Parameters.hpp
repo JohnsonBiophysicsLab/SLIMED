@@ -260,6 +260,28 @@ struct Param
      */
     double gamaArea = 0.2;
     /**
+     * @brief Width of the blend between the regularization cases (input key
+     * regularizationBlendWidth).
+     *
+     * A face's shape-deformed weight rises smoothly from 0 at gamaShape to 1
+     * at gamaShape + regularizationBlendWidth, and its area-deformed weight
+     * likewise from gamaArea in the fractional area excess. The cases' spring
+     * targets differ at the thresholds, so 0, the hard switch, makes the
+     * energy jump by a constant wherever a face crosses one, and a line
+     * search across the jump finds no step that lowers the energy. See
+     * Regularization_kernel.hpp. Read only when usingRpi is true.
+     */
+    double regularizationBlendWidth = 0.05;
+    /**
+     * @brief Under boundaryType = Periodic, let the energy minimization add
+     * each ghost vertex's force to the vertex it follows instead of dropping
+     * it (input key periodicGhostForceFolding). See
+     * Mesh::foldLegacyPeriodicGhostForces. false drops them, as run_flat
+     * always had, and reproduces the old trajectory. The dynamics does not
+     * read it.
+     */
+    bool periodicGhostForceFolding = true;
+    /**
      * @brief Apply one global Loop refinement to the control mesh at setup.
      *
      * Off by default. Only needed for meshes whose extraordinary vertices are
@@ -296,6 +318,18 @@ struct Param
     int propagateScaffoldingNstep = 100;                         ///< Number of steps every time propagating scaffolding
     double splinePointsZcoordScaling = 0.0;                     // for z scaling
     double lbond = 9.0;                                          ///< Harminc bond length in nm
+    /**
+     * @brief How the harmonic bond charges a vertex below its scaffold
+     * point's plane, in nm (input key harmonicBondSideWidth).
+     *
+     * > 0: the bond is 0.5 k (|r| - lbond)^2 on both sides, plus a wall of
+     * slope 2 k lbond in the depth below the point's plane, rounded over this
+     * width, so the energy is continuous and C1. 0: the legacy signed
+     * distance, -|r| below the plane, whose energy jumps by 2 k lbond |r|
+     * where a vertex beside its point crosses the plane. See
+     * Mesh::calculate_scaffolding_energy_force().
+     */
+    double harmonicBondSideWidth = 1.0;
     double relaxLengthRatioApproximation = 1.0;                  ///< ratio of relax length to cap length approximation
     double scaffoldingZeroPlaneZ = 0.0;                          ///< Height of the flat membrane plane around the Gag cap
     std::string scaffoldingFileName = "";

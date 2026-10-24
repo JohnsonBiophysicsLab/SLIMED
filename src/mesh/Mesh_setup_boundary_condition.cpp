@@ -465,6 +465,28 @@ void Mesh::fold_forces_onto_periodic_sources()
     }
 }
 
+int Mesh::legacy_periodic_source(int iVertex) const
+{
+    const int nFaceX = param.nFaceX;
+    const int nFaceY = param.nFaceY;
+    const int row = iVertex / (nFaceX + 1);
+    const int column = iVertex % (nFaceX + 1);
+    // Rows 0..2 copy rows nFaceY - 6 .. nFaceY - 4, and rows nFaceY - 2 ..
+    // nFaceY copy rows 4..6; the same for the columns.
+    auto source_line = [](int line, int nFace) {
+        if (line < 3)
+        {
+            return line + nFace - 6;
+        }
+        if (line > nFace - 3)
+        {
+            return line - nFace + 6;
+        }
+        return line;
+    };
+    return (nFaceX + 1) * source_line(row, nFaceY) + source_line(column, nFaceX);
+}
+
 bool Mesh::is_independent_vertex(int iVertex) const
 {
     const Vertex &vertex = vertices[iVertex];

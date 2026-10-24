@@ -10,6 +10,7 @@
 
 #include "cuda/Force_kernels.hpp"
 #include "energy_force/Patch_kernel.inl"
+#include "energy_force/Regularization_kernel.hpp"
 
 namespace slimed
 {
@@ -281,20 +282,6 @@ SLIMED_HD inline void regularization_for_face(const ForceKernelArgs &args, int f
     const double length21 = v3_norm(vector21);
     const double length02 = v3_norm(vector02);
 
-    // Heron's formula on the current triangle.
-    double semiperi = (length10 + length21 + length02) / 2.0;
-    const double area =
-        std::sqrt(semiperi * (semiperi - length10) * (semiperi - length21) * (semiperi - length02));
-
-    // Shape deformation: the variance of the three side lengths, which is zero
-    // for an equilateral triangle.
-    const double meanSideLength = (length10 + length21 + length02) / 3.0;
-    const double d10 = length10 - meanSideLength;
-    const double d21 = length21 - meanSideLength;
-    const double d02 = length02 - meanSideLength;
-    const double gama =
-        (d10 * d10 + d21 * d21 + d02 * d02) / (meanSideLength * meanSideLength);
-
     const double *r0 = args.coordsRef + iVertex0 * 3;
     const double *r1 = args.coordsRef + iVertex1 * 3;
     const double *r2 = args.coordsRef + iVertex2 * 3;
@@ -307,18 +294,21 @@ SLIMED_HD inline void regularization_for_face(const ForceKernelArgs &args, int f
         refVector21[axis] = r1[axis] - r2[axis];
         refVector02[axis] = r2[axis] - r0[axis];
     }
-    const double refLength10 = v3_norm(refVector10);
-    const double refLength21 = v3_norm(refVector21);
-    const double refLength02 = v3_norm(refVector02);
 
-    semiperi = (refLength10 + refLength21 + refLength02) / 2.0;
-    const double refArea = std::sqrt(semiperi * (semiperi - refLength10) *
-                                     (semiperi - refLength21) * (semiperi - refLength02));
-
-    const bool isDeformShape = (gama > args.gamaShape && args.usingRpi);
-    const double areaExcess = (area - refArea) / refArea;
-    const bool isDeformArea =
-        ((areaExcess < 0.0 ? -areaExcess : areaExcess) >= args.gamaArea && args.usingRpi);
+    // The energy and dE/dl of the face, in whichever case or blend of cases
+    // it is in. The same function the CPU loop calls.
+    const double length[3] = {length10, length21, length02};
+    const double refLength[3] = {v3_norm(refVector10), v3_norm(refVector21), v3_norm(refVector02)};
+    RegularizationParams params;
+    params.kCurv = args.kCurv;
+    params.gamaShape = args.gamaShape;
+    params.gamaArea = args.gamaArea;
+    params.usingRpi = args.usingRpi;
+    params.blendWidth = args.regularizationBlendWidth;
+    double dEdl[3];
+    unsigned char deformCase = 0;
+    args.faceERegular[face] = regularization_energy_and_gradient(length, refLength, params, dEdl, deformCase);
+    args.faceDeformCase[face] = deformCase;
 
     // Unit vectors along the three sides. Reciprocal-then-multiply, as
     // Matrix::operator/= did.
@@ -326,50 +316,10 @@ SLIMED_HD inline void regularization_for_face(const ForceKernelArgs &args, int f
     v3_scale(vector21, 1.0 / length21, vector21);
     v3_scale(vector02, 1.0 / length02, vector02);
 
-    // Whichever branch is taken, the energy is a spring on the three sides
-    // pulling them towards some target length; only the target differs. Shape
-    // deformation wins over area deformation.
-    double target10 = refLength10;
-    double target21 = refLength21;
-    double target02 = refLength02;
-    unsigned char deformCase = 0;
-    if (isDeformShape)
-    {
-        // Towards the equilateral triangle of the same current area.
-        const double meanSideLengthOld = std::sqrt(4.0 * area / std::sqrt(3.0));
-        target10 = meanSideLengthOld;
-        target21 = meanSideLengthOld;
-        target02 = meanSideLengthOld;
-        deformCase = 2;
-    }
-    else if (isDeformArea)
-    {
-        // Towards the equilateral triangle of the reference area.
-        const double meanSideLengthRef = std::sqrt(4.0 * refArea / std::sqrt(3.0));
-        target10 = meanSideLengthRef;
-        target21 = meanSideLengthRef;
-        target02 = meanSideLengthRef;
-        deformCase = 1;
-    }
-
-    const double e10 = length10 - target10;
-    const double e21 = length21 - target21;
-    const double e02 = length02 - target02;
-    args.faceERegular[face] = args.kCurv / 2.0 * (e10 * e10 + e21 * e21 + e02 * e02);
-    args.faceDeformCase[face] = deformCase;
-
     double *corner0 = args.cornerForceRegular + (face * 3 + 0) * 3;
     double *corner1 = args.cornerForceRegular + (face * 3 + 1) * 3;
     double *corner2 = args.cornerForceRegular + (face * 3 + 2) * 3;
-    for (int axis = 0; axis < 3; axis++)
-    {
-        corner0[axis] = args.kCurv * ((target10 - length10) * vector10[axis] +
-                                      (length02 - target02) * vector02[axis]);
-        corner1[axis] = args.kCurv * ((target21 - length21) * vector21[axis] +
-                                      (length10 - target10) * vector10[axis]);
-        corner2[axis] = args.kCurv * ((target02 - length02) * vector02[axis] +
-                                      (length21 - target21) * vector21[axis]);
-    }
+    regularization_corner_forces(dEdl, vector10, vector21, vector02, corner0, corner1, corner2);
 }
 
 SLIMED_HD inline void gather_force_for_vertex(const ForceKernelArgs &args, int vertex)

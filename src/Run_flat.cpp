@@ -95,6 +95,9 @@ void run_flat(std::string param_filename)
 
     mesh.update_previous_coord_for_vertex(); // Update previous coordinate...
     mesh.update_reference_coord_from_previous_coord(); // ...and reference coord
+    // The minimizer moves the legacy periodic ghosts with their sources, so
+    // their forces belong to those sources; see Mesh::foldLegacyPeriodicGhostForces.
+    mesh.foldLegacyPeriodicGhostForces = mesh.param.periodicGhostForceFolding;
     mesh.Compute_Energy_And_Force();// Calculate energy on faces and force on vertices
     mesh.update_previous_coord_for_vertex(); // Update previous coordinate
     mesh.update_previous_force_for_vertex(); // Update forces
@@ -226,12 +229,12 @@ void run_flat(std::string param_filename)
             }
         }
         // Search for a step size above model.oa.stepSizeThreshold
-        model.linear_search_for_stepsize_to_minimize_energy(); 
+        const double stepSizeFound = model.linear_search_for_stepsize_to_minimize_energy();
         // Command line out put for current step
         std::cout << "[main()] " << model.to_string_current_step() << std::endl;
- 
+
         // End program if no efficient step size found; assumed energy minimized (criteria based on model.oa.stepSizeThreshold)
-        if (model.stepSize < 0)
+        if (stepSizeFound < 0)
         {
             std::cout << "[main()] Step: " << model.iteration << "  -- could not find an efficient step size. Stopped." << std::endl;
             break;

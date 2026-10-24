@@ -835,6 +835,10 @@ TEST_F(ScafCovHarmonicBond, VerboseCorrespondenceReportsSharedVertices)
 
 TEST_F(ScafCovHarmonicBond, EnergyMatchesTheSignedDistanceFormula)
 {
+    // harmonicBondSideWidth = 0 selects the legacy bond: the signed distance,
+    // negative for a vertex below its point's plane.
+    param.harmonicBondSideWidth = 0.0;
+    mesh->param.harmonicBondSideWidth = 0.0;
     const double k = param.springConst;
     const double l = param.lbond;
     const double d0 = std::sqrt(0.3 * 0.3 + 0.2 * 0.2 + 12.0 * 12.0);
@@ -850,6 +854,40 @@ TEST_F(ScafCovHarmonicBond, EnergyMatchesTheSignedDistanceFormula)
     param.scaffoldingPoints_correspondingVertexIndex = {a};
     EXPECT_NEAR(energy(), 0.0, 1e-20);
     EXPECT_NEAR(norm3(mesh->vertices[a].force.forceHarmonicBond), 0.0, 1e-12);
+}
+
+TEST_F(ScafCovHarmonicBond, EnergyMatchesTheContinuousBondFormula)
+{
+    // The default bond (harmonicBondSideWidth = 1 nm): 0.5 k (|r| - l)^2 on
+    // both sides of the point's plane, plus a wall in the depth u of the
+    // vertex below that plane, 2 k l u^2 / (2 w) for u < w and 2 k l (u - w / 2)
+    // beyond. Vertex b sits 4 nm below its point's plane.
+    ASSERT_DOUBLE_EQ(param.harmonicBondSideWidth, 1.0);
+    const double k = param.springConst;
+    const double l = param.lbond;
+    const double w = param.harmonicBondSideWidth;
+    const double d0 = std::sqrt(0.3 * 0.3 + 0.2 * 0.2 + 12.0 * 12.0);
+    const double d1 = std::sqrt(0.1 * 0.1 + 0.2 * 0.2 + 4.0 * 4.0);
+    const double depth = 4.0;
+    const double expected = 0.5 * k * ((d0 - l) * (d0 - l) + (d1 - l) * (d1 - l)) +
+                            2.0 * k * l * (depth - 0.5 * w);
+    EXPECT_NEAR(energy(), expected, 1e-10 * expected);
+    EXPECT_NEAR(mesh->calculate_scaffolding_energy_force(true), expected, 1e-10 * expected);
+
+    // Continuous across the plane. A vertex 3 nm beside its point is charged
+    // the same just above and just below the point's plane; the signed
+    // distance jumped by 2 k l |r| there.
+    const Matrix &vb = mesh->vertices[b].coord;
+    const double eps = 1e-6;
+    param.scaffoldingPoints_correspondingVertexIndex = {b};
+    param.scaffoldingPoints = {vec3(vb(0, 0) - 3.0, vb(1, 0), vb(2, 0) - eps)};
+    const double above = energy();
+    param.scaffoldingPoints = {vec3(vb(0, 0) - 3.0, vb(1, 0), vb(2, 0) + eps)};
+    const double below = energy();
+    const double beside = 0.5 * k * (3.0 - l) * (3.0 - l);
+    EXPECT_NEAR(above, beside, 1e-6 * beside);
+    EXPECT_NEAR(below, beside, 1e-6 * beside);
+    EXPECT_NEAR(above, below, 1e-8 * beside);
 }
 
 TEST_F(ScafCovHarmonicBond, ForceIsMinusTheEnergyGradientAndReactsOnTheScaffold)
