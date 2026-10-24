@@ -404,6 +404,23 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 				  << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("meshForceSubsteps") == 0)
+	{
+		param.meshForceSubsteps = std::stoi(variableValueStr);
+		std::cout << "meshForceSubsteps set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("meshForceSubstepNoise") == 0)
+	{
+		if (variableValueStr != "once" && variableValueStr != "split")
+		{
+			throw std::invalid_argument("meshForceSubstepNoise must be once or split, got " +
+			                            variableValueStr);
+		}
+		param.meshForceSubstepNoise = variableValueStr;
+		std::cout << "meshForceSubstepNoise set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("inPlaneDynamicsEnabled") == 0)
 	{
 		param.inPlaneDynamicsEnabled = (variableValueStr.compare("true") == 0);
@@ -931,6 +948,27 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 	{
 		param.beadBreakRange = std::stod(variableValueStr);
 		std::cout << "beadBreakRange set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("noiseTruncation") == 0)
+	{
+		// 0 is off. Below 0.1 the rejection loop that draws the truncated
+		// normal accepts fewer than 8 % of its attempts, and no cutoff that
+		// small is a model of thermal noise anyone means.
+		const double cutoff = std::stod(variableValueStr);
+		if (!std::isfinite(cutoff) || cutoff < 0.0 || (cutoff > 0.0 && cutoff < 0.1))
+		{
+			throw std::runtime_error("[read_param_file] noiseTruncation must be 0 (off) or a finite "
+									 "number >= 0.1; got '" + variableValueStr + "'");
+		}
+		param.noiseTruncation = cutoff;
+		std::cout << "noiseTruncation set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("noiseTruncationRenormalize") == 0)
+	{
+		param.noiseTruncationRenormalize = (variableValueStr.compare("true") == 0);
+		std::cout << "noiseTruncationRenormalize set to: " << variableValueStr << std::endl;
 		return true;
 	}
 	else if (variableNameStr.compare("meanHeightPinned") == 0)

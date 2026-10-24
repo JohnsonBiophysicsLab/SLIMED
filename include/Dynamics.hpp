@@ -286,6 +286,11 @@ public:
     double randScaleConst;
     double forceScaleConst;
     unsigned int randomSeed;
+    /// |xi| cutoff of the vertex noise (Param::noiseTruncation); 0 = Gaussian.
+    double noiseCutoff = 0.0;
+    /// Factor every truncated xi is multiplied by: 1 / its standard deviation,
+    /// or 1 when Param::noiseTruncationRenormalize is false.
+    double noiseRescale = 1.0;
 
     Matrix nodalForce;  /**< -dE/dc_i, assembled per control point, one row per vertex. */
     Matrix driveForce;  /**< The same force expressed in whatever coordinates next_step() advances. */
@@ -481,6 +486,14 @@ public:
     /** @} */
 
     void next_step();
+
+    /**
+     * @brief The remaining n - 1 substeps of the mesh-quality force, after
+     * next_step() and the map back to the control net (Param::meshForceSubsteps).
+     * Each re-evaluates only the fluid mesh terms, moves the surface points by
+     * D (timeStep / n) / kT times that force, and maps back. Does nothing at n = 1.
+     */
+    void mesh_force_substeps();
 
 private:
     bool beadLogHeaderWritten = false;

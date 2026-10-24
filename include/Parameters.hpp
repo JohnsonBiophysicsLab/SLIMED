@@ -353,6 +353,33 @@ struct Param
     double KBT = 4.17;       // 1KbT = 4.17 pN.nm
     unsigned int randomSeed = 42; ///< random seed used in normal distribution
     bool fdtConsistentSurfaceUpdate = true; ///< Map the nodal force onto the limit-surface DOFs before the Brownian step
+    /**
+     * @brief Substeps of the mesh-quality force per Brownian step (prototype).
+     *
+     * 1, the default, is the single Euler step every run has used. n > 1
+     * splits the edge tether, altitude floor and crease wall -- the stiff,
+     * cheap, local part of the drive -- into n Euler substeps of timeStep / n:
+     * the first rides along with the bending, area and noise step from the
+     * step's starting force, the other n - 1 re-evaluate only those terms
+     * (DynamicModel::mesh_force_substeps()). The noise is drawn once per full
+     * step, so the bending modes see exactly the shipped update; only the
+     * walls are integrated more finely. Requires fdtConsistentSurfaceUpdate
+     * and edgeSpringEnabled, soft walls and the Brownian step.
+     */
+    int meshForceSubsteps = 1;
+    /**
+     * @brief Where the substepped step draws its noise: "once" or "split".
+     *
+     * "split" (the default) draws 2 D timeStep / n on every substep: their
+     * sum is still one Gaussian of variance 2 D timeStep, so the bending modes
+     * see the shipped step in law, while the walls get a true Euler-Maruyama
+     * step of timeStep / n, and the stable step is then timeStep / n <= ~0.003
+     * us at lFace 5 up to timeStep 0.02. "once" keeps the shipped single draw
+     * on the first substep; the other n - 1 push every wall violation back
+     * before the next frame, so the walls are sampled too cold and it needs
+     * more substeps to be stable. Read only at meshForceSubsteps > 1.
+     */
+    std::string meshForceSubstepNoise = "split";
     bool integratePeriodicDuplicates = false; ///< Legacy: give the fourth-ring periodic duplicates their own Brownian kick before overwriting them
     bool surfacepointOutput = true; ///< whether to output surface point file
     /**
@@ -454,6 +481,42 @@ struct Param
      * periodic run by the one Brownian mode it removes.
      */
     bool meanHeightPinned = false;
+
+    /**
+     * @brief Truncate the Brownian noise of the vertex step at |xi| < this.
+     *
+     * The step draws one standard normal xi per coordinate and moves the
+     * limit surface by sqrt(2 D dt) xi. A positive value here redraws every
+     * xi that falls outside (-noiseTruncation, noiseTruncation), so no single
+     * kick exceeds that many standard deviations. 0, the default, is the
+     * untruncated Gaussian, and the run is byte-identical to one without the
+     * key. The parameter file accepts 0 or a value of at least 0.1.
+     *
+     * Only the vertex step is affected: the elastic box, the lipid
+     * reservoir and the flip sweep draw their own numbers.
+     *
+     * It does not raise the stable time step: the node cross-over that ends
+     * a run at too large a step is the explicit overshoot of the stiff mesh
+     * terms, not a large kick, and with the variance held at 1 the divergence
+     * rate does not change measurably. See docs/resolution_limits.md
+     * section 2.5.
+     */
+    double noiseTruncation = 0.0;
+
+    /**
+     * @brief Divide the truncated noise by its own standard deviation.
+     *
+     * Truncation alone lowers the variance of xi to
+     * truncated_normal_variance(noiseTruncation) -- 0.774 at 2 -- and the
+     * step then samples the membrane at that fraction of KBT while its
+     * relaxation rates stay where they were, which breaks the
+     * fluctuation-dissipation relation between the spectrum and the rates.
+     * true (the default) restores unit variance, and with it the spectrum
+     * and the rates of the Gaussian step: under Euler-Maruyama both depend on
+     * the noise only through its variance. Set false only to study that
+     * effect. Ignored when noiseTruncation is 0.
+     */
+    bool noiseTruncationRenormalize = true;
 
     /**
      * @brief Replace the reference-length regularization with an edge spring.

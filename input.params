@@ -104,6 +104,17 @@ meshpointOutputInterval = 1
 # Set false only to reproduce results from before this was fixed.
 fdtConsistentSurfaceUpdate = true
 
+# Truncate the Brownian noise of the vertex step: every standard normal xi is
+# redrawn until |xi| < noiseTruncation, so no single kick exceeds that many
+# standard deviations. 0 (the default) is the untruncated Gaussian. With
+# noiseTruncationRenormalize = true the truncated xi is rescaled to unit
+# variance, which keeps the spectrum and the relaxation rates; false lowers the
+# variance (0.774 at a cutoff of 2), i.e. samples the membrane colder on the
+# same clock. It does not raise the stable time step: docs/resolution_limits.md
+# section 2.5.
+noiseTruncation = 0
+noiseTruncationRenormalize = true
+
 # Under a periodic boundary the fourth ring in from each edge duplicates the
 # ring on the far side; postprocess_ghost_periodic() overwrites it from its
 # partner every step, so it is not an independent coordinate.  It used to be
