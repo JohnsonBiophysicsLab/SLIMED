@@ -710,3 +710,228 @@ the pre-change binary's to the printed digits.
 The full test suite passes in the serial and OpenMP builds (290 tests). Run
 with the new default, a fluid workload changes at the 1e-4 level and is no
 longer byte-identical to earlier runs; the legacy pair restores it.
+
+The depth sweep behind these numbers, the scaling law and the cost of the tail
+correction itself are in §10.
+
+## 10. Run time against the recursion depth
+
+**Measured 2026-10-24**, on the tree of §9.9 (commit 4071c4c, PR #21), to
+answer two questions for users: how the step time scales with the recursion
+depth, and how much of a fluid step the depth controls.
+
+### 10.1 Method
+
+- **Workload.** `~/slimed_runs/sticky_bead/matrix/box_nu5/input.params`
+  (960 energy faces, Mixed periodic box, edge flips at rate 5, `forceBackend =
+  cpu`, `surfaceSolver = iterative`, `meshpointOutputInterval = 200`,
+  `localOutput = true`, `randomSeed = 20261012`), copied into one directory per
+  variant with only `maxIterations` and the two lines below changed.
+- **Variants.** `irregularPatchDepths = d, d, d, d` with
+  `irregularPatchTailCorrection = false` for d = 1, 2, 3, 4, 5, 6, 8, 10, 12;
+  the default (`6, 5, 5, 5`, tail correction on); the legacy pair
+  (`12, 8, 7, 7`, tail correction off); and a frozen reference,
+  `edgeFlipEnabled = false` on the regular lattice (every face regular, no
+  recursion at all).
+- **Per-step cost.** Flips start from a regular lattice, so the first few
+  hundred steps are cheap. Every variant was run to 1000 and to 2000 steps and
+  the per-step cost is `(t_2000 − t_1000) / 1000`, the cost of the disordered
+  mesh. The §9 valence counts show the mesh is stationary by step 1000.
+- **Timing.** The Mac could not be kept quiet (another project's MPI jobs
+  held its load average at 15–70; a pass taken under that load ran 1.6–2×
+  slower than a clean one and was discarded), so the sweep ran on JHU
+  Rockfish: one exclusive `parallel` node (2 × Intel Xeon Gold 6248R,
+  Cascade Lake, 24 cores per socket, 3.0 GHz base), Slurm job 32454969. Every
+  1-thread run was pinned to its own core with `taskset`, `OMP_NUM_THREADS=1
+  OMP_SCHEDULE=static OMP_PROC_BIND=true`, timed with `/usr/bin/time -p`
+  (`user` time), eight runs at once on a 48-core node (four streams per socket),
+  and the whole 24-run series was run twice (rep 1 on socket 0, rep 2 on
+  socket 1). Binary: CMake Release (`-O3 -DNDEBUG`), `SLIMED_ENABLE_OPENMP=ON`,
+  GCC 12.3.0, GSL 2.7, sha256 prefix `d67c6d84f74f075e`, built from this tree
+  (`rsync` of the worktree, commit 4071c4c). The 4-thread rows are wall time
+  on four pinned cores. The job script, stream runner and run tree are in
+  `analysis/depth_cost_sweep/`.
+- **Kernel calls per step.** The final connectivity of each run was rebuilt by
+  replaying the accepted flips of `inputEdgeFlips.csv` on `inputmesh_faces.csv`
+  (`analysis/depth_cost_replay.py`), and the force pass's patch-kernel calls
+  counted as 1 for a regular face, `3·D(N)` for a face with one extraordinary
+  corner of valence N, and for a face with several, the four Loop children:
+  1 for the centre, 1 for a regular corner child, `3·D(N)` for an extraordinary
+  one (`Mesh::compute_face_energies_and_forces`,
+  `include/mesh/Multi_extraordinary_patch.hpp`). The area pass and the flip
+  trials call the same rows again; they are not in this count, so the
+  per-call cost below is an upper bound on the force kernel alone.
+
+### 10.2 Results: the step is linear in the depth
+
+Per-step cost of steps 1000–2000, `user` seconds / 1000, one thread, one core.
+`K/step` is the force pass's patch-kernel calls per step on the final mesh
+(mean of the 1000- and 2000-step states), `EV corners` the extraordinary
+corners of the 960 energy faces (same mean), flips the accepted flips by step
+1000 / 2000.
+
+| depths (valence 4/5/7/8) | tail | ms/step rep 1 | ms/step rep 2 | steps/s | ×frozen | K/step | EV corners | flips |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| frozen reference (regular lattice, no flips) | – | 4.07 | 4.08 | 246 | 1.0 | 960 | 0 | 0 / 0 |
+| 1/1/1/1 | off | 14.72 | 14.72 | 67.9 | 3.6 | 3 303 | 777 | 183 / 638 |
+| 2/2/2/2 | off | 39.58 | 39.56 | 25.3 | 9.7 | 11 277 | 1 704 | 1 015 / 2 255 |
+| 3/3/3/3 | off | 50.09 | 50.14 | 20.0 | 12.3 | 16 455 | 1 710 | 1 324 / 2 538 |
+| 4/4/4/4 | off | 61.38 | 61.41 | 16.3 | 15.1 | 20 154 | 1 596 | 1 350 / 2 643 |
+| 5/5/5/5 | off | 70.10 | 74.92 | 14.3 | 17.2 | 25 533 | 1 632 | 1 357 / 2 619 |
+| 6/6/6/6 | off | 80.03 | 80.13 | 12.5 | 19.7 | 30 738 | 1 650 | 1 336 / 2 565 |
+| 8/8/8/8 | off | 101.17 | 101.17 | 9.9 | 24.9 | 40 377 | 1 638 | 1 308 / 2 546 |
+| 10/10/10/10 | off | 121.57 | 121.60 | 8.2 | 29.9 | 49 932 | 1 629 | 1 308 / 2 548 |
+| 12/12/12/12 | off | 142.45 | 142.12 | 7.0 | 35.0 | 59 706 | 1 629 | 1 308 / 2 548 |
+| **6/5/5/5 (default)** | **on** | **79.72** | **79.71** | **12.5** | **19.6** | 25 803 | 1 629 | 1 308 / 2 548 |
+| 12/8/7/7 (legacy) | off | 96.63 | 96.71 | 10.3 | 23.7 | 38 666 | 1 638 | 1 308 / 2 546 |
+
+The two repetitions agree to 0.1% except 5/5/5/5 at 2000 steps in rep 2
+(+3.5%, one run). The 1000-step totals (not shown; `results/`) agree to 0.1%
+in every row.
+
+**The flips are not identical across depths.** The flip ΔE is evaluated with
+the same quadrature, so a different depth is a different Metropolis trial
+energy: at depth 1 the acceptance collapses to 3–6% (183 / 638 flips) and at
+depth 2 it is 21–25% (1 015 / 2 255) against 29–31% from depth 3 up; from
+depth 8 up the flip history is identical (1 308 / 2 546–2 548). The rows from
+depth 3 up therefore time the same kind of mesh (1 600–1 710 extraordinary
+corners, 90% of faces extraordinary); the depth-2 mesh happens to carry the
+same corner count by step 1000; the depth-1 mesh has half of it (777 corners,
+59% of faces still regular), so its time is not comparable and it is left
+out of the fits below. Depth 1 and 2 are also outside the accuracy the model
+needs (§9.6), so they are only here to anchor the line.
+
+**Fit.** Over the uniform depths 3–12, `ms/step = a + b · depth`:
+
+| | a (ms/step) | b (ms/step per level) | R² | rms residual | largest residual |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| rep 1 | 19.45 | 10.22 | 0.99971 | 0.53 ms | 1.7% |
+| rep 2 | 21.28 | 10.05 | 0.99762 | 1.49 ms | 4.5% (the 5/5/5/5 outlier) |
+| rep 1, depths 2–12 | 19.31 | 10.24 | 0.99977 | 0.51 ms | 1.8% |
+
+**Scaling law: each recursion level adds 10.2 ms to a 960-face step, on top
+of a 19–21 ms step at depth → 0.** Linear, no measurable curvature from depth
+3 to 12 (the residuals are at the run-to-run noise). The slope is what §9's
+cost model predicts: one level is 3 regular children per extraordinary corner,
+3 × 1 641 corners = 4 920 extra kernel calls per step, so **one kernel call
+costs 2.08 µs (rep 1) / 2.04 µs (rep 2)** on this core. That figure is an
+upper bound on the force kernel alone: the area pass
+(`calculate_element_area_volume`) walks the same rows with the cheaper
+area/volume kernel, and every flip trial re-evaluates its patch, and both
+scale with the depth too. Fitting the time against `K/step` instead of the
+depth gives 2.1 µs per call and an intercept of 16.6 ms (R² = 0.9987); the
+legacy pair lands on that line to 1.3% (predicted 97.9, measured 96.6 ms).
+The default lands 11% above it (predicted 70.9, measured 79.7 ms): see §10.4.
+
+For scale, the depth → 0 intercept is itself 4.8× the frozen step: it holds
+the first level's bookkeeping that does not scale with depth (the control-net
+prolongations of the 540–630 multi-extraordinary faces, the row look-ups, the
+flip sweep, the area pass's regular faces) plus everything a frozen step does.
+
+### 10.3 How much of the step the depth controls
+
+Two references: the depth → 0 intercept *a* of the fit (what a fluid step
+would cost if the extraordinary faces were free; the honest reference for
+"what the depth parameter controls") and the frozen reference (what the same
+sheet costs with every face regular; the reference for "what the edge flips
+cost in total"). Share = (t − t_ref) / t.
+
+| quadrature | ms/step | share controlled by the depth (vs a = 19.5 ms) | share above frozen (4.07 ms) |
+| --- | ---: | ---: | ---: |
+| 2/2/2/2 | 39.6 | 51% | 90% |
+| 3/3/3/3 | 50.1 | 61% | 92% |
+| **6/5/5/5, tail correction (default)** | **79.7** | **76%** | **95%** |
+| 12/8/7/7 (legacy) | 96.6 | 80% | 96% |
+| 12/12/12/12 | 142.4 | 86% | 97% |
+
+At depth 1 the measured step (14.7 ms) sits below *a* because its mesh is only
+half as disordered; on the stationary mesh the fit puts a depth-1 step at
+29.7 ms (34% depth-controlled) and a depth-2 step at 39.9 ms (51%).
+
+**Answer: the recursion depth is the dominant cost of a fluid step.** At the
+PR default it controls three quarters of the step, at the legacy depths four
+fifths, and the whole extraordinary-face machinery (depth plus the fixed part)
+is 95–96% of a fluid step, which is 20–24× a frozen step on the same sheet.
+Halving the default depths (3/3/3/3, outside the §9 accuracy target) would
+buy 1.6×; nothing else in the step is worth more than the remaining 20 ms.
+Going the other way, the legacy 12/8/7/7 costs 1.21× the default here for no
+accuracy gain (§9.6); §9.9 measured 1.37× on the Mac, see below.
+
+**Four threads (wall time, four pinned cores, same node):**
+
+| quadrature | 1 thread ms/step | 4 threads ms/step | speedup | share above frozen, 4 threads |
+| --- | ---: | ---: | ---: | ---: |
+| frozen | 4.07 | 2.70 | 1.51× | – |
+| 6/5/5/5 default | 79.7 | 28.3 | 2.82× | 90% |
+| 12/8/7/7 legacy | 96.6 | 34.6 | 2.80× | 92% |
+
+The legacy/default ratio is 1.21× on one thread and 1.22× on four: the share is
+a property of the step, not of the thread count. (The frozen step
+parallelises worse because its 4 ms is mostly serial bookkeeping.)
+
+**Against the Mac.** A clean partial pass on the Apple M5 (load < 4.4, same
+binary target, Apple clang 21, depths 1–3 only before another project's jobs
+took the machine) gave 8.4 / 21.1 / 26.9 ms per step at depths 1 / 2 / 3
+against 14.7 / 39.6 / 50.1 here: the M5 core is 1.85× faster. Its two
+comparable points (depths 2, 3) give a slope of 5.8 ms per level and an
+intercept of 9.5 ms, which put the default at 39 and the legacy pair at 54 ms
+per step (ratio 1.39; §9.9 measured 1.37 over 3000 steps) with the same
+shares, 76% and 82%. The legacy/default ratio is 1.21 here and 1.37 on the
+Mac because the fixed part of the step weighs more on the Xeon; the
+depth-controlled share is the same on both.
+
+### 10.4 The tail correction costs about one level
+
+The default's 11% excess over the kernel-call line was isolated on a second
+node of the same type (job 32455384, c088), one thread, same protocol:
+
+| depths | tail correction | ms/step | flips (1000 / 2000) |
+| --- | --- | ---: | --- |
+| 6/5/5/5 | off | 69.74 | 1 349 / 2 622 |
+| 6/5/5/5 (default) | **on** | 79.91 | 1 308 / 2 548 |
+| 5/5/5/5 | off | 69.87 | 1 357 / 2 619 |
+| 5/5/5/5 | **on** | 79.08 | 1 308 / 2 548 |
+
+(The default's 79.91 ms here against 79.72 / 79.71 ms on c453 is the
+node-to-node spread, 0.2%.) **Switching the tail correction on costs 9.2–10.2 ms
+per step at fixed depths, 13% of the default step, about the price of one more
+recursion level**, although it changes no kernel-call count: it only routes
+the last two levels of every extraordinary corner (2 × 3 × 1 641 ≈ 9 800 calls
+per step) through `element_energy_force_patch_weighted_pod()`, which scales
+the Gauss weights, zeroes and rescales two per-child force buffers and divides
+the mean curvature (`include/energy_force/Patch_kernel.inl`), and the matching
+area wrapper. That is ~0.95 µs per weighted call, nearly half a kernel call,
+far more than those loops should cost, so the likely cause is that the
+weighted call is not inlined and specialised the way the plain call in the
+face loop is. §9.7's statement that "a tail2A run costs what a plain run at
+the same depths costs" is therefore wrong by 13%; the §9.9 speedup of 1.37×
+over the legacy pair already includes this cost. Making the weighted path as
+cheap as the plain one (pre-scaled rows per (valence, level), or a template
+on the weights) would take the default from 79.7 to ~70 ms per step, a free
+1.14×. Not done here. The weights also change the flip history (1 308 against
+1 349–1 357 accepted flips by step 1000), as any change of the trial energy
+does.
+
+### 10.5 Answers
+
+1. **Scaling law.** The step time is linear in the recursion depth,
+   `t = (19.5 ± 1) ms + 10.2 ms × depth` per step for this 960-face sheet on one
+   Xeon 6248R core (R² > 0.997, depths 3–12; the Apple M5 core is 1.85× faster
+   with the same shape). Each level is 3 kernel calls per extraordinary
+   corner, 4 900 calls per step on a mesh with 1 640 of them, at 2.05 µs per
+   call (force pass plus its share of the area pass and flip trials).
+2. **Share.** The depth controls 76% of the step at the default 6/5/5/5 (80% at
+   the legacy 12/8/7/7, 51% at a uniform depth 2, 86% at 12), and the
+   extraordinary-face evaluation as a whole is 95–96% of a fluid step, which
+   is 20–24× the frozen step of the same sheet. It is by far the largest lever
+   in the fluid step; the second-largest is the tail correction's own 13%.
+
+**Commands.** On the worktree of commit 4071c4c:
+
+```text
+cmake -S . -B build-omp -DSLIMED_ENABLE_OPENMP=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-omp --target membrane_dynamics -j 4
+# per run directory (input.params = box_nu5 + maxIterations + the two depth lines):
+OMP_NUM_THREADS=1 OMP_SCHEDULE=static /usr/bin/time -p build-omp/bin/membrane_dynamics
+# cluster: sbatch analysis/depth_cost_sweep/depth_sweep.sbatch   (then collect.sh, depth_cost_fit.py)
+```
