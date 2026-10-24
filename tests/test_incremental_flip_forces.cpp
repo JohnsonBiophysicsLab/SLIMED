@@ -626,11 +626,8 @@ std::vector<double> run_short_fluid_trajectory(bool incremental, int *stepsWithA
     {
         flippable += edge.flippable ? 1 : 0;
     }
-    if (flippable == 0)
-    {
-        return {};
-    }
-    param.edgeFlipAttemptRate = 6.0 / (param.timeStep * flippable);
+    EXPECT_GT(flippable, 0);
+    param.edgeFlipAttemptRate = 6.0 / (param.timeStep * std::max(1, flippable));
 
     Record record(param.maxIterations);
     DynamicModel model(mesh, record);

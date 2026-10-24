@@ -718,6 +718,80 @@ TEST(RunDriversDynamicsTest, FluidRunWithBeadLipidsAndExternalForceWritesTheirLo
     expect_all_finite(energy, "EnergyForce.csv");
 }
 
+/**
+ * @brief A fluid run whose sweeps land flips takes the incremental post-flip
+ * pass in the driver (Param::edgeFlipIncrementalForces), and the run it
+ * produces is the whole-mesh-pass run up to rounding: same attempts, same
+ * acceptances, final control nets a few ulp apart.
+ */
+TEST(RunDriversDynamicsTest, AcceptedFlipsTakeTheIncrementalPassInTheDriver)
+{
+    ScratchRunDirectory dir;
+    const std::vector<std::string> base = {"maxIterations = 20",
+                                           "VERBOSE_MODE = false",
+                                           "boundaryType = Mixed",
+                                           "boundaryTypeX = Periodic",
+                                           "boundaryTypeY = Periodic",
+                                           "surfaceSolver = iterative",
+                                           "lFace = 5.0",
+                                           "sideX = 50.0",
+                                           "sideY = 50.0",
+                                           "setRelaxAreaToDefault = true",
+                                           "meshpointOutput = true",
+                                           "meshpointOutputInterval = 10",
+                                           "timeStep = 0.001",
+                                           "diffConst = 1.0",
+                                           "randomSeed = 7",
+                                           "inPlaneDynamicsEnabled = true",
+                                           "edgeSpringEnabled = true",
+                                           "edgeTetherMinRatio = 0.7",
+                                           "triangleShapeEnabled = true",
+                                           "creaseWallEnabled = true",
+                                           "edgeFlipEnabled = true",
+                                           // Tens of attempts per sweep on this sheet, so that
+                                           // flips land within twenty steps.
+                                           "edgeFlipAttemptRate = 200.0",
+                                           "edgeFlipMinValence = 4",
+                                           "edgeFlipMaxValence = 8"};
+    write_params("inc", with(base, {"edgeFlipIncrementalForces = true"}));
+    run_dynamics_flat("inc");
+    write_params("whole", with(base, {"edgeFlipIncrementalForces = false"}));
+    run_dynamics_flat("whole");
+
+    // Flips landed, so the post-flip pass ran.
+    const auto flips = read_numeric_csv("incEdgeFlips.csv", 1);
+    int accepted = 0;
+    for (const std::vector<double> &row : flips)
+    {
+        ASSERT_EQ(row.size(), 8u);
+        accepted += (row[7] > 0.5) ? 1 : 0;
+    }
+    ASSERT_GT(accepted, 0) << "no flip was accepted, so the incremental pass never ran";
+
+    // The same sweeps: the acceptance draws see the same energies to the bit
+    // that decides them.
+    EXPECT_EQ(count_lines("incEdgeFlips.csv"), count_lines("wholeEdgeFlips.csv"));
+
+    const auto incremental = read_numeric_csv("incvertex_final.csv", 0);
+    const auto whole = read_numeric_csv("wholevertex_final.csv", 0);
+    ASSERT_EQ(incremental.size(), whole.size());
+    ASSERT_GT(incremental.size(), 0u);
+    double maxDifference = 0.0;
+    for (std::size_t i = 0; i < incremental.size(); i++)
+    {
+        ASSERT_EQ(incremental[i].size(), whole[i].size());
+        for (std::size_t k = 0; k < incremental[i].size(); k++)
+        {
+            maxDifference = std::max(maxDifference, std::abs(incremental[i][k] - whole[i][k]));
+        }
+    }
+    EXPECT_LT(maxDifference, 1e-8) << "nm between the incremental and the whole-mesh run";
+
+    const auto energy = read_numeric_csv("EnergyForce.csv", 1);
+    ASSERT_EQ(energy.size(), 21u);
+    expect_all_finite(energy, "EnergyForce.csv");
+}
+
 TEST(RunDriversDynamicsTest, PureMonteCarloRunLogsFlipsAndVertexMoves)
 {
     ScratchRunDirectory dir;
