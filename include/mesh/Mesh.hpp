@@ -388,6 +388,95 @@ public:
     void compute_face_energies_and_forces();
 
     /**
+     * @brief The force each face puts on its own control points, from the
+     * last pass that evaluated it.
+     *
+     * One block per face of kMaxControlPoints x 3 doubles for each of the
+     * bending, area and volume terms, in the order of Face::oneRingVertices.
+     * The CPU pass writes every face's block and then sums the blocks onto
+     * the vertices (scatter_face_forces_to_vertices()), so the vertex forces
+     * are a function of this store alone. That is what lets
+     * Compute_Energy_And_Force_After_Flips() rewrite a few blocks and rebuild
+     * the rest from memory. See Param::edgeFlipIncrementalForces.
+     *
+     * When incremental_flip_forces_active() the area and volume blocks hold
+     * the unscaled gradients dS/dx and dV/dx and the global constraint factor
+     * is applied in the scatter; otherwise they hold the scaled force exactly
+     * as the kernel always produced it.
+     */
+    std::vector<double> faceForceStore;
+
+    /**
+     * @brief The faces whose control nets the accepted flips of the sweep in
+     * progress changed: the union of flip_patch_faces() over those flips,
+     * taken before each flip, since the set is invariant under the move.
+     * Filled by edge_flip_sweep(), consumed and cleared by
+     * Compute_Energy_And_Force_After_Flips(), cleared by a whole-mesh pass.
+     */
+    std::vector<int> flipTouchedFaces;
+    /// One flag per face: whether it is already in flipTouchedFaces.
+    std::vector<char> flipTouchedMark;
+
+    /**
+     * @brief Whether the post-flip pass may be incremental: the parameter is
+     * on, flips are on, the CPU backend evaluates the forces, and the area
+     * constraint is a global factor (not local lipid flow).
+     *
+     * Decides the kernel's scaling in every pass, not only the incremental
+     * one, so that a whole-mesh pass and an incremental pass in the same run
+     * are the same arithmetic.
+     */
+    bool incremental_flip_forces_active() const;
+
+    /// Add @p faceList to flipTouchedFaces, once each.
+    void note_flip_touched_faces(const std::vector<int> &faceList);
+
+    /// Forget the touched faces; a whole-mesh pass has described all of them.
+    void clear_flip_touched_faces();
+
+    /**
+     * @brief Compute_Energy_And_Force() after a flip sweep, at fixed
+     * coordinates: only flipTouchedFaces are re-integrated.
+     *
+     * Their element areas and volumes, patch energies and control-point
+     * forces are recomputed; every other face keeps what the last pass left
+     * on it and in faceForceStore. The totals, the vertex forces, the
+     * closed-form mesh-quality terms and everything Compute_Energy_And_Force()
+     * does after its face loop are then rebuilt exactly as that routine
+     * builds them, so the two agree bit for bit when both are run in a mode
+     * where incremental_flip_forces_active(). Falls back to the whole-mesh
+     * pass when it is not active, or when nothing was touched.
+     */
+    void Compute_Energy_And_Force_After_Flips();
+
+    /// The loop-invariant inputs of one face's patch evaluation.
+    struct FacePatchContext;
+
+    /**
+     * @brief Integrate one face's patch: bending energy, mean curvature and
+     * normal onto the face, its control-point forces into faceForceStore.
+     * The body of the face loop of compute_face_energies_and_forces(), shared
+     * with the post-flip pass.
+     */
+    void evaluate_face_patch(int iFace, const FacePatchContext &context);
+
+    /// One face's elementArea and elementVolume, by the same quadrature the
+    /// energy uses. The body of calculate_element_area_volume().
+    void integrate_face_area_volume(int iFace);
+
+    /**
+     * @brief Sum faceForceStore onto the vertices' bending, area and volume
+     * force slots, through per-thread buffers in a fixed face-to-thread map.
+     * @param factorConstraintScales Multiply the area and volume sums by the
+     *        global constraint factors the kernel left out.
+     */
+    void scatter_face_forces_to_vertices(bool factorConstraintScales);
+
+    /// Steps 4 to 8 of Compute_Energy_And_Force(): the totals, the constraint
+    /// energies, the scaffolding term, the virial and the boundary handling.
+    void finalize_energy_and_force();
+
+    /**
      * @brief The fluid-mode mesh-quality terms: the edge tether, the
      * triangle-shape term and the crease wall, each behind its own flag.
      *
