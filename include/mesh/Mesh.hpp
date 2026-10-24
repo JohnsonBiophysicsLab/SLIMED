@@ -211,6 +211,13 @@ void write_vertex_move_log_csv(const std::string &path, long long iteration,
                                const WallViolations &walls);
 
 /**
+ * @brief The irregular-patch quadrature a Param asks for:
+ * irregularPatchDepths, irregularPatchTailCorrection and
+ * irregularPatchDepthScale, as IrregularPatchRowTable::build() takes them.
+ */
+IrregularPatchQuadrature irregular_patch_quadrature(const Param &param);
+
+/**
  * @brief A class representing a triangular mesh that defines a
  * limit surface.
  *

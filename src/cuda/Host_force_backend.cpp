@@ -56,6 +56,7 @@ ForceKernelArgs HostForceBackend::prepare(const DeviceMeshLayout &layout,
     args.irregularRows = rows.irregular();
     args.irregularOffsets = rows.irregularOffsets();
     args.irregularDepth = rows.depth();
+    args.irregularLevelWeights = rows.irregularLevelWeights();
 
     args.faceArea = faceArea_.data();
     args.faceVolume = faceVolume_.data();

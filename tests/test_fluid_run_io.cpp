@@ -265,13 +265,19 @@ TEST(IrregularDepthScaleTest, AScaleOfOneIsTheUnscaledTable)
     configure_sphere(param);
     Mesh mesh(param);
 
+    IrregularPatchQuadrature quadrature;
+    quadrature.depthScale = 1.0;
     IrregularPatchRowTable scaled;
-    scaled.build(param.shapeFunctions, kDefaultIrregularDepth, DepthPolicy::PerValence, 1.0);
+    scaled.build(param.shapeFunctions, quadrature);
 
     EXPECT_EQ(scaled.depth(), mesh.irregularRows.depth());
     EXPECT_EQ(scaled.memory_bytes(), mesh.irregularRows.memory_bytes());
     for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
     {
+        if (valence == 6)
+        {
+            continue; // regular; never reads the table
+        }
         EXPECT_EQ(scaled.depth_for(valence), mesh.irregularRows.depth_for(valence))
             << "valence " << valence;
         EXPECT_EQ(scaled.depth_for(valence), recommended_irregular_depth(valence))
@@ -294,8 +300,9 @@ TEST(IrregularDepthScaleTest, AScaleBelowOneShrinksTheBuiltAndConsumedDepth)
     IrregularPatchRowTable half;
     half.build(param.shapeFunctions, kDefaultIrregularDepth, DepthPolicy::PerValence, 0.5);
 
-    // The deepest valence is 4 at 12 levels, so half of it sets the build.
-    EXPECT_EQ(half.depth(), 6);
+    // The deepest default is valence 4 at 6 levels, so half of it sets the
+    // build; valences 5, 7 and 8 round 2.5 up to the same 3.
+    EXPECT_EQ(half.depth(), 3);
     EXPECT_LT(half.memory_bytes(), reference.irregularRows.memory_bytes());
 
     for (int valence = kMinIrregularValence; valence <= kMaxIrregularValence; valence++)
@@ -389,8 +396,8 @@ TEST(IrregularDepthScaleTest, ACheaperDepthPerturbsTheEnergyWithoutChangingIt)
     Mesh cheapMesh(cheap);
     build_sphere(cheapMesh, 1);
 
-    ASSERT_EQ(cheapMesh.irregularRows.depth(), 6);
-    ASSERT_EQ(fullMesh.irregularRows.depth(), kDefaultIrregularDepth);
+    ASSERT_EQ(cheapMesh.irregularRows.depth(), 3);
+    ASSERT_EQ(fullMesh.irregularRows.depth(), kDefaultIrregularPatchDepths[0]);
 
     const double fullEnergy = fullMesh.param.energy.energyTotal;
     const double cheapEnergy = cheapMesh.param.energy.energyTotal;

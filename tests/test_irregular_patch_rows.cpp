@@ -528,17 +528,22 @@ TEST(IrregularPatchRowTableTest, GeometryAndEnergyReadTheSameRows)
             control.set(k, axis, mesh.vertices[node].coord(axis, 0));
     }
 
+    // Each level with the area weight the tail correction gives it, which is
+    // 1 on every level but the last.
     double expectedArea = 0.0;
     double expectedVolume = 0.0;
     for (int d = 0; d < mesh.irregularRows.depth_for(5); d++)
     {
+        double bendWeight = 1.0;
+        double areaWeight = 1.0;
+        mesh.irregularRows.level_weights(5, d, bendWeight, areaWeight);
         for (int c = 0; c < kRegularChildrenPerStep; c++)
         {
             for (int q = 0; q < mesh.irregularRows.nSamples(); q++)
             {
                 accumulate_area_volume(mesh.irregularRows.rows(5, d, c, q), control,
-                                       mesh.param.gaussQuadratureCoeff(q, 0), expectedArea,
-                                       expectedVolume);
+                                       areaWeight * mesh.param.gaussQuadratureCoeff(q, 0),
+                                       expectedArea, expectedVolume);
             }
         }
     }
