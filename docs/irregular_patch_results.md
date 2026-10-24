@@ -821,7 +821,8 @@ area/volume kernel, and every flip trial re-evaluates its patch, and both
 scale with the depth too. Fitting the time against `K/step` instead of the
 depth gives 2.1 µs per call and an intercept of 16.6 ms (R² = 0.9987); the
 legacy pair lands on that line to 1.3% (predicted 97.9, measured 96.6 ms).
-The default lands 11% above it (predicted 70.9, measured 79.7 ms): see §10.4.
+The default landed 11% above it (predicted 70.9, measured 79.7 ms) until the
+weighted wrapper was fixed; see §10.4.
 
 For scale, the depth → 0 intercept is itself 4.8× the frozen step: it holds
 the first level's bookkeeping that does not scale with depth (the control-net
@@ -880,7 +881,7 @@ shares, 76% and 82%. The legacy/default ratio is 1.21 here and 1.37 on the
 Mac because the fixed part of the step weighs more on the Xeon; the
 depth-controlled share is the same on both.
 
-### 10.4 The tail correction costs about one level (GCC 12 build)
+### 10.4 The tail correction cost about one level under GCC 12; fixed by folding the weights into the kernel
 
 The default's 11% excess over the kernel-call line was isolated on a second
 node of the same type (job 32455384, c088), one thread, same protocol:
@@ -914,8 +915,40 @@ GCC 12 it is wrong by 13%, most plausibly the inliner treating the two arms
 of the wrapper differently or the per-child buffers, not yet confirmed. A
 weight-folding kernel (the weights multiplied into the kernel's own `0.5·g`
 factors, the plain kernel a forwarder with weights 1, bit-identical when off)
-would remove the question for every compiler; it is being done on
-`perf/tail-weighted-kernel`, not here. Note also that the instrumented count
+removes the question for every compiler, and is what this branch does.
+
+**Fix and measurement.** `element_energy_force_patch_weighted_pod()` is now
+the kernel itself: each sample's `0.5·g` factor is multiplied by `bendWeight`
+for the bending terms and by `areaWeight` for the area and volume terms (mean
+curvature and the normal stay unweighted), and `element_energy_force_patch_pod()`
+forwards to it with both weights 1; the area kernel is folded the same way. A
+multiplication by exactly 1 is exact, so the uncorrected path computes bit for
+bit what it did: the legacy pair `12/8/7/7`, correction off, writes all 19
+output files of a 500-step box_nu5 run byte-identical on the Mac (AppleClang)
+and `inputvertex_final.csv` byte-identical after 2000 steps on Rockfish (GCC
+12.3). With the correction on, the bending energy is bit-identical to the old
+wrapper's and the area/volume forces and mean curvature differ by rounding
+only: 500 steps of the default give the same flip history and a maximum
+coordinate difference of 6.5e-13 nm. Timed on Rockfish with the §10.1
+protocol (job 32456577, node c504, same node type, one pinned thread, `user`
+seconds of steps 1000–2000), old binary (commit 4071c4c) against this branch:
+
+| depths | tail correction | before, ms/step | after, ms/step | flips (1000 / 2000) |
+| --- | --- | ---: | ---: | --- |
+| 6/5/5/5 | off | 68.8 | 69.7 | 1 349 / 2 622 |
+| 6/5/5/5 (default) | **on** | **79.1** | **70.5** | 1 308 / 2 548 |
+
+The flip histories are identical between the two binaries in both rows. **The
+default step drops from 79.1 to 70.5 ms (1.12×), and the correction now costs
+1.2% at fixed depths** (70.5 against 69.7 ms) instead of 15%; the 0.9 ms of
+the uncorrected row is at the level of the run-to-run spread seen in §10.2 and
+of the four extra multiplications per quadrature sample, and is not resolved
+here. The 13% was therefore the wrapper (two zeroed and rescaled per-child
+buffers and a second kernel body for the weighted arm), not the weights.
+Correcting the §10.3 shares with the new default: depth controls 76% of the
+step as before, since both the intercept and the kernel-call line are unchanged;
+the default now lands 0.5% below the kernel-call prediction of 70.9 ms instead
+of 11% above it. Note also that the instrumented count
 of ~49 000 force-kernel calls per step is 1.9× the face-pass count used in
 §10.2 (the flip trials and the post-flip re-evaluation call the kernel too),
 so the 2.05 µs per call there is nearer 1.1 µs per actual kernel call. The weights also change the flip history (1 308 against
@@ -934,8 +967,10 @@ does.
    the legacy 12/8/7/7, 51% at a uniform depth 2, 86% at 12), and the
    extraordinary-face evaluation as a whole is 95–96% of a fluid step, which
    is 20–24× the frozen step of the same sheet. It is by far the largest lever
-   in the fluid step; the second-largest, on the GCC build, is the tail
-   correction's own 13% (§10.4; not present under AppleClang).
+   in the fluid step. The second-largest, the tail correction's own 13% on
+   the GCC build (not present under AppleClang), is gone since the weights
+   were folded into the kernel (§10.4): the default step is 70.5 ms on the
+   Xeon, 1.2% above the same depths uncorrected.
 
 **Commands.** On the worktree of commit 4071c4c:
 

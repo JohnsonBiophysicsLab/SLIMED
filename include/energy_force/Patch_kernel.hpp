@@ -48,10 +48,6 @@ constexpr int kMaxControlPoints = 18;
 /// (du, dv, duu, dvv, duv, dvu), in that order.
 constexpr int kShapeRows = 7;
 
-/// Most quadrature points a weighted call can carry: the largest rule
-/// get_gauss_quadrature_weight_VWU() offers has 12.
-constexpr int kMaxQuadratureSamples = 12;
-
 /// (1/3) from the divergence theorem times (1/2) for the reference triangle's
 /// own area. See element_area_volume_pod().
 constexpr double kSignedVolumeQuadratureFactor = 1.0 / 6.0;
@@ -382,16 +378,17 @@ SLIMED_HD inline void element_area_volume_pod(const double *sampleRows,
  * irregular patch.
  *
  * The bending energy and force are integrated with every quadrature weight
- * multiplied by `bendWeight`; the area and volume forces as if multiplied by
- * `areaWeight`. Both are fixed constants, so the result is still an exact
- * energy and its exact gradient. See irregular_tail_weights().
+ * multiplied by `bendWeight`; the area and volume forces with every weight
+ * multiplied by `areaWeight`. Both are fixed constants, so the result is still
+ * an exact energy and its exact gradient. See irregular_tail_weights().
  *
- * With both weights exactly 1 this is element_energy_force_patch_pod() itself,
- * operation for operation, which is what keeps an uncorrected run
- * bit-identical. `meanCurv` is reported unweighted, since it is a curvature
- * and not a share of an integral.
- *
- * @param nSamples  At most kMaxQuadratureSamples when a weight is not 1.
+ * This is the kernel itself: the two weights are folded into each sample's
+ * quadrature coefficient inside the loop, so a weighted level costs what an
+ * unweighted one does. element_energy_force_patch_pod() is this with both
+ * weights 1, and since a multiplication by exactly 1 is exact, a level with
+ * unit weights -- and every regular patch -- computes bit for bit what the
+ * unweighted kernel computed before the weights existed. `meanCurv` is
+ * reported unweighted, since it is a curvature and not a share of an integral.
  */
 SLIMED_HD inline void element_energy_force_patch_weighted_pod(const double *sampleRows,
                                                        const double *gaussCoeff,
@@ -410,7 +407,8 @@ SLIMED_HD inline void element_energy_force_patch_weighted_pod(const double *samp
 
 /**
  * @brief element_area_volume_pod() with every quadrature weight multiplied by
- * `areaWeight`. With a weight of exactly 1 it is element_area_volume_pod().
+ * `areaWeight`, folded in per sample. With a weight of exactly 1 it is
+ * element_area_volume_pod(), which forwards here.
  */
 SLIMED_HD inline void element_area_volume_weighted_pod(const double *sampleRows,
                                                 const double *gaussCoeff,

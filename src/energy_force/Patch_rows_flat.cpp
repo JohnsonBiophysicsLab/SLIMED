@@ -113,19 +113,6 @@ void PatchRowsFlat::build(const std::vector<Matrix> &regularShapeFunctions,
             }
         }
     }
-
-    // A weighted level copies its quadrature weights into a fixed-size buffer
-    // (element_energy_force_patch_weighted_pod()), which a device cannot grow.
-    for (const double weight : levelWeights_)
-    {
-        if (weight != 1.0 && nSamples_ > slimed::kMaxQuadratureSamples)
-        {
-            throw std::invalid_argument(
-                "[PatchRowsFlat] the irregular-patch tail correction supports at most " +
-                std::to_string(slimed::kMaxQuadratureSamples) + " quadrature points, got " +
-                std::to_string(nSamples_));
-        }
-    }
 }
 
 int PatchRowsFlat::slot_index(int valence, int depth, int childIndex) const
