@@ -880,7 +880,7 @@ shares, 76% and 82%. The legacy/default ratio is 1.21 here and 1.37 on the
 Mac because the fixed part of the step weighs more on the Xeon; the
 depth-controlled share is the same on both.
 
-### 10.4 The tail correction costs about one level
+### 10.4 The tail correction costs about one level (GCC 12 build)
 
 The default's 11% excess over the kernel-call line was isolated on a second
 node of the same type (job 32455384, c088), one thread, same protocol:
@@ -901,14 +901,24 @@ per step) through `element_energy_force_patch_weighted_pod()`, which scales
 the Gauss weights, zeroes and rescales two per-child force buffers and divides
 the mean curvature (`include/energy_force/Patch_kernel.inl`), and the matching
 area wrapper. That is ~0.95 µs per weighted call, nearly half a kernel call,
-far more than those loops should cost, so the likely cause is that the
-weighted call is not inlined and specialised the way the plain call in the
-face loop is. §9.7's statement that "a tail2A run costs what a plain run at
-the same depths costs" is therefore wrong by 13%; the §9.9 speedup of 1.37×
-over the legacy pair already includes this cost. Making the weighted path as
-cheap as the plain one (pre-scaled rows per (valence, level), or a template
-on the weights) would take the default from 79.7 to ~70 ms per step, a free
-1.14×. Not done here. The weights also change the flip history (1 308 against
+far more than those loops should cost. **This penalty is specific to the
+GCC 12.3 build used here.** On the Mac with AppleClang 21 (same tree, same
+workload, 2026-10-24, session notes) an instrumented build counts the same
+kernel calls per step with the correction on and off (48 965 against 48 403
+force-kernel calls per step, 38% of them through the weighted arm when on), a
+micro-benchmark of the two arms gives 0.53 against 0.51–0.56 µs per call, and
+a `sample` profile splits the kernel's time between the two groups of call
+sites in exactly the plain/weighted call ratio. So under clang the weighted
+path costs what the plain path costs and §9.7's statement holds there; under
+GCC 12 it is wrong by 13%, most plausibly the inliner treating the two arms
+of the wrapper differently or the per-child buffers, not yet confirmed. A
+weight-folding kernel (the weights multiplied into the kernel's own `0.5·g`
+factors, the plain kernel a forwarder with weights 1, bit-identical when off)
+would remove the question for every compiler; it is being done on
+`perf/tail-weighted-kernel`, not here. Note also that the instrumented count
+of ~49 000 force-kernel calls per step is 1.9× the face-pass count used in
+§10.2 (the flip trials and the post-flip re-evaluation call the kernel too),
+so the 2.05 µs per call there is nearer 1.1 µs per actual kernel call. The weights also change the flip history (1 308 against
 1 349–1 357 accepted flips by step 1000), as any change of the trial energy
 does.
 
@@ -924,7 +934,8 @@ does.
    the legacy 12/8/7/7, 51% at a uniform depth 2, 86% at 12), and the
    extraordinary-face evaluation as a whole is 95–96% of a fluid step, which
    is 20–24× the frozen step of the same sheet. It is by far the largest lever
-   in the fluid step; the second-largest is the tail correction's own 13%.
+   in the fluid step; the second-largest, on the GCC build, is the tail
+   correction's own 13% (§10.4; not present under AppleClang).
 
 **Commands.** On the worktree of commit 4071c4c:
 
