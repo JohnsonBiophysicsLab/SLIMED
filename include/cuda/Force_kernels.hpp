@@ -63,6 +63,10 @@ struct ForceKernelArgs
     const double *irregularRows = nullptr;
     const std::size_t *irregularOffsets = nullptr;
     int irregularDepth = 0;
+    /// Two weights per (valence, depth) level, bending then area, as
+    /// PatchRowsFlat::irregularLevelWeights() lays them out. Null reads as
+    /// every weight 1.
+    const double *irregularLevelWeights = nullptr;
 
     // --- per-evaluation input ---------------------------------------------
     const double *coords = nullptr;    ///< nVertices * 3

@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <cmath>
+#include <array>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -754,24 +755,49 @@ struct Param
     std::string surfaceSolver = "dense";
 
     /**
-     * @brief Multiplies the per-valence subdivision depth of irregular patches.
+     * @brief Subdivision depth of irregular patches, per extraordinary valence.
      *
      * A face with an extraordinary corner is evaluated by recursing down a
-     * chain of regular children, and the depth of that chain is what the patch
-     * costs. recommended_irregular_depth() picks a depth per valence for a
-     * bending-energy tail below 1e-4 relative, which is the right target for a
-     * minimization whose answer is a single converged shape.
+     * chain of regular children, 3 per level, and the depth of that chain is
+     * what the patch costs. A fluid mesh is ~90% such faces, so this is the
+     * largest lever on the cost of fluidity.
      *
-     * A Brownian run is not that. It lives in thermal noise several orders
-     * above 1e-4, and a fluid mesh is mostly irregular -- measured at WP1 as
-     * 36x the cost of an all-regular mesh -- so the depth is the largest lever
-     * on the cost of fluidity. This scales every valence's depth together, so
-     * a run can trade patch accuracy for throughput and WP6 can measure what
-     * the spectrum actually needs.
+     * Four entries, for valences 4, 5, 7 and 8 in that order; in a params
+     * file, `irregularPatchDepths = 6, 5, 5, 5`. Each lies in [1, 24].
      *
-     * 1.0 is the converged depth and reproduces every existing run exactly.
-     * Below 1.0 is cheaper and less accurate; above 1.0 costs build time and
-     * memory for accuracy the sampling noise hides.
+     * The default, 6/5/5/5, is chosen together with
+     * irregularPatchTailCorrection = true: no less accurate than the old
+     * 12/8/7/7 on bending, area or force, at 0.67 of the kernel evaluations
+     * (docs/irregular_patch_results.md section 9). The old runs used
+     * `irregularPatchDepths = 12, 8, 7, 7` with
+     * `irregularPatchTailCorrection = false`, and that pair reproduces them
+     * exactly. Equal to kDefaultIrregularPatchDepths.
+     */
+    std::array<int, 4> irregularPatchDepths = {{6, 5, 5, 5}};
+
+    /**
+     * @brief Weight the last two levels of an irregular patch for the
+     * truncated tail.
+     *
+     * The levels' contributions shrink geometrically at rates the subdivision
+     * spectrum fixes, so the dropped tail can be added back with constant
+     * weights: two for bending (the bowl and saddle modes converge at
+     * different rates), one for area and volume. The energy stays exact and
+     * the forces its exact gradient. See irregular_tail_weights().
+     *
+     * On by default. Off leaves every level's weight at 1 -- the plain
+     * truncated sum every run used before -- which at the default depths is
+     * about 25x less accurate; raise irregularPatchDepths with it.
+     */
+    bool irregularPatchTailCorrection = true;
+
+    /**
+     * @brief Multiplies every entry of irregularPatchDepths.
+     *
+     * Rounded to the nearest level and floored at 1. 1.0 applies the depths
+     * as given. Below 1.0 is cheaper and less accurate; a Brownian run lives
+     * in thermal noise well above the patch error, so it is a fair trade for
+     * exploratory runs.
      */
     double irregularPatchDepthScale = 1.0;
 

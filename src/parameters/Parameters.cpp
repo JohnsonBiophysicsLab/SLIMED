@@ -97,6 +97,10 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "creaseWallAngle: " << param.creaseWallAngle << std::endl;
     os << "creaseWallConstant: " << param.creaseWallConstant << std::endl;
     os << "surfaceSolver: " << param.surfaceSolver << std::endl;
+    os << "irregularPatchDepths: " << param.irregularPatchDepths[0] << ", "
+       << param.irregularPatchDepths[1] << ", " << param.irregularPatchDepths[2] << ", "
+       << param.irregularPatchDepths[3] << std::endl;
+    os << "irregularPatchTailCorrection: " << param.irregularPatchTailCorrection << std::endl;
     os << "irregularPatchDepthScale: " << param.irregularPatchDepthScale << std::endl;
     os << "edgeFlipEnabled: " << param.edgeFlipEnabled << std::endl;
     os << "edgeFlipAttemptRate: " << param.edgeFlipAttemptRate << std::endl;

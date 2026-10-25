@@ -721,7 +721,9 @@ the natural first fluid run.
 | `edgeTetherShape` | `flat` | `flat` (WP6) or `harmonic` (equation (3), WP4) |
 | `edgeTetherMinRatio` / `edgeTetherMaxRatio` | `0.6` / `1.8` | the flat tether's allowed range, in multiples of `l0`; the upper bound must exceed `√3` or a flip of an equilateral rhombus is forbidden |
 | `surfaceSolver` | `dense` | `dense` (today) or `iterative` (§3.7) |
-| `irregularPatchDepthScale` | `1.0` | multiplies the recommended depths, for the cost study in §6 |
+| `irregularPatchDepths` | `6, 5, 5, 5` | levels for valences 4, 5, 7, 8; was a fixed 12/8/7/7 (docs/irregular_patch_results.md §9.9) |
+| `irregularPatchTailCorrection` | `true` | tail weights on the last levels; `false` with `12, 8, 7, 7` is the old evaluation |
+| `irregularPatchDepthScale` | `1.0` | multiplies `irregularPatchDepths`, for the cost study in §6 |
 
 Every new key touches three places — `Param`, `input.cpp`, `Parameters.cpp` —
 and the `test_io` round-trip.

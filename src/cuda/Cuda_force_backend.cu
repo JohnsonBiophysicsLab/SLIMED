@@ -186,6 +186,7 @@ struct CudaForceBackend::Impl
     DeviceBuffer<double> gaussCoeff;
     DeviceBuffer<double> irregularRows;
     DeviceBuffer<std::size_t> irregularOffsets;
+    DeviceBuffer<double> irregularLevelWeights;
 
     DeviceBuffer<double> coords;
     DeviceBuffer<double> coordsRef;
@@ -247,6 +248,8 @@ struct CudaForceBackend::Impl
         a.irregularRows = irregularRows.count() > 0 ? irregularRows.data() : nullptr;
         a.irregularOffsets = irregularOffsets.count() > 0 ? irregularOffsets.data() : nullptr;
         a.irregularDepth = rows.depth();
+        a.irregularLevelWeights =
+            irregularLevelWeights.count() > 0 ? irregularLevelWeights.data() : nullptr;
 
         a.coords = coords.data();
         a.coordsRef = coordsRef.data();
@@ -339,6 +342,8 @@ void CudaForceBackend::upload_topology(const DeviceMeshLayout &layout, const Pat
     {
         impl.irregularRows.upload(rows.irregular(), rows.irregular_count());
         impl.irregularOffsets.upload(rows.irregularOffsets(), rows.irregular_slot_count());
+        impl.irregularLevelWeights.upload(rows.irregularLevelWeights(),
+                                          rows.irregular_level_weight_count());
     }
 
     // Outputs and scratch: allocated, never uploaded. Every entry is written
@@ -528,6 +533,7 @@ std::size_t CudaForceBackend::device_memory_bytes() const
            i.vertexCornerOffsets.bytes() + i.vertexCorners.bytes() + i.multiEntries.bytes() +
            i.multiProlongations.bytes() + i.regularRows.bytes() +
            i.gaussCoeff.bytes() + i.irregularRows.bytes() + i.irregularOffsets.bytes() +
+           i.irregularLevelWeights.bytes() +
            i.coords.bytes() + i.coordsRef.bytes() + i.faceArea.bytes() + i.faceVolume.bytes() +
            i.faceEBend.bytes() + i.faceMeanCurv.bytes() + i.faceNormal.bytes() +
            i.faceERegular.bytes() + i.faceDeformCase.bytes() + i.slotForceBend.bytes() +

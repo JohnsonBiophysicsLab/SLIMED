@@ -34,14 +34,34 @@ SLIMED_HD inline const double *rows_for_patch(const ForceKernelArgs &args, int v
     return args.irregularRows + args.irregularOffsets[slot];
 }
 
+/// The tail-correction weights of the level a child counter falls in; both 1
+/// for a regular patch or a table without them. See irregular_tail_weights().
+SLIMED_HD inline void weights_for_patch(const ForceKernelArgs &args, int valence, int child,
+                                        double &bendWeight, double &areaWeight)
+{
+    bendWeight = 1.0;
+    areaWeight = 1.0;
+    if (valence == 6 || args.irregularLevelWeights == nullptr)
+    {
+        return;
+    }
+    const int depth = child / kChildrenPerSubdivisionStep;
+    const int level = (valence - kMinPatchValence) * args.irregularDepth + depth;
+    bendWeight = args.irregularLevelWeights[level * 2];
+    areaWeight = args.irregularLevelWeights[level * 2 + 1];
+}
+
 SLIMED_HD inline void integrate_patch(const ForceKernelArgs &args, int valence, int nChildren,
                                       const double *ctrlPts, int nCtrl, double &area,
                                       double &volume)
 {
     for (int child = 0; child < nChildren; child++)
     {
-        element_area_volume_pod(rows_for_patch(args, valence, child), args.gaussCoeff,
-                                args.nSamples, ctrlPts, nCtrl, area, volume);
+        double bendWeight = 1.0;
+        double areaWeight = 1.0;
+        weights_for_patch(args, valence, child, bendWeight, areaWeight);
+        element_area_volume_weighted_pod(rows_for_patch(args, valence, child), args.gaussCoeff,
+                                         args.nSamples, ctrlPts, nCtrl, areaWeight, area, volume);
     }
 }
 
@@ -56,9 +76,13 @@ SLIMED_HD inline void evaluate_patch(const ForceKernelArgs &args, int valence, i
         double childEBend = 0.0;
         double childMeanCurv = 0.0;
         double childNormVector[3] = {0.0, 0.0, 0.0};
-        element_energy_force_patch_pod(rows_for_patch(args, valence, child), args.gaussCoeff,
-                                       args.nSamples, ctrlPts, nCtrl, p, childEBend,
-                                       childMeanCurv, childNormVector, fBend, fArea, fVolume);
+        double bendWeight = 1.0;
+        double areaWeight = 1.0;
+        weights_for_patch(args, valence, child, bendWeight, areaWeight);
+        element_energy_force_patch_weighted_pod(rows_for_patch(args, valence, child),
+                                                args.gaussCoeff, args.nSamples, ctrlPts, nCtrl, p,
+                                                bendWeight, areaWeight, childEBend, childMeanCurv,
+                                                childNormVector, fBend, fArea, fVolume);
         eBend += childEBend;
         // A regular patch has one child and takes its values directly. An
         // irregular patch reports the child nearest the patch centre -- depth

@@ -23,6 +23,18 @@ namespace
 constexpr double kSignedVolumeQuadratureFactor = 1.0 / 6.0;
 } // namespace
 
+IrregularPatchQuadrature irregular_patch_quadrature(const Param &param)
+{
+    IrregularPatchQuadrature quadrature;
+    for (int index = 0; index < kExtraordinaryValenceCount; index++)
+    {
+        quadrature.depths[index] = param.irregularPatchDepths[index];
+    }
+    quadrature.tailCorrection = param.irregularPatchTailCorrection;
+    quadrature.depthScale = param.irregularPatchDepthScale;
+    return quadrature;
+}
+
 Mesh::Mesh(Param &srcParam) : param(srcParam)
 {
     // Calculate element triangle area
@@ -38,8 +50,7 @@ Mesh::Mesh(Param &srcParam) : param(srcParam)
     // Collapse the irregular-patch recursion into limit-surface rows. Depends
     // only on the valence and the quadrature rule, so it is built once here
     // and shared, immutable, for the life of the mesh.
-    irregularRows.build(param.shapeFunctions, kDefaultIrregularDepth, DepthPolicy::PerValence,
-                        param.irregularPatchDepthScale);
+    irregularRows.build(param.shapeFunctions, irregular_patch_quadrature(param));
 
     // initialze scaffolding points matrices
     centerScaffoldingSphere = mat_calloc(3, 1); ///< Center of the scaffolding cap sphere
@@ -63,8 +74,7 @@ Mesh::Mesh(const std::vector<Vertex> &srcVertices,
     // Collapse the irregular-patch recursion into limit-surface rows. Depends
     // only on the valence and the quadrature rule, so it is built once here
     // and shared, immutable, for the life of the mesh.
-    irregularRows.build(param.shapeFunctions, kDefaultIrregularDepth, DepthPolicy::PerValence,
-                        param.irregularPatchDepthScale);
+    irregularRows.build(param.shapeFunctions, irregular_patch_quadrature(param));
 
     // initialze scaffolding points matrices
     centerScaffoldingSphere = mat_calloc(3, 1); ///< Center of the scaffolding cap sphere
@@ -410,11 +420,16 @@ void Mesh::integrate_face_area_volume(int iFace)
             }
             for (int d = 0; d < irregularRows.depth_for(valence); d++)
             {
+                // The area weight the force pass integrates this level
+                // with, so area and its force stay conjugate.
+                double bendWeight = 1.0;
+                double areaWeight = 1.0;
+                patchRowsFlat.level_weights(valence, d, bendWeight, areaWeight);
                 for (int c = 0; c < kRegularChildrenPerStep; c++)
                 {
-                    slimed::element_area_volume_pod(patchRowsFlat.child(valence, d, c),
-                                                    gaussCoeff, nSamples, coords, nCtrl, area,
-                                                    volume);
+                    slimed::element_area_volume_weighted_pod(
+                        patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
+                        nCtrl, areaWeight, area, volume);
                 }
             }
         };

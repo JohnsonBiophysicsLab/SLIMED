@@ -247,19 +247,23 @@ FaceSubsetEnergy Mesh::evaluate_face_subset(const std::vector<int> &faceList,
             }
             for (int d = 0; d < irregularRows.depth_for(valence); d++)
             {
+                // The same tail weights the whole-mesh passes use.
+                double bendWeight = 1.0;
+                double areaWeight = 1.0;
+                patchRowsFlat.level_weights(valence, d, bendWeight, areaWeight);
                 for (int c = 0; c < kRegularChildrenPerStep; c++)
                 {
                     const double *const rows = patchRowsFlat.child(valence, d, c);
                     double childBending = 0.0;
                     double childMeanCurv = 0.0;
                     double childNormVector[3] = {0.0, 0.0, 0.0};
-                    slimed::element_energy_force_patch_pod(rows, gaussCoeff, nSamples, coords,
-                                                           nCtrl, facePatchParams, childBending,
-                                                           childMeanCurv, childNormVector, fBend,
-                                                           fArea, fVolume);
+                    slimed::element_energy_force_patch_weighted_pod(
+                        rows, gaussCoeff, nSamples, coords, nCtrl, facePatchParams, bendWeight,
+                        areaWeight, childBending, childMeanCurv, childNormVector, fBend, fArea,
+                        fVolume);
                     bending += childBending;
-                    slimed::element_area_volume_pod(rows, gaussCoeff, nSamples, coords, nCtrl,
-                                                    area, volume);
+                    slimed::element_area_volume_weighted_pod(rows, gaussCoeff, nSamples, coords,
+                                                             nCtrl, areaWeight, area, volume);
                 }
             }
         };

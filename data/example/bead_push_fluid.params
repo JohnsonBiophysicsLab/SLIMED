@@ -129,6 +129,8 @@ edgeFlipAttemptRate = 0.5        # attempts per edge per us
 edgeFlipInterval = 1
 edgeFlipMinValence = 4
 edgeFlipMaxValence = 8
+irregularPatchDepths = 6, 5, 5, 5          # valences 4, 5, 7, 8; legacy runs used 12, 8, 7, 7
+irregularPatchTailCorrection = true        # legacy runs: false (docs/irregular_patch_results.md §9)
 irregularPatchDepthScale = 1.0
 
 ############################################

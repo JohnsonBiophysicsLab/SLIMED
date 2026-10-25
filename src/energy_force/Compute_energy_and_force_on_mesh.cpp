@@ -335,15 +335,20 @@ void Mesh::evaluate_face_patch(int iFace, const FacePatchContext &context)
             patchEBend = 0.0;
             for (int d = 0; d < irregularRows.depth_for(valence); d++)
             {
+                // The tail correction's weights; both 1 on every level
+                // but the last two, and everywhere when it is off.
+                double bendWeight = 1.0;
+                double areaWeight = 1.0;
+                patchRowsFlat.level_weights(valence, d, bendWeight, areaWeight);
                 for (int c = 0; c < kRegularChildrenPerStep; c++)
                 {
                     double childEBend = 0.0;
                     double childMeanCurv = 0.0;
                     double childNormVector[3] = {0.0, 0.0, 0.0};
-                    slimed::element_energy_force_patch_pod(
+                    slimed::element_energy_force_patch_weighted_pod(
                         patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
-                        nCtrl, facePatchParams, childEBend, childMeanCurv, childNormVector,
-                        outBend, outArea, outVolume);
+                        nCtrl, facePatchParams, bendWeight, areaWeight, childEBend,
+                        childMeanCurv, childNormVector, outBend, outArea, outVolume);
                     patchEBend += childEBend;
                     // Mean curvature and the normal are reported per face,
                     // so take them from the child nearest the patch centre
