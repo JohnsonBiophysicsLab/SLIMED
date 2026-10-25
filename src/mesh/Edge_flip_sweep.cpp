@@ -192,6 +192,11 @@ EdgeFlipSweepStats Mesh::edge_flip_sweep(long long iteration, std::vector<EdgeFl
             continue;
         }
 
+        // The faces this flip changes are already in flipTouchedFaces: the
+        // trial recorded its patch before its own flip-and-restore, and an
+        // accepted flip changes exactly that set. See
+        // Param::edgeFlipIncrementalForces.
+
         const bool carryLipids = lipid_flow_local() && !faceArea0.empty();
         const MeshEdge edgeBeforeFlip = edges[iEdge];
         flip_edge(iEdge);

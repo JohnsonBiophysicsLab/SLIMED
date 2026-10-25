@@ -168,7 +168,16 @@ class StickyRun:
         b = rows_at(bead, self.iterations)
         self.bead_center = np.column_stack([b["centerX"], b["centerY"], b["centerZ"]])
         self.force = np.column_stack([b["forceOnBeadX"], b["forceOnBeadY"], b["forceOnBeadZ"]])
-        self.bonded = b["bonded"].astype(int) if "bonded" in b.dtype.names else b["adhered"].astype(int)
+        # A sticky bead keeps the vertices it bonded; a bead that only pushes
+        # (beadPotential = wall, no well) has contacts instead, the vertices
+        # its wall is holding off. The same column serves both as the wrap.
+        self.potential = p.get("beadPotential", "wall")
+        self.sticky = self.potential == "harmonic"
+        self.contact_word = "bonded" if self.sticky else "in contact"
+        if self.sticky:
+            self.bonded = b["bonded"].astype(int) if "bonded" in b.dtype.names else b["adhered"].astype(int)
+        else:
+            self.bonded = b["contacts"].astype(int)
         self.bond_energy = b["energy_pNnm"]
         self.max_stretch = b["maxStretch_nm"] if "maxStretch_nm" in b.dtype.names else np.zeros(n)
         self.wrapped = self.bonded / self.sphere_cells
@@ -239,6 +248,19 @@ class StickyRun:
     def bending_density(self, k):
         e, area = self.face_data[k, :, 0], self.face_data[k, :, 3]
         return np.where(area > 0, e / np.where(area > 0, area, 1.0), 0.0)
+
+    def energy_faces(self, k):
+        """The energy-carrying faces at frame k and their bending energy density.
+
+        The mesh's periodic image band holds copy faces that carry no energy
+        (area 0 in the per-face output). Under edge flips the code never
+        re-mirrors them from the flipped real faces, so their connectivity
+        goes stale and they stretch across the band, while every force on the
+        tile stays exact (docs/mixed_boundary_conditions.md section 9). They
+        must not be drawn or binned: this is the set to use."""
+        faces = self.faces_at(k)
+        carry = self.face_data[k, :, 3] > 0
+        return faces[carry], self.bending_density(k)[carry]
 
     def _neck_and_apex(self):
         """Per frame: the narrowest ring of membrane below the bead's centre
@@ -430,7 +452,7 @@ def summarize(run):
     last = slice(max(0, run.n_frames - max(2, run.n_frames // 10)), run.n_frames)
     hold = run.hold_frames(skip_us=0.0)
     out = {
-        "run": run.name, "reservoir": run.reservoir, "fluidity": run.fluidity,
+        "run": run.name, "potential": run.potential, "reservoir": run.reservoir, "fluidity": run.fluidity,
         "t_end_us": run.time[-1],
         "bonded_at_stop": int(run.bonded[k_stop]), "bonded_end": int(np.mean(run.bonded[last])),
         "wrapped_end": float(np.mean(run.wrapped[last])),
@@ -482,6 +504,50 @@ def line_style(run):
     return dict(color=FLUIDITY_COLORS.get(run.fluidity, "#333333"), ls=RESERVOIR_STYLES.get(run.reservoir, "-"), lw=1.3)
 
 
+def bead_word(runs):
+    kinds = {r.sticky for r in runs}
+    return "Sticky bead" if kinds == {True} else "Pushing bead" if kinds == {False} else "Sticky and pushing beads"
+
+
+def write_potential_comparison(sticky, push, path):
+    """The sticky bead against the bead that only pushes, run by run: one row
+    per reservoir, colour by fluidity, solid = sticky, dashed = pushing."""
+    reservoirs = [k for k in RESERVOIR_STYLES if k != "fixed" and any(r.reservoir == k for r in sticky + push)]
+    panels = [
+        ("force on the bead, z (pN)", lambda r: running_mean(r.force[:, 2], 5)),
+        ("vertices on the bead (bonded / in contact)", lambda r: r.bonded.astype(float)),
+        ("excess area A − A_p (nm²)", lambda r: r.excess_area),
+        ("neck radius (nm)", lambda r: r.neck),
+        ("apex height above the sheet (nm)", lambda r: r.apex),
+    ]
+    fig, axes = plt.subplots(len(reservoirs), len(panels), figsize=(4.0 * len(panels), 3.4 * len(reservoirs)), dpi=110,
+                             squeeze=False)
+    for i, res in enumerate(reservoirs):
+        for j, (label, pick) in enumerate(panels):
+            ax = axes[i, j]
+            shade_motion(ax, sticky + push)
+            for group, ls, lw in ((sticky, "-", 1.4), (push, "--", 1.0)):
+                for r in group:
+                    if r.reservoir != res:
+                        continue
+                    ax.plot(r.time, pick(r), color=FLUIDITY_COLORS.get(r.fluidity, "#333333"), ls=ls, lw=lw,
+                            label=f"{FLUIDITY_LABELS.get(r.fluidity, r.fluidity)}, {'sticky' if r.sticky else 'pushing'}")
+            if j == 0:
+                ax.axhline(0.0, color=INK_2, lw=0.6)
+                ax.text(0.02, 0.96, RESERVOIR_LABELS[res], transform=ax.transAxes, va="top", fontsize=9, color=INK)
+            if i == len(reservoirs) - 1:
+                ax.set_xlabel("time (µs)", fontsize=9)
+            if i == 0:
+                ax.set_title(label, fontsize=9)
+            style(ax)
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=4, frameon=False, fontsize=8.5, bbox_to_anchor=(0.5, -0.005))
+    fig.suptitle("Sticky bead (solid) against the bead that only pushes (dashed): grey while the bead moves", fontsize=11)
+    fig.tight_layout(rect=(0, 0.07, 1, 0.97))
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def shade_motion(ax, runs):
     run = max(runs, key=lambda r: r.time[-1])
     if run.stop_iteration >= 0:
@@ -493,7 +559,7 @@ def write_traces(runs, path):
     panels = [
         ("force on the bead, z (pN)", lambda r: running_mean(r.force[:, 2], 5)),
         ("lateral force on the bead (pN)", lambda r: running_mean(np.hypot(r.force[:, 0], r.force[:, 1]), 5)),
-        ("wrapped fraction (bonded vertices / sphere cells)", lambda r: r.wrapped),
+        (f"wrapped fraction ({runs[0].contact_word} vertices / sphere cells)", lambda r: r.wrapped),
         ("tension (pN/nm)", lambda r: running_mean(r.tension, 5)),
         ("excess area A − A_p (nm²)", lambda r: r.excess_area),
         ("neck radius (nm)", lambda r: r.neck),
@@ -513,7 +579,8 @@ def write_traces(runs, path):
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=min(4, len(runs)), frameon=False, fontsize=8.5,
                bbox_to_anchor=(0.5, -0.005))
-    fig.suptitle("Sticky bead through a periodic membrane: grey while the bead moves, white while it holds", fontsize=11)
+    fig.suptitle(f"{bead_word(runs)} through a periodic membrane: grey while the bead moves, white while it holds",
+                 fontsize=11)
     fig.tight_layout(rect=(0, 0.06, 1, 0.97))
     fig.savefig(path)
     plt.close(fig)
@@ -521,7 +588,7 @@ def write_traces(runs, path):
 
 def write_hold_relaxation(runs, path, stats):
     fig, axes = plt.subplots(1, 3, figsize=(15.0, 4.4), dpi=110)
-    labels = ["force on the bead, z (pN)", "bonded vertices", "tension (pN/nm)"]
+    labels = ["force on the bead, z (pN)", f"{runs[0].contact_word} vertices", "tension (pN/nm)"]
     for r in runs:
         hold = r.hold_frames(skip_us=0.0)
         if len(hold) < 10:
@@ -570,31 +637,31 @@ def energy_map_grid(runs, path, t_us, vmax=None):
             r = match[0]
             k = frame_index(r, t_us)
             pts = r.control[k]
-            faces = r.faces_at(k)
-            dens = r.bending_density(k)
-            # Only faces whose vertices do not straddle the tile seam (short edges), for a clean map.
-            tri = pts[faces]
-            span = np.ptp(tri[:, :, :2], axis=1).max(axis=1)
-            keep = span < 3.0 * r.l_face
-            ax.tripcolor(pts[:, 0], pts[:, 1], faces[keep], facecolors=dens[keep], cmap=ENERGY_CMAP, norm=norm,
-                         edgecolors="none")
+            faces, dens = r.energy_faces(k)
+            L = r.L0 * r.scale[k]
+            # The margin shows the tile's own periodic continuation: the
+            # energy-carrying faces shifted by the period. The mesh's copy
+            # faces are not drawn -- see energy_faces().
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    ax.tripcolor(pts[:, 0] + dx * L[0], pts[:, 1] + dy * L[1], faces, facecolors=dens,
+                                 cmap=ENERGY_CMAP, norm=norm, edgecolors="none")
             c = r.bead_center[k]
             ax.add_patch(plt.Circle((c[0], c[1]), r.radius, fill=False, ec="white", lw=1.0, ls="--"))
-            L = r.L0 * r.scale[k]
             o = r.origin * r.scale[k] - 0.5 * r.l_face
             ax.add_patch(plt.Rectangle((o[0], o[1]), L[0], L[1], fill=False, ec="#2bb3a5", lw=0.8))
             ax.set_xlim(o[0] - 0.08 * L[0], o[0] + 1.08 * L[0])
             ax.set_ylim(o[1] - 0.08 * L[1], o[1] + 1.08 * L[1])
             ax.set_aspect("equal")
-            ax.set_title(f"{r.label}\nbead at {c[2] - r.base_level:+.0f} nm, {r.bonded[k]} bonded", fontsize=8)
+            ax.set_title(f"{r.label}\nbead at {c[2] - r.base_level:+.0f} nm, {r.bonded[k]} {r.contact_word}", fontsize=8)
             ax.tick_params(labelsize=7)
     sm = plt.cm.ScalarMappable(norm=norm, cmap=ENERGY_CMAP)
-    cbar = fig.colorbar(sm, ax=axes.ravel().tolist(), shrink=0.8, pad=0.03, fraction=0.04)
-    cbar.set_label("bending energy density (pN/nm)")
+    fig.subplots_adjust(left=0.05, right=0.86, top=0.92, bottom=0.05, hspace=0.4, wspace=0.3)
+    cax = fig.add_axes([0.89, 0.3, 0.015, 0.4])
+    fig.colorbar(sm, cax=cax).set_label("bending energy density (pN/nm)")
     fig.suptitle(f"Bending energy density on the control net, top view, t = {t_us:.0f} µs "
                  f"(teal: the periodic tile; white: the bead)", fontsize=10)
-    fig.subplots_adjust(hspace=0.45, wspace=0.25)
-    fig.savefig(path, bbox_inches="tight")
+    fig.savefig(path)
     plt.close(fig)
 
 
@@ -661,8 +728,7 @@ def draw_bead(ax, centre, radius):
 def paint_membrane(ax, run, k, norm, zmax, xlim, zoom=1.3, elev=22, azim=-58):
     ax.cla()
     pts = run.surface[k]
-    faces = run.faces_at(k)
-    values = run.bending_density(k)
+    faces, values = run.energy_faces(k)
     surface = ax.plot_trisurf(pts[:, 0], pts[:, 1], pts[:, 2], triangles=faces, cmap=ENERGY_CMAP,
                               linewidth=0.12, edgecolor=(0.0, 0.0, 0.0, 0.10), antialiased=True)
     surface.set_array(values)
@@ -720,7 +786,8 @@ def write_animation(runs, path, n_frames, fps, vmax):
     def update(k):
         for ax, run, title in zip(ax3d, runs, titles):
             paint_membrane(ax, run, k, norm, zmax, xlim)
-            title.set_text(f"{run.label}: bead at {run.bead_center[k, 2] - run.base_level:+.0f} nm, {run.bonded[k]} bonded")
+            title.set_text(f"{run.label}: bead at {run.bead_center[k, 2] - run.base_level:+.0f} nm, "
+                           f"{run.bonded[k]} {run.contact_word}")
         cursor.set_xdata([runs[0].time[k], runs[0].time[k]])
         stamp.set_text(f"t = {runs[0].time[k]:.1f} µs")
         return tuple(ax3d) + (cursor, stamp)
@@ -742,7 +809,8 @@ def write_stats(stats, md_path, csv_path):
         writer.writeheader()
         for s in stats:
             writer.writerow({k: s.get(k, "") for k in keys})
-    cols = [("run", "run"), ("bonded_end", "bonded"), ("wrapped_end", "wrapped"), ("Fz_peak_pN", "Fz peak (pN)"),
+    cols = [("run", "run"), ("potential", "bead"), ("bonded_end", "on the bead"), ("wrapped_end", "wrapped"),
+            ("Fz_peak_pN", "Fz peak (pN)"),
             ("Fz_at_stop_pN", "Fz at stop"), ("Fz_end_pN", "Fz end"), ("Flat_end_pN", "|F_lat| end"),
             ("tension_end_pN_nm", "σ end"), ("excess_area_end_nm2", "A − A_p (nm²)"), ("reservoir_area_end_nm2", "ΔA reservoir"),
             ("neck_end_nm", "neck (nm)"), ("apex_end_nm", "apex (nm)"), ("E_bend_end_pNnm", "E_bend end"),
@@ -774,6 +842,8 @@ def main(argv=None):
     parser.add_argument("--no-gif", action="store_true")
     parser.add_argument("--compare", nargs="*", help="runs for the side-by-side compare.gif (up to 4)")
     parser.add_argument("--map-times", nargs="*", type=float, default=None, help="times (us) of the energy maps")
+    parser.add_argument("--compare-root", default=None,
+                        help="a second matrix (the sticky bead) to set against --root in potential_comparison.png")
     args = parser.parse_args(argv)
     root = os.path.expanduser(args.root)
     names = args.runs or sorted(os.path.basename(d) for d in glob.glob(os.path.join(root, "*"))
@@ -803,6 +873,21 @@ def main(argv=None):
     write_spectra(runs, os.path.join(out, "spectra.png"), stats)
     write_stats(stats, os.path.join(out, "stats.md"), os.path.join(out, "stats.csv"))
     print(open(os.path.join(out, "stats.md")).read())
+    if args.compare_root:
+        other_root = os.path.expanduser(args.compare_root)
+        other = []
+        for name in sorted(os.listdir(other_root)):
+            if os.path.exists(os.path.join(other_root, name, "inputbead.csv")):
+                try:
+                    other.append(StickyRun(os.path.join(other_root, name)))
+                except Exception as exc:
+                    print(f"skipping {name} of {other_root}: {exc}")
+        sticky = [r for r in runs + other if r.sticky]
+        push = [r for r in runs + other if not r.sticky]
+        write_potential_comparison(sticky, push, os.path.join(out, "potential_comparison.png"))
+        both = sorted(stats + [summarize(r) for r in other], key=lambda s: (s["reservoir"], s["fluidity"], s["potential"]))
+        write_stats(both, os.path.join(out, "stats_comparison.md"), os.path.join(out, "stats_comparison.csv"))
+        print("potential_comparison.png and stats_comparison.md written")
     if not args.no_gif:
         for r in runs:
             n = write_animation([r], os.path.join(out, f"anim_{r.name}.gif"), args.frames, args.fps, vmax)

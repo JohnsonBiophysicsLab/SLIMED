@@ -110,11 +110,11 @@ irregularPatchTailCorrection = true        # legacy runs: false (docs/irregular_
 irregularPatchDepthScale = 1.0
 
 ############################################
-## The area reservoir: uniform scaling of the box at a frame tension of 0.5 pN/nm (docs/elastic_box.md)
+## The area reservoir: uniform scaling of the box at zero frame tension (docs/elastic_box.md)
 ############################################
 
 elasticBoxEnabled = true
-elasticBoxTension = 0.5
+elasticBoxTension = 0.0             # the target frame tension, pN/nm; docs/elastic_box_with_bead.md
 elasticBoxMobility = 0.02        # fast enough to follow a bead at 0.5 nm/us
 elasticBoxThermal = true
 elasticBoxCoupling = isotropic

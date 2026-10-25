@@ -427,8 +427,157 @@ harmonic`, `k = 20`, capture 2.5 nm, rising 35 nm in 70 us and holding 110 us
 `-O3` OpenMP build; `analysis/sticky_bead_analysis.py --root DIR` writes the
 traces, the hold-phase relaxation fits, the bending-energy maps and ring
 profiles, the Fourier analysis of the hold phase, one animation per run and
-`stats.md`.
+`stats.md`; `--compare-root` sets a second matrix against it
+(`potential_comparison.png`, `stats_comparison.md`), and
+`analysis/sticky_bead_plots.ipynb` writes every figure of both matrices as
+.svg and .png. The same matrix with a bead that only pushes is section 9.3.
 
-### 9.2 Results
+### 9.2 Results (runs of 2026-10-12, `~/slimed_runs/sticky_bead/matrix`, cluster copy `slimed/sticky_bead`)
 
-(filled in below from the runs of 2026-10-12)
+All 13 runs finished their 180 us with finite energy, no crease over 90 deg
+and a smallest interior altitude of 1.1-1.6 nm (the floor is 2 nm).
+`stats.md` beside the figures has every number; the ones that matter:
+
+| run | bonded at end (sphere = 58 cells) | F_z at stop / end (pN) | neck (nm) | A - A_p (nm^2) | tension (pN/nm) | tau_F (us) |
+| --- | --- | --- | --- | --- | --- | --- |
+| box, frozen | 71 | -344 / -193 | 9.9 | 1685 | 0.47 | 11 |
+| box, nu = 0.05 | 93 | -307 / -101 | 7.9 | 1546 | 0.45 | 25 |
+| box, nu = 0.5 | 97 | -212 / -70 | 7.0 | 1516 | 0.45 | 12 |
+| box, nu = 5 | 97 | -224 / -82 | 6.9 | 1501 | 0.44 | 16 |
+| S0 global, frozen | 61 | -304 / -162 | 10.0 | 1628 | 0.43 | 10 |
+| S0 global, nu = 0.05 | 83 | -284 / -80 | 8.5 | 1505 | 0.43 | 18 |
+| S0 global, nu = 0.5 | 88 | -162 / -62 | 7.6 | 1483 | 0.44 | 27 |
+| S0 global, nu = 5 | 92 | -195 / -55 | 7.3 | 1482 | 0.44 | 17 |
+| S0 local, frozen | 55 | -294 / -160 | 10.1 | 1568 | 0.52 | 9 |
+| S0 local, nu = 0.05 | 79 | -266 / -93 | 9.3 | 1517 | 0.53 | 17 |
+| S0 local, nu = 0.5 | 83 | -156 / -82 | 8.3 | 1474 | 0.53 | 23 |
+| S0 local, nu = 5 | 86 | -205 / -69 | 7.5 | 1466 | 0.52 | 7 |
+| fixed box, nu = 0.5 | 51 | -811 / -741 | (no neck) | 440 | 10.6 | 2 |
+
+- **The sticky bead pulls the membrane onto itself before it touches.** The
+  force on the bead is *positive* (upward, the membrane pulling the bead
+  toward it) for the first 20 us, peaking at +100-145 pN as the capture
+  range reaches the sheet, and only turns into a push once the bead is in
+  the plane. From then on it grows linearly with the pull-out to -300-350 pN
+  (frozen) or -160-210 pN (nu = 0.5) at the stop, and relaxes over
+  `tau_F` = 10-25 us to a residual that the membrane keeps exerting on the
+  held bead: -160 to -190 pN with a frozen mesh, -60 to -100 pN with flips.
+  The lateral force is 40-70 pN r.m.s. throughout (the bonds are stiff and
+  the contact is discrete), with no drift.
+- **The bead is wrapped completely under every reservoir, and the
+  reservoirs are interchangeable for this.** Box scaling, the global
+  relaxed area and the per-face relaxed area all hold the tension at
+  0.45-0.53 pN/nm (target 0.5) throughout, supply 1500-1700 nm^2 of excess
+  area (a 10 nm sphere is 1257; the rest is the neck and the tent), and
+  give the same force, the same neck and the same spectrum to within the
+  run-to-run scatter. The box and the global relaxed area do it at no cost;
+  the local mode costs 6-10 %. Which one to use is a question of what else
+  the run needs (a tension gradient: local), not of the bead.
+- **The reservoir is not optional.** The fixed box at the bilayer's modulus
+  reaches 10.6 pN/nm, does not wrap the bead (a 14 nm tent, 440 nm^2 of
+  excess area, 51 vertices bonded to the sphere's underside), holds it with
+  -740 pN, and its fluctuation spectrum is the tension-dominated q^-2 line
+  (right panel of `spectra.png`) -- a different membrane.
+- **Fluidity sets the neck and the residual force, not the wrap.** With
+  flips the bead is wrapped by 80-100 vertices against 55-70 with the
+  frozen mesh (1.4-1.7 sphere-cells' worth: per-vertex bonds pack vertices
+  onto the sphere as far as the tether's lower wall lets them, as the
+  adhesive benchmark did, docs/elastic_box.md section 5), the neck closes
+  from 10 nm to 7-8.5 nm, the residual pull on the held bead halves, and the
+  bending energy of the tile is 15-25 % higher (more membrane on the sphere
+  at `2 kc / R^2`). nu = 0.05 and 0.5 differ mostly in how fast this happens:
+  at 0.05 the bonded count is still climbing at the end of the hold, at 0.5
+  it has nearly saturated. The force at the stop is the clearest
+  fluidity signal: -344 / -307 / -212 / -224 pN (box, frozen / 0.05 / 0.5
+  / 5). nu = 5 adds nothing over 0.5: the same wrap (86-97 bonded), the same
+  neck (6.9-7.5 nm) and the same forces, at ten times the flips (900-1030
+  per us). The membrane is as fluid as the bead can use by nu = 0.5.
+- **Equilibration.** After the stop the force and the tension relax within
+  10-30 us; the excess area keeps flowing in for 30-50 us (the neck
+  lengthens and the tent relaxes); the bonded count of the fluid runs is
+  still growing linearly at 110 us (`hold_relaxation.png`, middle), because
+  every vertex that diffuses to the capture range is kept -- with bonds that
+  never break the bonded set has no equilibrium short of the tether's
+  packing limit. A run that needs an equilibrated contact should set
+  `beadBreakRange`.
+- **Fourier.** Over the hold, the static imprint |<h_q>|^2 of the bead is
+  a q^-4-like bump out to q = 0.3 /nm with a secondary peak at the neck's
+  scale (q = 0.4), stronger on the fluid meshes (sharper neck). The
+  fluctuations of the sheet outside the footprint lie on one q^-4 curve for
+  every reservoir and fluidity; the fit returns `kc` = 34-41 pN.nm and
+  `sigma` = 0.5-1.2 pN/nm. The `kc` is low against the input 83 because
+  the grid is the control net, not the limit surface, and the hold window is
+  90 us; the comparison between runs is the point, and there is none.
+- **Energy maps.** The bending energy density is `2 kc / R^2` = 1.7-2
+  pN/nm on the sphere and 0.1 (thermal) everywhere beyond 1.5 R; the frozen
+  mesh concentrates it in a ring at the sphere's rim (the funnel), the fluid
+  meshes spread it over the cap. The maps and the animations draw only the
+  energy-carrying faces (area > 0 in `faceenergy*.csv`), tiled by the period
+  for the margin. The mesh's own image-band copies must not be drawn: under
+  flips the code never re-mirrors them from the flipped real faces, so their
+  connectivity goes stale and they stretch across the band (188 of 600 past
+  15 nm at the end of `box_nu0.5`). They carry no energy and no force -- the
+  forces on the tile were checked bitwise against a band with its ghost
+  connectivity scrambled -- so this is an output artefact, not a physics one
+  (docs/mixed_boundary_conditions.md section 9).
+
+### 9.3 The same bead that only pushes (`beadPotential = wall`)
+
+The control for what the bond does: the same 13 runs, same seeds, same
+reservoirs and fluidities, with the bead's potential cut to its repulsive
+half (the wall inside the sphere, no well, `analysis/sticky_bead_runs.py
+--potential wall`). Runs of 2026-10-13, `~/slimed_runs/sticky_bead/push_matrix`,
+cluster copy `slimed/push_bead`; the sticky-against-pushing overlay is
+`potential_comparison.png` and the merged table `stats_comparison.md`, beside
+both matrices' figures.
+
+| run | in contact at end | F_z push peak / end (pN) | neck (nm) | A - A_p (nm^2) | tension (pN/nm) | outcome |
+| --- | --- | --- | --- | --- | --- | --- |
+| box, frozen | 0 | -129 / 0 | -- | 90 | 0.46 | sheet slips over the bead at 69 us |
+| box, nu = 0.05 | 0 | -134 / 0 | -- | 86 | 0.46 | slips at 66 us |
+| box, nu = 0.5 | 0 | -133 / 0 | -- | 85 | 0.45 | slips at 68 us |
+| box, nu = 5 | 0 | -134 / 0 | -- | 92 | 0.46 | slips at 68 us |
+| S0 global, frozen | 7 | -129 / -77 | 12.4 | 1438 | 0.43 | tent, held |
+| S0 global, nu = 0.05 | 9 | -150 / -75 | 12.6 | 1469 | 0.44 | tent, held |
+| S0 global, nu = 0.5 | 8 | -128 / -76 | 12.3 | 1448 | 0.43 | tent, held |
+| S0 global, nu = 5 | 8 | -126 / -70 | 12.5 | 1463 | 0.44 | tent, held |
+| S0 local, frozen | 7 | -134 / -84 | 12.1 | 1388 | 0.52 | tent, held |
+| S0 local, nu = 0.05 | 8 | -128 / -87 | 12.0 | 1410 | 0.52 | tent, held |
+| S0 local, nu = 0.5 | 9 | -128 / -76 | 11.9 | 1401 | 0.52 | tent, held |
+| S0 local, nu = 5 | 9 | -126 / -84 | 11.9 | 1354 | 0.50 | tent, held |
+| fixed box, nu = 0.5 | 0 | -140 / 0 | -- | 64 | 1.5 | slips at 44 us |
+
+- **No wrap, and no pull.** Without the bond the force on the bead is never
+  positive at the approach and never exceeds -125 to -150 pN during the
+  push (the sticky bead reaches -260 pN at the same height, dragging the
+  membrane it has bonded), 10-15 vertices touch the cap against the 50-60
+  bonded to the sticky bead at the stop, and the neck never closes below
+  the bead's radius. Fluidity makes no difference to any of it: a tent is
+  a cone, developable, and the frozen mesh follows it as well as the fluid
+  one (section 2 made the same point on the clamped sheet).
+- **Under the adaptive S0 the tent holds.** Through the 110 us hold the
+  bead keeps 7-9 vertices on its cap, a residual push of -70 to -87 pN, a
+  neck of 12 nm (above the equator: the contact ring sits on the upper
+  cap) and an apex of 28 nm; the excess area, 1350-1470 nm^2, is what the
+  sticky bead draws for a full wrap, because a 28 nm tent over a 10 nm
+  sphere holds as much membrane as the sphere plus its neck.
+- **Under box scaling the sheet slips over the bead** 1-4 us before it
+  stops (66-69 us, the bead's centre 18-19 nm above the sheet), and under
+  the fixed box at 44 us. The box supplies area with a lag (mobility 0.02):
+  at 65 us the tent has 750 nm^2 of excess area against 900-1000 under S0
+  at the same tension, so it is tighter, and its neck has closed to 9.4 nm,
+  below R. A contact ring below the equator is pushed down and out by the
+  wall, the ring opens, and the sheet relaxes flat under the bead (apex
+  3 nm, A - A_p 90 nm^2, F = 0 for the rest of the run). The neck column
+  is meaningless after the slip. The fixed box, at 4 pN/nm when the bead is
+  7 nm into the sheet, lets it through earliest.
+- **What this says about the model.** Whether a pushing bead goes through
+  is decided by a ring of 8-12 control points, because the wall acts on
+  the vertices and the surface between them is not repelled; at `R = 2
+  lFace` that ring can open to the bead's diameter inside the tether's
+  range. The sticky bead is immune, its bonds hold the ring. A pushing bead
+  that must not pass through needs either a larger `R / lFace` or a wall
+  on the limit surface rather than the control net (which would cost the
+  flip sweep its exactness, section 2). None of this changes the sticky
+  results of 9.2, and the reservoirs' order is the same in both matrices:
+  S0 supplies area on demand, the box with a lag, the fixed box not at all.

@@ -62,6 +62,55 @@ inline double standard_normal(std::uint64_t stepKey, std::uint64_t vertex, std::
     return std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * M_PI * u2);
 }
 
+/**
+ * @brief The variance of a standard normal restricted to |x| < cutoff.
+ *
+ * 1 - 2 c phi(c) / erf(c / sqrt 2): 0.9733 at 3, 0.7737 at 2, 0.2911 at 1. A
+ * cutoff of zero or less means no truncation, and the variance is 1.
+ */
+inline double truncated_normal_variance(double cutoff)
+{
+    if (!(cutoff > 0.0))
+    {
+        return 1.0;
+    }
+    const double phi = std::exp(-0.5 * cutoff * cutoff) / std::sqrt(2.0 * M_PI);
+    return 1.0 - 2.0 * cutoff * phi / std::erf(cutoff / std::sqrt(2.0));
+}
+
+/**
+ * @brief One standard normal truncated to |x| < cutoff, keyed like
+ * standard_normal().
+ *
+ * By rejection: the first attempt is standard_normal() on the same key, so a
+ * draw that already lies inside the cutoff is returned unchanged, and a run
+ * differs from the untruncated one only where a draw fell in the tails. A
+ * rejected draw is redrawn from the same key salted with the attempt number,
+ * which keeps the result a function of the key alone. Not rescaled: the
+ * variance is truncated_normal_variance(cutoff), and the caller decides
+ * whether to divide that back out. A cutoff of zero or less is the plain
+ * Gaussian.
+ *
+ * The acceptance per attempt is erf(c / sqrt 2): 0.95 at 2, 0.68 at 1, still
+ * 0.08 at the smallest cutoff the parameter file accepts (0.1).
+ */
+inline double truncated_standard_normal(std::uint64_t stepKey, std::uint64_t vertex, std::uint64_t axis,
+                                        double cutoff)
+{
+    double x = standard_normal(stepKey, vertex, axis);
+    if (!(cutoff > 0.0))
+    {
+        return x;
+    }
+    std::uint64_t attempt = 0;
+    while (std::fabs(x) >= cutoff)
+    {
+        attempt++;
+        x = standard_normal(stepKey ^ splitmix64(0x5452554EULL + attempt), vertex, axis);
+    }
+    return x;
+}
+
 /// A uniform integer in [0, bound), or 0 when the range is empty.
 inline int uniform_below(std::uint64_t key, int bound)
 {

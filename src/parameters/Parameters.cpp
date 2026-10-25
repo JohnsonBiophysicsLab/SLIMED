@@ -107,6 +107,7 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "edgeFlipInterval: " << param.edgeFlipInterval << std::endl;
     os << "edgeFlipMinValence: " << param.edgeFlipMinValence << std::endl;
     os << "edgeFlipMaxValence: " << param.edgeFlipMaxValence << std::endl;
+    os << "edgeFlipIncrementalForces: " << param.edgeFlipIncrementalForces << std::endl;
     os << "meshWallType: " << param.meshWallType << std::endl;
     os << "vertexMoveEnabled: " << param.vertexMoveEnabled << std::endl;
     os << "vertexMoveStepRatio: " << param.vertexMoveStepRatio << std::endl;

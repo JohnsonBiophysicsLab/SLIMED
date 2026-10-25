@@ -350,107 +350,115 @@ void Mesh::calculate_element_area_volume()
 {
     // Must happen before the parallel region; the build is not thread safe.
     ensure_patch_rows_flat();
-    const double *const regularRows = patchRowsFlat.regular();
-    const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
-    const int nSamples = patchRowsFlat.nSamples();
 
     // Interleaved static chunks for load balance, as in
     // compute_face_energies_and_forces(). Each face writes only its own
     // fields, so the schedule cannot change any result here.
+    const int nFaces = static_cast<int>(faces.size());
 #pragma omp parallel for schedule(static, 4)
-    for (Face& face : faces)
+    for (int iFace = 0; iFace < nFaces; iFace++)
     {
-        // Ghost faces won't contribute to the membrane area
-        // I changed this from boundary faces to ghost faces since
-        // by def, ghost faces are the ones that do not contribute to physical
-        // calculations - Y Ying
-        if (face.isGhost)
-            continue;
+        integrate_face_area_volume(iFace);
+    }
+}
 
-        double area = 0.0;   ///< The accumulated area for a membrane.
-        double volume = 0.0; ///< The accumulated volume for a membrane.
-        const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
+void Mesh::integrate_face_area_volume(int iFace)
+{
+    Face &face = faces[iFace];
 
-        // Geometry reads exactly the rows energy and force read, through the
-        // same dispatch. Before WP5 this arm ran its own explicit subdivision
-        // recursion over param.subMatrix, bounded by an uninitialized
-        // param.subDivideTimes -- so area and volume were integrated by
-        // different code, to a different depth, than the energy they are
-        // constrained against.
-        //
-        // Any other width means no complete one-ring -- a boundary face, with
-        // no limit surface and so no area or volume of its own. Bailing before
-        // the copy also keeps it inside the stack buffer.
-        // Which patch a face carries is read off the face, for the same reason
-        // the force loop reads it there: the width of the one-ring stopped
-        // being enough to tell once a face could have several extraordinary
-        // corners.
-        const bool isRegular = (face.patchKind == PatchKind::Regular);
-        const bool isIrregular = (face.patchKind == PatchKind::SingleExtraordinary);
-        const bool isMulti =
-            (face.patchKind == PatchKind::MultiExtraordinary && face.patchEntry >= 0);
-        if ((isRegular || isIrregular || isMulti) && nOneRingVertices > 0 &&
-            nOneRingVertices <= slimed::kMaxControlPoints)
+    // Ghost faces won't contribute to the membrane area
+    // I changed this from boundary faces to ghost faces since
+    // by def, ghost faces are the ones that do not contribute to physical
+    // calculations - Y Ying
+    if (face.isGhost)
+        return;
+
+    const double *const regularRows = patchRowsFlat.regular();
+    const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
+    const int nSamples = patchRowsFlat.nSamples();
+
+    double area = 0.0;   ///< The accumulated area for a membrane.
+    double volume = 0.0; ///< The accumulated volume for a membrane.
+    const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
+
+    // Geometry reads exactly the rows energy and force read, through the
+    // same dispatch. Before WP5 this arm ran its own explicit subdivision
+    // recursion over param.subMatrix, bounded by an uninitialized
+    // param.subDivideTimes -- so area and volume were integrated by
+    // different code, to a different depth, than the energy they are
+    // constrained against.
+    //
+    // Any other width means no complete one-ring -- a boundary face, with
+    // no limit surface and so no area or volume of its own. Bailing before
+    // the copy also keeps it inside the stack buffer.
+    // Which patch a face carries is read off the face, for the same reason
+    // the force loop reads it there: the width of the one-ring stopped
+    // being enough to tell once a face could have several extraordinary
+    // corners.
+    const bool isRegular = (face.patchKind == PatchKind::Regular);
+    const bool isIrregular = (face.patchKind == PatchKind::SingleExtraordinary);
+    const bool isMulti =
+        (face.patchKind == PatchKind::MultiExtraordinary && face.patchEntry >= 0);
+    if ((isRegular || isIrregular || isMulti) && nOneRingVertices > 0 &&
+        nOneRingVertices <= slimed::kMaxControlPoints)
+    {
+        double coordOneRingVertices[slimed::kMaxControlPoints * 3];
+        for (int j = 0; j < nOneRingVertices; j++)
         {
-            double coordOneRingVertices[slimed::kMaxControlPoints * 3];
-            for (int j = 0; j < nOneRingVertices; j++)
-            {
-                const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
-                coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
-                coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
-                coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
-            }
-
-            auto integrateOnePatch = [&](int valence, const double *coords, int nCtrl) {
-                if (valence == 6)
-                {
-                    slimed::element_area_volume_pod(regularRows, gaussCoeff, nSamples, coords,
-                                                    nCtrl, area, volume);
-                    return;
-                }
-                for (int d = 0; d < irregularRows.depth_for(valence); d++)
-                {
-                    // The area weight the force pass integrates this level
-                    // with, so area and its force stay conjugate.
-                    double bendWeight = 1.0;
-                    double areaWeight = 1.0;
-                    patchRowsFlat.level_weights(valence, d, bendWeight, areaWeight);
-                    for (int c = 0; c < kRegularChildrenPerStep; c++)
-                    {
-                        slimed::element_area_volume_weighted_pod(
-                            patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
-                            nCtrl, areaWeight, area, volume);
-                    }
-                }
-            };
-
-            if (isRegular || isIrregular)
-            {
-                integrateOnePatch(isRegular ? 6 : nOneRingVertices - 6, coordOneRingVertices,
-                                  nOneRingVertices);
-            }
-            else
-            {
-                // The same four children the energy uses, over the same
-                // prolongations, so geometry and energy still read the same
-                // rows for the same face.
-                const MultiPatchTable::Entry &entry = multiPatchTable.entry(face.patchEntry);
-                const double *const prolongations = multiPatchTable.data();
-                for (int c = 0; c < 4; c++)
-                {
-                    const MultiPatchTable::Child &child = entry.children[c];
-                    double childCoords[slimed::kMaxControlPoints * 3];
-                    multi_patch_prolong(prolongations + child.offset, coordOneRingVertices,
-                                        entry.nControl, child.nControl, childCoords);
-                    integrateOnePatch(child.valence, childCoords, child.nControl);
-                }
-            }
+            const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
+            coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
+            coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
+            coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
         }
 
-        face.elementArea = area;
-        face.elementVolume = volume;
+        auto integrateOnePatch = [&](int valence, const double *coords, int nCtrl) {
+            if (valence == 6)
+            {
+                slimed::element_area_volume_pod(regularRows, gaussCoeff, nSamples, coords,
+                                                nCtrl, area, volume);
+                return;
+            }
+            for (int d = 0; d < irregularRows.depth_for(valence); d++)
+            {
+                // The area weight the force pass integrates this level
+                // with, so area and its force stay conjugate.
+                double bendWeight = 1.0;
+                double areaWeight = 1.0;
+                patchRowsFlat.level_weights(valence, d, bendWeight, areaWeight);
+                for (int c = 0; c < kRegularChildrenPerStep; c++)
+                {
+                    slimed::element_area_volume_weighted_pod(
+                        patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
+                        nCtrl, areaWeight, area, volume);
+                }
+            }
+        };
 
+        if (isRegular || isIrregular)
+        {
+            integrateOnePatch(isRegular ? 6 : nOneRingVertices - 6, coordOneRingVertices,
+                              nOneRingVertices);
+        }
+        else
+        {
+            // The same four children the energy uses, over the same
+            // prolongations, so geometry and energy still read the same
+            // rows for the same face.
+            const MultiPatchTable::Entry &entry = multiPatchTable.entry(face.patchEntry);
+            const double *const prolongations = multiPatchTable.data();
+            for (int c = 0; c < 4; c++)
+            {
+                const MultiPatchTable::Child &child = entry.children[c];
+                double childCoords[slimed::kMaxControlPoints * 3];
+                multi_patch_prolong(prolongations + child.offset, coordOneRingVertices,
+                                    entry.nControl, child.nControl, childCoords);
+                integrateOnePatch(child.valence, childCoords, child.nControl);
+            }
+        }
     }
+
+    face.elementArea = area;
+    face.elementVolume = volume;
 }
 
 void Mesh::sum_membrane_area_and_volume(double &area, double &volume)

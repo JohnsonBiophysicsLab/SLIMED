@@ -1,0 +1,20 @@
+# Smoke-test input for continuum_membrane and continuum_membrane_multithreading.
+# A 40 nm clamped sheet whose relaxed area is below its built area, so the
+# minimizer has a force to follow; a handful of NCG steps take well under a
+# second even in an unoptimised coverage build. See tests/CMakeLists.txt.
+
+maxIterations = 5
+VERBOSE_MODE = false
+boundaryType = Fixed
+lFace = 5.0
+sideX = 40.0
+sideY = 40.0
+setRelaxAreaToDefault = false
+relaxArea = 900.0
+isEnergyHarmonicBondIncluded = false
+isInsertionIncluded = false
+thermalFluctuationEnabled = false
+meshpointOutput = true
+checkpointOutputInterval = 2
+checkpointOutputFile = smoke_restart.chk
+randomSeed = 11

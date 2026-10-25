@@ -1,4 +1,5 @@
 #include "Run_simulation.hpp"
+#include "dynamics/Divergence_guard.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -209,6 +210,9 @@ void run_dynamics_flat(std::string param_filename) {
         }
     }
 
+    // The divergence bounds, from the mesh as the first step finds it.
+    const DivergenceGuard divergenceGuard(mesh);
+
     for (model.iteration = 0; model.iteration < mesh.param.maxIterations; model.iteration ++) {
 
         // A pure Monte Carlo run (brownianStepEnabled = false) skips the
@@ -226,6 +230,12 @@ void run_dynamics_flat(std::string param_filename) {
 
         //4. postprocessing based on boundary condition
         mesh.postprocess_boundary();
+
+        //4a. the rest of the mesh-quality force's substeps, at
+        // meshForceSubsteps > 1. Off, nothing runs.
+        if (mesh.param.meshForceSubsteps > 1) {
+            model.mesh_force_substeps();
+        }
 
         //4b. the elastic box: one Brownian step of the periodic strain from
         // the same force evaluation the vertex step used, then the rescale
@@ -298,8 +308,12 @@ void run_dynamics_flat(std::string param_filename) {
         // the current per-face energies because the trial energy is a local
         // difference against them, and it invalidates them by construction, so
         // an accepted flip is followed by a second evaluation before the next
-        // Brownian step reads a force.
-        bool sweepChangedMesh = false;
+        // Brownian step reads a force. That second evaluation touches only
+        // the faces the flips changed when Param::edgeFlipIncrementalForces
+        // allows it; a vertex-move sweep moves coordinates and so needs the
+        // whole mesh again.
+        bool flipsChangedMesh = false;
+        bool movesChangedMesh = false;
         if (mesh.param.edgeFlipEnabled &&
             (model.iteration + 1) % std::max(1, mesh.param.edgeFlipInterval) == 0) {
             const EdgeFlipSweepStats stats = mesh.edge_flip_sweep(model.iteration, &edgeFlipLog);
@@ -312,7 +326,7 @@ void run_dynamics_flat(std::string param_filename) {
                 // device layout, the sparse limit mask -- notices the version
                 // bump on its own. What does not is the stored energy and
                 // force, which still describe the old triangulation.
-                sweepChangedMesh = true;
+                flipsChangedMesh = true;
             }
             if (edgeFlipLog.size() >= 4096) {
                 write_edge_flip_log_csv(edgeFlipLog, edgeFlipLogPath);
@@ -334,21 +348,28 @@ void run_dynamics_flat(std::string param_filename) {
                 // The moves act on the vertices; the step and the trajectory
                 // read the control net from matMesh.
                 mesh.update_vertices_mat_with_vector();
-                sweepChangedMesh = true;
+                movesChangedMesh = true;
             }
         }
 
-        if (sweepChangedMesh) {
+        if (movesChangedMesh) {
             mesh.Compute_Energy_And_Force();
+        } else if (flipsChangedMesh) {
+            // Falls back to the whole-mesh pass when the incremental one is
+            // not available (parameter off, device backend, local lipid flow).
+            mesh.Compute_Energy_And_Force_After_Flips();
         }
 
         // A run that has gone non-finite has nothing left to say, and it says
         // it for as long as it is given: the 3000-step fluid run that found
         // this wrote NaN into every row after step 1535 and took four minutes
-        // doing it. Stop at the first one, keeping what was collected.
-        if (!std::isfinite(mesh.param.energy.energyTotal)) {
-            std::cerr << "[run_dynamics_flat] The total energy is "
-                      << mesh.param.energy.energyTotal << " at iteration " << model.iteration
+        // doing it. Stop at the first one, keeping what was collected. Nor
+        // does a blow-up always reach NaN: diag_fixedbox_dt0.005 stayed finite
+        // at E ~ 1e206 for 80k steps, so the guard also stops a run whose
+        // coordinates or energy have left any range a healthy run visits.
+        const std::string divergence = divergenceGuard.check(mesh);
+        if (!divergence.empty()) {
+            std::cerr << "[run_dynamics_flat] " << divergence << " at iteration " << model.iteration
                       << "; the run has diverged and is stopping. Everything up to here has "
                          "been written. A membrane that blows up this way is usually held "
                          "together too weakly for the moves it is being asked to make -- check "
