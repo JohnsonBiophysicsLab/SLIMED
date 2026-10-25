@@ -47,6 +47,9 @@ std::ostream& operator<<(std::ostream& os, const Param& param)
     os << "isNCGstuck: " << param.isNCGstuck << std::endl;
     os << "gamaShape: " << param.gamaShape << std::endl;
     os << "gamaArea: " << param.gamaArea << std::endl;
+    os << "regularizationBlendWidth: " << param.regularizationBlendWidth << std::endl;
+    os << "periodicGhostForceFolding: " << param.periodicGhostForceFolding << std::endl;
+    os << "harmonicBondSideWidth: " << param.harmonicBondSideWidth << std::endl;
     os << "usingRpi: " << param.usingRpi << std::endl;
     os << "xyzOutput: " << param.xyzOutput << std::endl;
     os << "meshpointOutput: " << param.meshpointOutput << std::endl;

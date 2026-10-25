@@ -24,6 +24,13 @@ Model::Model(Mesh &mesh_, Record &record_)
     }
     oa.energyDiffThreshold = mesh.param.deltaEnergyConverge;
     oa.forceDiffThreshold = mesh.param.deltaForceScaleConverge;
+    oa.usingNCG = mesh.param.usingNCG;
+    // The initial direction is the force, so the first Fletcher-Reeves
+    // update divides by its squared norm.
+    for (const Vertex &vertex : mesh.vertices)
+    {
+        ncgForceNormSquaredPrev += dot_col(vertex.force.forceTotal, vertex.force.forceTotal);
+    }
 }
 
 /**
@@ -101,21 +108,19 @@ std::string Model::to_string_current_step()
 void Model::update_ncg_direction()
 {
     vector<Force> &ncgDirection0 = this->ncgDirection0;
-    double ncgFactorPrev = 0.0; // Calculated from previous force
+    // The squared force norm at the previous update. Not from forcePrev:
+    // run_flat has already copied the current force there, which made the
+    // Fletcher-Reeves factor 1 at every step.
+    const double ncgFactorPrev = ncgForceNormSquaredPrev;
     double ncgFactorCurr = 0.0; // Calculated from current force
-    Matrix forceTmp(3, 1);      // Temporary force matrix to calculate dot product
 
-#pragma omp parallel for reduction(+ : ncgFactorPrev, ncgFactorCurr) private(forceTmp)
+#pragma omp parallel for reduction(+ : ncgFactorCurr)
     for (int i = 0; i < static_cast<int>(mesh.vertices.size()); ++i)
     {
-        Vertex &vertex = mesh.vertices[i];
-        // update ncgFactorPrev with previous force
-        forceTmp = vertex.forcePrev.forceTotal;
-        ncgFactorPrev += dot_col(forceTmp, forceTmp);
-        // update ncgFactorCurr with current force
-        forceTmp = vertex.force.forceTotal;
-        ncgFactorCurr += dot_col(forceTmp, forceTmp);
+        const Matrix &force = mesh.vertices[i].force.forceTotal;
+        ncgFactorCurr += dot_col(force, force);
     }
+    ncgForceNormSquaredPrev = ncgFactorCurr;
 
     // Calculate new direction for NCG using current force and previous NCG
     // direction scaled by peta1 = ncgFactorCurr / ncgFactorPrev
@@ -128,15 +133,38 @@ void Model::update_ncg_direction()
             ncgDirection0[i].forceTotal = mesh.vertices[i].force.forceTotal;
         }
     }
+    else if (oa.isNCGstuck || ncgFactorPrev == 0.0)
+    { // Restart: the last search fell back to the force, so the previous
+      // direction is not a conjugate direction to build on
+#pragma omp parallel for
+        for (int i = 0; i < mesh.vertices.size(); i++)
+        {
+            ncgDirection0[i].forceTotal = mesh.vertices[i].force.forceTotal;
+        }
+    }
     else
     { // If using NCG
         double peta1 = ncgFactorCurr / ncgFactorPrev;
+        double descent = 0.0; // sum F . d, positive along a descent direction
 
-#pragma omp parallel for
+#pragma omp parallel for reduction(+ : descent)
         for (int i = 0; i < mesh.vertices.size(); i++)
         {
             // Update NCG direction as a combination of current force and previous NCG direction
             ncgDirection0[i].forceTotal = mesh.vertices[i].force.forceTotal + peta1 * ncgDirection0[i].forceTotal;
+            descent += dot_col(mesh.vertices[i].force.forceTotal, ncgDirection0[i].forceTotal);
+        }
+
+        // Fletcher-Reeves only guarantees descent after a strong-Wolfe step
+        // with c2 < 1/2; any other step (an accepted step of the simple search,
+        // a changed energy function) can leave d uphill. Restart from the force.
+        if (!(descent > 0.0))
+        {
+#pragma omp parallel for
+            for (int i = 0; i < mesh.vertices.size(); i++)
+            {
+                ncgDirection0[i].forceTotal = mesh.vertices[i].force.forceTotal;
+            }
         }
     }
 }

@@ -449,6 +449,7 @@ void CudaForceBackend::evaluate(Mesh &mesh, const DeviceMeshLayout &layout,
     args.gamaShape = param.gamaShape;
     args.gamaArea = param.gamaArea;
     args.usingRpi = param.usingRpi;
+    args.regularizationBlendWidth = param.regularizationBlendWidth;
     // Fluid mode: the edge tether replaces the reference-length term and is
     // evaluated on the host over the edge table once this returns
     // (Mesh::energy_force_fluid_terms()); the stage writes zeros instead.

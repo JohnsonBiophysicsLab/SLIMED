@@ -499,14 +499,35 @@ TEST(ModelCoverageNcgDirectionTest, WithNcgTheOldDirectionIsAddedWithTheFletcher
     Model model(mesh, record);
     model.oa.usingNCG = true;
 
-    // |F|^2 / |Fprev|^2 = (n * 4) / (n * 1) = 4, exact in floating point.
+    // The Fletcher-Reeves denominator is |F|^2 at the previous update, kept in
+    // ncgForceNormSquaredPrev -- not forcePrev, which run_flat has already
+    // overwritten with the current force by the time the direction is built
+    // (that made the factor 1 at every step). First update: |F|^2 = n, and
+    // with no previous norm the direction restarts from the force.
     for (std::size_t i = 0; i < mesh.vertices.size(); i++)
     {
-        set_vector(mesh.vertices[i].forcePrev.forceTotal, 1.0, 0.0, 0.0);
+        set_vector(mesh.vertices[i].force.forceTotal, 1.0, 0.0, 0.0);
+    }
+    model.update_ncg_direction();
+    EXPECT_DOUBLE_EQ(model.ncgForceNormSquaredPrev, static_cast<double>(mesh.vertices.size()));
+    for (std::size_t i = 0; i < mesh.vertices.size(); i++)
+    {
+        EXPECT_DOUBLE_EQ(model.ncgDirection0[i].forceTotal.get(0, 0), 1.0);
+        EXPECT_DOUBLE_EQ(model.ncgDirection0[i].forceTotal.get(1, 0), 0.0);
+        EXPECT_DOUBLE_EQ(model.ncgDirection0[i].forceTotal.get(2, 0), 0.0);
+    }
+
+    // Second update: |F|^2 / |F at the last update|^2 = (n * 4) / (n * 1) = 4,
+    // exact in floating point. forcePrev holds something else to show that it
+    // is not what the factor reads.
+    for (std::size_t i = 0; i < mesh.vertices.size(); i++)
+    {
+        set_vector(mesh.vertices[i].forcePrev.forceTotal, 7.0, 7.0, 7.0);
         set_vector(mesh.vertices[i].force.forceTotal, 0.0, 2.0, 0.0);
         set_vector(model.ncgDirection0[i].forceTotal, 0.0, 0.0, 1.0);
     }
     model.update_ncg_direction();
+    EXPECT_DOUBLE_EQ(model.ncgForceNormSquaredPrev, 4.0 * mesh.vertices.size());
     for (std::size_t i = 0; i < mesh.vertices.size(); i++)
     {
         EXPECT_DOUBLE_EQ(model.ncgDirection0[i].forceTotal.get(0, 0), 0.0);
@@ -551,7 +572,7 @@ TEST(ModelCoverageNcgDirectionTest, ResetZeroesTheDirectionAndTheNextUpdateIsThe
 // Model: line search
 // ---------------------------------------------------------------------------
 
-TEST(ModelCoverageLineSearchTest, NcgBranchAcceptsAStepThatSatisfiesSufficientDecrease)
+TEST(ModelCoverageLineSearchTest, NcgBranchAcceptsAStrongWolfeStep)
 {
     Param param;
     configure_free_sheet(param);
@@ -564,9 +585,6 @@ TEST(ModelCoverageLineSearchTest, NcgBranchAcceptsAStepThatSatisfiesSufficientDe
     record.add(mesh.param.area, mesh.param.energy, mesh.calculate_mean_force());
     Model model(mesh, record);
     model.oa.usingNCG = true;
-    // The curvature test compares the previous force with itself (see the
-    // report), so it only passes with c2 >= 1; that leaves the Armijo test.
-    model.oa.c2 = 1.0;
     testing::internal::CaptureStdout();
     model.determine_trial_step_size();
     const double trial = model.oa.trialStepSize;
@@ -575,19 +593,37 @@ TEST(ModelCoverageLineSearchTest, NcgBranchAcceptsAStepThatSatisfiesSufficientDe
     ASSERT_LT(slope, 0.0) << "the force direction must be a descent direction";
 
     const double step = model.linear_search_for_stepsize_to_minimize_energy();
-    testing::internal::GetCapturedStdout();
+    const std::string out = testing::internal::GetCapturedStdout();
 
+    // The strong-Wolfe search accepted a step: no fallback to the simple search.
     EXPECT_GT(step, 0.0);
     EXPECT_EQ(step, model.stepSize);
     EXPECT_FALSE(model.oa.isNCGstuck) << "the NCG branch should have accepted a step";
-    // The step is the trial step scaled down by 0.8 a whole number of times (at least once).
-    const double k = std::log(step / trial) / std::log(0.8);
-    EXPECT_GE(k, 1.0 - 1e-9);
-    EXPECT_NEAR(k, std::round(k), 1e-9);
-    // The accepted energy is lower than the start and satisfies Armijo.
+    EXPECT_EQ(out.find("simple line search"), std::string::npos) << out;
+
+    // The mesh is left at the accepted step along the direction...
+    const int centre = central_mobile_vertex(mesh);
+    const Vertex &vertex = mesh.vertices[centre];
+    EXPECT_NEAR(vertex.coord.get(2, 0),
+                vertex.coordPrev.get(2, 0) + step * model.ncgDirection0[centre].forceTotal.get(2, 0),
+                1e-12);
+    // ...with its energy and force, and both strong-Wolfe conditions hold
+    // there: sufficient decrease, and the slope -F . d at the step flattened
+    // to within c2 of the slope at the start. The old search never checked the
+    // second one: it compared the start slope with itself.
     const double energyAfter = mesh.param.energy.energyTotal;
     EXPECT_LT(energyAfter, energyBefore);
     EXPECT_LE(energyAfter, energyBefore + model.oa.c1 * step * slope + 1e-12 * std::abs(energyBefore));
+    double slopeAtStep = 0.0;
+    for (std::size_t i = 0; i < mesh.vertices.size(); i++)
+    {
+        for (int axis = 0; axis < 3; axis++)
+        {
+            slopeAtStep -= mesh.vertices[i].force.forceTotal.get(axis, 0) *
+                           model.ncgDirection0[i].forceTotal.get(axis, 0);
+        }
+    }
+    EXPECT_LE(std::abs(slopeAtStep), model.oa.c2 * std::abs(slope));
 }
 
 TEST(ModelCoverageLineSearchTest, SimpleSearchAlongTheForceLowersTheEnergy)
@@ -618,7 +654,7 @@ TEST(ModelCoverageLineSearchTest, SimpleSearchAlongTheForceLowersTheEnergy)
                 1e-12);
 }
 
-TEST(ModelCoverageLineSearchTest, SimpleSearchUphillGivesUpWithMinusOne)
+TEST(ModelCoverageLineSearchTest, SimpleSearchUphillRetriesAlongTheForce)
 {
     Param param;
     configure_free_sheet(param);
@@ -633,7 +669,11 @@ TEST(ModelCoverageLineSearchTest, SimpleSearchUphillGivesUpWithMinusOne)
     model.oa.stepThreshold = 1e-3; // keep the number of trial steps small
     testing::internal::CaptureStdout();
     model.determine_trial_step_size();
-    // Search against the force: every step raises the energy.
+    // Search against the force: every step raises the energy, so the first
+    // search runs down to stepThreshold. A failure there used to be final.
+    // Now the search refreshes the regularization reference and tries once
+    // more along the force from the rule-of-thumb step, so it only reports
+    // a failure when no step along the force lowers the energy either.
     for (std::size_t i = 0; i < mesh.vertices.size(); i++)
     {
         model.ncgDirection0[i].forceTotal = -1.0 * mesh.vertices[i].forcePrev.forceTotal;
@@ -641,7 +681,44 @@ TEST(ModelCoverageLineSearchTest, SimpleSearchUphillGivesUpWithMinusOne)
     const double step = model.linear_search_for_stepsize_to_minimize_energy();
     const std::string out = testing::internal::GetCapturedStdout();
 
+    EXPECT_GT(step, 0.0);
+    EXPECT_EQ(step, model.stepSize);
+    EXPECT_EQ(out.find("cannot find an efficient small stepSize"), std::string::npos) << out;
+    EXPECT_LT(mesh.param.energy.energyTotal, energyBefore);
+    // The retry replaced the direction with the force at its refreshed start,
+    // which is what forcePrev holds afterwards.
+    for (std::size_t i = 0; i < mesh.vertices.size(); i++)
+    {
+        for (int axis = 0; axis < 3; axis++)
+        {
+            EXPECT_DOUBLE_EQ(model.ncgDirection0[i].forceTotal.get(axis, 0),
+                             mesh.vertices[i].forcePrev.forceTotal.get(axis, 0));
+        }
+    }
+}
+
+TEST(ModelCoverageLineSearchTest, SimpleSearchAtAStationaryPointGivesUpWithMinusOne)
+{
+    Param param;
+    configure_free_sheet(param);
+    Mesh mesh(param);
+    // The flat sheet at its target area with the reference geometry on it
+    // carries no force, so neither the first search nor the retry along the
+    // force finds a step that lowers the energy.
+    prepare_sheet(mesh);
+    const double energyBefore = mesh.param.energy.energyTotal;
+
+    Record record(2);
+    Model model(mesh, record);
+    model.oa.usingNCG = false;
+    model.oa.stepThreshold = 1e-3; // keep the number of trial steps small
+    testing::internal::CaptureStdout();
+    model.determine_trial_step_size();
+    const double step = model.linear_search_for_stepsize_to_minimize_energy();
+    const std::string out = testing::internal::GetCapturedStdout();
+
     EXPECT_EQ(step, -1.0);
+    EXPECT_EQ(model.stepSize, -1.0);
     EXPECT_NE(out.find("cannot find an efficient small stepSize"), std::string::npos) << out;
     EXPECT_GE(mesh.param.energy.energyTotal, energyBefore);
 }

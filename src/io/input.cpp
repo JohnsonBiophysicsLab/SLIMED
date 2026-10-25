@@ -226,6 +226,43 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "usingRpi set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("harmonicBondSideWidth") == 0)
+	{
+		// 0 is the legacy signed distance.
+		const double width = std::stod(variableValueStr);
+		if (!std::isfinite(width) || width < 0.0)
+		{
+			throw std::runtime_error("[read_param_file] harmonicBondSideWidth must be a finite number >= 0; got '" +
+									 variableValueStr + "'");
+		}
+		param.harmonicBondSideWidth = width;
+		std::cout << "harmonicBondSideWidth set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("periodicGhostForceFolding") == 0)
+	{
+		if (variableValueStr.compare("true") != 0 && variableValueStr.compare("false") != 0)
+		{
+			throw std::runtime_error("[read_param_file] periodicGhostForceFolding must be true or false; got '" +
+									 variableValueStr + "'");
+		}
+		param.periodicGhostForceFolding = (variableValueStr.compare("true") == 0);
+		std::cout << "periodicGhostForceFolding set to: " << variableValueStr << std::endl;
+		return true;
+	}
+	else if (variableNameStr.compare("regularizationBlendWidth") == 0)
+	{
+		// 0 is the hard switch between the regularization cases.
+		const double width = std::stod(variableValueStr);
+		if (!std::isfinite(width) || width < 0.0)
+		{
+			throw std::runtime_error("[read_param_file] regularizationBlendWidth must be a finite number >= 0; got '" +
+									 variableValueStr + "'");
+		}
+		param.regularizationBlendWidth = width;
+		std::cout << "regularizationBlendWidth set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("gamaShape") == 0 ||
 			 variableNameStr.compare("gamaArea") == 0)
 	{

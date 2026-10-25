@@ -487,6 +487,9 @@ TEST(RunDriversFlatTest, ANearlyRelaxedSheetKeepsLoweringItsEnergy)
     ScratchRunDirectory dir;
     // Relaxed area just under the built one: the energy changes by less than
     // 1e-3 per step, which is when the driver refreshes the reference shape.
+    // The built sheet is 1039.23 nm^2. At 1039.0 the usable line search
+    // lowers the energy by 1.3e-3 a step; 1039.2 keeps every step under the
+    // bound and still covers the refresh.
     write_params("near", {"maxIterations = 5",
                           "VERBOSE_MODE = false",
                           "boundaryType = Fixed",
@@ -494,7 +497,7 @@ TEST(RunDriversFlatTest, ANearlyRelaxedSheetKeepsLoweringItsEnergy)
                           "sideX = 40.0",
                           "sideY = 40.0",
                           "setRelaxAreaToDefault = false",
-                          "relaxArea = 1039.0",
+                          "relaxArea = 1039.2",
                           "meshpointOutput = false",
                           "checkpointOutputInterval = 0"});
     run_flat("near");

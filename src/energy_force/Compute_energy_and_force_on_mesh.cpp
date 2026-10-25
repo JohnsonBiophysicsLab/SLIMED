@@ -1,6 +1,7 @@
 #include "mesh/Mesh.hpp"
 
 #include "energy_force/Patch_kernel.hpp"
+#include "energy_force/Regularization_kernel.hpp"
 
 #include <algorithm>
 #pragma omp declare reduction(vector_plus                                                                                             \
@@ -1220,11 +1221,12 @@ void Mesh::element_energy_force_patch_reference(const std::vector<Matrix> &sampl
  * @brief Calculates the regularization energy and force for each face
  *
  * This function calculates the regularization energy and force
- * for each face in the mesh. The regularization energy is
- * calculated based on the deformation of the face's shape and
- * area relative to an equilateral triangle with the same side length.
- * The regularization force is then calculated based on the energy
- * and applied to the vertices of the face. The function also updates
+ * for each face in the mesh: a spring on each side of the face, towards its
+ * reference length, or towards an equilateral triangle once the face is
+ * deformed past Param::gamaShape or Param::gamaArea, blended across
+ * Param::regularizationBlendWidth. The per-face arithmetic lives in
+ * Regularization_kernel.hpp, which the device backends share. The force is
+ * the exact negative gradient of the energy. The function also updates
  * the deformation counts for shapes and areas.
  *
  * @return void
@@ -1232,7 +1234,12 @@ void Mesh::element_energy_force_patch_reference(const std::vector<Matrix> &sampl
  */
 void Mesh::energy_force_regularization()
 {
-    double kCurv = param.kCurv;
+    slimed::RegularizationParams regularizationParams;
+    regularizationParams.kCurv = param.kCurv;
+    regularizationParams.gamaShape = param.gamaShape;
+    regularizationParams.gamaArea = param.gamaArea;
+    regularizationParams.usingRpi = param.usingRpi;
+    regularizationParams.blendWidth = param.regularizationBlendWidth;
     const bool skipCopyFaces = (param.boundaryCondition == BoundaryType::Mixed);
 
     // shape deformation meausures the shape degression of element triangles from an equilateral triangle
@@ -1292,43 +1299,30 @@ void Mesh::energy_force_regularization()
         difference_of_coords(vertices[iVertex2].coord, vertices[iVertex0].coord, vector02);
         double length02 = slimed::v3_norm(vector02);
 
-        // semi-perimeter of the triangle
-        double semiperi = (length10 + length21 + length02) / 2.0;
-
-        // Area deformation
-        //   s = 0.5(a + b + c)
-        //   a = sqrt(s(s - a)(s - b)(s - c))
-        double area = sqrt(semiperi * (semiperi - length10) * (semiperi - length21) * (semiperi - length02));
-
-        // Shape deformation
-        //   l = lmean = 1/3(a + b + c)
-        //   gama = ((a - l)^2 + (b - l)^2 + (c - l)^2)/l^2
-        // This calculate digression of triangle shape from equilateral
-        // by calculating variance of three sides
-        double meanSideLength = (length10 + length21 + length02) / 3.0;
-        double gama = (pow(length10 - meanSideLength, 2.0) +
-                       pow(length21 - meanSideLength, 2.0) +
-                       pow(length02 - meanSideLength, 2.0)) /
-                      pow(meanSideLength, 2.0);
-
         double refVector10[3];
         double refVector21[3];
         double refVector02[3];
         difference_of_coords(vertices[iVertex0].coordRef, vertices[iVertex1].coordRef, refVector10);
-        double refLength10 = slimed::v3_norm(refVector10);
         difference_of_coords(vertices[iVertex1].coordRef, vertices[iVertex2].coordRef, refVector21);
-        double refLength21 = slimed::v3_norm(refVector21);
         difference_of_coords(vertices[iVertex2].coordRef, vertices[iVertex0].coordRef, refVector02);
-        double refLength02 = slimed::v3_norm(refVector02);
 
-        // Here semipri = semi-perimeter of the reference triangle
-        semiperi = (refLength10 + refLength21 + refLength02) / 2.0;
-
-        // Calculate reference area
-        double refArea = sqrt(semiperi * (semiperi - refLength10) * (semiperi - refLength21) * (semiperi - refLength02)); // double refArea = S0/face.n_rows;
-
-        bool isDeformShape = (gama > param.gamaShape && param.usingRpi);
-        bool isDeformArea = (abs(area - refArea) / refArea >= param.gamaArea && param.usingRpi);
+        // The energy and dE/dl of the face, in whichever case or blend of
+        // cases it is in; see Regularization_kernel.hpp.
+        const double length[3] = {length10, length21, length02};
+        const double refLength[3] = {slimed::v3_norm(refVector10), slimed::v3_norm(refVector21),
+                                     slimed::v3_norm(refVector02)};
+        double dEdl[3];
+        unsigned char deformationCase = 0;
+        eReg = slimed::regularization_energy_and_gradient(length, refLength, regularizationParams,
+                                                          dEdl, deformationCase);
+        if (deformationCase == 2)
+        {
+            shapeDeformCount++;
+        }
+        else if (deformationCase == 1)
+        {
+            areaDeformCount++;
+        }
 
         // convert vector10, vector21, vector02 unit vector.
         // Reciprocal-then-multiply, as Matrix::operator/= did, rather than a
@@ -1337,56 +1331,13 @@ void Mesh::energy_force_regularization()
         slimed::v3_scale(vector21, 1.0 / length21, vector21);
         slimed::v3_scale(vector02, 1.0 / length02, vector02);
 
-        /*
-         * Use a switch statement to check the values of
-         * isDeformShape and isDeformArea , then performs the appropriate calculations based on each case.
-         * Additionally, it may be possible to optimize the calculation of meanSideLength
-         * by using a constant value or pre-calculated value instead of computing it at runtime.
-         *
-         * isDeformShape << isDeformArea:
-         * -------------------------------
-         * false, false: 0
-         * false, true: 1
-         * true, x: default
-         */
-        const int deformationCase = (isDeformShape ? 2 : 0) | (isDeformArea ? 1 : 0);
-        switch (deformationCase)
+        double force0[3], force1[3], force2[3];
+        slimed::regularization_corner_forces(dEdl, vector10, vector21, vector02, force0, force1, force2);
+        for (int axis = 0; axis < 3; ++axis)
         {
-        case 0:
-            eReg = kCurv / 2.0 * (pow(length10 - refLength10, 2.0) + pow(length21 - refLength21, 2.0) + pow(length02 - refLength02, 2.0));
-            for (int axis = 0; axis < 3; ++axis)
-            {
-                localRegComponents[iVertex0 * 3 + axis] += kCurv * ((refLength10 - length10) * vector10[axis] + (length02 - refLength02) * vector02[axis]);
-                localRegComponents[iVertex1 * 3 + axis] += kCurv * ((refLength21 - length21) * vector21[axis] + (length10 - refLength10) * vector10[axis]);
-                localRegComponents[iVertex2 * 3 + axis] += kCurv * ((refLength02 - length02) * vector02[axis] + (length21 - refLength21) * vector21[axis]);
-            }
-            break;
-        case 1:
-            {
-                areaDeformCount++;
-                double meanSideLengthRef = sqrt(4.0 * refArea / sqrt(3.0));
-                eReg = kCurv / 2.0 * (pow(length10 - meanSideLengthRef, 2.0) + pow(length21 - meanSideLengthRef, 2.0) + pow(length02 - meanSideLengthRef, 2.0));
-                for (int axis = 0; axis < 3; ++axis)
-                {
-                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthRef - length10) * vector10[axis] + (length02 - meanSideLengthRef) * vector02[axis]);
-                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthRef - length21) * vector21[axis] + (length10 - meanSideLengthRef) * vector10[axis]);
-                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthRef - length02) * vector02[axis] + (length21 - meanSideLengthRef) * vector21[axis]);
-                }
-            }
-            break;
-        default:
-            {
-                shapeDeformCount++;
-                double meanSideLengthOld = sqrt(4.0 * area / sqrt(3.0));
-                eReg = kCurv / 2.0 * (pow(length10 - meanSideLengthOld, 2.0) + pow(length21 - meanSideLengthOld, 2.0) + pow(length02 - meanSideLengthOld, 2.0));
-                for (int axis = 0; axis < 3; ++axis)
-                {
-                    localRegComponents[iVertex0 * 3 + axis] += kCurv * ((meanSideLengthOld - length10) * vector10[axis] + (length02 - meanSideLengthOld) * vector02[axis]);
-                    localRegComponents[iVertex1 * 3 + axis] += kCurv * ((meanSideLengthOld - length21) * vector21[axis] + (length10 - meanSideLengthOld) * vector10[axis]);
-                    localRegComponents[iVertex2 * 3 + axis] += kCurv * ((meanSideLengthOld - length02) * vector02[axis] + (length21 - meanSideLengthOld) * vector21[axis]);
-                }
-            }
-            break;
+            localRegComponents[iVertex0 * 3 + axis] += force0[axis];
+            localRegComponents[iVertex1 * 3 + axis] += force1[axis];
+            localRegComponents[iVertex2 * 3 + axis] += force2[axis];
         }
 
         // Store energy on faces
@@ -1450,9 +1401,23 @@ void Mesh::manage_force_for_boundary_ghost_vertex()
         break;
     }
 
-    // If the boundary condition is periodic, set the force of ghost vertices to zero.
+    // If the boundary condition is periodic, set the force of ghost vertices
+    // to zero -- after adding it to the vertex each ghost follows, when the
+    // minimizer asks for the exact gradient (foldLegacyPeriodicGhostForces).
     case BoundaryType::Periodic:
     {
+        if (foldLegacyPeriodicGhostForces)
+        {
+            // Serial on purpose: up to three ghosts share one source.
+            for (int i = 0; i < static_cast<int>(vertices.size()); i++)
+            {
+                const int source = legacy_periodic_source(i);
+                if (source != i)
+                {
+                    vertices[source].force += vertices[i].force;
+                }
+            }
+        }
         Force zeroForce;
 #pragma omp parallel for
         for (Vertex &vertex : vertices)
