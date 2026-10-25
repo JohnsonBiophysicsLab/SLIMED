@@ -334,6 +334,16 @@ bool Mesh::evaluate_edge_flip(int iEdge, EdgeFlipDelta &delta, std::string *why)
     // exactly the same faces, which is what makes everything outside cancel.
     const std::vector<int> patch = flip_patch_faces(iEdge);
 
+    // Recorded for the post-sweep force pass whether or not the flip is
+    // accepted. The trial below flips and flips back, and each flip_edge()
+    // rebuilds these faces' one-rings: the restored mesh is the same mesh, but
+    // a rebuilt one-ring can list the same control points from a different
+    // starting corner, and the kernel's sum over them then rounds
+    // differently. A pass that kept those faces' stored forces would differ
+    // from a whole-mesh pass by those last bits. See
+    // Param::edgeFlipIncrementalForces.
+    note_flip_touched_faces(patch);
+
     // Which faces carry a control net now. A flip must not take that away
     // from any of them -- see the check below.
     std::vector<char> hadPatch(patch.size(), 0);

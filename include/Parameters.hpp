@@ -453,6 +453,28 @@ struct Param
      */
     int edgeFlipMinValence = 5;
     int edgeFlipMaxValence = 7;
+    /**
+     * @brief After a sweep that accepted flips, re-evaluate only the faces
+     * the flips touched instead of the whole mesh.
+     *
+     * A flip changes the control nets of the faces incident to the four
+     * vertices of its quadrilateral -- about eighteen on a near-regular mesh
+     * -- and nothing else, since the sweep runs at fixed coordinates. The
+     * whole-mesh re-evaluation that followed every sweep with an acceptance
+     * was 35% of a fluid run's time (docs/incremental_flip_update.md). With
+     * this on, the force pass keeps every face's contribution to its control
+     * points and rebuilds the vertex forces from that store, so the post-flip
+     * pass recomputes only the touched faces.
+     *
+     * The global area and volume constraint forces are then integrated
+     * unscaled and multiplied by the constraint factor after the sum rather
+     * than inside the integrand. Same terms, reassociated: the result differs
+     * from the whole-mesh pass with this off by rounding only. Off, every pass
+     * is the whole-mesh pass exactly as before. Ignored when flips are off, on
+     * the device backend, and under local lipid flow, whose per-face tension
+     * is not a global factor.
+     */
+    bool edgeFlipIncrementalForces = true;
 
     // Fluid-mode dynamics. See docs/edge_flip_plan.md section 3.7.
     /**

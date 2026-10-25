@@ -2,6 +2,8 @@
 
 #include "energy_force/Patch_kernel.hpp"
 #include "energy_force/Regularization_kernel.hpp"
+
+#include <algorithm>
 #pragma omp declare reduction(vector_plus                                                                                             \
                               : std::vector <Force>                                                                                   \
                               : std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus <Force>())) \
@@ -44,6 +46,116 @@ void Mesh::ensure_patch_rows_flat()
     }
 }
 
+namespace
+{
+/// Doubles per term block in Mesh::faceForceStore: kMaxControlPoints x 3.
+constexpr int kFaceForceBlock = slimed::kMaxControlPoints * 3;
+/// Doubles per face in Mesh::faceForceStore: the bending, area and volume blocks.
+constexpr int kFaceForceStride = 3 * kFaceForceBlock;
+} // namespace
+
+struct Mesh::FacePatchContext
+{
+    const double *regularRows = nullptr; ///< PatchRowsFlat::regular()
+    const double *gaussCoeff = nullptr;  ///< PatchRowsFlat::gaussCoeff()
+    int nSamples = 0;                    ///< PatchRowsFlat::nSamples()
+    /// The sheet-wide constants; spontCurv is set per face.
+    slimed::PatchParams patchParams;
+    /// Whether patchParams carries unit constraint factors, so that the area
+    /// and volume blocks come out as plain gradients to be scaled afterwards.
+    bool factorConstraintScales = false;
+};
+
+namespace
+{
+/**
+ * The loop-invariant inputs of the patch kernel, hoisted out of the face
+ * loop. With @p factorConstraintScales the two global constraint factors are
+ * set to exactly one -- uSurfPerArea * (area - area0) with (1, 1, 0) and
+ * uVol * (vol - vol0) / 3 with (3, 1, 0) -- so the kernel integrates dS/dx
+ * and dV/dx and Mesh::scatter_face_forces_to_vertices() applies the factors.
+ *
+ * The two guards: a surface that encloses nothing -- any flat sheet, whose
+ * limit surface lies in the z = 0 plane -- has vol0 == 0, and with the default
+ * uvVolumeConstraint = 0.0 the scale factor would be 0.0/0.0; the NaN would
+ * spread into every vertex force. area0 comes from `relaxArea` whenever
+ * setRelaxAreaToDefault is false, so a parameter file setting it to 0 reaches
+ * here too and would poison the area force with inf. No reference quantity
+ * means no constraint.
+ */
+Mesh::FacePatchContext build_face_patch_context(const Mesh &mesh, bool factorConstraintScales)
+{
+    const Param &param = mesh.param;
+    Mesh::FacePatchContext context;
+    context.regularRows = mesh.patchRowsFlat.regular();
+    context.gaussCoeff = mesh.patchRowsFlat.gaussCoeff();
+    context.nSamples = mesh.patchRowsFlat.nSamples();
+    context.factorConstraintScales = factorConstraintScales;
+
+    slimed::PatchParams &patchParams = context.patchParams;
+    patchParams.kCurv = param.kCurv;
+    if (factorConstraintScales)
+    {
+        patchParams.uSurfPerArea = 1.0;
+        patchParams.area = 1.0;
+        patchParams.area0 = 0.0;
+        patchParams.uVol = 3.0;
+        patchParams.vol = 1.0;
+        patchParams.vol0 = 0.0;
+        return context;
+    }
+    patchParams.uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
+    if (mesh.lipid_flow_global() && mesh.lipidAreaNormalization > 0.0)
+    {
+        // Global lipid flow: the modulus is normalised by the relaxed area as
+        // built; param.area0 is the one that moves with the reservoir.
+        patchParams.uSurfPerArea = param.uSurf / mesh.lipidAreaNormalization;
+    }
+    patchParams.area = param.area;
+    patchParams.area0 = param.area0;
+    patchParams.uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
+    patchParams.vol = param.vol;
+    patchParams.vol0 = param.vol0;
+    return context;
+}
+} // namespace
+
+bool Mesh::incremental_flip_forces_active() const
+{
+    return param.edgeFlipIncrementalForces && param.edgeFlipEnabled &&
+           forceBackendChoice != ForceBackendChoice::Cuda && !lipid_flow_local();
+}
+
+void Mesh::note_flip_touched_faces(const std::vector<int> &faceList)
+{
+    if (flipTouchedMark.size() != faces.size())
+    {
+        flipTouchedMark.assign(faces.size(), 0);
+        flipTouchedFaces.clear();
+    }
+    for (int iFace : faceList)
+    {
+        if (iFace < 0 || iFace >= static_cast<int>(faces.size()) || flipTouchedMark[iFace] != 0)
+        {
+            continue;
+        }
+        flipTouchedMark[iFace] = 1;
+        flipTouchedFaces.push_back(iFace);
+    }
+}
+
+void Mesh::clear_flip_touched_faces()
+{
+    for (int iFace : flipTouchedFaces)
+    {
+        if (iFace >= 0 && iFace < static_cast<int>(flipTouchedMark.size()))
+        {
+            flipTouchedMark[iFace] = 0;
+        }
+    }
+    flipTouchedFaces.clear();
+}
+
 /**
  * @brief The per-face and per-vertex half of the force evaluation, on the CPU.
  *
@@ -64,48 +176,18 @@ void Mesh::compute_face_energies_and_forces()
     // Sum up the total area and volume of the membrane and sync with parameter
     sum_membrane_area_and_volume(param.area, param.vol);
 
-    const int nVertices = static_cast<int>(vertices.size());
-#ifdef OMP
-    const int nThreads = omp_get_max_threads();
-#else
-    const int nThreads = 1;
-#endif
-    // Per-thread accumulation avoids races when neighboring faces contribute
-    // to the same vertex force.
-    std::vector<std::vector<double>> faceForceComponents(
-        nThreads, std::vector<double>(nVertices * 9, 0.0));
-
     // calculate_element_area_volume() above has already built these, but this
     // is also reachable on its own.
     ensure_patch_rows_flat();
 
-    // Loop-invariant physical constants, hoisted out of the per-patch kernel.
-    //
-    // The two guards were inside it. A surface that encloses nothing -- any
-    // flat sheet, whose limit surface lies in the z = 0 plane -- has vol0 == 0,
-    // and with the default uvVolumeConstraint = 0.0 the scale factor would be
-    // 0.0/0.0; the NaN would spread into every vertex force. area0 comes from
-    // `relaxArea` whenever setRelaxAreaToDefault is false, so a parameter file
-    // setting it to 0 reaches here too and would poison the area force with
-    // inf. No reference quantity means no constraint.
-    slimed::PatchParams patchParams;
-    patchParams.kCurv = param.kCurv;
-    patchParams.uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
-    if (lipid_flow_global() && lipidAreaNormalization > 0.0)
-    {
-        // Global lipid flow: the modulus is normalised by the relaxed area as
-        // built; param.area0 is the one that moves with the reservoir.
-        patchParams.uSurfPerArea = param.uSurf / lipidAreaNormalization;
-    }
-    patchParams.area = param.area;
-    patchParams.area0 = param.area0;
-    patchParams.uVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
-    patchParams.vol = param.vol;
-    patchParams.vol0 = param.vol0;
+    const FacePatchContext context =
+        build_face_patch_context(*this, incremental_flip_forces_active());
 
-    const double *const regularRows = patchRowsFlat.regular();
-    const double *const gaussCoeff = patchRowsFlat.gaussCoeff();
-    const int nSamples = patchRowsFlat.nSamples();
+    const std::size_t storeSize = faces.size() * static_cast<std::size_t>(kFaceForceStride);
+    if (faceForceStore.size() != storeSize)
+    {
+        faceForceStore.assign(storeSize, 0.0);
+    }
 
     // Step 2.
     // Iterate through faces and calculate forces.
@@ -117,231 +199,292 @@ void Mesh::compute_face_energies_and_forces()
     // and with it the order the per-thread force buffers are summed -- is
     // fixed for a given thread count. Never dynamic: it is no faster here and
     // not reproducible (docs/patch_kernel_performance.md).
+    //
+    // Each face writes its own fields and its own block of faceForceStore;
+    // the sum onto the vertices is the pass that follows.
+    const int nFaces = static_cast<int>(faces.size());
 #pragma omp parallel for schedule(static, 4)
-    for (Face &face : faces)
+    for (int iFace = 0; iFace < nFaces; iFace++)
     {
+        evaluate_face_patch(iFace, context);
+    }
+
+    scatter_face_forces_to_vertices(context.factorConstraintScales);
+
+    // Every face has just been described; nothing is left over from a sweep.
+    clear_flip_touched_faces();
+
+    // Step 3.
+    // The mesh-quality term. The two are alternatives, not additions: the
+    // reference-length regularization is a solid's memory of where it started,
+    // and a fluid membrane has none -- see energy_force_edge_spring(). The
+    // device backend evaluates this one in its regularization stage (writing
+    // zeros when the spring is on) and then calls energy_force_fluid_terms()
+    // exactly as this does, so both paths end in the same slots.
+    if (!param.edgeSpringEnabled)
+    {
+        energy_force_regularization();
+    }
+    energy_force_fluid_terms();
+}
+
+void Mesh::evaluate_face_patch(int iFace, const FacePatchContext &context)
+{
+    Face &face = faces[iFace];
+    if (face.isBoundary)
+    {
+        return;
+    }
+
+    // Get number of one ring vertices
+    const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
+
+    // The face's block of the store: bending, area and volume forces on its
+    // control points, zeroed here and accumulated by the kernel. Nothing else
+    // in this body allocates -- malloc and free were about a third of the
+    // program's runtime before the kernel was rewritten over flat arrays.
+    double *const fBend = faceForceStore.data() + static_cast<std::size_t>(iFace) * kFaceForceStride;
+    double *const fArea = fBend + kFaceForceBlock;
+    double *const fVol = fArea + kFaceForceBlock;
+    std::fill(fBend, fBend + kFaceForceStride, 0.0);
+    double normVector[3] = {0.0, 0.0, 0.0};
+
+    double eBend = 0.0;    // curvature Energy of this element
+    double meanCurv = 0.0; // mean curvature of this element
+
+    face.normVector.free();             // reinitialize empty normal vector
+    face.normVector = mat_calloc(3, 1); // normal vector
+
+    // What kind of patch a face carries is read off the face rather than
+    // inferred from the width of its one-ring. The inference
+    // (`valence = width - 6`) was fine while every face had at most one
+    // extraordinary corner; once edges flip it is ambiguous, because a
+    // 5/5/7 face and a valence-5 face both have an 11-point control net.
+    //
+    // A face with no patch at all -- a ghost, or one on the mesh
+    // boundary -- leaves everything at its zero initializer, which is what
+    // the previous dispatch did, and bailing here also keeps the copy
+    // below inside the stack buffers.
+    const bool isRegular = (face.patchKind == PatchKind::Regular);
+    const bool isIrregular = (face.patchKind == PatchKind::SingleExtraordinary);
+    const bool isMulti = (face.patchKind == PatchKind::MultiExtraordinary &&
+                          face.patchEntry >= 0);
+    if ((isRegular || isIrregular || isMulti) && nOneRingVertices > 0 &&
+        nOneRingVertices <= slimed::kMaxControlPoints)
+    {
+        double coordOneRingVertices[slimed::kMaxControlPoints * 3];
+        for (int j = 0; j < nOneRingVertices; j++)
+        {
+            const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
+            coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
+            coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
+            coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
+        }
+
+        slimed::PatchParams facePatchParams = context.patchParams;
+        facePatchParams.spontCurv = face.spontCurvature;
+
+        // Lipid flow: the face's own tension in place of the sheet's.
+        // The kernel's area force is areaScale * dS_f/dx with
+        // areaScale = uSurfPerArea * (area - area0), so the three fields
+        // are set to make that product sigma_f, and the face's
+        // stretching energy is its own. Off, nothing here changes. A
+        // per-face factor is not a global one, which is why
+        // incremental_flip_forces_active() is false in this mode.
+        if (lipid_flow_local() && !faceArea0.empty())
+        {
+            const double relaxedArea = faceArea0[iFace];
+            const double modulusArea = param.lipidFlowLinearStretching ? faceArea0Initial[iFace] : relaxedArea;
+            double tension = 0.0;
+            if (relaxedArea > 0.0 && modulusArea > 0.0)
+            {
+                const double excess = face.elementArea - relaxedArea;
+                tension = param.uSurf * excess / modulusArea;
+                face.energy.energyArea = 0.5 * param.uSurf / modulusArea * excess * excess;
+            }
+            faceTension[iFace] = tension;
+            facePatchParams.uSurfPerArea = 1.0;
+            facePatchParams.area = tension;
+            facePatchParams.area0 = 0.0;
+        }
+
+        const double *const regularRows = context.regularRows;
+        const double *const gaussCoeff = context.gaussCoeff;
+        const int nSamples = context.nSamples;
+
+        // One kernel for both patch kinds. The width lives in the rows and
+        // in the control-point list, not in a branch: a regular face is 12
+        // wide, an irregular one N+6, and the kernel reads that off its
+        // arguments.
+        // Evaluate one patch of a given valence over a given control net,
+        // accumulating its forces. A valence of 6 means the direct
+        // closed-form kernel; anything else means Stam's tiling by regular
+        // children at increasing depth, where each child is a 12-point
+        // patch expressed in the parent's own control points, so the same
+        // kernel evaluates it and only the rows differ.
+        auto evaluateOnePatch = [&](int valence, const double *coords, int nCtrl,
+                                    double &patchEBend, double &patchMeanCurv,
+                                    double patchNorm[3], double *outBend, double *outArea,
+                                    double *outVolume) {
+            if (valence == 6)
+            {
+                slimed::element_energy_force_patch_pod(
+                    regularRows, gaussCoeff, nSamples, coords, nCtrl, facePatchParams,
+                    patchEBend, patchMeanCurv, patchNorm, outBend, outArea, outVolume);
+                return;
+            }
+            patchEBend = 0.0;
+            for (int d = 0; d < irregularRows.depth_for(valence); d++)
+            {
+                for (int c = 0; c < kRegularChildrenPerStep; c++)
+                {
+                    double childEBend = 0.0;
+                    double childMeanCurv = 0.0;
+                    double childNormVector[3] = {0.0, 0.0, 0.0};
+                    slimed::element_energy_force_patch_pod(
+                        patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
+                        nCtrl, facePatchParams, childEBend, childMeanCurv, childNormVector,
+                        outBend, outArea, outVolume);
+                    patchEBend += childEBend;
+                    // Mean curvature and the normal are reported per face,
+                    // so take them from the child nearest the patch centre
+                    // -- depth 0, the middle child -- rather than summing
+                    // quantities that do not add.
+                    if (d == 0 && c == 1)
+                    {
+                        patchMeanCurv = childMeanCurv;
+                        patchNorm[0] = childNormVector[0];
+                        patchNorm[1] = childNormVector[1];
+                        patchNorm[2] = childNormVector[2];
+                    }
+                }
+            }
+        };
+
+        if (isRegular || isIrregular)
+        {
+            evaluateOnePatch(isRegular ? 6 : nOneRingVertices - 6, coordOneRingVertices,
+                             nOneRingVertices, eBend, meanCurv, normVector, fBend, fArea,
+                             fVol);
+        }
+        else
+        {
+            // A face with several extraordinary corners has no single
+            // corner to run Stam's reduction from. Subdividing its own
+            // control net once splits it into four children that each do
+            // -- three corner children and a regular centre -- and every
+            // one of their control points is a fixed linear combination of
+            // this face's, so the whole thing is a prolongation matrix per
+            // child and then the paths above, unchanged.
+            //
+            // The children tile the parent's parameter domain exactly
+            // once, and each child's rows are with respect to its own
+            // parameters, so the area element already carries the shrunken
+            // metric. There is no Jacobian to apply -- the same argument
+            // that says the depth-d children need no 4^-d weight.
+            const MultiPatchTable::Entry &entry = multiPatchTable.entry(face.patchEntry);
+            const double *const prolongations = multiPatchTable.data();
+            for (int c = 0; c < 4; c++)
+            {
+                const MultiPatchTable::Child &child = entry.children[c];
+                const double *const prolongation = prolongations + child.offset;
+
+                double childCoords[slimed::kMaxControlPoints * 3];
+                multi_patch_prolong(prolongation, coordOneRingVertices, entry.nControl,
+                                    child.nControl, childCoords);
+
+                double childBend[slimed::kMaxControlPoints * 3] = {0.0};
+                double childArea[slimed::kMaxControlPoints * 3] = {0.0};
+                double childVolume[slimed::kMaxControlPoints * 3] = {0.0};
+                double childEBend = 0.0;
+                double childMeanCurv = 0.0;
+                double childNormVector[3] = {0.0, 0.0, 0.0};
+
+                evaluateOnePatch(child.valence, childCoords, child.nControl, childEBend,
+                                 childMeanCurv, childNormVector, childBend, childArea,
+                                 childVolume);
+
+                eBend += childEBend;
+                // The centre child is the one covering the middle of the
+                // face, so it is the honest place to read a single
+                // per-face curvature and normal from.
+                if (c == 3)
+                {
+                    meanCurv = childMeanCurv;
+                    normVector[0] = childNormVector[0];
+                    normVector[1] = childNormVector[1];
+                    normVector[2] = childNormVector[2];
+                }
+
+                multi_patch_scatter(prolongation, childBend, entry.nControl, child.nControl,
+                                    fBend);
+                multi_patch_scatter(prolongation, childArea, entry.nControl, child.nControl,
+                                    fArea);
+                multi_patch_scatter(prolongation, childVolume, entry.nControl,
+                                    child.nControl, fVol);
+            }
+        }
+
+        for (int axis = 0; axis < 3; ++axis)
+        {
+            face.normVector.set(axis, 0, normVector[axis]);
+        }
+    }
+    face.energy.energyCurvature = eBend; ///< store curvature energy in face object
+    face.meanCurvature = meanCurv;       ///< store mean curvature in face object
+}
+
+void Mesh::scatter_face_forces_to_vertices(bool factorConstraintScales)
+{
+    const int nVertices = static_cast<int>(vertices.size());
+    const int nFaces = static_cast<int>(faces.size());
+#ifdef OMP
+    const int nThreads = omp_get_max_threads();
+#else
+    const int nThreads = 1;
+#endif
+    // Per-thread accumulation avoids races when neighboring faces contribute
+    // to the same vertex force. The schedule is the face loop's, so a face
+    // lands in the same thread's buffer whether its block was integrated in
+    // this pass or kept from an earlier one.
+    std::vector<std::vector<double>> faceForceComponents(
+        nThreads, std::vector<double>(static_cast<std::size_t>(nVertices) * 9, 0.0));
+
+#pragma omp parallel for schedule(static, 4)
+    for (int iFace = 0; iFace < nFaces; iFace++)
+    {
+        const Face &face = faces[iFace];
+        if (face.isBoundary)
+        {
+            continue;
+        }
 #ifdef OMP
         const int threadIndex = omp_get_thread_num();
 #else
         const int threadIndex = 0;
 #endif
         std::vector<double> &localForceComponents = faceForceComponents[threadIndex];
-        // std::cout << "Face index: " << i << endl;
-        if (face.isBoundary)
-            continue;
 
-        // Get number of one ring vertices
+        // Bounded by the same width test as the kernel call. A face wider than
+        // kMaxControlPoints contributed nothing before and contributes nothing
+        // now, but reading past its block to discover that would be a buffer
+        // overrun rather than a no-op.
         const int nOneRingVertices = static_cast<int>(face.oneRingVertices.size());
-
-        // Everything the kernel touches lives on the stack, sized by the
-        // widest patch the mesh can produce. No allocation happens anywhere
-        // inside this loop body, which is the whole point of the rewrite --
-        // malloc and free were about a third of the program's runtime.
-        double coordOneRingVertices[slimed::kMaxControlPoints * 3];
-        double fBend[slimed::kMaxControlPoints * 3] = {0.0}; // bending or curvature term
-        double fArea[slimed::kMaxControlPoints * 3] = {0.0}; // area term
-        double fVol[slimed::kMaxControlPoints * 3] = {0.0};  // volume term
-        double normVector[3] = {0.0, 0.0, 0.0};
-
-        double eBend = 0.0;    // curvature Energy of this element
-        double meanCurv = 0.0; // mean curvature of this element
-
-        face.normVector.free();             // reinitialize empty normal vector
-        face.normVector = mat_calloc(3, 1); // normal vector
-
-        // What kind of patch a face carries is read off the face now rather
-        // than inferred from the width of its one-ring. The inference
-        // (`valence = width - 6`) was fine while every face had at most one
-        // extraordinary corner; once edges flip it is ambiguous, because a
-        // 5/5/7 face and a valence-5 face both have an 11-point control net.
-        //
-        // A face with no patch at all -- a ghost, or one on the mesh
-        // boundary -- leaves everything at its zero initializer, which is what
-        // the previous dispatch did, and bailing here also keeps the copy
-        // below inside the stack buffers.
         const bool isRegular = (face.patchKind == PatchKind::Regular);
         const bool isIrregular = (face.patchKind == PatchKind::SingleExtraordinary);
         const bool isMulti = (face.patchKind == PatchKind::MultiExtraordinary &&
                               face.patchEntry >= 0);
-        if ((isRegular || isIrregular || isMulti) && nOneRingVertices > 0 &&
-            nOneRingVertices <= slimed::kMaxControlPoints)
-        {
-            for (int j = 0; j < nOneRingVertices; j++)
-            {
-                const Matrix &coord = vertices[face.oneRingVertices[j]].coord;
-                coordOneRingVertices[j * 3 + 0] = coord.get(0, 0);
-                coordOneRingVertices[j * 3 + 1] = coord.get(1, 0);
-                coordOneRingVertices[j * 3 + 2] = coord.get(2, 0);
-            }
-
-            slimed::PatchParams facePatchParams = patchParams;
-            facePatchParams.spontCurv = face.spontCurvature;
-
-            // Lipid flow: the face's own tension in place of the sheet's.
-            // The kernel's area force is areaScale * dS_f/dx with
-            // areaScale = uSurfPerArea * (area - area0), so the three fields
-            // are set to make that product sigma_f, and the face's
-            // stretching energy is its own. Off, nothing here changes.
-            if (lipid_flow_local() && !faceArea0.empty())
-            {
-                const std::size_t iFace = static_cast<std::size_t>(&face - faces.data());
-                const double relaxedArea = faceArea0[iFace];
-                const double modulusArea = param.lipidFlowLinearStretching ? faceArea0Initial[iFace] : relaxedArea;
-                double tension = 0.0;
-                if (relaxedArea > 0.0 && modulusArea > 0.0)
-                {
-                    const double excess = face.elementArea - relaxedArea;
-                    tension = param.uSurf * excess / modulusArea;
-                    face.energy.energyArea = 0.5 * param.uSurf / modulusArea * excess * excess;
-                }
-                faceTension[iFace] = tension;
-                facePatchParams.uSurfPerArea = 1.0;
-                facePatchParams.area = tension;
-                facePatchParams.area0 = 0.0;
-            }
-
-            // One kernel for both patch kinds. The width lives in the rows and
-            // in the control-point list, not in a branch: a regular face is 12
-            // wide, an irregular one N+6, and the kernel reads that off its
-            // arguments.
-            // Evaluate one patch of a given valence over a given control net,
-            // accumulating its forces. A valence of 6 means the direct
-            // closed-form kernel; anything else means Stam's tiling by regular
-            // children at increasing depth, where each child is a 12-point
-            // patch expressed in the parent's own control points, so the same
-            // kernel evaluates it and only the rows differ.
-            auto evaluateOnePatch = [&](int valence, const double *coords, int nCtrl,
-                                        double &patchEBend, double &patchMeanCurv,
-                                        double patchNorm[3], double *outBend, double *outArea,
-                                        double *outVolume) {
-                if (valence == 6)
-                {
-                    slimed::element_energy_force_patch_pod(
-                        regularRows, gaussCoeff, nSamples, coords, nCtrl, facePatchParams,
-                        patchEBend, patchMeanCurv, patchNorm, outBend, outArea, outVolume);
-                    return;
-                }
-                patchEBend = 0.0;
-                for (int d = 0; d < irregularRows.depth_for(valence); d++)
-                {
-                    for (int c = 0; c < kRegularChildrenPerStep; c++)
-                    {
-                        double childEBend = 0.0;
-                        double childMeanCurv = 0.0;
-                        double childNormVector[3] = {0.0, 0.0, 0.0};
-                        slimed::element_energy_force_patch_pod(
-                            patchRowsFlat.child(valence, d, c), gaussCoeff, nSamples, coords,
-                            nCtrl, facePatchParams, childEBend, childMeanCurv, childNormVector,
-                            outBend, outArea, outVolume);
-                        patchEBend += childEBend;
-                        // Mean curvature and the normal are reported per face,
-                        // so take them from the child nearest the patch centre
-                        // -- depth 0, the middle child -- rather than summing
-                        // quantities that do not add.
-                        if (d == 0 && c == 1)
-                        {
-                            patchMeanCurv = childMeanCurv;
-                            patchNorm[0] = childNormVector[0];
-                            patchNorm[1] = childNormVector[1];
-                            patchNorm[2] = childNormVector[2];
-                        }
-                    }
-                }
-            };
-
-            if (isRegular || isIrregular)
-            {
-                evaluateOnePatch(isRegular ? 6 : nOneRingVertices - 6, coordOneRingVertices,
-                                 nOneRingVertices, eBend, meanCurv, normVector, fBend, fArea,
-                                 fVol);
-            }
-            else
-            {
-                // A face with several extraordinary corners has no single
-                // corner to run Stam's reduction from. Subdividing its own
-                // control net once splits it into four children that each do
-                // -- three corner children and a regular centre -- and every
-                // one of their control points is a fixed linear combination of
-                // this face's, so the whole thing is a prolongation matrix per
-                // child and then the paths above, unchanged.
-                //
-                // The children tile the parent's parameter domain exactly
-                // once, and each child's rows are with respect to its own
-                // parameters, so the area element already carries the shrunken
-                // metric. There is no Jacobian to apply -- the same argument
-                // that says the depth-d children need no 4^-d weight.
-                const MultiPatchTable::Entry &entry = multiPatchTable.entry(face.patchEntry);
-                const double *const prolongations = multiPatchTable.data();
-                for (int c = 0; c < 4; c++)
-                {
-                    const MultiPatchTable::Child &child = entry.children[c];
-                    const double *const prolongation = prolongations + child.offset;
-
-                    double childCoords[slimed::kMaxControlPoints * 3];
-                    multi_patch_prolong(prolongation, coordOneRingVertices, entry.nControl,
-                                        child.nControl, childCoords);
-
-                    double childBend[slimed::kMaxControlPoints * 3] = {0.0};
-                    double childArea[slimed::kMaxControlPoints * 3] = {0.0};
-                    double childVolume[slimed::kMaxControlPoints * 3] = {0.0};
-                    double childEBend = 0.0;
-                    double childMeanCurv = 0.0;
-                    double childNormVector[3] = {0.0, 0.0, 0.0};
-
-                    evaluateOnePatch(child.valence, childCoords, child.nControl, childEBend,
-                                     childMeanCurv, childNormVector, childBend, childArea,
-                                     childVolume);
-
-                    eBend += childEBend;
-                    // The centre child is the one covering the middle of the
-                    // face, so it is the honest place to read a single
-                    // per-face curvature and normal from.
-                    if (c == 3)
-                    {
-                        meanCurv = childMeanCurv;
-                        normVector[0] = childNormVector[0];
-                        normVector[1] = childNormVector[1];
-                        normVector[2] = childNormVector[2];
-                    }
-
-                    multi_patch_scatter(prolongation, childBend, entry.nControl, child.nControl,
-                                        fBend);
-                    multi_patch_scatter(prolongation, childArea, entry.nControl, child.nControl,
-                                        fArea);
-                    multi_patch_scatter(prolongation, childVolume, entry.nControl,
-                                        child.nControl, fVol);
-                }
-            }
-
-            for (int axis = 0; axis < 3; ++axis)
-            {
-                face.normVector.set(axis, 0, normVector[axis]);
-            }
-        }
-        face.energy.energyCurvature = eBend; ///< store curvature energy in face object
-
-        
-        
-        face.meanCurvature = meanCurv;       ///< store mean curvature in face object
-        /*
-        if (eBend > 0.1){
-
-            std::cout << "energyCurvature: " << face.index << " = " << face.energy.energyCurvature << std::endl;
-            std::cout << "meanCurvature: " << face.index << " = " << face.meanCurvature << std::endl;
-            std::cout << "area: " << face.index << " = " << face.elementArea << std::endl;
-            double estimate_ebend = 2.0 * 83.4 * face.elementArea * meanCurv * meanCurv;
-            std::cout << "estimateEbend = " << estimate_ebend << std::endl;
-        }*/
-
-        // Bounded by the same width test as the kernel call. A face wider than
-        // kMaxControlPoints contributed nothing before and contributes nothing
-        // now, but reading past the stack buffers to discover that would be a
-        // buffer overrun rather than a no-op.
         const int nScatteredVertices =
-            (isRegular || isIrregular || isMulti) ? nOneRingVertices : 0;
+            ((isRegular || isIrregular || isMulti) && nOneRingVertices <= slimed::kMaxControlPoints)
+                ? nOneRingVertices
+                : 0;
+        const double *const fBend =
+            faceForceStore.data() + static_cast<std::size_t>(iFace) * kFaceForceStride;
+        const double *const fArea = fBend + kFaceForceBlock;
+        const double *const fVol = fArea + kFaceForceBlock;
         for (int j = 0; j < nScatteredVertices; j++)
         {
-            int iVertex = face.oneRingVertices[j];
+            const int iVertex = face.oneRingVertices[j];
             const int baseIndex = iVertex * 9;
             for (int axis = 0; axis < 3; ++axis)
             {
@@ -349,9 +492,25 @@ void Mesh::compute_face_energies_and_forces()
                 localForceComponents[baseIndex + 3 + axis] += fArea[j * 3 + axis];
                 localForceComponents[baseIndex + 6 + axis] += fVol[j * 3 + axis];
             }
-            // std::cout << "Force at node: " << fBend[j][0] << fBend[j][1]<< fBend[j][2] << F_consA[j][0] << F_consV[j][0] << endl;
         }
+    }
 
+    // The global constraint factors the kernel left out of the blocks: the
+    // same expressions it evaluates per sample, areaScale = uSurfPerArea *
+    // (area - area0) and volScale = uVol * (vol - vol0) / 3, with the same
+    // guards, applied once per vertex to the summed gradient.
+    double areaScale = 1.0;
+    double volScale = 1.0;
+    if (factorConstraintScales)
+    {
+        double uSurfPerArea = (param.area0 == 0.0) ? 0.0 : param.uSurf / param.area0;
+        if (lipid_flow_global() && lipidAreaNormalization > 0.0)
+        {
+            uSurfPerArea = param.uSurf / lipidAreaNormalization;
+        }
+        areaScale = uSurfPerArea * (param.area - param.area0);
+        const double uVolPerVol = (param.vol0 == 0.0) ? 0.0 : param.uVol / param.vol0;
+        volScale = uVolPerVol * (param.vol - param.vol0) / 3.0;
     }
 
 #pragma omp parallel for
@@ -370,23 +529,85 @@ void Mesh::compute_face_energies_and_forces()
         for (int axis = 0; axis < 3; ++axis)
         {
             vertices[i].force.forceCurvature.set(axis, 0, componentSums[axis]);
-            vertices[i].force.forceArea.set(axis, 0, componentSums[3 + axis]);
-            vertices[i].force.forceVolume.set(axis, 0, componentSums[6 + axis]);
+            if (factorConstraintScales)
+            {
+                vertices[i].force.forceArea.set(axis, 0, componentSums[3 + axis] * areaScale);
+                vertices[i].force.forceVolume.set(axis, 0, componentSums[6 + axis] * volScale);
+            }
+            else
+            {
+                vertices[i].force.forceArea.set(axis, 0, componentSums[3 + axis]);
+                vertices[i].force.forceVolume.set(axis, 0, componentSums[6 + axis]);
+            }
         }
     }
+}
 
-    // Step 3.
-    // The mesh-quality term. The two are alternatives, not additions: the
-    // reference-length regularization is a solid's memory of where it started,
-    // and a fluid membrane has none -- see energy_force_edge_spring(). The
-    // device backend evaluates this one in its regularization stage (writing
-    // zeros when the spring is on) and then calls energy_force_fluid_terms()
-    // exactly as this does, so both paths end in the same slots.
+void Mesh::Compute_Energy_And_Force_After_Flips()
+{
+    resolve_force_backend();
+
+    const std::size_t storeSize = faces.size() * static_cast<std::size_t>(kFaceForceStride);
+    if (!incremental_flip_forces_active() || flipTouchedFaces.empty() ||
+        faceForceStore.size() != storeSize)
+    {
+        // Nothing to save, or no store to build on: the whole mesh, as always.
+        Compute_Energy_And_Force();
+        return;
+    }
+
+    // The slots the closed-form terms write start from zero, as they do after
+    // clear_force_on_vertices_and_energy_on_faces(). The vertex forces are
+    // rebuilt from the store below; the patch energy of a face the flips did
+    // not touch is the one the last pass left on it.
+    const int nVertices = static_cast<int>(vertices.size());
+#pragma omp parallel for
+    for (int i = 0; i < nVertices; i++)
+    {
+        vertices[i].force.set_all_zero();
+    }
+    const int nFaces = static_cast<int>(faces.size());
+#pragma omp parallel for
+    for (int iFace = 0; iFace < nFaces; iFace++)
+    {
+        Face &face = faces[iFace];
+        const double eBend = face.energy.energyCurvature;
+        face.energy = Energy();
+        face.energy.energyCurvature = eBend;
+    }
+
+    ensure_patch_rows_flat();
+
+    // Step 1, on the touched faces only; the totals over every face, in the
+    // order the whole-mesh pass sums them.
+    const int nTouched = static_cast<int>(flipTouchedFaces.size());
+#pragma omp parallel for schedule(static, 4)
+    for (int k = 0; k < nTouched; k++)
+    {
+        integrate_face_area_volume(flipTouchedFaces[k]);
+    }
+    sum_membrane_area_and_volume(param.area, param.vol);
+
+    // Step 2, likewise. The context is the one the whole-mesh pass builds in
+    // this mode, so a touched face's block is what that pass would have
+    // written for it.
+    const FacePatchContext context = build_face_patch_context(*this, true);
+#pragma omp parallel for schedule(static, 4)
+    for (int k = 0; k < nTouched; k++)
+    {
+        evaluate_face_patch(flipTouchedFaces[k], context);
+    }
+    scatter_face_forces_to_vertices(context.factorConstraintScales);
+    clear_flip_touched_faces();
+
+    // Step 3: closed-form sums over the edge table, cheap enough to redo.
     if (!param.edgeSpringEnabled)
     {
         energy_force_regularization();
     }
     energy_force_fluid_terms();
+
+    finalize_energy_and_force();
 }
 
 void Mesh::energy_force_fluid_terms()
@@ -507,12 +728,25 @@ void Mesh::Compute_Energy_And_Force()
         // as they do after the CPU loop. With the spring on, the device wrote
         // zeros into the regularization slots this overwrites.
         energy_force_fluid_terms();
+        // The device described every face; nothing is left over from a sweep.
+        clear_flip_touched_faces();
     }
     else
     {
         compute_face_energies_and_forces();
     }
 
+    finalize_energy_and_force();
+}
+
+/**
+ * @brief Steps 4 to 8 of Compute_Energy_And_Force(), after the per-face work:
+ * the per-vertex and per-face totals, the constraint energies, the
+ * scaffolding term, the virial and the boundary handling. Shared with
+ * Compute_Energy_And_Force_After_Flips(), which replaces only the face loop.
+ */
+void Mesh::finalize_energy_and_force()
+{
     // Step 4.
     // Summing up energy and force
     // On each vertex, the total Force is the sum of internal, constraint and regularization Force.

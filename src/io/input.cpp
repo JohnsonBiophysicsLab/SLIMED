@@ -577,6 +577,12 @@ bool import_kv_string(std::string variableNameStr, std::string variableValueStr,
 		std::cout << "edgeFlipMaxValence set to: " << variableValueStr << std::endl;
 		return true;
 	}
+	else if (variableNameStr.compare("edgeFlipIncrementalForces") == 0)
+	{
+		param.edgeFlipIncrementalForces = (variableValueStr.compare("true") == 0);
+		std::cout << "edgeFlipIncrementalForces set to: " << variableValueStr << std::endl;
+		return true;
+	}
 	else if (variableNameStr.compare("randomSeed") == 0)
 	{
 		param.randomSeed = static_cast<unsigned int>(std::stoul(variableValueStr));
