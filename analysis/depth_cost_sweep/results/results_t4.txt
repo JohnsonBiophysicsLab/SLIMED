@@ -1,0 +1,6 @@
+default_n1000 real 26.90 user 96.25  flips=1308 1308 accepted of 4540 admissible attempts (5829 drawn), acceptance 0.288106, total dE 174.199 pN.nm.
+default_n2000 real 55.15 user 198.01  flips=2548 2548 accepted of 8839 admissible attempts (11678 drawn), acceptance 0.288268, total dE 232.409 pN.nm.
+frozen_n1000 real 2.74 user 10.61  flips=0 
+frozen_n2000 real 5.44 user 21.05  flips=0 
+legacy_n1000 real 32.73 user 112.19  flips=1308 1308 accepted of 4540 admissible attempts (5829 drawn), acceptance 0.288106, total dE 173.844 pN.nm.
+legacy_n2000 real 67.28 user 231.59  flips=2546 2546 accepted of 8835 admissible attempts (11678 drawn), acceptance 0.288172, total dE 182.218 pN.nm.

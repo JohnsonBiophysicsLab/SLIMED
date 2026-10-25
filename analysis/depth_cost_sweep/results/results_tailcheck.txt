@@ -1,0 +1,5 @@
+# tail-correction check, job 32455384, node c088 (same node type), 1 thread, user seconds
+d6555_notail t1000=66.86 t2000=136.60 flips=1349/2622
+d5_tail t1000=73.71 t2000=152.79 flips=1308/2548
+default_rep3 t1000=74.38 t2000=154.29 flips=1308/2548
+d5_rep3 t1000=66.25 t2000=136.12 flips=1357/2619

@@ -1,0 +1,25 @@
+GCCcore/12.3.0 GCCcore-12.3.0 GCCcore-12.3.0 GCC/12.3.0 
+node c453  Sat Oct 24 18:15:24 EDT 2026
+CPU(s):              48
+Thread(s) per core:  1
+Model name:          Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz
+CPU MHz:             4000.000
+CPU max MHz:         4000.0000
+CPU min MHz:         1200.0000
+ 18:15:24 up 171 days,  8:44,  0 users,  load average: 14.23, 16.44, 11.41
+-rwxr-xr-x 1 yying7 jgray21 955576 Oct 24 18:10 /scratch4/mjohn218/yying7/slimed_depth_bench/runs/../SLIMED/build-omp/bin/membrane_dynamics
+	libgsl.so.25 => /data/apps/extern/GSL/2.7/lib/libgsl.so.25 (0x0000155554e47000)
+	libgslcblas.so.0 => /data/apps/extern/GSL/2.7/lib/libgslcblas.so.0 (0x0000155554c08000)
+	libgomp.so.1 => /data/apps/extern/easybuild/GCCcore/12.3.0/lib64/libgomp.so.1 (0x0000155555502000)
+	libstdc++.so.6 => /data/apps/extern/easybuild/GCCcore/12.3.0/lib64/libstdc++.so.6 (0x00001555547bf000)
+    PID PSR %CPU     ELAPSED COMMAND
+pre-flight ok: real 1.58 user 1.53 
+1-thread series done Sat Oct 24 18:26:03 EDT 2026
+18:20:01 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d12_n2000 real 275.50 user 274.42 
+18:22:18 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d5_n2000 real 137.09 user 136.34 
+18:23:57 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d3_n2000 real 98.34 user 97.92 
+18:25:11 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/default_n1000 real 74.79 user 74.48 
+18:25:59 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d3_n1000 real 48.07 user 47.83 
+18:19:21 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d10_n2000 real 235.48 user 234.68 
+18:21:34 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d12_n1000 real 132.47 user 131.97 
+18:23:08 done /scratch4/mjohn218/yying7/slimed_depth_bench/runs/rep1/d8_n1000 real 94.48 user 94.00 
