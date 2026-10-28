@@ -981,3 +981,88 @@ cmake --build build-omp --target membrane_dynamics -j 4
 OMP_NUM_THREADS=1 OMP_SCHEDULE=static /usr/bin/time -p build-omp/bin/membrane_dynamics
 # cluster: sbatch analysis/depth_cost_sweep/depth_sweep.sbatch   (then collect.sh, depth_cost_fit.py)
 ```
+
+### 10.6 Going shallower: 4/3/3/3 against the default 6/5/5/5
+
+Asked after §10.4: what does `irregularPatchDepths = 4, 3, 3, 3` (tail
+correction on) buy and cost against the default `6, 5, 5, 5`? Two measurements,
+both on the weight-folded kernel of §10.4 (commit 71bdb21).
+
+**Accuracy at a frozen configuration.** `analysis/ev_patch_cost.cpp real` on two
+saved box_nu5 states: the long-run final state (step 180 000, 960 faces: 96
+regular, 266 single-EV, 598 multi-EV) and the step-1000 state of the §10.4
+timing run (111 / 289 / 560). Every candidate is compared with the depth-16
+tail-corrected reference on the same state; the bending-energy and area errors
+are relative to the sheet total, the force error is the largest per-vertex
+bending-force error over the largest reference force. Samples are the force
+pass's quadrature points per evaluation; the depth-3 valence 6 column is the
+regular kernel and is not swept. Raw rows (plain and tail-corrected, all six
+depth sets) are in `analysis/depth_cost_sweep/results/ev_error_shallow_depths.tsv`.
+
+| depths | tail | samples | E_bend, step 180 000 | E_bend, step 1000 | area, 180 000 / 1000 | force, 180 000 / 1000 |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| 12/8/7/7 (legacy) | off | 118 062 | −1.2e-4 | −1.2e-4 | −7.2e-5 / −7.3e-5 | 7.9e-4 / 4.0e-4 |
+| **6/5/5/5 (default)** | on | 79 362 | **−3.1e-5** | **+1.0e-5** | +8e-7 / +1e-6 | **5.6e-4 / 5.7e-4** |
+| 5/4/4/4 | on | 64 296 | −2.7e-5 | +2.1e-4 | +4e-6 / +6e-6 | 2.9e-3 / 2.9e-3 |
+| 4/4/4/4 | on | 63 504 | −8.5e-5 | −3.2e-5 | +4e-6 / +6e-6 | 3.2e-3 / 8.1e-3 |
+| **4/3/3/3** | on | 49 230 | **+1.8e-4** | **+1.2e-3** | +2.0e-5 / +3.3e-5 | **2.5e-2 / 1.5e-2** |
+| 3/3/3/3 | on | 48 438 | −9.7e-5 | +2.8e-4 | +2.0e-5 / +3.3e-5 | 2.5e-2 / 3.0e-2 |
+| 4/3/3/3 | off | 49 230 | −1.8e-2 | −2.7e-2 | −1.2e-2 / −1.2e-2 | 9.2e-2 / 9.1e-2 |
+
+Reading the table:
+
+- **Bending energy.** 4/3/3/3 is 6× (long-run state) to 120× (step 1000) less
+  accurate than the default: +1.8e-4 and +1.2e-3 of the sheet's bending energy
+  against −3.1e-5 and +1.0e-5. In energy units at step 1000 that is 1.3 pN·nm
+  (0.3 kT) on E_bend = 1 078 pN·nm, against 0.01 pN·nm for the default. The
+  signed sheet error at depth 3 is a cancellation between valences: §9.6's
+  per-valence table gives the tail-corrected depth-3 errors as −1e-3 (N=4),
+  −1e-3 (N=5), +1e-3 (N=7) and +9e-5 (N=8) of the sheet's bending, so the
+  sign-free bound Σ|e_N| for 4/3/3/3 (N=4 at depth 4: −3e-4) is about 2.4e-3,
+  thirty times the default's 8.2e-5. The two states straddle that bound
+  because their valence mix differs; 3/3/3/3 looking "better" than 4/3/3/3 on
+  the long-run state is the same cancellation, not a real gain.
+- **Area, and so the area-constraint energy.** 2e-5 of the sheet area against
+  1e-6: 0.2 nm² on 10 450 nm². With `usMembraneStretching = 250` and the
+  observed E_area ≈ 15 pN·nm (|A − A0| ≈ 35 nm²) that is 0.2 pN·nm, 1% of
+  E_area and 1e-4 of E_total; it does not matter for the energies, but it is
+  also the error of the area *force*, which the box tension sees directly.
+- **Force.** This is where 4/3/3/3 loses: the largest per-vertex bending-force
+  error is 1.5–2.5% of the largest force against 0.06% for the default, a
+  factor 30–45. That is the floor of the 3-point rule itself (§9.2: the
+  rule's own force error is 1.6e-2) reached from below with two levels too
+  few; 4/4/4/4 and 5/4/4/4 sit at 0.3–0.8%. Switching the correction off at
+  4/3/3/3 is 4× worse again on every column (9% of the force), so a shallow
+  run must keep `irregularPatchTailCorrection = true`.
+
+**Cost.** Rockfish, Slurm job 32636353, one exclusive `parallel` node (Xeon
+Gold 6248R, c558), one pinned thread per run, `user` seconds of steps
+1000–2000, box_nu5, §10.1 protocol, all four variants on the same node:
+
+| depths | tail | ms/step | × default | accepted flips (1000 / 2000) | E_total, steps 1000–2000 (pN·nm) |
+| --- | --- | ---: | ---: | --- | --- |
+| 6/5/5/5 (default) | on | 70.6 | 1.00 | 1 308 / 2 548 | 1 378 ± 82 |
+| 4/3/3/3 | on | **49.8** | **1.42** | 1 320 / 2 564 | 1 364 ± 83 |
+| 4/3/3/3 | off | 50.6 | 1.40 | 1 329 / 2 540 | 1 358 ± 85 |
+| 3/3/3/3 | on | 49.1 | 1.44 | 1 322 / 2 562 | 1 367 ± 82 |
+
+The 1.42× follows the §10.5 scaling law: 4/3/3/3 spends 62% of the default's
+quadrature samples on this sheet (49 230 against 79 362 per force evaluation),
+and 0.62 × 76% + 24% = 71% of the step, i.e. 50 ms. The flip acceptance moves
+by 1% (1 320 against 1 308 accepted by step 1000), as §10.2 found for depth 3,
+and the mean total energy of the stationary half of the run shifts by 1%, less
+than one standard deviation of its fluctuation; the trajectories themselves
+diverge after the first differing flip, so this is a check that the ensemble
+does not move visibly, not a measurement of the per-step error (that is the
+frozen-configuration table above).
+
+**Verdict.** 4/3/3/3 is 1.42× faster than the default and costs a factor 6–120
+in bending-energy error (to 1e-3 of E_bend, 0.3 kT on this sheet) and a factor
+30–45 in force error (to 2.5% of the largest force, the 3-point rule's own
+floor). The default was chosen in §9.8 to keep the quadrature error below the
+rule's own and below the per-face kT scale with margin; 4/3/3/3 gives that
+margin up for 20 ms per step. If a cheaper default is wanted, 4/4/4/4 (63 504
+samples, predicted ≈ 61 ms, 1.16×) keeps the force error under 1% and the
+bending error under 1e-4; 4/3/3/3 is a defensible choice only for runs whose
+observables are mesh-scale and thermal (flip statistics, mean energies) rather
+than force-resolved.
