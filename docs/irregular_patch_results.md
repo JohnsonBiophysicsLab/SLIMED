@@ -1066,3 +1066,118 @@ samples, predicted ≈ 61 ms, 1.16×) keeps the force error under 1% and the
 bending error under 1e-4; 4/3/3/3 is a defensible choice only for runs whose
 observables are mesh-scale and thermal (flip statistics, mean energies) rather
 than force-resolved.
+
+### 10.7 An adaptive depth from a planar-angle curvature estimate: not worth it
+
+The question after §10.6: could the depth be chosen per face from a cheap
+estimate of the local curvature, 3/3/3/3 or 4/4/4/4 where the sheet is flat and
+the default or deeper where it bends, so that the error stays at the default's
+level for less than the default's cost? Tested as a study, not an
+implementation: `analysis/ev_patch_cost.cpp adaptive` evaluates every face of
+a saved box_nu5 state under each candidate depth set (3/3/3/3, 4/4/4/4,
+5/4/4/4, 6/5/5/5, 8/6/6/6, all tail-corrected) and under the depth-16
+reference, stores the per-face energies, areas and forces, and then scores any
+assignment rule by summing the stored results. Same two states as §10.6
+(step 180 000: 864 extraordinary faces of 960; step 1000: 849 of 960). Raw
+tables: `analysis/depth_cost_sweep/results/adaptive_depth_feasibility.tsv`.
+
+**The estimate.** Two planar-angle proxies, both from the flat triangle
+normals of the control mesh and nothing else: *edge*, the largest dihedral
+angle across the face's three edges; *ring*, the largest angle between an
+incident face normal and the mean normal at any of the face's three corners
+(the normal cone of the star). Both cost 0.3–0.5 µs per face, 0.3–0.5 ms for
+the whole sheet, under 1% of a step: the estimate itself is free. Depths are
+assigned by proxy quantile among the extraordinary faces: the lowest `q_low`
+at 3/3/3/3, up to `q_high` at 4/4/4/4, the rest at the default, optionally the
+top 10% at 8/6/6/6. A third "proxy", the *oracle*, ranks faces by their own
+measured depth-3 force error; no estimate can rank better, so it bounds what
+any adaptive rule can gain. Step time from §10.6's measured points,
+`t = 15.8 ms + 0.69 µs × samples`.
+
+**The estimate barely predicts the error.** Spearman rank correlation between
+the proxy and the face's own depth-3 error, extraordinary faces only:
+
+| state | proxy | vs \|ΔE_bend\| | vs \|ΔF\| | vs E_face | E_face vs \|ΔE_bend\| |
+| --- | --- | ---: | ---: | ---: | ---: |
+| step 180 000 | edge | 0.41 | 0.36 | 0.55 | 0.45 |
+| step 180 000 | ring | 0.40 | 0.35 | 0.52 | 0.45 |
+| step 1000 | edge | 0.35 | 0.25 | 0.60 | 0.40 |
+| step 1000 | ring | 0.21 | 0.09 | 0.41 | 0.40 |
+
+By quintile of the edge proxy on the step-180 000 state, the mean depth-3
+bending-energy error rises from 8.4e-4 kT (dihedrals 2–12°) to 4.1e-3 kT
+(28–65°), a factor 5, and the mean depth-3 force error from 0.019 to 0.057 pN,
+a factor 3; the largest single-face force error in the *flattest* quintile
+(0.13 pN) is a quarter of the largest in the steepest (0.54 pN). The reason is
+in §2: the depth truncation error is the bending energy of the rings the
+recursion has not reached, which live inside the innermost ring of the
+extraordinary vertex, at sub-mesh scale, where the limit surface's curvature
+is set by the irregular arrangement of the control net (the valence artefact
+of §3) as much as by the mesh-scale bending that a dihedral angle sees. On a
+thermal sheet no face is flat at the mesh scale either: the flattest quintile
+still has dihedrals of 2–12°. Even the face's exact bending energy, the best
+"curvature" one could have, correlates with the error at only 0.40–0.45.
+
+**The adaptive rules land on the uniform line.** Matched-cost comparisons;
+`relF` is the largest per-vertex bending-force error over the largest force,
+`jump` the largest energy a face would gain or lose by changing tier at the
+threshold, in kT:
+
+| state | rule | samples | predicted ms/step | relF | relE_bend | jump, kT |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 180 000 | uniform 4/4/4/4 | 63 504 | 59.6 | 3.2e-3 | −8.5e-5 | 8.0e-3 |
+| 180 000 | uniform 5/4/4/4 | 64 296 | 60.2 | 2.9e-3 | −2.7e-5 | 5.3e-3 |
+| 180 000 | edge: 90% at 4/4/4/4, rest default | 65 124 | 60.7 | 2.4e-3 | −7.6e-5 | 5.3e-3 |
+| 180 000 | edge: 60% at 4/4/4/4, rest default | 69 795 | 64.0 | 1.5e-3 | −2.6e-5 | 2.9e-3 |
+| 180 000 | *uniform line interpolated at 69.8k samples* | | 64.0 | ≈1.6e-3 | | |
+| 180 000 | edge: 20% at 3/3/3/3, rest 4/4/4/4 | 60 552 | 57.6 | 4.5e-3 | −6.3e-5 | 1.5e-2 |
+| 180 000 | **oracle**: 40% at 4/4/4/4, rest default | 72 504 | 65.8 | 5.6e-4 | −3.9e-5 | 5.6e-4 |
+| 180 000 | **oracle**: 60% at 4/4/4/4, rest default | 69 138 | 63.5 | 6.2e-4 | −4.3e-5 | 1.2e-3 |
+| 180 000 | **oracle**: 60% at 3/3/3/3, rest 4/4/4/4 | 53 505 | 52.7 | 3.6e-3 | −1.2e-4 | 8.0e-3 |
+| 180 000 | default 6/5/5/5 | 79 362 | 70.6 | 5.6e-4 | −3.1e-5 | 0 |
+| 1000 | uniform 4/4/4/4 | 59 796 | 57.1 | 8.1e-3 | −3.2e-5 | 1.2e-2 |
+| 1000 | uniform 5/4/4/4 | 60 876 | 57.8 | 2.9e-3 | +2.1e-4 | 3.5e-3 |
+| 1000 | edge: 80% at 4/4/4/4, rest default | 62 856 | 59.2 | 4.5e-3 | +9.3e-5 | 1.2e-2 |
+| 1000 | ring: 70% at 4/4/4/4, rest default | 64 287 | 60.2 | 2.9e-3 | +1.4e-4 | 2.3e-3 |
+| 1000 | **oracle**: 50% at 4/4/4/4, rest default | 66 843 | 61.9 | 5.7e-4 | +3.8e-5 | 3.1e-4 |
+| 1000 | default 6/5/5/5 | 75 024 | 67.6 | 5.7e-4 | +1.0e-5 | 0 |
+
+Reading it:
+
+- With the real estimates, every adaptive rule sits on, or slightly below,
+  the error–cost line the uniform depth sets already trace: 90% of the faces
+  at 4/4/4/4 costs what 5/4/4/4 costs and is as accurate; 60% at 4/4/4/4
+  matches the interpolated uniform line to within the spread; on the step-1000
+  state, where the correlation is weakest, the edge rule at 59 ms is *less*
+  accurate than uniform 5/4/4/4 at 58 ms. A rule needs to shallow about 90%
+  of the faces before it saves 10 ms, and by then its error is that of the
+  shallow depth.
+- The oracle sets the ceiling: keeping the default's force accuracy exactly
+  (5.6e-4) allows 40–50% of the faces at 4/4/4/4 and saves 7–8% of the step
+  (4.8 of 70.6 ms, 5.7 of 67.6 ms); accepting 10% more error allows 60% and
+  saves 10%. Any real estimate, which ranks the faces imperfectly, gets a
+  fraction of that; the planar angles got none. Shallowing to 3/3/3/3 is
+  never on the oracle's frontier at the default's accuracy, because the
+  flattest faces' depth-3 force error (0.1–0.3 pN) already exceeds the
+  default's largest error.
+- The discontinuity the scheme would introduce is small: a face changing
+  tier at the threshold shifts the energy by at most 1.5e-2 kT (3/3/3/3
+  threshold) or 5e-3 kT (4/4/4/4), 1e-3 kT for the oracle rules, against a
+  flip ΔE of order kT. It would be handled by deciding the tier only when a
+  face's connectivity changes (a flip) rather than every step, so that the
+  force is the exact gradient of a fixed energy between flips, and by
+  evaluating both trial states of a flip at the tiers of the *old*
+  connectivity. Neither is hard; neither is the obstacle.
+
+**Verdict.** Not feasible as a saving worth its complexity. A planar-angle
+estimate ranks the faces' quadrature errors too poorly (rank correlation
+0.1–0.4) to separate them, because the error is a sub-mesh-scale property of
+the extraordinary vertex, not of the mesh-scale curvature; and even a perfect
+ranking would save only 7–10% of the step at the default's accuracy, less
+than the 12% the §10.4 kernel fix just gave and far less than the 42% that
+uniform 4/3/3/3 gives by paying 30–45× in force error. The error–cost curve of
+this quadrature is set by the per-valence depths (§3.2, §9.8), which are
+already the adaptivity that pays: the valence *is* the predictor of the
+error (per-valence rates of §2.2), and it is known exactly. If a cheaper
+default is wanted, it should be a uniform one from §10.6's table
+(5/4/4/4 or 4/4/4/4 for 1.17×), not an adaptive one.

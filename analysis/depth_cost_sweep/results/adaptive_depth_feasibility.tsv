@@ -1,0 +1,691 @@
+# ev_patch_cost adaptive, box_nu5 final state (step 180000)
+beadEnabled set to: true
+beadPotential set to: harmonic
+beadRadius set to: 10.0
+beadStiffness set to: 20.0
+beadCaptureRange set to: 2.5
+beadBreakRange set to: -1
+beadAdhesionEnergy set to: 0.0
+beadCenterX set to: 0.0
+beadCenterY set to: 0.0
+beadCenterZ set to: -5.0
+beadVelocityX set to: 0.0
+beadVelocityY set to: 0.0
+beadVelocityZ set to: 0.5
+beadStartIteration set to: 0
+beadStopIteration set to: 70000
+BOUNDARY_TYPE set to : Mixed
+boundaryTypeX set to: Periodic
+boundaryTypeY set to: Periodic
+meanHeightPinned set to: true
+surfaceSolver set to: iterative
+LMESHSIDE set to: 5.0
+VARIABLE NOT SUPPORTED: isFlat
+SideX set to: 130.0
+SideY set to: 130.0
+C0INSERTION set to: 0.0
+C0MEMBRANE set to: 0.0
+KCMEMBRANEBENDING set to: 83.4
+USMEMBRANESTRETCHING set to: 250.0
+setRelaxAreaToDefault set to : true
+UVVOLUMECONSTRAINT set to: 0.0
+GLOBAL CONSTRAINT for area and volume : true
+FORCE_BACKEND set to : cpu
+KBT set to: 4.17
+MAXITERATIONS set to: 180000
+TIMESTEP set to: 0.001
+DIFFCONST set to: 1.0
+randomSeed set to: 20261012
+MESHPOINTOUTPUT set to: true
+meshpointOutputInterval set to: 200
+XYZOUTPUT set to: false
+fdtConsistentSurfaceUpdate set to: true
+localOutput set to: true
+inPlaneDynamicsEnabled set to: true
+edgeSpringEnabled set to: true
+edgeTetherShape set to: flat
+edgeTetherMinRatio set to: 0.7
+edgeTetherMaxRatio set to: 1.75
+edgeSpringConstant set to: 83.4
+triangleShapeEnabled set to: true
+triangleShapeMinAltitudeRatio set to: 0.4
+triangleShapeConstant set to: 83.4
+creaseWallEnabled set to: true
+creaseWallAngle set to: 60.0
+creaseWallConstant set to: 500.0
+edgeFlipEnabled set to: true
+edgeFlipAttemptRate set to: 5.0
+edgeFlipInterval set to: 1
+edgeFlipMinValence set to: 4
+edgeFlipMaxValence set to: 8
+irregularPatchDepthScale set to: 1.0
+elasticBoxEnabled set to: true
+elasticBoxTension set to: 0.5
+elasticBoxMobility set to: 0.02
+elasticBoxThermal set to: true
+elasticBoxCoupling set to: isotropic
+elasticBoxMaxStrainPerStep set to: 0.001
+elasticBoxVertexGasTerm set to: true
+lipidFlowMode set to: off
+VARIABLE NOT SUPPORTED: isInsertionIncluded
+HARMONIC BOND included : false
+thermalFluctuationEnabled set to: false
+externalForceEnabled set to: false
+VERBOSED_MODE set to : false
+============================END OF INPUT============================
+[Mesh::apply_vertex_boundary_types] 837 vertices: 480 free, 0 fixed, 357 periodic images (312 of them ghost, touching no energy-carrying face); 1560 faces: 960 carry energy, 600 are copies.
+[Mesh::valence histogram] faces: 960 non-ghost, of which 0 touch the mesh boundary (no limit surface, skipped)
+[Mesh::valence histogram] vertices: 312 ghost, 0 boundary; interior valences: N=4:22 N=5:120 N=6:246 N=7:110 N=8:27
+[Mesh::valence histogram] interior faces with more than one extraordinary corner: 598
+# proxy cost: 355.2 us for 960 faces (0.370 us/face)
+# sheet E_bend (ref) 3.370883e+01 kc-units = 674.2 kT; EV faces 864 of 960
+# proxy edge: Spearman(proxy, |dE| at 3333) 0.410, (proxy, |dF| at 3333) 0.355, (proxy, E_face) 0.550; (E_face, |dE| at 3333) 0.452
+proxy	quintile	proxy_min_deg	proxy_max_deg	mean_Eface_kT	mean_|dE3|_kT	max_|dE3|_kT	mean_|dE4|_kT	mean_dF3_pN	max_dF3_pN	mean_dF4_pN
+edge	1	2.12	11.78	2.210e-01	8.356e-04	1.512e-02	1.550e-04	1.884e-02	1.305e-01	3.186e-03
+edge	2	11.82	15.93	3.371e-01	1.240e-03	1.557e-02	2.344e-04	3.083e-02	3.017e-01	5.293e-03
+edge	3	15.97	20.68	5.990e-01	1.752e-03	1.708e-02	3.067e-04	3.596e-02	2.203e-01	6.063e-03
+edge	4	20.68	27.79	1.229e+00	2.707e-03	1.977e-02	4.481e-04	4.765e-02	3.089e-01	7.232e-03
+edge	5	27.79	65.02	1.038e+00	4.147e-03	5.453e-02	7.238e-04	5.720e-02	5.449e-01	9.439e-03
+# proxy ring: Spearman(proxy, |dE| at 3333) 0.401, (proxy, |dF| at 3333) 0.352, (proxy, E_face) 0.524; (E_face, |dE| at 3333) 0.452
+proxy	quintile	proxy_min_deg	proxy_max_deg	mean_Eface_kT	mean_|dE3|_kT	max_|dE3|_kT	mean_|dE4|_kT	mean_dF3_pN	max_dF3_pN	mean_dF4_pN
+ring	1	6.77	14.10	1.578e-01	8.498e-04	1.226e-02	1.463e-04	2.310e-02	1.591e-01	3.770e-03
+ring	2	14.15	17.69	3.285e-01	1.146e-03	1.149e-02	1.928e-04	2.886e-02	2.637e-01	4.650e-03
+ring	3	17.69	20.87	7.509e-01	2.038e-03	1.708e-02	3.543e-04	4.005e-02	3.017e-01	6.651e-03
+ring	4	20.87	24.59	1.081e+00	2.545e-03	1.507e-02	4.571e-04	4.338e-02	3.089e-01	6.935e-03
+ring	5	24.59	60.17	1.105e+00	4.104e-03	5.453e-02	7.175e-04	5.512e-02	5.449e-01	9.210e-03
+rule	proxy	q_low	q_high	q_top	n3333	n4444	n5444	n6555	n8666	samples	relE	relA	relF	max_jump_kT	pred_ms
+uniform	3333	0.00	0.00	0.00	960	0	0	0	0	48438	-9.726e-05	2.001e-05	2.453e-02	5.453e-02	49.2
+uniform	4444	0.00	0.00	0.00	0	960	0	0	0	63504	-8.509e-05	4.155e-06	3.232e-03	7.979e-03	59.6
+uniform	5444	0.00	0.00	0.00	0	0	960	0	0	64296	-2.687e-05	4.182e-06	2.942e-03	5.293e-03	60.2
+uniform	6555	0.00	0.00	0.00	0	0	0	960	0	79362	-3.067e-05	8.254e-07	5.550e-04	0.000e+00	70.6
+uniform	8666	0.00	0.00	0.00	0	0	0	0	960	95220	-1.179e-05	1.612e-07	1.893e-04	1.083e-03	81.5
+adaptive	edge	0.00	0.00	1.00	0	0	0	960	0	79362	-3.067e-05	8.254e-07	5.550e-04	0.000e+00	70.6
+adaptive	edge	0.00	0.00	0.90	0	0	0	874	86	80982	-2.645e-05	7.788e-07	5.076e-04	1.032e-03	71.7
+adaptive	edge	0.00	0.20	1.00	0	173	0	787	0	76275	-2.731e-05	2.336e-06	7.412e-04	2.198e-03	68.4
+adaptive	edge	0.00	0.20	0.90	0	173	0	701	86	77895	-2.309e-05	2.290e-06	7.412e-04	2.198e-03	69.5
+adaptive	edge	0.00	0.40	1.00	0	346	0	614	0	72981	-3.124e-05	2.069e-06	1.429e-03	2.198e-03	66.2
+adaptive	edge	0.00	0.40	0.90	0	346	0	528	86	74601	-2.702e-05	2.022e-06	1.429e-03	2.198e-03	67.3
+adaptive	edge	0.00	0.50	1.00	0	433	0	527	0	71451	-2.208e-05	3.373e-06	1.470e-03	2.922e-03	65.1
+adaptive	edge	0.00	0.50	0.90	0	433	0	441	86	73071	-1.786e-05	3.326e-06	1.469e-03	2.922e-03	66.2
+adaptive	edge	0.00	0.60	1.00	0	519	0	441	0	69795	-2.568e-05	3.332e-06	1.470e-03	2.922e-03	64.0
+adaptive	edge	0.00	0.60	0.90	0	519	0	355	86	71415	-2.146e-05	3.286e-06	1.469e-03	2.922e-03	65.1
+adaptive	edge	0.00	0.70	1.00	0	605	0	355	0	68337	-3.462e-05	4.249e-06	2.127e-03	2.922e-03	63.0
+adaptive	edge	0.00	0.70	0.90	0	605	0	269	86	69957	-3.040e-05	4.203e-06	2.122e-03	2.922e-03	64.1
+adaptive	edge	0.00	0.80	1.00	0	692	0	268	0	66762	-5.085e-05	3.914e-06	2.172e-03	3.275e-03	61.9
+adaptive	edge	0.00	0.80	0.90	0	692	0	182	86	68382	-4.663e-05	3.867e-06	2.167e-03	3.275e-03	63.0
+adaptive	edge	0.00	0.90	1.00	0	778	0	182	0	65124	-7.587e-05	3.692e-06	2.373e-03	5.293e-03	60.7
+adaptive	edge	0.00	0.90	0.90	0	778	0	96	86	66744	-7.165e-05	3.646e-06	2.373e-03	5.293e-03	61.9
+adaptive	edge	0.00	1.00	1.00	0	864	0	96	0	63504	-8.509e-05	4.155e-06	3.232e-03	7.979e-03	59.6
+adaptive	edge	0.20	0.20	1.00	173	0	0	787	0	73323	-5.197e-06	1.056e-05	3.373e-03	1.481e-02	66.4
+adaptive	edge	0.20	0.20	0.90	173	0	0	701	86	74943	-9.771e-07	1.052e-05	3.373e-03	1.481e-02	67.5
+adaptive	edge	0.20	0.40	1.00	173	173	0	614	0	70029	-9.119e-06	1.030e-05	3.668e-03	1.481e-02	64.1
+adaptive	edge	0.20	0.40	0.90	173	173	0	528	86	71649	-4.899e-06	1.025e-05	3.667e-03	1.481e-02	65.2
+adaptive	edge	0.20	0.50	1.00	173	260	0	527	0	68499	3.214e-08	1.160e-05	4.066e-03	1.481e-02	63.1
+adaptive	edge	0.20	0.50	0.90	173	260	0	441	86	70119	4.252e-06	1.155e-05	4.065e-03	1.481e-02	64.2
+adaptive	edge	0.20	0.60	1.00	173	346	0	441	0	66843	-3.558e-06	1.156e-05	4.066e-03	1.481e-02	61.9
+adaptive	edge	0.20	0.60	0.90	173	346	0	355	86	68463	6.618e-07	1.151e-05	4.065e-03	1.481e-02	63.0
+adaptive	edge	0.20	0.70	1.00	173	432	0	355	0	65385	-1.250e-05	1.248e-05	4.018e-03	1.481e-02	60.9
+adaptive	edge	0.20	0.70	0.90	173	432	0	269	86	67005	-8.282e-06	1.243e-05	4.017e-03	1.481e-02	62.0
+adaptive	edge	0.20	0.80	1.00	173	519	0	268	0	63810	-2.874e-05	1.214e-05	4.441e-03	1.481e-02	59.8
+adaptive	edge	0.20	0.80	0.90	173	519	0	182	86	65430	-2.452e-05	1.209e-05	4.440e-03	1.481e-02	60.9
+adaptive	edge	0.20	0.90	1.00	173	605	0	182	0	62172	-5.375e-05	1.192e-05	4.510e-03	1.481e-02	58.7
+adaptive	edge	0.20	0.90	0.90	173	605	0	96	86	63792	-4.953e-05	1.187e-05	4.509e-03	1.481e-02	59.8
+adaptive	edge	0.20	1.00	1.00	173	691	0	96	0	60552	-6.297e-05	1.238e-05	4.518e-03	1.481e-02	57.6
+adaptive	edge	0.40	0.40	1.00	346	0	0	614	0	66969	4.045e-05	7.711e-06	6.799e-03	1.543e-02	62.0
+adaptive	edge	0.40	0.40	0.90	346	0	0	528	86	68589	4.467e-05	7.665e-06	6.816e-03	1.543e-02	63.1
+adaptive	edge	0.40	0.50	1.00	346	87	0	527	0	65439	4.961e-05	9.015e-06	6.792e-03	1.543e-02	61.0
+adaptive	edge	0.40	0.50	0.90	346	87	0	441	86	67059	5.383e-05	8.968e-06	6.809e-03	1.543e-02	62.1
+adaptive	edge	0.40	0.60	1.00	346	173	0	441	0	63783	4.602e-05	8.975e-06	6.796e-03	1.543e-02	59.8
+adaptive	edge	0.40	0.60	0.90	346	173	0	355	86	65403	5.024e-05	8.928e-06	6.813e-03	1.543e-02	60.9
+adaptive	edge	0.40	0.70	1.00	346	259	0	355	0	62325	3.707e-05	9.892e-06	6.886e-03	1.543e-02	58.8
+adaptive	edge	0.40	0.70	0.90	346	259	0	269	86	63945	4.129e-05	9.845e-06	6.903e-03	1.543e-02	59.9
+adaptive	edge	0.40	0.80	1.00	346	346	0	268	0	60750	2.084e-05	9.556e-06	7.063e-03	1.543e-02	57.7
+adaptive	edge	0.40	0.80	0.90	346	346	0	182	86	62370	2.506e-05	9.509e-06	7.080e-03	1.543e-02	58.8
+adaptive	edge	0.40	0.90	1.00	346	432	0	182	0	59112	-4.176e-06	9.334e-06	7.184e-03	1.543e-02	56.6
+adaptive	edge	0.40	0.90	0.90	346	432	0	96	86	60732	4.437e-08	9.288e-06	7.201e-03	1.543e-02	57.7
+adaptive	edge	0.40	1.00	1.00	346	518	0	96	0	57492	-1.340e-05	9.797e-06	7.157e-03	1.543e-02	55.5
+adaptive	edge	0.50	0.50	1.00	433	0	0	527	0	64017	7.729e-05	1.617e-05	8.075e-03	1.659e-02	60.0
+adaptive	edge	0.50	0.50	0.90	433	0	0	441	86	65637	8.151e-05	1.612e-05	8.074e-03	1.659e-02	61.1
+adaptive	edge	0.50	0.60	1.00	433	86	0	441	0	62361	7.370e-05	1.613e-05	8.075e-03	1.659e-02	58.8
+adaptive	edge	0.50	0.60	0.90	433	86	0	355	86	63981	7.792e-05	1.608e-05	8.074e-03	1.659e-02	59.9
+adaptive	edge	0.50	0.70	1.00	433	172	0	355	0	60903	6.475e-05	1.705e-05	8.027e-03	1.659e-02	57.8
+adaptive	edge	0.50	0.70	0.90	433	172	0	269	86	62523	6.897e-05	1.700e-05	8.026e-03	1.659e-02	58.9
+adaptive	edge	0.50	0.80	1.00	433	259	0	268	0	59328	4.852e-05	1.671e-05	8.450e-03	1.659e-02	56.7
+adaptive	edge	0.50	0.80	0.90	433	259	0	182	86	60948	5.274e-05	1.666e-05	8.449e-03	1.659e-02	57.9
+adaptive	edge	0.50	0.90	1.00	433	345	0	182	0	57690	2.350e-05	1.649e-05	8.519e-03	1.659e-02	55.6
+adaptive	edge	0.50	0.90	0.90	433	345	0	96	86	59310	2.772e-05	1.644e-05	8.518e-03	1.659e-02	56.7
+adaptive	edge	0.50	1.00	1.00	433	431	0	96	0	56070	1.428e-05	1.695e-05	8.528e-03	1.659e-02	54.5
+adaptive	edge	0.60	0.60	1.00	519	0	0	441	0	60759	8.836e-05	1.578e-05	1.024e-02	1.659e-02	57.7
+adaptive	edge	0.60	0.60	0.90	519	0	0	355	86	62379	9.258e-05	1.573e-05	1.024e-02	1.659e-02	58.8
+adaptive	edge	0.60	0.70	1.00	519	86	0	355	0	59301	7.941e-05	1.669e-05	1.024e-02	1.659e-02	56.7
+adaptive	edge	0.60	0.70	0.90	519	86	0	269	86	60921	8.363e-05	1.665e-05	1.024e-02	1.659e-02	57.8
+adaptive	edge	0.60	0.80	1.00	519	173	0	268	0	57726	6.318e-05	1.636e-05	1.025e-02	1.659e-02	55.6
+adaptive	edge	0.60	0.80	0.90	519	173	0	182	86	59346	6.740e-05	1.631e-05	1.025e-02	1.659e-02	56.7
+adaptive	edge	0.60	0.90	1.00	519	259	0	182	0	56088	3.816e-05	1.614e-05	1.024e-02	1.659e-02	54.5
+adaptive	edge	0.60	0.90	0.90	519	259	0	96	86	57708	4.238e-05	1.609e-05	1.024e-02	1.659e-02	55.6
+adaptive	edge	0.60	1.00	1.00	519	345	0	96	0	54468	2.894e-05	1.660e-05	1.024e-02	1.659e-02	53.4
+adaptive	edge	0.70	0.70	1.00	605	0	0	355	0	57924	4.221e-05	2.046e-05	1.561e-02	1.659e-02	55.8
+adaptive	edge	0.70	0.70	0.90	605	0	0	269	86	59544	4.643e-05	2.042e-05	1.560e-02	1.659e-02	56.9
+adaptive	edge	0.70	0.80	1.00	605	87	0	268	0	56349	2.598e-05	2.013e-05	1.565e-02	1.659e-02	54.7
+adaptive	edge	0.70	0.80	0.90	605	87	0	182	86	57969	3.020e-05	2.008e-05	1.565e-02	1.659e-02	55.8
+adaptive	edge	0.70	0.90	1.00	605	173	0	182	0	54711	9.661e-07	1.991e-05	1.572e-02	1.659e-02	53.6
+adaptive	edge	0.70	0.90	0.90	605	173	0	96	86	56331	5.186e-06	1.986e-05	1.572e-02	1.659e-02	54.7
+adaptive	edge	0.70	1.00	1.00	605	259	0	96	0	53091	-8.253e-06	2.037e-05	1.572e-02	1.659e-02	52.4
+adaptive	edge	0.80	0.80	1.00	692	0	0	268	0	54810	-5.572e-05	1.789e-05	1.575e-02	1.924e-02	53.6
+adaptive	edge	0.80	0.80	0.90	692	0	0	182	86	56430	-5.150e-05	1.785e-05	1.574e-02	1.924e-02	54.7
+adaptive	edge	0.80	0.90	1.00	692	86	0	182	0	53172	-8.073e-05	1.767e-05	1.582e-02	1.924e-02	52.5
+adaptive	edge	0.80	0.90	0.90	692	86	0	96	86	54792	-7.651e-05	1.762e-05	1.581e-02	1.924e-02	53.6
+adaptive	edge	0.80	1.00	1.00	692	172	0	96	0	51552	-8.995e-05	1.813e-05	1.581e-02	1.924e-02	51.4
+adaptive	edge	0.90	0.90	1.00	778	0	0	182	0	51615	-1.314e-04	1.562e-05	1.636e-02	4.252e-02	51.4
+adaptive	edge	0.90	0.90	0.90	778	0	0	96	86	53235	-1.272e-04	1.557e-05	1.635e-02	4.252e-02	52.5
+adaptive	edge	0.90	1.00	1.00	778	86	0	96	0	49995	-1.407e-04	1.608e-05	1.636e-02	4.252e-02	50.3
+adaptive	edge	1.00	1.00	1.00	864	0	0	96	0	48438	-9.726e-05	2.001e-05	2.453e-02	5.453e-02	49.2
+adaptive	ring	0.00	0.00	1.00	0	0	0	960	0	79362	-3.067e-05	8.254e-07	5.550e-04	0.000e+00	70.6
+adaptive	ring	0.00	0.00	0.90	0	0	0	877	83	81081	-2.014e-05	6.793e-07	5.076e-04	1.032e-03	71.7
+adaptive	ring	0.00	0.20	1.00	0	173	0	787	0	76293	-2.469e-05	1.445e-06	1.293e-03	1.470e-03	68.4
+adaptive	ring	0.00	0.20	0.90	0	173	0	704	83	78012	-1.416e-05	1.299e-06	1.293e-03	1.470e-03	69.6
+adaptive	ring	0.00	0.40	1.00	0	346	0	614	0	73107	-2.646e-05	9.331e-07	1.436e-03	2.124e-03	66.2
+adaptive	ring	0.00	0.40	0.90	0	346	0	531	83	74826	-1.593e-05	7.869e-07	1.436e-03	2.124e-03	67.4
+adaptive	ring	0.00	0.50	1.00	0	437	0	523	0	71433	-2.510e-05	9.240e-07	2.210e-03	3.275e-03	65.1
+adaptive	ring	0.00	0.50	0.90	0	437	0	440	83	73152	-1.457e-05	7.778e-07	2.210e-03	3.275e-03	66.3
+adaptive	ring	0.00	0.60	1.00	0	521	0	439	0	69867	-2.079e-05	9.594e-07	2.210e-03	3.275e-03	64.0
+adaptive	ring	0.00	0.60	0.90	0	521	0	356	83	71586	-1.026e-05	8.133e-07	2.210e-03	3.275e-03	65.2
+adaptive	ring	0.00	0.70	1.00	0	605	0	355	0	68544	-2.548e-05	2.701e-06	2.167e-03	3.275e-03	63.1
+adaptive	ring	0.00	0.70	0.90	0	605	0	272	83	70263	-1.495e-05	2.555e-06	2.167e-03	3.275e-03	64.3
+adaptive	ring	0.00	0.80	1.00	0	694	0	266	0	66762	-4.930e-05	2.959e-06	2.373e-03	3.332e-03	61.9
+adaptive	ring	0.00	0.80	0.90	0	694	0	183	83	68481	-3.877e-05	2.813e-06	2.373e-03	3.332e-03	63.1
+adaptive	ring	0.00	0.90	1.00	0	781	0	179	0	65223	-4.237e-05	3.089e-06	2.942e-03	5.293e-03	60.8
+adaptive	ring	0.00	0.90	0.90	0	781	0	96	83	66942	-3.184e-05	2.942e-06	2.942e-03	5.293e-03	62.0
+adaptive	ring	0.00	1.00	1.00	0	864	0	96	0	63504	-8.509e-05	4.155e-06	3.232e-03	7.979e-03	59.6
+adaptive	ring	0.20	0.20	1.00	173	0	0	787	0	73422	2.429e-05	4.056e-06	9.804e-03	1.206e-02	66.5
+adaptive	ring	0.20	0.20	0.90	173	0	0	704	83	75141	3.482e-05	3.910e-06	9.804e-03	1.206e-02	67.6
+adaptive	ring	0.20	0.40	1.00	173	173	0	614	0	70236	2.252e-05	3.544e-06	9.799e-03	1.206e-02	64.3
+adaptive	ring	0.20	0.40	0.90	173	173	0	531	83	71955	3.305e-05	3.398e-06	9.799e-03	1.206e-02	65.4
+adaptive	ring	0.20	0.50	1.00	173	264	0	523	0	68562	2.388e-05	3.535e-06	9.868e-03	1.206e-02	63.1
+adaptive	ring	0.20	0.50	0.90	173	264	0	440	83	70281	3.441e-05	3.389e-06	9.868e-03	1.206e-02	64.3
+adaptive	ring	0.20	0.60	1.00	173	348	0	439	0	66996	2.818e-05	3.571e-06	9.880e-03	1.206e-02	62.0
+adaptive	ring	0.20	0.60	0.90	173	348	0	356	83	68715	3.871e-05	3.425e-06	9.880e-03	1.206e-02	63.2
+adaptive	ring	0.20	0.70	1.00	173	432	0	355	0	65673	2.350e-05	5.313e-06	9.880e-03	1.206e-02	61.1
+adaptive	ring	0.20	0.70	0.90	173	432	0	272	83	67392	3.403e-05	5.166e-06	9.880e-03	1.206e-02	62.3
+adaptive	ring	0.20	0.80	1.00	173	521	0	266	0	63891	-3.272e-07	5.570e-06	9.880e-03	1.206e-02	59.9
+adaptive	ring	0.20	0.80	0.90	173	521	0	183	83	65610	1.020e-05	5.424e-06	9.880e-03	1.206e-02	61.1
+adaptive	ring	0.20	0.90	1.00	173	608	0	179	0	62352	6.611e-06	5.700e-06	9.880e-03	1.206e-02	58.8
+adaptive	ring	0.20	0.90	0.90	173	608	0	96	83	64071	1.714e-05	5.554e-06	9.880e-03	1.206e-02	60.0
+adaptive	ring	0.20	1.00	1.00	173	691	0	96	0	60633	-3.611e-05	6.766e-06	9.880e-03	1.206e-02	57.6
+adaptive	ring	0.40	0.40	1.00	346	0	0	614	0	67194	3.483e-05	5.479e-07	1.028e-02	1.206e-02	62.2
+adaptive	ring	0.40	0.40	0.90	346	0	0	531	83	68913	4.536e-05	4.017e-07	1.028e-02	1.206e-02	63.3
+adaptive	ring	0.40	0.50	1.00	346	91	0	523	0	65520	3.619e-05	5.388e-07	1.043e-02	1.206e-02	61.0
+adaptive	ring	0.40	0.50	0.90	346	91	0	440	83	67239	4.672e-05	3.926e-07	1.043e-02	1.206e-02	62.2
+adaptive	ring	0.40	0.60	1.00	346	175	0	439	0	63954	4.049e-05	5.742e-07	1.047e-02	1.206e-02	59.9
+adaptive	ring	0.40	0.60	0.90	346	175	0	356	83	65673	5.102e-05	4.281e-07	1.047e-02	1.206e-02	61.1
+adaptive	ring	0.40	0.70	1.00	346	259	0	355	0	62631	3.581e-05	2.316e-06	1.060e-02	1.206e-02	59.0
+adaptive	ring	0.40	0.70	0.90	346	259	0	272	83	64350	4.634e-05	2.170e-06	1.060e-02	1.206e-02	60.2
+adaptive	ring	0.40	0.80	1.00	346	348	0	266	0	60849	1.198e-05	2.574e-06	1.060e-02	1.206e-02	57.8
+adaptive	ring	0.40	0.80	0.90	346	348	0	183	83	62568	2.251e-05	2.428e-06	1.060e-02	1.206e-02	59.0
+adaptive	ring	0.40	0.90	1.00	346	435	0	179	0	59310	1.892e-05	2.703e-06	1.060e-02	1.206e-02	56.7
+adaptive	ring	0.40	0.90	0.90	346	435	0	96	83	61029	2.945e-05	2.557e-06	1.060e-02	1.206e-02	57.9
+adaptive	ring	0.40	1.00	1.00	346	518	0	96	0	57591	-2.380e-05	3.770e-06	1.060e-02	1.206e-02	55.5
+adaptive	ring	0.50	0.50	1.00	437	0	0	523	0	63918	5.128e-05	1.267e-06	1.166e-02	1.543e-02	59.9
+adaptive	ring	0.50	0.50	0.90	437	0	0	440	83	65637	6.181e-05	1.121e-06	1.166e-02	1.543e-02	61.1
+adaptive	ring	0.50	0.60	1.00	437	84	0	439	0	62352	5.558e-05	1.303e-06	1.170e-02	1.543e-02	58.8
+adaptive	ring	0.50	0.60	0.90	437	84	0	356	83	64071	6.611e-05	1.157e-06	1.170e-02	1.543e-02	60.0
+adaptive	ring	0.50	0.70	1.00	437	168	0	355	0	61029	5.090e-05	3.045e-06	1.183e-02	1.543e-02	57.9
+adaptive	ring	0.50	0.70	0.90	437	168	0	272	83	62748	6.143e-05	2.899e-06	1.183e-02	1.543e-02	59.1
+adaptive	ring	0.50	0.80	1.00	437	257	0	266	0	59247	2.707e-05	3.302e-06	1.183e-02	1.543e-02	56.7
+adaptive	ring	0.50	0.80	0.90	437	257	0	183	83	60966	3.760e-05	3.156e-06	1.183e-02	1.543e-02	57.9
+adaptive	ring	0.50	0.90	1.00	437	344	0	179	0	57708	3.401e-05	3.432e-06	1.183e-02	1.543e-02	55.6
+adaptive	ring	0.50	0.90	0.90	437	344	0	96	83	59427	4.454e-05	3.286e-06	1.183e-02	1.543e-02	56.8
+adaptive	ring	0.50	1.00	1.00	437	427	0	96	0	55989	-8.710e-06	4.498e-06	1.183e-02	1.543e-02	54.4
+adaptive	ring	0.60	0.60	1.00	521	0	0	439	0	60876	7.215e-05	1.037e-06	1.221e-02	1.659e-02	57.8
+adaptive	ring	0.60	0.60	0.90	521	0	0	356	83	62595	8.268e-05	8.906e-07	1.221e-02	1.659e-02	59.0
+adaptive	ring	0.60	0.70	1.00	521	84	0	355	0	59553	6.747e-05	2.779e-06	1.235e-02	1.659e-02	56.9
+adaptive	ring	0.60	0.70	0.90	521	84	0	272	83	61272	7.800e-05	2.632e-06	1.235e-02	1.659e-02	58.1
+adaptive	ring	0.60	0.80	1.00	521	173	0	266	0	57771	4.364e-05	3.036e-06	1.235e-02	1.659e-02	55.7
+adaptive	ring	0.60	0.80	0.90	521	173	0	183	83	59490	5.417e-05	2.890e-06	1.235e-02	1.659e-02	56.8
+adaptive	ring	0.60	0.90	1.00	521	260	0	179	0	56232	5.058e-05	3.166e-06	1.235e-02	1.659e-02	54.6
+adaptive	ring	0.60	0.90	0.90	521	260	0	96	83	57951	6.111e-05	3.020e-06	1.235e-02	1.659e-02	55.8
+adaptive	ring	0.60	1.00	1.00	521	343	0	96	0	54513	7.856e-06	4.232e-06	1.235e-02	1.659e-02	53.4
+adaptive	ring	0.70	0.70	1.00	605	0	0	355	0	58284	3.818e-05	9.387e-06	1.614e-02	1.659e-02	56.0
+adaptive	ring	0.70	0.70	0.90	605	0	0	272	83	60003	4.871e-05	9.241e-06	1.614e-02	1.659e-02	57.2
+adaptive	ring	0.70	0.80	1.00	605	89	0	266	0	56502	1.435e-05	9.645e-06	1.615e-02	1.659e-02	54.8
+adaptive	ring	0.70	0.80	0.90	605	89	0	183	83	58221	2.488e-05	9.499e-06	1.615e-02	1.659e-02	56.0
+adaptive	ring	0.70	0.90	1.00	605	176	0	179	0	54963	2.129e-05	9.775e-06	1.663e-02	1.659e-02	53.7
+adaptive	ring	0.70	0.90	0.90	605	176	0	96	83	56682	3.182e-05	9.629e-06	1.663e-02	1.659e-02	54.9
+adaptive	ring	0.70	1.00	1.00	605	259	0	96	0	53244	-2.143e-05	1.084e-05	1.662e-02	1.659e-02	52.5
+adaptive	ring	0.80	0.80	1.00	694	0	0	266	0	54819	-6.240e-05	1.018e-05	1.622e-02	1.659e-02	53.6
+adaptive	ring	0.80	0.80	0.90	694	0	0	183	83	56538	-5.187e-05	1.003e-05	1.622e-02	1.659e-02	54.8
+adaptive	ring	0.80	0.90	1.00	694	87	0	179	0	53280	-5.546e-05	1.031e-05	1.671e-02	1.659e-02	52.6
+adaptive	ring	0.80	0.90	0.90	694	87	0	96	83	54999	-4.493e-05	1.016e-05	1.671e-02	1.659e-02	53.7
+adaptive	ring	0.80	1.00	1.00	694	170	0	96	0	51561	-9.818e-05	1.137e-05	1.669e-02	1.659e-02	51.4
+adaptive	ring	0.90	0.90	1.00	781	0	0	179	0	51831	8.477e-05	1.158e-05	2.453e-02	4.252e-02	51.6
+adaptive	ring	0.90	0.90	0.90	781	0	0	96	83	53550	9.530e-05	1.143e-05	2.453e-02	4.252e-02	52.7
+adaptive	ring	0.90	1.00	1.00	781	83	0	96	0	50112	4.205e-05	1.264e-05	2.453e-02	4.252e-02	50.4
+adaptive	ring	1.00	1.00	1.00	864	0	0	96	0	48438	-9.726e-05	2.001e-05	2.453e-02	5.453e-02	49.2
+adaptive	oracle_dF3	0.00	0.00	1.00	0	0	0	960	0	79362	-3.067e-05	8.254e-07	5.550e-04	0.000e+00	70.6
+adaptive	oracle_dF3	0.00	0.00	0.90	0	0	0	874	86	80667	-2.981e-05	9.291e-07	3.929e-04	1.083e-03	71.5
+adaptive	oracle_dF3	0.00	0.20	1.00	0	173	0	787	0	76005	-3.455e-05	1.124e-06	5.550e-04	2.617e-04	68.2
+adaptive	oracle_dF3	0.00	0.20	0.90	0	173	0	701	86	77310	-3.369e-05	1.228e-06	4.247e-04	1.083e-03	69.1
+adaptive	oracle_dF3	0.00	0.40	1.00	0	346	0	614	0	72504	-3.861e-05	2.374e-06	5.551e-04	5.591e-04	65.8
+adaptive	oracle_dF3	0.00	0.40	0.90	0	346	0	528	86	73809	-3.775e-05	2.478e-06	4.440e-04	1.083e-03	66.7
+adaptive	oracle_dF3	0.00	0.50	1.00	0	433	0	527	0	70794	-3.691e-05	1.826e-06	6.383e-04	7.481e-04	64.6
+adaptive	oracle_dF3	0.00	0.50	0.90	0	433	0	441	86	72099	-3.605e-05	1.930e-06	5.295e-04	1.083e-03	65.5
+adaptive	oracle_dF3	0.00	0.60	1.00	0	519	0	441	0	69138	-4.286e-05	2.698e-06	6.233e-04	1.152e-03	63.5
+adaptive	oracle_dF3	0.00	0.60	0.90	0	519	0	355	86	70443	-4.200e-05	2.801e-06	5.340e-04	1.152e-03	64.4
+adaptive	oracle_dF3	0.00	0.70	1.00	0	605	0	355	0	67707	-5.134e-05	2.688e-06	8.319e-04	1.152e-03	62.5
+adaptive	oracle_dF3	0.00	0.70	0.90	0	605	0	269	86	69012	-5.047e-05	2.792e-06	7.468e-04	1.152e-03	63.4
+adaptive	oracle_dF3	0.00	0.80	1.00	0	692	0	268	0	66348	-5.818e-05	4.102e-06	9.699e-04	1.527e-03	61.6
+adaptive	oracle_dF3	0.00	0.80	0.90	0	692	0	182	86	67653	-5.732e-05	4.206e-06	8.848e-04	1.527e-03	62.5
+adaptive	oracle_dF3	0.00	0.90	1.00	0	778	0	182	0	64809	-7.050e-05	4.647e-06	1.536e-03	2.198e-03	60.5
+adaptive	oracle_dF3	0.00	0.90	0.90	0	778	0	96	86	66114	-6.963e-05	4.751e-06	1.528e-03	2.198e-03	61.4
+adaptive	oracle_dF3	0.00	1.00	1.00	0	864	0	96	0	63504	-8.509e-05	4.155e-06	3.232e-03	7.979e-03	59.6
+adaptive	oracle_dF3	0.20	0.20	1.00	173	0	0	787	0	72684	-6.077e-05	1.585e-06	7.495e-04	1.169e-03	66.0
+adaptive	oracle_dF3	0.20	0.20	0.90	173	0	0	701	86	73989	-5.990e-05	1.689e-06	7.499e-04	1.169e-03	66.9
+adaptive	oracle_dF3	0.20	0.40	1.00	173	173	0	614	0	69183	-6.483e-05	2.835e-06	7.804e-04	1.169e-03	63.5
+adaptive	oracle_dF3	0.20	0.40	0.90	173	173	0	528	86	70488	-6.396e-05	2.938e-06	7.808e-04	1.169e-03	64.4
+adaptive	oracle_dF3	0.20	0.50	1.00	173	260	0	527	0	67473	-6.313e-05	2.287e-06	8.260e-04	1.169e-03	62.4
+adaptive	oracle_dF3	0.20	0.50	0.90	173	260	0	441	86	68778	-6.226e-05	2.391e-06	7.956e-04	1.169e-03	63.3
+adaptive	oracle_dF3	0.20	0.60	1.00	173	346	0	441	0	65817	-6.908e-05	3.158e-06	8.360e-04	1.169e-03	61.2
+adaptive	oracle_dF3	0.20	0.60	0.90	173	346	0	355	86	67122	-6.821e-05	3.262e-06	8.364e-04	1.169e-03	62.1
+adaptive	oracle_dF3	0.20	0.70	1.00	173	432	0	355	0	64386	-7.755e-05	3.149e-06	1.043e-03	1.169e-03	60.2
+adaptive	oracle_dF3	0.20	0.70	0.90	173	432	0	269	86	65691	-7.669e-05	3.253e-06	9.582e-04	1.169e-03	61.1
+adaptive	oracle_dF3	0.20	0.80	1.00	173	519	0	268	0	63027	-8.440e-05	4.563e-06	1.181e-03	1.527e-03	59.3
+adaptive	oracle_dF3	0.20	0.80	0.90	173	519	0	182	86	64332	-8.353e-05	4.667e-06	1.096e-03	1.527e-03	60.2
+adaptive	oracle_dF3	0.20	0.90	1.00	173	605	0	182	0	61488	-9.671e-05	5.108e-06	1.710e-03	2.198e-03	58.2
+adaptive	oracle_dF3	0.20	0.90	0.90	173	605	0	96	86	62793	-9.584e-05	5.212e-06	1.625e-03	2.198e-03	59.1
+adaptive	oracle_dF3	0.20	1.00	1.00	173	691	0	96	0	60183	-1.113e-04	4.615e-06	3.271e-03	7.979e-03	57.3
+adaptive	oracle_dF3	0.40	0.40	1.00	346	0	0	614	0	65754	-7.585e-05	9.307e-06	1.893e-03	2.166e-03	61.2
+adaptive	oracle_dF3	0.40	0.40	0.90	346	0	0	528	86	67059	-7.498e-05	9.410e-06	1.893e-03	2.166e-03	62.1
+adaptive	oracle_dF3	0.40	0.50	1.00	346	87	0	527	0	64044	-7.415e-05	8.759e-06	1.929e-03	2.166e-03	60.0
+adaptive	oracle_dF3	0.40	0.50	0.90	346	87	0	441	86	65349	-7.328e-05	8.862e-06	1.929e-03	2.166e-03	60.9
+adaptive	oracle_dF3	0.40	0.60	1.00	346	173	0	441	0	62388	-8.010e-05	9.630e-06	1.954e-03	2.166e-03	58.8
+adaptive	oracle_dF3	0.40	0.60	0.90	346	173	0	355	86	63693	-7.923e-05	9.734e-06	1.954e-03	2.166e-03	59.7
+adaptive	oracle_dF3	0.40	0.70	1.00	346	259	0	355	0	60957	-8.857e-05	9.621e-06	1.951e-03	2.166e-03	57.9
+adaptive	oracle_dF3	0.40	0.70	0.90	346	259	0	269	86	62262	-8.771e-05	9.725e-06	1.951e-03	2.166e-03	58.8
+adaptive	oracle_dF3	0.40	0.80	1.00	346	346	0	268	0	59598	-9.542e-05	1.103e-05	1.951e-03	2.166e-03	56.9
+adaptive	oracle_dF3	0.40	0.80	0.90	346	346	0	182	86	60903	-9.455e-05	1.114e-05	1.951e-03	2.166e-03	57.8
+adaptive	oracle_dF3	0.40	0.90	1.00	346	432	0	182	0	58059	-1.077e-04	1.158e-05	2.195e-03	2.198e-03	55.9
+adaptive	oracle_dF3	0.40	0.90	0.90	346	432	0	96	86	59364	-1.069e-04	1.168e-05	2.195e-03	2.198e-03	56.8
+adaptive	oracle_dF3	0.40	1.00	1.00	346	518	0	96	0	56754	-1.223e-04	1.109e-05	3.275e-03	7.979e-03	55.0
+adaptive	oracle_dF3	0.50	0.50	1.00	433	0	0	527	0	62406	-6.444e-05	5.010e-06	2.468e-03	3.028e-03	58.9
+adaptive	oracle_dF3	0.50	0.50	0.90	433	0	0	441	86	63711	-6.358e-05	5.113e-06	2.468e-03	3.028e-03	59.8
+adaptive	oracle_dF3	0.50	0.60	1.00	433	86	0	441	0	60750	-7.040e-05	5.881e-06	2.461e-03	3.028e-03	57.7
+adaptive	oracle_dF3	0.50	0.60	0.90	433	86	0	355	86	62055	-6.953e-05	5.985e-06	2.461e-03	3.028e-03	58.6
+adaptive	oracle_dF3	0.50	0.70	1.00	433	172	0	355	0	59319	-7.887e-05	5.872e-06	2.456e-03	3.028e-03	56.7
+adaptive	oracle_dF3	0.50	0.70	0.90	433	172	0	269	86	60624	-7.801e-05	5.976e-06	2.456e-03	3.028e-03	57.6
+adaptive	oracle_dF3	0.50	0.80	1.00	433	259	0	268	0	57960	-8.572e-05	7.286e-06	2.451e-03	3.028e-03	55.8
+adaptive	oracle_dF3	0.50	0.80	0.90	433	259	0	182	86	59265	-8.485e-05	7.389e-06	2.451e-03	3.028e-03	56.7
+adaptive	oracle_dF3	0.50	0.90	1.00	433	345	0	182	0	56421	-9.803e-05	7.831e-06	2.494e-03	3.028e-03	54.7
+adaptive	oracle_dF3	0.50	0.90	0.90	433	345	0	96	86	57726	-9.716e-05	7.935e-06	2.494e-03	3.028e-03	55.6
+adaptive	oracle_dF3	0.50	1.00	1.00	433	431	0	96	0	55116	-1.126e-04	7.338e-06	3.228e-03	7.979e-03	53.8
+adaptive	oracle_dF3	0.60	0.60	1.00	519	0	0	441	0	59139	-7.638e-05	9.840e-06	3.383e-03	5.416e-03	56.6
+adaptive	oracle_dF3	0.60	0.60	0.90	519	0	0	355	86	60444	-7.551e-05	9.944e-06	3.383e-03	5.416e-03	57.5
+adaptive	oracle_dF3	0.60	0.70	1.00	519	86	0	355	0	57708	-8.485e-05	9.831e-06	3.384e-03	5.416e-03	55.6
+adaptive	oracle_dF3	0.60	0.70	0.90	519	86	0	269	86	59013	-8.399e-05	9.935e-06	3.384e-03	5.416e-03	56.5
+adaptive	oracle_dF3	0.60	0.80	1.00	519	173	0	268	0	56349	-9.170e-05	1.124e-05	3.355e-03	5.416e-03	54.7
+adaptive	oracle_dF3	0.60	0.80	0.90	519	173	0	182	86	57654	-9.083e-05	1.135e-05	3.355e-03	5.416e-03	55.6
+adaptive	oracle_dF3	0.60	0.90	1.00	519	259	0	182	0	54810	-1.040e-04	1.179e-05	3.393e-03	5.416e-03	53.6
+adaptive	oracle_dF3	0.60	0.90	0.90	519	259	0	96	86	56115	-1.031e-04	1.189e-05	3.393e-03	5.416e-03	54.5
+adaptive	oracle_dF3	0.60	1.00	1.00	519	345	0	96	0	53505	-1.186e-04	1.130e-05	3.597e-03	7.979e-03	52.7
+adaptive	oracle_dF3	0.70	0.70	1.00	605	0	0	355	0	56349	-8.952e-05	1.029e-05	3.740e-03	6.316e-03	54.7
+adaptive	oracle_dF3	0.70	0.70	0.90	605	0	0	269	86	57654	-8.866e-05	1.039e-05	3.723e-03	6.316e-03	55.6
+adaptive	oracle_dF3	0.70	0.80	1.00	605	87	0	268	0	54990	-9.637e-05	1.170e-05	3.921e-03	6.316e-03	53.7
+adaptive	oracle_dF3	0.70	0.80	0.90	605	87	0	182	86	56295	-9.550e-05	1.181e-05	3.903e-03	6.316e-03	54.6
+adaptive	oracle_dF3	0.70	0.90	1.00	605	173	0	182	0	53451	-1.087e-04	1.225e-05	4.006e-03	6.316e-03	52.7
+adaptive	oracle_dF3	0.70	0.90	0.90	605	173	0	96	86	54756	-1.078e-04	1.235e-05	3.988e-03	6.316e-03	53.6
+adaptive	oracle_dF3	0.70	1.00	1.00	605	259	0	96	0	52146	-1.233e-04	1.176e-05	4.341e-03	7.979e-03	51.8
+adaptive	oracle_dF3	0.80	0.80	1.00	692	0	0	268	0	53730	-1.524e-04	1.861e-05	5.481e-03	6.926e-03	52.9
+adaptive	oracle_dF3	0.80	0.80	0.90	692	0	0	182	86	55035	-1.515e-04	1.871e-05	5.463e-03	6.926e-03	53.8
+adaptive	oracle_dF3	0.80	0.90	1.00	692	86	0	182	0	52191	-1.647e-04	1.915e-05	5.567e-03	6.926e-03	51.8
+adaptive	oracle_dF3	0.80	0.90	0.90	692	86	0	96	86	53496	-1.638e-04	1.926e-05	5.548e-03	6.926e-03	52.7
+adaptive	oracle_dF3	0.80	1.00	1.00	692	172	0	96	0	50886	-1.793e-04	1.866e-05	5.625e-03	7.979e-03	50.9
+adaptive	oracle_dF3	0.90	0.90	1.00	778	0	0	182	0	50841	-1.369e-04	2.082e-05	9.327e-03	1.146e-02	50.9
+adaptive	oracle_dF3	0.90	0.90	0.90	778	0	0	96	86	52146	-1.361e-04	2.092e-05	9.319e-03	1.146e-02	51.8
+adaptive	oracle_dF3	0.90	1.00	1.00	778	86	0	96	0	49536	-1.515e-04	2.033e-05	9.429e-03	1.146e-02	50.0
+adaptive	oracle_dF3	1.00	1.00	1.00	864	0	0	96	0	48438	-9.726e-05	2.001e-05	2.453e-02	5.453e-02	49.2
+
+# ev_patch_cost adaptive, box_nu5 step-1000 state
+beadEnabled set to: true
+beadPotential set to: harmonic
+beadRadius set to: 10.0
+beadStiffness set to: 20.0
+beadCaptureRange set to: 2.5
+beadBreakRange set to: -1
+beadAdhesionEnergy set to: 0.0
+beadCenterX set to: 0.0
+beadCenterY set to: 0.0
+beadCenterZ set to: -5.0
+beadVelocityX set to: 0.0
+beadVelocityY set to: 0.0
+beadVelocityZ set to: 0.5
+beadStartIteration set to: 0
+beadStopIteration set to: 70000
+BOUNDARY_TYPE set to : Mixed
+boundaryTypeX set to: Periodic
+boundaryTypeY set to: Periodic
+meanHeightPinned set to: true
+surfaceSolver set to: iterative
+LMESHSIDE set to: 5.0
+VARIABLE NOT SUPPORTED: isFlat
+SideX set to: 130.0
+SideY set to: 130.0
+C0INSERTION set to: 0.0
+C0MEMBRANE set to: 0.0
+KCMEMBRANEBENDING set to: 83.4
+USMEMBRANESTRETCHING set to: 250.0
+setRelaxAreaToDefault set to : true
+UVVOLUMECONSTRAINT set to: 0.0
+GLOBAL CONSTRAINT for area and volume : true
+FORCE_BACKEND set to : cpu
+KBT set to: 4.17
+TIMESTEP set to: 0.001
+DIFFCONST set to: 1.0
+randomSeed set to: 20261012
+MESHPOINTOUTPUT set to: true
+meshpointOutputInterval set to: 200
+XYZOUTPUT set to: false
+fdtConsistentSurfaceUpdate set to: true
+localOutput set to: true
+inPlaneDynamicsEnabled set to: true
+edgeSpringEnabled set to: true
+edgeTetherShape set to: flat
+edgeTetherMinRatio set to: 0.7
+edgeTetherMaxRatio set to: 1.75
+edgeSpringConstant set to: 83.4
+triangleShapeEnabled set to: true
+triangleShapeMinAltitudeRatio set to: 0.4
+triangleShapeConstant set to: 83.4
+creaseWallEnabled set to: true
+creaseWallAngle set to: 60.0
+creaseWallConstant set to: 500.0
+edgeFlipEnabled set to: true
+edgeFlipAttemptRate set to: 5.0
+edgeFlipInterval set to: 1
+edgeFlipMinValence set to: 4
+edgeFlipMaxValence set to: 8
+irregularPatchDepthScale set to: 1.0
+elasticBoxEnabled set to: true
+elasticBoxTension set to: 0.5
+elasticBoxMobility set to: 0.02
+elasticBoxThermal set to: true
+elasticBoxCoupling set to: isotropic
+elasticBoxMaxStrainPerStep set to: 0.001
+elasticBoxVertexGasTerm set to: true
+lipidFlowMode set to: off
+VARIABLE NOT SUPPORTED: isInsertionIncluded
+HARMONIC BOND included : false
+thermalFluctuationEnabled set to: false
+externalForceEnabled set to: false
+VERBOSED_MODE set to : false
+MAXITERATIONS set to: 1000
+irregularPatchDepths set to: 6,5,5,5
+irregularPatchTailCorrection set to: true
+============================END OF INPUT============================
+[Mesh::apply_vertex_boundary_types] 837 vertices: 480 free, 0 fixed, 357 periodic images (312 of them ghost, touching no energy-carrying face); 1560 faces: 960 carry energy, 600 are copies.
+[Mesh::valence histogram] faces: 960 non-ghost, of which 0 touch the mesh boundary (no limit surface, skipped)
+[Mesh::valence histogram] vertices: 312 ghost, 0 boundary; interior valences: N=4:30 N=5:100 N=6:263 N=7:104 N=8:28
+[Mesh::valence histogram] interior faces with more than one extraordinary corner: 560
+# proxy cost: 358.1 us for 960 faces (0.373 us/face)
+# sheet E_bend (ref) 1.292603e+01 kc-units = 258.5 kT; EV faces 849 of 960
+# proxy edge: Spearman(proxy, |dE| at 3333) 0.350, (proxy, |dF| at 3333) 0.253, (proxy, E_face) 0.599; (E_face, |dE| at 3333) 0.395
+proxy	quintile	proxy_min_deg	proxy_max_deg	mean_Eface_kT	mean_|dE3|_kT	max_|dE3|_kT	mean_|dE4|_kT	mean_dF3_pN	max_dF3_pN	mean_dF4_pN
+edge	1	2.84	10.27	1.099e-01	6.422e-04	9.170e-03	1.181e-04	2.027e-02	2.808e-01	3.794e-03
+edge	2	10.27	14.15	1.980e-01	1.252e-03	2.203e-02	2.107e-04	2.941e-02	2.098e-01	5.140e-03
+edge	3	14.16	18.22	2.438e-01	1.886e-03	1.923e-02	3.030e-04	3.879e-02	2.915e-01	6.488e-03
+edge	4	18.22	23.92	3.153e-01	2.076e-03	4.660e-02	3.746e-04	3.612e-02	5.646e-01	6.281e-03
+edge	5	23.92	45.45	4.941e-01	3.288e-03	3.711e-02	6.267e-04	4.942e-02	4.880e-01	8.915e-03
+# proxy ring: Spearman(proxy, |dE| at 3333) 0.210, (proxy, |dF| at 3333) 0.091, (proxy, E_face) 0.414; (E_face, |dE| at 3333) 0.395
+proxy	quintile	proxy_min_deg	proxy_max_deg	mean_Eface_kT	mean_|dE3|_kT	max_|dE3|_kT	mean_|dE4|_kT	mean_dF3_pN	max_dF3_pN	mean_dF4_pN
+ring	1	6.38	13.41	1.346e-01	1.085e-03	1.087e-02	1.845e-04	2.786e-02	2.915e-01	4.857e-03
+ring	2	13.41	15.85	2.073e-01	1.337e-03	1.923e-02	2.270e-04	3.179e-02	1.676e-01	5.445e-03
+ring	3	15.86	18.20	2.934e-01	1.596e-03	1.653e-02	2.808e-04	3.499e-02	2.808e-01	6.154e-03
+ring	4	18.20	21.31	3.149e-01	2.468e-03	4.660e-02	4.572e-04	4.122e-02	5.646e-01	7.463e-03
+ring	5	21.31	30.52	4.110e-01	2.661e-03	2.272e-02	4.841e-04	3.819e-02	2.614e-01	6.706e-03
+rule	proxy	q_low	q_high	q_top	n3333	n4444	n5444	n6555	n8666	samples	relE	relA	relF	max_jump_kT	pred_ms
+uniform	3333	0.00	0.00	0.00	960	0	0	0	0	45648	2.813e-04	3.291e-05	3.036e-02	4.559e-02	47.3
+uniform	4444	0.00	0.00	0.00	0	960	0	0	0	59796	-3.158e-05	6.063e-06	8.088e-03	1.222e-02	57.1
+uniform	5444	0.00	0.00	0.00	0	0	960	0	0	60876	2.058e-04	6.060e-06	2.915e-03	3.544e-03	57.8
+uniform	6555	0.00	0.00	0.00	0	0	0	960	0	75024	1.030e-05	1.155e-06	5.671e-04	0.000e+00	67.6
+uniform	8666	0.00	0.00	0.00	0	0	0	0	960	90252	-5.212e-07	2.238e-07	1.332e-04	9.303e-04	78.1
+adaptive	edge	0.00	0.00	1.00	0	0	0	960	0	75024	1.030e-05	1.155e-06	5.671e-04	0.000e+00	67.6
+adaptive	edge	0.00	0.00	0.90	0	0	0	877	83	76527	1.062e-05	1.212e-06	5.683e-04	4.485e-04	68.6
+adaptive	edge	0.00	0.20	1.00	0	170	0	790	0	71802	1.764e-05	1.416e-06	2.290e-03	2.188e-03	65.3
+adaptive	edge	0.00	0.20	0.90	0	170	0	707	83	73305	1.796e-05	1.473e-06	2.295e-03	2.188e-03	66.4
+adaptive	edge	0.00	0.40	1.00	0	340	0	620	0	68751	6.938e-05	2.107e-06	2.495e-03	3.544e-03	63.2
+adaptive	edge	0.00	0.40	0.90	0	340	0	537	83	70254	6.970e-05	2.165e-06	2.501e-03	3.544e-03	64.3
+adaptive	edge	0.00	0.50	1.00	0	425	0	535	0	67374	9.584e-05	3.607e-06	2.952e-03	3.544e-03	62.3
+adaptive	edge	0.00	0.50	0.90	0	425	0	452	83	68877	9.615e-05	3.664e-06	2.957e-03	3.544e-03	63.3
+adaptive	edge	0.00	0.60	1.00	0	510	0	450	0	65844	1.028e-04	4.460e-06	2.954e-03	3.544e-03	61.2
+adaptive	edge	0.00	0.60	0.90	0	510	0	367	83	67347	1.032e-04	4.518e-06	2.960e-03	3.544e-03	62.3
+adaptive	edge	0.00	0.70	1.00	0	595	0	365	0	64323	1.261e-04	5.554e-06	2.954e-03	3.544e-03	60.2
+adaptive	edge	0.00	0.70	0.90	0	595	0	282	83	65826	1.265e-04	5.611e-06	2.960e-03	3.544e-03	61.2
+adaptive	edge	0.00	0.80	1.00	0	680	0	280	0	62856	9.325e-05	6.373e-06	4.539e-03	1.222e-02	59.2
+adaptive	edge	0.00	0.80	0.90	0	680	0	197	83	64359	9.356e-05	6.430e-06	4.553e-03	1.222e-02	60.2
+adaptive	edge	0.00	0.90	1.00	0	766	0	194	0	61299	1.678e-05	6.665e-06	7.571e-03	1.222e-02	58.1
+adaptive	edge	0.00	0.90	0.90	0	766	0	111	83	62802	1.710e-05	6.722e-06	7.585e-03	1.222e-02	59.1
+adaptive	edge	0.00	1.00	1.00	0	849	0	111	0	59796	-3.158e-05	6.063e-06	8.088e-03	1.222e-02	57.1
+adaptive	edge	0.20	0.20	1.00	170	0	0	790	0	68850	1.223e-04	3.555e-06	8.973e-03	9.023e-03	63.3
+adaptive	edge	0.20	0.20	0.90	170	0	0	707	83	70353	1.226e-04	3.612e-06	8.979e-03	9.023e-03	64.3
+adaptive	edge	0.20	0.40	1.00	170	170	0	620	0	65799	1.740e-04	4.246e-06	9.181e-03	9.023e-03	61.2
+adaptive	edge	0.20	0.40	0.90	170	170	0	537	83	67302	1.743e-04	4.304e-06	9.186e-03	9.023e-03	62.2
+adaptive	edge	0.20	0.50	1.00	170	255	0	535	0	64422	2.005e-04	5.746e-06	9.637e-03	9.023e-03	60.3
+adaptive	edge	0.20	0.50	0.90	170	255	0	452	83	65925	2.008e-04	5.803e-06	9.643e-03	9.023e-03	61.3
+adaptive	edge	0.20	0.60	1.00	170	340	0	450	0	62892	2.075e-04	6.600e-06	9.639e-03	9.023e-03	59.2
+adaptive	edge	0.20	0.60	0.90	170	340	0	367	83	64395	2.078e-04	6.657e-06	9.645e-03	9.023e-03	60.2
+adaptive	edge	0.20	0.70	1.00	170	425	0	365	0	61371	2.308e-04	7.693e-06	9.639e-03	9.023e-03	58.1
+adaptive	edge	0.20	0.70	0.90	170	425	0	282	83	62874	2.311e-04	7.750e-06	9.645e-03	9.023e-03	59.2
+adaptive	edge	0.20	0.80	1.00	170	510	0	280	0	59904	1.979e-04	8.512e-06	9.639e-03	1.222e-02	57.1
+adaptive	edge	0.20	0.80	0.90	170	510	0	197	83	61407	1.982e-04	8.569e-06	9.645e-03	1.222e-02	58.2
+adaptive	edge	0.20	0.90	1.00	170	596	0	194	0	58347	1.214e-04	8.804e-06	9.639e-03	1.222e-02	56.1
+adaptive	edge	0.20	0.90	0.90	170	596	0	111	83	59850	1.217e-04	8.861e-06	9.645e-03	1.222e-02	57.1
+adaptive	edge	0.20	1.00	1.00	170	679	0	111	0	56844	7.306e-05	8.202e-06	9.587e-03	1.222e-02	55.0
+adaptive	edge	0.40	0.40	1.00	340	0	0	620	0	63009	5.164e-04	9.319e-06	1.023e-02	2.147e-02	59.3
+adaptive	edge	0.40	0.40	0.90	340	0	0	537	83	64512	5.167e-04	9.376e-06	1.024e-02	2.147e-02	60.3
+adaptive	edge	0.40	0.50	1.00	340	85	0	535	0	61632	5.429e-04	1.082e-05	1.069e-02	2.147e-02	58.3
+adaptive	edge	0.40	0.50	0.90	340	85	0	452	83	63135	5.432e-04	1.088e-05	1.069e-02	2.147e-02	59.4
+adaptive	edge	0.40	0.60	1.00	340	170	0	450	0	60102	5.499e-04	1.167e-05	1.069e-02	2.147e-02	57.3
+adaptive	edge	0.40	0.60	0.90	340	170	0	367	83	61605	5.502e-04	1.173e-05	1.070e-02	2.147e-02	58.3
+adaptive	edge	0.40	0.70	1.00	340	255	0	365	0	58581	5.732e-04	1.277e-05	1.069e-02	2.147e-02	56.2
+adaptive	edge	0.40	0.70	0.90	340	255	0	282	83	60084	5.735e-04	1.282e-05	1.070e-02	2.147e-02	57.3
+adaptive	edge	0.40	0.80	1.00	340	340	0	280	0	57114	5.403e-04	1.358e-05	1.069e-02	2.147e-02	55.2
+adaptive	edge	0.40	0.80	0.90	340	340	0	197	83	58617	5.406e-04	1.364e-05	1.070e-02	2.147e-02	56.2
+adaptive	edge	0.40	0.90	1.00	340	426	0	194	0	55557	4.638e-04	1.388e-05	1.069e-02	2.147e-02	54.1
+adaptive	edge	0.40	0.90	0.90	340	426	0	111	83	57060	4.641e-04	1.393e-05	1.070e-02	2.147e-02	55.2
+adaptive	edge	0.40	1.00	1.00	340	509	0	111	0	54054	4.155e-04	1.327e-05	1.064e-02	2.147e-02	53.1
+adaptive	edge	0.50	0.50	1.00	425	0	0	535	0	60354	7.420e-04	1.905e-05	1.269e-02	2.147e-02	57.4
+adaptive	edge	0.50	0.50	0.90	425	0	0	452	83	61857	7.423e-04	1.911e-05	1.269e-02	2.147e-02	58.5
+adaptive	edge	0.50	0.60	1.00	425	85	0	450	0	58824	7.490e-04	1.990e-05	1.269e-02	2.147e-02	56.4
+adaptive	edge	0.50	0.60	0.90	425	85	0	367	83	60327	7.493e-04	1.996e-05	1.270e-02	2.147e-02	57.4
+adaptive	edge	0.50	0.70	1.00	425	170	0	365	0	57303	7.723e-04	2.099e-05	1.269e-02	2.147e-02	55.3
+adaptive	edge	0.50	0.70	0.90	425	170	0	282	83	58806	7.726e-04	2.105e-05	1.270e-02	2.147e-02	56.4
+adaptive	edge	0.50	0.80	1.00	425	255	0	280	0	55836	7.394e-04	2.181e-05	1.269e-02	2.147e-02	54.3
+adaptive	edge	0.50	0.80	0.90	425	255	0	197	83	57339	7.397e-04	2.187e-05	1.270e-02	2.147e-02	55.4
+adaptive	edge	0.50	0.90	1.00	425	341	0	194	0	54279	6.630e-04	2.211e-05	1.269e-02	2.147e-02	53.3
+adaptive	edge	0.50	0.90	0.90	425	341	0	111	83	55782	6.633e-04	2.216e-05	1.270e-02	2.147e-02	54.3
+adaptive	edge	0.50	1.00	1.00	425	424	0	111	0	52776	6.146e-04	2.150e-05	1.264e-02	2.147e-02	52.2
+adaptive	edge	0.60	0.60	1.00	510	0	0	450	0	57438	8.445e-04	2.622e-05	1.270e-02	2.147e-02	55.4
+adaptive	edge	0.60	0.60	0.90	510	0	0	367	83	58941	8.448e-04	2.628e-05	1.271e-02	2.147e-02	56.5
+adaptive	edge	0.60	0.70	1.00	510	85	0	365	0	55917	8.678e-04	2.732e-05	1.270e-02	2.147e-02	54.4
+adaptive	edge	0.60	0.70	0.90	510	85	0	282	83	57420	8.681e-04	2.737e-05	1.271e-02	2.147e-02	55.4
+adaptive	edge	0.60	0.80	1.00	510	170	0	280	0	54450	8.349e-04	2.814e-05	1.270e-02	2.147e-02	53.4
+adaptive	edge	0.60	0.80	0.90	510	170	0	197	83	55953	8.352e-04	2.819e-05	1.271e-02	2.147e-02	54.4
+adaptive	edge	0.60	0.90	1.00	510	256	0	194	0	52893	7.584e-04	2.843e-05	1.270e-02	2.147e-02	52.3
+adaptive	edge	0.60	0.90	0.90	510	256	0	111	83	54396	7.588e-04	2.849e-05	1.271e-02	2.147e-02	53.3
+adaptive	edge	0.60	1.00	1.00	510	339	0	111	0	51390	7.101e-04	2.783e-05	1.265e-02	2.147e-02	51.3
+adaptive	edge	0.70	0.70	1.00	595	0	0	365	0	54468	1.019e-03	3.402e-05	1.270e-02	2.147e-02	53.4
+adaptive	edge	0.70	0.70	0.90	595	0	0	282	83	55971	1.019e-03	3.408e-05	1.271e-02	2.147e-02	54.4
+adaptive	edge	0.70	0.80	1.00	595	85	0	280	0	53001	9.861e-04	3.484e-05	1.270e-02	2.147e-02	52.4
+adaptive	edge	0.70	0.80	0.90	595	85	0	197	83	54504	9.864e-04	3.490e-05	1.271e-02	2.147e-02	53.4
+adaptive	edge	0.70	0.90	1.00	595	171	0	194	0	51444	9.096e-04	3.513e-05	1.270e-02	2.147e-02	51.3
+adaptive	edge	0.70	0.90	0.90	595	171	0	111	83	52947	9.099e-04	3.519e-05	1.271e-02	2.147e-02	52.3
+adaptive	edge	0.70	1.00	1.00	595	254	0	111	0	49941	8.612e-04	3.453e-05	1.265e-02	2.147e-02	50.3
+adaptive	edge	0.80	0.80	1.00	680	0	0	280	0	51597	8.982e-04	3.834e-05	1.513e-02	4.559e-02	51.4
+adaptive	edge	0.80	0.80	0.90	680	0	0	197	83	53100	8.985e-04	3.840e-05	1.514e-02	4.559e-02	52.4
+adaptive	edge	0.80	0.90	1.00	680	86	0	194	0	50040	8.217e-04	3.863e-05	1.815e-02	4.559e-02	50.3
+adaptive	edge	0.80	0.90	0.90	680	86	0	111	83	51543	8.220e-04	3.869e-05	1.817e-02	4.559e-02	51.4
+adaptive	edge	0.80	1.00	1.00	680	169	0	111	0	48537	7.734e-04	3.803e-05	1.868e-02	4.559e-02	49.3
+adaptive	edge	0.90	0.90	1.00	766	0	0	194	0	48564	6.522e-04	3.834e-05	2.652e-02	4.559e-02	49.3
+adaptive	edge	0.90	0.90	0.90	766	0	0	111	83	50067	6.526e-04	3.840e-05	2.654e-02	4.559e-02	50.3
+adaptive	edge	0.90	1.00	1.00	766	83	0	111	0	47061	6.039e-04	3.774e-05	2.705e-02	4.559e-02	48.3
+adaptive	edge	1.00	1.00	1.00	849	0	0	111	0	45648	2.813e-04	3.291e-05	3.036e-02	4.559e-02	47.3
+adaptive	ring	0.00	0.00	1.00	0	0	0	960	0	75024	1.030e-05	1.155e-06	5.671e-04	0.000e+00	67.6
+adaptive	ring	0.00	0.00	0.90	0	0	0	880	80	76608	1.377e-05	1.214e-06	5.671e-04	4.973e-04	68.7
+adaptive	ring	0.00	0.20	1.00	0	172	0	788	0	72054	1.041e-05	1.185e-06	2.015e-03	2.288e-03	65.5
+adaptive	ring	0.00	0.20	0.90	0	172	0	708	80	73638	1.388e-05	1.244e-06	2.015e-03	2.288e-03	66.6
+adaptive	ring	0.00	0.40	1.00	0	340	0	620	0	68976	3.465e-05	2.959e-06	2.015e-03	2.288e-03	63.4
+adaptive	ring	0.00	0.40	0.90	0	340	0	540	80	70560	3.812e-05	3.017e-06	2.015e-03	2.288e-03	64.5
+adaptive	ring	0.00	0.50	1.00	0	429	0	531	0	67428	9.195e-05	4.610e-06	2.015e-03	2.288e-03	62.3
+adaptive	ring	0.00	0.50	0.90	0	429	0	451	80	69012	9.542e-05	4.669e-06	2.015e-03	2.288e-03	63.4
+adaptive	ring	0.00	0.60	1.00	0	510	0	450	0	65880	1.147e-04	4.895e-06	2.909e-03	2.288e-03	61.3
+adaptive	ring	0.00	0.60	0.90	0	510	0	370	80	67464	1.182e-04	4.954e-06	2.909e-03	2.288e-03	62.4
+adaptive	ring	0.00	0.70	1.00	0	598	0	362	0	64287	1.410e-04	4.436e-06	2.909e-03	2.288e-03	60.2
+adaptive	ring	0.00	0.70	0.90	0	598	0	282	80	65871	1.444e-04	4.495e-06	2.909e-03	2.288e-03	61.3
+adaptive	ring	0.00	0.80	1.00	0	681	0	279	0	62946	2.604e-05	5.270e-06	7.560e-03	1.222e-02	59.2
+adaptive	ring	0.00	0.80	0.90	0	681	0	199	80	64530	2.951e-05	5.329e-06	7.560e-03	1.222e-02	60.3
+adaptive	ring	0.00	0.90	1.00	0	769	0	191	0	61380	2.430e-05	6.368e-06	8.082e-03	1.222e-02	58.2
+adaptive	ring	0.00	0.90	0.90	0	769	0	111	80	62964	2.777e-05	6.427e-06	8.082e-03	1.222e-02	59.2
+adaptive	ring	0.00	1.00	1.00	0	849	0	111	0	59796	-3.158e-05	6.063e-06	8.088e-03	1.222e-02	57.1
+adaptive	ring	0.20	0.20	1.00	172	0	0	788	0	69327	1.128e-04	1.082e-06	1.085e-02	1.063e-02	63.6
+adaptive	ring	0.20	0.20	0.90	172	0	0	708	80	70911	1.162e-04	1.141e-06	1.085e-02	1.063e-02	64.7
+adaptive	ring	0.20	0.40	1.00	172	168	0	620	0	66249	1.370e-04	2.855e-06	1.079e-02	1.063e-02	61.5
+adaptive	ring	0.20	0.40	0.90	172	168	0	540	80	67833	1.405e-04	2.914e-06	1.079e-02	1.063e-02	62.6
+adaptive	ring	0.20	0.50	1.00	172	257	0	531	0	64701	1.943e-04	4.507e-06	1.079e-02	1.063e-02	60.4
+adaptive	ring	0.20	0.50	0.90	172	257	0	451	80	66285	1.978e-04	4.566e-06	1.079e-02	1.063e-02	61.5
+adaptive	ring	0.20	0.60	1.00	172	338	0	450	0	63153	2.171e-04	4.791e-06	1.079e-02	1.063e-02	59.4
+adaptive	ring	0.20	0.60	0.90	172	338	0	370	80	64737	2.205e-04	4.850e-06	1.079e-02	1.063e-02	60.5
+adaptive	ring	0.20	0.70	1.00	172	426	0	362	0	61560	2.433e-04	4.333e-06	1.079e-02	1.063e-02	58.3
+adaptive	ring	0.20	0.70	0.90	172	426	0	282	80	63144	2.468e-04	4.392e-06	1.079e-02	1.063e-02	59.4
+adaptive	ring	0.20	0.80	1.00	172	509	0	279	0	60219	1.284e-04	5.167e-06	1.079e-02	1.222e-02	57.4
+adaptive	ring	0.20	0.80	0.90	172	509	0	199	80	61803	1.319e-04	5.226e-06	1.079e-02	1.222e-02	58.4
+adaptive	ring	0.20	0.90	1.00	172	597	0	191	0	58653	1.267e-04	6.264e-06	1.079e-02	1.222e-02	56.3
+adaptive	ring	0.20	0.90	0.90	172	597	0	111	80	60237	1.301e-04	6.323e-06	1.079e-02	1.222e-02	57.4
+adaptive	ring	0.20	1.00	1.00	172	677	0	111	0	57069	7.077e-05	5.960e-06	1.079e-02	1.222e-02	55.2
+adaptive	ring	0.40	0.40	1.00	340	0	0	620	0	63459	4.338e-04	1.233e-05	1.052e-02	1.898e-02	59.6
+adaptive	ring	0.40	0.40	0.90	340	0	0	540	80	65043	4.373e-04	1.239e-05	1.052e-02	1.898e-02	60.7
+adaptive	ring	0.40	0.50	1.00	340	89	0	531	0	61911	4.911e-04	1.398e-05	1.052e-02	1.898e-02	58.5
+adaptive	ring	0.40	0.50	0.90	340	89	0	451	80	63495	4.946e-04	1.404e-05	1.052e-02	1.898e-02	59.6
+adaptive	ring	0.40	0.60	1.00	340	170	0	450	0	60363	5.139e-04	1.426e-05	1.052e-02	1.898e-02	57.5
+adaptive	ring	0.40	0.60	0.90	340	170	0	370	80	61947	5.174e-04	1.432e-05	1.052e-02	1.898e-02	58.5
+adaptive	ring	0.40	0.70	1.00	340	258	0	362	0	58770	5.402e-04	1.380e-05	1.052e-02	1.898e-02	56.4
+adaptive	ring	0.40	0.70	0.90	340	258	0	282	80	60354	5.436e-04	1.386e-05	1.052e-02	1.898e-02	57.4
+adaptive	ring	0.40	0.80	1.00	340	341	0	279	0	57429	4.252e-04	1.464e-05	1.052e-02	1.898e-02	55.4
+adaptive	ring	0.40	0.80	0.90	340	341	0	199	80	59013	4.287e-04	1.470e-05	1.052e-02	1.898e-02	56.5
+adaptive	ring	0.40	0.90	1.00	340	429	0	191	0	55863	4.235e-04	1.574e-05	1.052e-02	1.898e-02	54.3
+adaptive	ring	0.40	0.90	0.90	340	429	0	111	80	57447	4.270e-04	1.579e-05	1.052e-02	1.898e-02	55.4
+adaptive	ring	0.40	1.00	1.00	340	509	0	111	0	54279	3.676e-04	1.543e-05	1.052e-02	1.898e-02	53.3
+adaptive	ring	0.50	0.50	1.00	429	0	0	531	0	60435	7.668e-04	2.476e-05	1.251e-02	1.898e-02	57.5
+adaptive	ring	0.50	0.50	0.90	429	0	0	451	80	62019	7.703e-04	2.482e-05	1.251e-02	1.898e-02	58.6
+adaptive	ring	0.50	0.60	1.00	429	81	0	450	0	58887	7.896e-04	2.505e-05	1.251e-02	1.898e-02	56.4
+adaptive	ring	0.50	0.60	0.90	429	81	0	370	80	60471	7.931e-04	2.511e-05	1.251e-02	1.898e-02	57.5
+adaptive	ring	0.50	0.70	1.00	429	169	0	362	0	57294	8.159e-04	2.459e-05	1.251e-02	1.898e-02	55.3
+adaptive	ring	0.50	0.70	0.90	429	169	0	282	80	58878	8.193e-04	2.465e-05	1.251e-02	1.898e-02	56.4
+adaptive	ring	0.50	0.80	1.00	429	252	0	279	0	55953	7.009e-04	2.542e-05	1.251e-02	1.898e-02	54.4
+adaptive	ring	0.50	0.80	0.90	429	252	0	199	80	57537	7.044e-04	2.548e-05	1.251e-02	1.898e-02	55.5
+adaptive	ring	0.50	0.90	1.00	429	340	0	191	0	54387	6.992e-04	2.652e-05	1.245e-02	1.898e-02	53.3
+adaptive	ring	0.50	0.90	0.90	429	340	0	111	80	55971	7.027e-04	2.658e-05	1.245e-02	1.898e-02	54.4
+adaptive	ring	0.50	1.00	1.00	429	420	0	111	0	52803	6.433e-04	2.622e-05	1.245e-02	1.898e-02	52.2
+adaptive	ring	0.60	0.60	1.00	510	0	0	450	0	57474	9.691e-04	2.732e-05	1.461e-02	1.898e-02	55.5
+adaptive	ring	0.60	0.60	0.90	510	0	0	370	80	59058	9.726e-04	2.738e-05	1.461e-02	1.898e-02	56.6
+adaptive	ring	0.60	0.70	1.00	510	88	0	362	0	55881	9.954e-04	2.686e-05	1.461e-02	1.898e-02	54.4
+adaptive	ring	0.60	0.70	0.90	510	88	0	282	80	57465	9.989e-04	2.692e-05	1.461e-02	1.898e-02	55.5
+adaptive	ring	0.60	0.80	1.00	510	171	0	279	0	54540	8.804e-04	2.770e-05	1.461e-02	1.898e-02	53.4
+adaptive	ring	0.60	0.80	0.90	510	171	0	199	80	56124	8.839e-04	2.776e-05	1.461e-02	1.898e-02	54.5
+adaptive	ring	0.60	0.90	1.00	510	259	0	191	0	52974	8.787e-04	2.879e-05	1.461e-02	1.898e-02	52.4
+adaptive	ring	0.60	0.90	0.90	510	259	0	111	80	54558	8.822e-04	2.885e-05	1.461e-02	1.898e-02	53.4
+adaptive	ring	0.60	1.00	1.00	510	339	0	111	0	51390	8.228e-04	2.849e-05	1.461e-02	1.898e-02	51.3
+adaptive	ring	0.70	0.70	1.00	598	0	0	362	0	54360	1.070e-03	2.600e-05	1.461e-02	1.898e-02	53.3
+adaptive	ring	0.70	0.70	0.90	598	0	0	282	80	55944	1.074e-03	2.606e-05	1.461e-02	1.898e-02	54.4
+adaptive	ring	0.70	0.80	1.00	598	83	0	279	0	53019	9.554e-04	2.683e-05	1.461e-02	1.898e-02	52.4
+adaptive	ring	0.70	0.80	0.90	598	83	0	199	80	54603	9.589e-04	2.689e-05	1.461e-02	1.898e-02	53.5
+adaptive	ring	0.70	0.90	1.00	598	171	0	191	0	51453	9.537e-04	2.793e-05	1.461e-02	1.898e-02	51.3
+adaptive	ring	0.70	0.90	0.90	598	171	0	111	80	53037	9.571e-04	2.799e-05	1.461e-02	1.898e-02	52.4
+adaptive	ring	0.70	1.00	1.00	598	251	0	111	0	49869	8.978e-04	2.763e-05	1.461e-02	1.898e-02	50.2
+adaptive	ring	0.80	0.80	1.00	681	0	0	279	0	51759	7.407e-04	3.139e-05	2.625e-02	4.559e-02	51.5
+adaptive	ring	0.80	0.80	0.90	681	0	0	199	80	53343	7.442e-04	3.145e-05	2.625e-02	4.559e-02	52.6
+adaptive	ring	0.80	0.90	1.00	681	88	0	191	0	50193	7.389e-04	3.249e-05	2.678e-02	4.559e-02	50.4
+adaptive	ring	0.80	0.90	0.90	681	88	0	111	80	51777	7.424e-04	3.255e-05	2.678e-02	4.559e-02	51.5
+adaptive	ring	0.80	1.00	1.00	681	168	0	111	0	48609	6.831e-04	3.218e-05	2.679e-02	4.559e-02	49.3
+adaptive	ring	0.90	0.90	1.00	769	0	0	191	0	48690	6.633e-04	3.483e-05	3.025e-02	4.559e-02	49.4
+adaptive	ring	0.90	0.90	0.90	769	0	0	111	80	50274	6.668e-04	3.489e-05	3.025e-02	4.559e-02	50.5
+adaptive	ring	0.90	1.00	1.00	769	80	0	111	0	47106	6.075e-04	3.452e-05	3.026e-02	4.559e-02	48.3
+adaptive	ring	1.00	1.00	1.00	849	0	0	111	0	45648	2.813e-04	3.291e-05	3.036e-02	4.559e-02	47.3
+adaptive	oracle_dF3	0.00	0.00	1.00	0	0	0	960	0	75024	1.030e-05	1.155e-06	5.671e-04	0.000e+00	67.6
+adaptive	oracle_dF3	0.00	0.00	0.90	0	0	0	876	84	75996	1.203e-05	9.481e-07	4.292e-04	9.303e-04	68.2
+adaptive	oracle_dF3	0.00	0.20	1.00	0	170	0	790	0	71838	4.786e-06	6.133e-07	5.591e-04	1.522e-04	65.4
+adaptive	oracle_dF3	0.00	0.20	0.90	0	170	0	706	84	72810	6.517e-06	4.063e-07	4.213e-04	9.303e-04	66.0
+adaptive	oracle_dF3	0.00	0.40	1.00	0	340	0	620	0	68499	1.368e-05	1.435e-06	5.709e-04	3.087e-04	63.1
+adaptive	oracle_dF3	0.00	0.40	0.90	0	340	0	536	84	69471	1.542e-05	1.228e-06	4.203e-04	9.303e-04	63.7
+adaptive	oracle_dF3	0.00	0.50	1.00	0	425	0	535	0	66843	3.825e-05	2.757e-06	5.728e-04	3.146e-04	61.9
+adaptive	oracle_dF3	0.00	0.50	0.90	0	425	0	451	84	67815	3.999e-05	2.550e-06	4.312e-04	9.303e-04	62.6
+adaptive	oracle_dF3	0.00	0.60	1.00	0	510	0	450	0	65214	5.476e-05	3.960e-06	6.275e-04	4.161e-04	60.8
+adaptive	oracle_dF3	0.00	0.60	0.90	0	510	0	366	84	66186	5.649e-05	3.753e-06	6.362e-04	9.303e-04	61.5
+adaptive	oracle_dF3	0.00	0.70	1.00	0	595	0	365	0	63648	7.595e-05	3.741e-06	8.022e-04	4.760e-04	59.7
+adaptive	oracle_dF3	0.00	0.70	0.90	0	595	0	281	84	64620	7.768e-05	3.534e-06	8.108e-04	9.303e-04	60.4
+adaptive	oracle_dF3	0.00	0.80	1.00	0	680	0	280	0	62145	7.195e-05	4.875e-06	1.475e-03	8.258e-04	58.7
+adaptive	oracle_dF3	0.00	0.80	0.90	0	680	0	196	84	63117	7.368e-05	4.668e-06	1.337e-03	9.303e-04	59.4
+adaptive	oracle_dF3	0.00	0.90	1.00	0	765	0	195	0	60768	5.800e-05	5.138e-06	2.080e-03	1.747e-03	57.7
+adaptive	oracle_dF3	0.00	0.90	0.90	0	765	0	111	84	61740	5.973e-05	4.931e-06	1.942e-03	1.747e-03	58.4
+adaptive	oracle_dF3	0.00	1.00	1.00	0	849	0	111	0	59796	-3.158e-05	6.063e-06	8.088e-03	1.222e-02	57.1
+adaptive	oracle_dF3	0.20	0.20	1.00	170	0	0	790	0	68688	-3.756e-05	-3.603e-06	1.101e-03	9.123e-04	63.2
+adaptive	oracle_dF3	0.20	0.20	0.90	170	0	0	706	84	69660	-3.583e-05	-3.810e-06	1.101e-03	9.303e-04	63.9
+adaptive	oracle_dF3	0.20	0.40	1.00	170	170	0	620	0	65349	-2.866e-05	-2.782e-06	1.065e-03	9.123e-04	60.9
+adaptive	oracle_dF3	0.20	0.40	0.90	170	170	0	536	84	66321	-2.693e-05	-2.989e-06	1.065e-03	9.303e-04	61.6
+adaptive	oracle_dF3	0.20	0.50	1.00	170	255	0	535	0	63693	-4.089e-06	-1.460e-06	1.048e-03	9.123e-04	59.7
+adaptive	oracle_dF3	0.20	0.50	0.90	170	255	0	451	84	64665	-2.358e-06	-1.667e-06	1.048e-03	9.303e-04	60.4
+adaptive	oracle_dF3	0.20	0.60	1.00	170	340	0	450	0	62064	1.242e-05	-2.569e-07	1.048e-03	9.123e-04	58.6
+adaptive	oracle_dF3	0.20	0.60	0.90	170	340	0	366	84	63036	1.415e-05	-4.639e-07	1.048e-03	9.303e-04	59.3
+adaptive	oracle_dF3	0.20	0.70	1.00	170	425	0	365	0	60498	3.360e-05	-4.754e-07	1.059e-03	9.123e-04	57.5
+adaptive	oracle_dF3	0.20	0.70	0.90	170	425	0	281	84	61470	3.534e-05	-6.825e-07	1.059e-03	9.303e-04	58.2
+adaptive	oracle_dF3	0.20	0.80	1.00	170	510	0	280	0	58995	2.961e-05	6.579e-07	1.380e-03	9.123e-04	56.5
+adaptive	oracle_dF3	0.20	0.80	0.90	170	510	0	196	84	59967	3.134e-05	4.508e-07	1.242e-03	9.303e-04	57.2
+adaptive	oracle_dF3	0.20	0.90	1.00	170	595	0	195	0	57618	1.566e-05	9.212e-07	1.985e-03	1.747e-03	55.6
+adaptive	oracle_dF3	0.20	0.90	0.90	170	595	0	111	84	58590	1.739e-05	7.141e-07	1.848e-03	1.747e-03	56.2
+adaptive	oracle_dF3	0.20	1.00	1.00	170	679	0	111	0	56646	-7.393e-05	1.846e-06	8.101e-03	1.222e-02	54.9
+adaptive	oracle_dF3	0.40	0.40	1.00	340	0	0	620	0	62145	5.160e-05	2.317e-06	1.778e-03	1.485e-03	58.7
+adaptive	oracle_dF3	0.40	0.40	0.90	340	0	0	536	84	63117	5.333e-05	2.110e-06	1.761e-03	1.485e-03	59.4
+adaptive	oracle_dF3	0.40	0.50	1.00	340	85	0	535	0	60489	7.617e-05	3.639e-06	1.797e-03	1.485e-03	57.5
+adaptive	oracle_dF3	0.40	0.50	0.90	340	85	0	451	84	61461	7.790e-05	3.432e-06	1.780e-03	1.485e-03	58.2
+adaptive	oracle_dF3	0.40	0.60	1.00	340	170	0	450	0	58860	9.267e-05	4.842e-06	1.794e-03	1.485e-03	56.4
+adaptive	oracle_dF3	0.40	0.60	0.90	340	170	0	366	84	59832	9.440e-05	4.635e-06	1.777e-03	1.485e-03	57.1
+adaptive	oracle_dF3	0.40	0.70	1.00	340	255	0	365	0	57294	1.139e-04	4.624e-06	1.879e-03	1.485e-03	55.3
+adaptive	oracle_dF3	0.40	0.70	0.90	340	255	0	281	84	58266	1.156e-04	4.417e-06	1.870e-03	1.485e-03	56.0
+adaptive	oracle_dF3	0.40	0.80	1.00	340	340	0	280	0	55791	1.099e-04	5.757e-06	1.879e-03	1.485e-03	54.3
+adaptive	oracle_dF3	0.40	0.80	0.90	340	340	0	196	84	56763	1.116e-04	5.550e-06	1.870e-03	1.485e-03	55.0
+adaptive	oracle_dF3	0.40	0.90	1.00	340	425	0	195	0	54414	9.591e-05	6.020e-06	2.378e-03	1.747e-03	53.3
+adaptive	oracle_dF3	0.40	0.90	0.90	340	425	0	111	84	55386	9.764e-05	5.813e-06	2.318e-03	1.747e-03	54.0
+adaptive	oracle_dF3	0.40	1.00	1.00	340	509	0	111	0	53442	6.328e-06	6.946e-06	8.395e-03	1.222e-02	52.7
+adaptive	oracle_dF3	0.50	0.50	1.00	425	0	0	535	0	58860	2.029e-04	1.090e-05	2.342e-03	1.833e-03	56.4
+adaptive	oracle_dF3	0.50	0.50	0.90	425	0	0	451	84	59832	2.046e-04	1.069e-05	2.297e-03	1.833e-03	57.1
+adaptive	oracle_dF3	0.50	0.60	1.00	425	85	0	450	0	57231	2.194e-04	1.210e-05	2.340e-03	1.833e-03	55.3
+adaptive	oracle_dF3	0.50	0.60	0.90	425	85	0	366	84	58203	2.211e-04	1.190e-05	2.296e-03	1.833e-03	56.0
+adaptive	oracle_dF3	0.50	0.70	1.00	425	170	0	365	0	55665	2.406e-04	1.188e-05	2.336e-03	1.833e-03	54.2
+adaptive	oracle_dF3	0.50	0.70	0.90	425	170	0	281	84	56637	2.423e-04	1.168e-05	2.291e-03	1.833e-03	54.9
+adaptive	oracle_dF3	0.50	0.80	1.00	425	255	0	280	0	54162	2.366e-04	1.302e-05	2.331e-03	1.833e-03	53.2
+adaptive	oracle_dF3	0.50	0.80	0.90	425	255	0	196	84	55134	2.383e-04	1.281e-05	2.286e-03	1.833e-03	53.8
+adaptive	oracle_dF3	0.50	0.90	1.00	425	340	0	195	0	52785	2.226e-04	1.328e-05	2.378e-03	1.833e-03	52.2
+adaptive	oracle_dF3	0.50	0.90	0.90	425	340	0	111	84	53757	2.244e-04	1.307e-05	2.318e-03	1.833e-03	52.9
+adaptive	oracle_dF3	0.50	1.00	1.00	425	424	0	111	0	51813	1.330e-04	1.421e-05	8.468e-03	1.222e-02	51.6
+adaptive	oracle_dF3	0.60	0.60	1.00	510	0	0	450	0	55692	3.129e-04	1.811e-05	3.277e-03	3.480e-03	54.2
+adaptive	oracle_dF3	0.60	0.60	0.90	510	0	0	366	84	56664	3.147e-04	1.790e-05	3.276e-03	3.480e-03	54.9
+adaptive	oracle_dF3	0.60	0.70	1.00	510	85	0	365	0	54126	3.341e-04	1.789e-05	3.352e-03	3.480e-03	53.1
+adaptive	oracle_dF3	0.60	0.70	0.90	510	85	0	281	84	55098	3.359e-04	1.768e-05	3.351e-03	3.480e-03	53.8
+adaptive	oracle_dF3	0.60	0.80	1.00	510	170	0	280	0	52623	3.301e-04	1.902e-05	3.347e-03	3.480e-03	52.1
+adaptive	oracle_dF3	0.60	0.80	0.90	510	170	0	196	84	53595	3.319e-04	1.881e-05	3.346e-03	3.480e-03	52.8
+adaptive	oracle_dF3	0.60	0.90	1.00	510	255	0	195	0	51246	3.162e-04	1.928e-05	3.396e-03	3.480e-03	51.2
+adaptive	oracle_dF3	0.60	0.90	0.90	510	255	0	111	84	52218	3.179e-04	1.908e-05	3.396e-03	3.480e-03	51.8
+adaptive	oracle_dF3	0.60	1.00	1.00	510	339	0	111	0	50274	2.266e-04	2.021e-05	8.519e-03	1.222e-02	50.5
+adaptive	oracle_dF3	0.70	0.70	1.00	595	0	0	365	0	52722	4.417e-04	1.704e-05	3.819e-03	4.047e-03	52.2
+adaptive	oracle_dF3	0.70	0.70	0.90	595	0	0	281	84	53694	4.434e-04	1.683e-05	3.818e-03	4.047e-03	52.8
+adaptive	oracle_dF3	0.70	0.80	1.00	595	85	0	280	0	51219	4.377e-04	1.817e-05	3.814e-03	4.047e-03	51.1
+adaptive	oracle_dF3	0.70	0.80	0.90	595	85	0	196	84	52191	4.394e-04	1.796e-05	3.814e-03	4.047e-03	51.8
+adaptive	oracle_dF3	0.70	0.90	1.00	595	170	0	195	0	49842	4.238e-04	1.843e-05	4.099e-03	4.047e-03	50.2
+adaptive	oracle_dF3	0.70	0.90	0.90	595	170	0	111	84	50814	4.255e-04	1.823e-05	4.108e-03	4.047e-03	50.9
+adaptive	oracle_dF3	0.70	1.00	1.00	595	254	0	111	0	48870	3.342e-04	1.936e-05	8.483e-03	1.222e-02	49.5
+adaptive	oracle_dF3	0.80	0.80	1.00	680	0	0	280	0	49950	4.210e-04	2.316e-05	5.727e-03	6.212e-03	50.3
+adaptive	oracle_dF3	0.80	0.80	0.90	680	0	0	196	84	50922	4.227e-04	2.296e-05	5.661e-03	6.212e-03	50.9
+adaptive	oracle_dF3	0.80	0.90	1.00	680	85	0	195	0	48573	4.070e-04	2.343e-05	6.332e-03	6.212e-03	49.3
+adaptive	oracle_dF3	0.80	0.90	0.90	680	85	0	111	84	49545	4.088e-04	2.322e-05	6.195e-03	6.212e-03	50.0
+adaptive	oracle_dF3	0.80	1.00	1.00	680	169	0	111	0	47601	3.174e-04	2.435e-05	8.441e-03	1.222e-02	48.6
+adaptive	oracle_dF3	0.90	0.90	1.00	765	0	0	195	0	47457	2.909e-04	2.650e-05	9.145e-03	7.653e-03	48.5
+adaptive	oracle_dF3	0.90	0.90	0.90	765	0	0	111	84	48429	2.927e-04	2.629e-05	9.007e-03	7.653e-03	49.2
+adaptive	oracle_dF3	0.90	1.00	1.00	765	84	0	111	0	46485	2.013e-04	2.743e-05	1.020e-02	1.222e-02	47.9
+adaptive	oracle_dF3	1.00	1.00	1.00	849	0	0	111	0	45648	2.813e-04	3.291e-05	3.036e-02	4.559e-02	47.3

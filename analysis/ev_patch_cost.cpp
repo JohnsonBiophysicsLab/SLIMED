@@ -24,6 +24,8 @@
 //             inputface_<last>.csv, inputmesh_faces.csv (copy flags);
 //             "perval" sweeps one valence at a time with the rest at the reference
 //   time      per-face wall time against sample count
+//   adaptive P V F C
+//             per-face depth from a planar-angle curvature proxy, feasibility
 #include "mesh/Mesh.hpp"
 #include "energy_force/Patch_kernel.hpp"
 #include "energy_force/Patch_rows_flat.hpp"
@@ -34,6 +36,7 @@
 #include <fstream>
 #include <sstream>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -395,6 +398,193 @@ Scheme with_depth(Scheme s, int N, int D)
     s.depth[N] = D;
     return s;
 }
+
+// ---------------------------------------------------------------- adaptive
+/// The saved-state loader of the `real` mode: params, vertex_type csv, face
+/// csv and (optionally) the copy flags. `param` must outlive the mesh, which
+/// keeps a reference to it.
+Mesh *load_real_state(Param &param, int argc, char **argv)
+{
+    import_param_file(param, argv[2]);
+    param.VERBOSE_MODE = false;
+    std::vector<std::vector<double>> V;
+    std::vector<VertexType> types;
+    std::vector<int> mirrors;
+    {
+        std::ifstream in(argv[3]);
+        std::string line;
+        while (std::getline(in, line))
+        {
+            std::stringstream ss(line);
+            std::string tok;
+            std::vector<std::string> t;
+            while (std::getline(ss, tok, ','))
+                t.push_back(tok);
+            if (t.size() < 5)
+                continue;
+            V.push_back({std::stod(t[0]), std::stod(t[1]), std::stod(t[2])});
+            types.push_back(static_cast<VertexType>(std::stoi(t[3])));
+            mirrors.push_back(std::stoi(t[4]));
+        }
+    }
+    std::vector<std::vector<int>> F;
+    {
+        std::ifstream in(argv[4]);
+        std::string line;
+        while (std::getline(in, line))
+        {
+            int a, b, c;
+            if (std::sscanf(line.c_str(), "%d,%d,%d", &a, &b, &c) == 3)
+                F.push_back({a, b, c});
+        }
+    }
+    std::vector<char> isCopy;
+    if (argc > 5)
+    {
+        std::ifstream in(argv[5]);
+        std::string line;
+        while (std::getline(in, line))
+        {
+            int a, b, c, cp;
+            if (std::sscanf(line.c_str(), "%d,%d,%d,%d", &a, &b, &c, &cp) == 4)
+                isCopy.push_back(static_cast<char>(cp));
+        }
+    }
+    Mesh *mesh = new Mesh(param);
+    mesh->setup_from_vertices_faces(V, F, types, mirrors, isCopy);
+    mesh->calculate_element_area_volume();
+    mesh->sum_membrane_area_and_volume(mesh->param.area0, mesh->param.vol0);
+    mesh->Compute_Energy_And_Force();
+    return mesh;
+}
+
+/// eval_face() without the scatter: the face's own force on its control net.
+void eval_face_local(const Scheme &s, Mesh &mesh, int iFace, std::vector<double> &fLocal, Eval &e)
+{
+    Face &face = mesh.faces[iFace];
+    const int n = static_cast<int>(face.oneRingVertices.size());
+    double coords[slimed::kMaxControlPoints * 3];
+    for (int j = 0; j < n; j++)
+        for (int a = 0; a < 3; a++)
+            coords[j * 3 + a] = mesh.vertices[face.oneRingVertices[j]].coord.get(a, 0);
+    double f[slimed::kMaxControlPoints * 3] = {0};
+    if (face.patchKind == PatchKind::Regular || face.patchKind == PatchKind::SingleExtraordinary)
+    {
+        const int N = face.patchKind == PatchKind::Regular ? 6 : n - 6;
+        eval_patch(s, N, s.depth[N], coords, n, f, e);
+    }
+    else if (face.patchKind == PatchKind::MultiExtraordinary && face.patchEntry >= 0)
+    {
+        const MultiPatchTable::Entry &entry = mesh.multiPatchTable.entry(face.patchEntry);
+        for (int c = 0; c < 4; c++)
+        {
+            const MultiPatchTable::Child &child = entry.children[c];
+            const double *M = mesh.multiPatchTable.data() + child.offset;
+            double cc[slimed::kMaxControlPoints * 3];
+            multi_patch_prolong(M, coords, entry.nControl, child.nControl, cc);
+            double cf[slimed::kMaxControlPoints * 3] = {0};
+            int D = s.depth[child.valence];
+            if (child.valence != 6 && c != 3)
+                D = D == 0 ? 0 : std::max(1, D - s.multiCornerReduce);
+            eval_patch(s, child.valence, D, cc, child.nControl, cf, e);
+            multi_patch_scatter(M, cf, entry.nControl, child.nControl, f);
+        }
+    }
+    fLocal.assign(f, f + n * 3);
+}
+
+/// Unit normal of the flat triangle of a face, from its three corners.
+void flat_face_normal(const Mesh &mesh, const Face &face, double n[3])
+{
+    double p[3][3];
+    for (int k = 0; k < 3; k++)
+        for (int a = 0; a < 3; a++)
+            p[k][a] = mesh.vertices[face.adjacentVertices[k]].coord.get(a, 0);
+    double u[3], v[3];
+    for (int a = 0; a < 3; a++)
+    {
+        u[a] = p[1][a] - p[0][a];
+        v[a] = p[2][a] - p[0][a];
+    }
+    n[0] = u[1] * v[2] - u[2] * v[1];
+    n[1] = u[2] * v[0] - u[0] * v[2];
+    n[2] = u[0] * v[1] - u[1] * v[0];
+    const double len = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+    for (int a = 0; a < 3; a++)
+        n[a] /= len;
+}
+
+double angle_between(const double a[3], const double b[3])
+{
+    double d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    d = std::max(-1.0, std::min(1.0, d));
+    return std::acos(d);
+}
+
+/// Planar-angle curvature proxies of one face, from flat triangle normals only:
+///   edge  : largest dihedral angle across the face's three edges
+///   ring  : largest angle between an incident face normal and the mean normal
+///           at any of the face's three corners (the normal cone of the star)
+void face_proxies(const Mesh &mesh, const std::vector<std::vector<double>> &normals, int iFace,
+                  double &edgeProxy, double &ringProxy)
+{
+    const Face &face = mesh.faces[iFace];
+    edgeProxy = 0.0;
+    for (int j : face.adjacentFaces)
+        if (j >= 0 && j < (int)normals.size() && j != iFace)
+            edgeProxy = std::max(edgeProxy, angle_between(normals[iFace].data(), normals[j].data()));
+    ringProxy = 0.0;
+    for (int k = 0; k < 3; k++)
+    {
+        const Vertex &v = mesh.vertices[face.adjacentVertices[k]];
+        double m[3] = {0, 0, 0};
+        for (int j : v.adjacentFaces)
+            if (j >= 0 && j < (int)normals.size())
+                for (int a = 0; a < 3; a++)
+                    m[a] += normals[j][a];
+        const double len = std::sqrt(m[0] * m[0] + m[1] * m[1] + m[2] * m[2]);
+        if (len == 0.0)
+            continue;
+        for (int a = 0; a < 3; a++)
+            m[a] /= len;
+        for (int j : v.adjacentFaces)
+            if (j >= 0 && j < (int)normals.size())
+                ringProxy = std::max(ringProxy, angle_between(normals[j].data(), m));
+    }
+}
+
+/// Spearman rank correlation.
+double spearman(std::vector<double> x, std::vector<double> y)
+{
+    auto ranks = [](const std::vector<double> &v) {
+        std::vector<int> idx(v.size());
+        for (std::size_t i = 0; i < v.size(); i++)
+            idx[i] = (int)i;
+        std::sort(idx.begin(), idx.end(), [&](int a, int b) { return v[a] < v[b]; });
+        std::vector<double> r(v.size());
+        for (std::size_t i = 0; i < idx.size(); i++)
+            r[idx[i]] = (double)i;
+        return r;
+    };
+    const std::vector<double> rx = ranks(x), ry = ranks(y);
+    const double n = (double)rx.size();
+    double mx = 0, my = 0;
+    for (std::size_t i = 0; i < rx.size(); i++)
+    {
+        mx += rx[i];
+        my += ry[i];
+    }
+    mx /= n;
+    my /= n;
+    double sxy = 0, sxx = 0, syy = 0;
+    for (std::size_t i = 0; i < rx.size(); i++)
+    {
+        sxy += (rx[i] - mx) * (ry[i] - my);
+        sxx += (rx[i] - mx) * (rx[i] - mx);
+        syy += (ry[i] - my) * (ry[i] - my);
+    }
+    return sxy / std::sqrt(sxx * syy);
+}
 } // namespace
 
 int main(int argc, char **argv)
@@ -599,6 +789,268 @@ int main(int argc, char **argv)
                         }
                 }
             }
+        return 0;
+    }
+
+    if (mode == "adaptive")
+    {
+        // Feasibility of a per-face depth chosen from a planar-angle curvature
+        // estimate (docs/irregular_patch_results.md section 10.7). Every face is
+        // evaluated under each candidate depth set and under the depth-16
+        // reference, so any assignment rule can be scored by summing stored
+        // per-face results without re-evaluating anything.
+        Param param;
+        Mesh *meshPtr = load_real_state(param, argc, argv);
+        Mesh &mesh = *meshPtr;
+        const double kT = param.KBT;
+        const double kc = param.kCurv;
+
+        std::vector<int> all;
+        for (int i = 0; i < (int)mesh.faces.size(); i++)
+        {
+            const Face &f = mesh.faces[i];
+            if (f.isBoundary)
+                continue;
+            const bool ok = f.patchKind == PatchKind::Regular ||
+                            f.patchKind == PatchKind::SingleExtraordinary ||
+                            (f.patchKind == PatchKind::MultiExtraordinary && f.patchEntry >= 0);
+            if (ok)
+                all.push_back(i);
+        }
+        const int nF = (int)all.size();
+
+        // Proxies, and their cost.
+        std::vector<std::vector<double>> normals(mesh.faces.size(), std::vector<double>(3, 0.0));
+        std::vector<double> edgeProxy(nF, 0.0), ringProxy(nF, 0.0);
+        const auto t0 = std::chrono::steady_clock::now();
+        for (int i = 0; i < (int)mesh.faces.size(); i++)
+            if (!mesh.faces[i].isBoundary)
+                flat_face_normal(mesh, mesh.faces[i], normals[i].data());
+        for (int k = 0; k < nF; k++)
+            face_proxies(mesh, normals, all[k], edgeProxy[k], ringProxy[k]);
+        const double proxyMicros =
+            std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count();
+
+        // Tiers.
+        struct Tier
+        {
+            const char *name;
+            int d[9];
+        };
+        const std::vector<Tier> tiers = {
+            {"3333", {0, 0, 0, 0, 3, 3, 6, 3, 3}}, {"4444", {0, 0, 0, 0, 4, 4, 6, 4, 4}},
+            {"5444", {0, 0, 0, 0, 5, 4, 6, 4, 4}}, {"6555", {0, 0, 0, 0, 6, 5, 6, 5, 5}},
+            {"8666", {0, 0, 0, 0, 8, 6, 6, 6, 6}},
+        };
+        const int T = (int)tiers.size();
+        const int iT3 = 0, iT4 = 1, iT6 = 3, iT8 = 4;
+        Scheme tail2A;
+        tail2A.name = "tail2A";
+        tail2A.weight = tail2_weight;
+        tail2A.areaWeight = [](int N, int D, int d) {
+            return d == D - 1 ? 1.0 / (1.0 - lam(N) * lam(N)) : 1.0;
+        };
+        Scheme refS = tail2A;
+        for (int N = 4; N <= 8; N++)
+            if (N != 6)
+                refS.depth[N] = 16;
+
+        // Per-face, per-tier results.
+        std::vector<std::vector<double>> E(T, std::vector<double>(nF)), A(T, std::vector<double>(nF));
+        std::vector<std::vector<long>> S(T, std::vector<long>(nF));
+        std::vector<std::vector<std::vector<double>>> Fl(T, std::vector<std::vector<double>>(nF));
+        std::vector<double> Eref(nF), Aref(nF);
+        std::vector<std::vector<double>> Fref(nF);
+        std::vector<char> isEv(nF, 0);
+        for (int k = 0; k < nF; k++)
+        {
+            isEv[k] = mesh.faces[all[k]].patchKind != PatchKind::Regular;
+            Eval e;
+            eval_face_local(refS, mesh, all[k], Fref[k], e);
+            Eref[k] = e.eBend;
+            Aref[k] = e.area;
+            for (int t = 0; t < T; t++)
+            {
+                Scheme s = tail2A;
+                for (int N = 4; N <= 8; N++)
+                    s.depth[N] = tiers[t].d[N];
+                Eval et;
+                eval_face_local(s, mesh, all[k], Fl[t][k], et);
+                E[t][k] = et.eBend;
+                A[t][k] = et.area;
+                S[t][k] = et.samples;
+            }
+        }
+        auto faceForceErr = [&](int t, int k) {
+            double d = 0;
+            for (std::size_t j = 0; j < Fref[k].size(); j++)
+                d += std::pow(Fl[t][k][j] - Fref[k][j], 2);
+            return std::sqrt(d);
+        };
+        double sheetE = 0;
+        for (int k = 0; k < nF; k++)
+            sheetE += Eref[k];
+        // The oracle: rank faces by their own depth-3 force error. No cheap
+        // estimate can do better than this, so it bounds the adaptive gain.
+        std::vector<double> oracleProxy(nF, 0.0);
+        for (int k = 0; k < nF; k++)
+            oracleProxy[k] = faceForceErr(iT3, k);
+        auto proxyByIndex = [&](int which) -> const std::vector<double> & {
+            return which == 0 ? edgeProxy : which == 1 ? ringProxy : oracleProxy;
+        };
+        const char *proxyNames[3] = {"edge", "ring", "oracle_dF3"};
+
+        // A. Does the proxy predict the per-face error?
+        std::printf("# proxy cost: %.1f us for %d faces (%.3f us/face)\n", proxyMicros, nF,
+                    proxyMicros / nF);
+        std::printf("# sheet E_bend (ref) %.6e kc-units = %.1f kT; EV faces %d of %d\n", sheetE,
+                    sheetE * kc / kT, (int)std::count(isEv.begin(), isEv.end(), 1), nF);
+        for (int which = 0; which < 2; which++)
+        {
+            const std::vector<double> &px = which == 0 ? edgeProxy : ringProxy;
+            std::vector<double> pxEv, dE3, dE4, dF3, dF4, eRef;
+            for (int k = 0; k < nF; k++)
+                if (isEv[k])
+                {
+                    pxEv.push_back(px[k]);
+                    dE3.push_back(std::fabs(E[iT3][k] - Eref[k]));
+                    dE4.push_back(std::fabs(E[iT4][k] - Eref[k]));
+                    dF3.push_back(faceForceErr(iT3, k));
+                    dF4.push_back(faceForceErr(iT4, k));
+                    eRef.push_back(Eref[k]);
+                }
+            std::printf("# proxy %s: Spearman(proxy, |dE| at 3333) %.3f, (proxy, |dF| at 3333) %.3f, "
+                        "(proxy, E_face) %.3f; (E_face, |dE| at 3333) %.3f\n",
+                        which == 0 ? "edge" : "ring", spearman(pxEv, dE3), spearman(pxEv, dF3),
+                        spearman(pxEv, eRef), spearman(eRef, dE3));
+            // quintiles
+            std::vector<int> idx(pxEv.size());
+            for (std::size_t i = 0; i < idx.size(); i++)
+                idx[i] = (int)i;
+            std::sort(idx.begin(), idx.end(), [&](int a, int b) { return pxEv[a] < pxEv[b]; });
+            std::printf("proxy\tquintile\tproxy_min_deg\tproxy_max_deg\tmean_Eface_kT\tmean_|dE3|_kT\tmax_|dE3|_kT\tmean_|dE4|_kT\tmean_dF3_pN\tmax_dF3_pN\tmean_dF4_pN\n");
+            const int nq = 5;
+            for (int q = 0; q < nq; q++)
+            {
+                const int lo = (int)(idx.size() * q / nq), hi = (int)(idx.size() * (q + 1) / nq);
+                double mE = 0, m3 = 0, x3 = 0, m4 = 0, f3 = 0, xf3 = 0, f4 = 0;
+                for (int i = lo; i < hi; i++)
+                {
+                    const int k = idx[i];
+                    mE += eRef[k];
+                    m3 += dE3[k];
+                    x3 = std::max(x3, dE3[k]);
+                    m4 += dE4[k];
+                    f3 += dF3[k];
+                    xf3 = std::max(xf3, dF3[k]);
+                    f4 += dF4[k];
+                }
+                const double n = hi - lo;
+                const double toKT = kc / kT;
+                std::printf("%s\t%d\t%.2f\t%.2f\t%.3e\t%.3e\t%.3e\t%.3e\t%.3e\t%.3e\t%.3e\n",
+                            which == 0 ? "edge" : "ring", q + 1, pxEv[idx[lo]] * 180 / kPi,
+                            pxEv[idx[hi - 1]] * 180 / kPi, mE / n * toKT, m3 / n * toKT, x3 * toKT,
+                            m4 / n * toKT, f3 / n * kc, xf3 * kc, f4 / n * kc);
+            }
+        }
+
+        // B. Threshold sweep: tier by proxy quantile among EV faces.
+        // Step time from section 10.6: t = a + b * samples (6555: 70.6 ms at
+        // 79 362 samples, 4333: 49.8 at 49 230, 3333: 49.1 at 48 438).
+        const double kMsIntercept = 15.8, kMsPerSample = 6.9e-4;
+        auto score = [&](const std::vector<int> &tierOf, const char *label, const char *proxyName,
+                         double qLow, double qHigh, double qTop) {
+            double e = 0, a = 0;
+            long samples = 0;
+            int count[8] = {0};
+            std::vector<double> force(mesh.vertices.size() * 3, 0.0), fref(mesh.vertices.size() * 3, 0.0);
+            double maxJump = 0;
+            for (int k = 0; k < nF; k++)
+            {
+                const int t = tierOf[k];
+                count[t]++;
+                e += E[t][k];
+                a += A[t][k];
+                samples += S[t][k];
+                const Face &face = mesh.faces[all[k]];
+                for (std::size_t j = 0; j < Fref[k].size(); j++)
+                {
+                    force[face.oneRingVertices[j / 3] * 3 + j % 3] += Fl[t][k][j];
+                    fref[face.oneRingVertices[j / 3] * 3 + j % 3] += Fref[k][j];
+                }
+                if (isEv[k] && t != iT6)
+                    maxJump = std::max(maxJump, std::fabs(E[t][k] - E[iT6][k]));
+            }
+            double eRefAll = 0, aRefAll = 0;
+            for (int k = 0; k < nF; k++)
+            {
+                eRefAll += Eref[k];
+                aRefAll += Aref[k];
+            }
+            double num = 0, den = 0;
+            for (std::size_t i = 0; i < fref.size(); i += 3)
+            {
+                double dn = 0, rn = 0;
+                for (int c = 0; c < 3; c++)
+                {
+                    dn += std::pow(force[i + c] - fref[i + c], 2);
+                    rn += std::pow(fref[i + c], 2);
+                }
+                num = std::max(num, std::sqrt(dn));
+                den = std::max(den, std::sqrt(rn));
+            }
+            std::printf("%s\t%s\t%.2f\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\t%ld\t%.3e\t%.3e\t%.3e\t%.3e\t%.1f\n",
+                        label, proxyName, qLow, qHigh, qTop, count[0], count[1], count[2], count[3],
+                        count[4], samples, (e - eRefAll) / eRefAll, (a - aRefAll) / aRefAll,
+                        num / den, maxJump * kc / kT, kMsIntercept + kMsPerSample * samples);
+        };
+        std::printf("rule\tproxy\tq_low\tq_high\tq_top\tn3333\tn4444\tn5444\tn6555\tn8666\tsamples\trelE\trelA\trelF\tmax_jump_kT\tpred_ms\n");
+        for (int t = 0; t < T; t++)
+        {
+            std::vector<int> tierOf(nF, t);
+            score(tierOf, "uniform", tiers[t].name, 0, 0, 0);
+        }
+        for (int which = 0; which < 3; which++)
+        {
+            const std::vector<double> &px = proxyByIndex(which);
+            std::vector<double> sorted;
+            for (int k = 0; k < nF; k++)
+                if (isEv[k])
+                    sorted.push_back(px[k]);
+            std::sort(sorted.begin(), sorted.end());
+            auto quant = [&](double q) {
+                if (q <= 0)
+                    return -1.0;
+                if (q >= 1)
+                    return 1e9;
+                return sorted[std::min(sorted.size() - 1, (std::size_t)(q * sorted.size()))];
+            };
+            const double qs[] = {0.0, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+            for (double qLow : qs)
+                for (double qHigh : qs)
+                {
+                    if (qHigh < qLow)
+                        continue;
+                    for (double qTop : {1.0, 0.9})
+                    {
+                        if (qTop < qHigh)
+                            continue;
+                        std::vector<int> tierOf(nF, iT6);
+                        for (int k = 0; k < nF; k++)
+                        {
+                            if (!isEv[k])
+                                continue;
+                            if (px[k] <= quant(qLow))
+                                tierOf[k] = iT3;
+                            else if (px[k] <= quant(qHigh))
+                                tierOf[k] = iT4;
+                            else if (px[k] > quant(qTop))
+                                tierOf[k] = iT8;
+                        }
+                        score(tierOf, "adaptive", proxyNames[which], qLow, qHigh, qTop);
+                    }
+                }
+        }
         return 0;
     }
 
