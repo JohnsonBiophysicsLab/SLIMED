@@ -801,6 +801,15 @@ same corner count by step 1000; the depth-1 mesh has half of it (777 corners,
 out of the fits below. Depth 1 and 2 are also outside the accuracy the model
 needs (§9.6), so they are only here to anchor the line.
 
+![Step cost against recursion depth](../analysis/depth_cost_sweep/depth_cost_plot.svg)
+
+*Figure: the rows above. Filled circles: uniform depths 3–12, both repetitions;
+open circles: depths 1–2 (different flip history, not fitted); the line is
+the fit below, its open circle the depth → 0 intercept; the squares are the
+default and legacy quadratures at their effective depths; the dashed line is
+the frozen reference. `analysis/depth_cost_sweep/depth_cost_plot.py` draws it
+from `results/`.*
+
 **Fit.** Over the uniform depths 3–12, `ms/step = a + b · depth`:
 
 | | a (ms/step) | b (ms/step per level) | R² | rms residual | largest residual |
